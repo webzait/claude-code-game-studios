@@ -10,6 +10,8 @@ export interface InputHandlers {
   mute(): void;
   /** Colours currently on the board, in button order (for the number keys). */
   colors(): ColorId[];
+  /** The bumper colour under a screen point, if any: tapping a bumper bursts its colour too. */
+  pick(clientX: number, clientY: number): ColorId | null;
 }
 
 /**
@@ -31,6 +33,21 @@ export function bindInput(buttons: HTMLElement, h: InputHandlers): void {
   buttons.addEventListener('pointerdown', press);
   buttons.addEventListener('touchstart', press, { passive: true });
   buttons.addEventListener('click', press);
+
+  // Tapping a bumper on the board is the same intent as its colour button.
+  const stage = document.getElementById('stage')!;
+  const board = (e: Event) => {
+    if (e.type === 'click' && performance.now() - lastDown < 700) return;
+    const pt = 'touches' in e ? (e as TouchEvent).touches[0] : (e as MouseEvent);
+    if (!pt) return;
+    const c = h.pick(pt.clientX, pt.clientY);
+    if (!c) return;
+    if (e.type !== 'click') lastDown = performance.now();
+    h.pulse(c);
+  };
+  stage.addEventListener('pointerdown', board);
+  stage.addEventListener('touchstart', board, { passive: true });
+  stage.addEventListener('click', board);
   document.getElementById('btn-reset')!.addEventListener('click', () => h.reset());
   document.getElementById('btn-mute')!.addEventListener('click', () => h.mute());
 

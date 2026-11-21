@@ -421,6 +421,29 @@ export class View {
     extent(dist);
   }
 
+  /** Which bumper colour, if any, lies under a screen point (so a tap on a bumper itself also counts). */
+  pick(clientX: number, clientY: number, level: LevelDef): ColorId | null {
+    const rect = this.canvas.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1) return null;
+    const ndc = new THREE.Vector2(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
+    const ray = new THREE.Raycaster();
+    ray.setFromCamera(ndc, this.camera);
+    const hit = new THREE.Vector3();
+    if (!ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -BUMPER_H * 0.6), hit)) return null;
+    const x = hit.x + this.size.w / 2;
+    const y = hit.z + this.size.h / 2;
+    let best: ColorId | null = null;
+    let bestD = Infinity;
+    for (const b of level.bumpers) {
+      const d = Math.hypot(x - b.x, y - b.y) - b.r;
+      if (d < 0.3 && d < bestD) {
+        bestD = d;
+        best = b.color;
+      }
+    }
+    return best;
+  }
+
   /** Draw-call and triangle counts of the last frame (for the performance read-out). */
   stats(): { calls: number; triangles: number } {
     return { calls: this.renderer.info.render.calls, triangles: this.renderer.info.render.triangles };

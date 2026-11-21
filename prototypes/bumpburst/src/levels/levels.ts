@@ -37,7 +37,7 @@ export const LEVELS: LevelDef[] = [
   {
     id: 1,
     name: 'First Burst',
-    hint: 'Tap the color. Its bumper bursts.',
+    hint: 'Tap the red button below, or the bumper itself.',
     size: SIZE,
     bumpers: [{ color: 'red', x: 5, y: 4.2, r: 1.1 }],
     marbles: arc(5, 4.2, 1.1, [-52, -21, 0, 21, 52]),

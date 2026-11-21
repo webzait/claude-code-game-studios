@@ -77,11 +77,15 @@ function startLevel(idx: number): void {
   dirty = 3;
 }
 
+const diag = { taps: 0, accepted: 0, frames: 0, steps: 0, lastDt: 0 };
+
 function pulse(color: ColorId): void {
+  diag.taps++;
   if (hud.titleOpen || hud.resultOpen) return;
   sfx.unlock();
   // Game.pulse refuses while a pulse resolves, so a double tap can never spend two pulses.
   if (!game.pulse(color)) return;
+  diag.accepted++;
   acc = 0;
   sfx.pulse(color);
   view.pulse(color);
@@ -132,6 +136,7 @@ bindInput(hud.buttons, {
     sfx.unlock();
   },
   colors: () => game.colors,
+  pick: (x, y) => view.pick(x, y, game.level),
 });
 document.getElementById('btn-play')!.addEventListener('click', confirm);
 document.getElementById('res-main')!.addEventListener('click', confirm);
@@ -154,14 +159,31 @@ new ResizeObserver(refit).observe(document.getElementById('stage')!);
 
 const fpsEl = document.getElementById('fps')!;
 const showFps = params.has('fps');
+// Three quick taps on the level name show a small diagnostic read-out (for reporting from a phone).
+let showDiag = false;
+let nameTaps = 0;
+let nameTapT = 0;
+document.querySelector('.lvl')!.addEventListener('click', () => {
+  const t = performance.now();
+  nameTaps = t - nameTapT < 600 ? nameTaps + 1 : 1;
+  nameTapT = t;
+  if (nameTaps >= 3) showDiag = !showDiag;
+  if (!showDiag && !showFps) fpsEl.hidden = true;
+});
 let last = performance.now();
 let fpsT = 0;
 
-function frame(now: number): void {
+function frame(): void {
   requestAnimationFrame(frame);
-  const rawMs = now - last;
+  // Own clock, and never a zero or negative step: some embedded browsers hand out coarse or
+  // frozen frame timestamps, which would leave a pulse hanging forever.
+  const now = performance.now();
+  let rawMs = now - last;
+  if (!(rawMs > 0.5)) rawMs = 1000 / 60;
   const dt = Math.min(0.1, rawMs / 1000);
   last = now;
+  diag.frames++;
+  diag.lastDt = dt;
 
   if (game.phase === 'resolving') {
     const t0 = performance.now();
@@ -170,6 +192,7 @@ function frame(now: number): void {
       snapshotPrev();
       events.length = 0;
       game.step(events);
+      diag.steps++;
       acc -= tune.dt;
       for (const e of events) {
         if (e.type === 'collect') {
@@ -199,7 +222,11 @@ function frame(now: number): void {
     }
   }
 
-  if (showFps && now - fpsT > 500 && perf.frames > 0) {
+  if (showDiag && now - fpsT > 300) {
+    fpsT = now;
+    fpsEl.hidden = false;
+    fpsEl.textContent = `taps ${diag.taps} accepted ${diag.accepted}\nframes ${diag.frames} steps ${diag.steps} dt ${diag.lastDt.toFixed(4)}\nphase ${game.phase} pulses ${game.pulsesLeft} title ${hud.titleOpen} result ${hud.resultOpen}`;
+  } else if (showFps && now - fpsT > 500 && perf.frames > 0) {
     fpsT = now;
     perf.fps = 1000 / (perf.frameMs / perf.frames);
     const s = view.stats();
