@@ -183,17 +183,12 @@ card('Onderplaat', 'underlay', buildUnderlay(6, 6, CONFIG.board.grid.gap, true),
   const COLORS = ['red', 'blue', 'yellow', 'forward'] as const;
   const COLOR_NAMES = { red: 'rood', blue: 'blauw', yellow: 'geel', forward: 'vooruit' } as const;
 
-  const small = '--fs:12.5px;--icon:17px';
-  const utilityRow = (narrow: boolean): string => {
-    const s = narrow ? p.utilityNarrow : p.utility;
-    const extra = narrow ? `;${small}` : '';
-    return `<div class="tf-line">${utility(s, undo, 'Undo', '', extra)}${utility(s, restart, 'Restart', '', extra)}${utility(s, replay, 'Replay', '', extra)}${narrow ? button('tf-hint', s, bulb + label('Hint'), 'Hint', '', extra) : ''}</div>`;
-  };
+  const utilityRow = `<div class="tf-line">${utility(p.utility, undo, 'Undo')}${utility(p.utility, restart, 'Restart')}${utility(p.utility, replay, 'Replay')}</div>`;
   const actionRow = `<div class="tf-line">${COLORS.map((c) => action(p.action, c, c === 'blue' ? 'nudge' : '')).join('')}</div>`;
-  const phone = (id: string, withHintInBar: boolean): string => `<div class="tf-phone" id="${id}">
-      <div class="tf-bar"><span class="tf-pill grow">Level 5</span><span class="tf-pill">0 / 12</span><span class="tf-pill">12 zetten</span>${withHintInBar ? hint(p.hintCompact, '', 'tf-hint compact') : ''}</div>
+  const phone = `<div class="tf-phone" id="buttons-phone">
+      <div class="tf-bar"><span class="tf-pill grow">Level 5</span><span class="tf-pill">0 / 12</span><span class="tf-pill">12 zetten</span>${hint(p.hintCompact, '', 'tf-hint compact')}</div>
       <div class="tf-board">speelbord</div>
-      <div class="tf-controls">${utilityRow(!withHintInBar)}${actionRow}</div>
+      <div class="tf-controls">${utilityRow}${actionRow}</div>
     </div>`;
 
   const el = document.createElement('section');
@@ -220,10 +215,8 @@ card('Onderplaat', 'underlay', buildUnderlay(6, 6, CONFIG.board.grid.gap, true),
     ${ACTION_STATES.map(([, n]) => `<span>${n}</span>`).join('')}
     ${COLORS.map((c) => ACTION_STATES.map(([s]) => action(p.action, c, s)).join('')).join('')}
   </div>
-  <h3 class="btn-title">Telefoon ${p.stripWidth} px · optie A: Hint compact in de bovenbalk</h3>
-  ${phone('buttons-phone-a', true)}
-  <h3 class="btn-title">Telefoon ${p.stripWidth} px · optie B: vier smallere utility-knoppen</h3>
-  ${phone('buttons-phone-b', false)}
+  <h3 class="btn-title">Telefoon ${p.stripWidth} px · Hint compact in de bovenbalk</h3>
+  ${phone}
   <p class="note">Echte HTML-knoppen met CSS: tekst blijft tekst, maten komen uit <code>--w --h --d --r</code>. Elke knop is één gegoten blok met een bovenvlak, een ronde rand en schuine flanken: bij indrukken zakt het hele blok ${Math.round(b.pressFraction * 100)}% van de diepte weg; de voetafdruk en het raakvlak blijven gelijk. Blauw toont in de telefoonstroken de nudge.</p>`;
   document.getElementById('sheet')!.appendChild(el);
 }

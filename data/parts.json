@@ -108,12 +108,6 @@
         "depth": 12,
         "radius": 20
       },
-      "utilityNarrow": {
-        "width": 83,
-        "height": 44,
-        "depth": 12,
-        "radius": 18
-      },
       "action": {
         "width": 83,
         "height": 83,
