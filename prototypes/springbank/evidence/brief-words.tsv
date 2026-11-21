@@ -1,0 +1,8 @@
+2.5D-dioramastijl	a cabinet with a back panel, side walls with depth and cast shadows, seen by a perspective camera with a slight tilt	evidence/play.png
+3D-visuele presentatie	three.js scene over the 2D simulation: lit spheres, capsule bars, a helix spring	evidence/play.png
+glanzende balletjes	clear-coated ivory spheres with environment reflections, drawn as one InstancedMesh	evidence/play.png
+compacte verticale spelwereld	a 9 by 16 portrait board that fills a phone screen	evidence/play.png
+premium	copper and gold tray and spring, soft shadows, restrained HUD	evidence/play.png
+2D	the physics is 2D (src/sim/sim.ts): balls, bars and goals live on one plane	evidence/play.png
+3D	three.js draws it: lit spheres, capsule bars, a helix spring, shadows	evidence/play.png
+2.5D	a diorama cabinet with depth seen by a fixed, slightly tilted perspective camera; play stays on one plane	evidence/play.png

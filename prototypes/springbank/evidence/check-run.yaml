@@ -1,0 +1,121 @@
+# The one-shot's small check (check-run/1).
+# Written by one-shot-check.sh --record: the results are /prototype's reading of
+# evidence/self-check.tsv; never edited by hand.
+kind: check-run/1
+engine: web
+browser: "HeadlessChrome/153.0.0.0"
+time: "2026-11-21 08:14:53"
+checks:
+  - id: boots
+    result: pass
+    evidence:
+      - "evidence/self-check.tsv"
+  - id: shot
+    result: pass
+    evidence:
+      - "evidence/play.png"
+  - id: outlines
+    result: pass
+    evidence:
+      - "evidence/figures.png"
+  - id: brief-words
+    result: pass
+    evidence:
+      - "evidence/brief-words.tsv"
+  - id: emoji
+    result: pass
+    evidence:
+      - "evidence/self-check.tsv"
+  - id: nearest-game
+    result: pass
+    evidence:
+      - "evidence/nearest-game.txt"
+brief_checklist:
+  - id: L1
+    result: pass
+    evidence: "evidence/l5-aim.png"
+    item: "Look: compacte, premium 2.5D-diorama in een staande kast; glanzende balletjes; de opvangbak met zichtbare veer is het grootste en warmste object; diep nachtblauw bord, koper en goud voor bak en veer, ivoorwitte balletjes, turquoise doelen *(guessed: het palet)*; signatuur: de veer die zichtbaar inzakt als de bak voller raakt en bij loslaten terugslaat; every figure drawn, no emoji, no plain circles."
+  - id: L2
+    result: pass
+    evidence: "evidence/play.png"
+    item: "References: geen genoemd."
+  - id: L3
+    result: pass
+    evidence: "evidence/iphone-touch-aim.png"
+    item: "View: 2.5D · Camera: vaste camera recht voor de baan met lichte kanteling, de baan vult vrijwel het hele smartphonescherm."
+  - id: F1
+    result: pass
+    evidence: "evidence/iphone-touch-aim.png"
+    item: "Opvangbak die met één vinger horizontaal schuift en bij vasthouden balletjes vangt"
+  - id: F2
+    result: pass
+    evidence: "evidence/l1-aim.png"
+    item: "Energieopslag: snelheid en massa van elke vangst vullen de veer, zichtbaar in de veer en in een lijn die de verwachte hoogte toont"
+  - id: F3
+    result: pass
+    evidence: "evidence/l5-launch.png"
+    item: "Lancering van de hele verzamelde massa recht omhoog bij loslaten"
+  - id: F4
+    result: pass
+    evidence: "evidence/tests.txt"
+    item: "Kringloop: dezelfde balletjes vallen terug en komen opnieuw bovenaan, geen nieuwe voorraad"
+  - id: F5
+    result: pass
+    evidence: "evidence/l4-aim.png"
+    item: "Opvangdoelen met een capaciteit, en hindernissen waar balletjes tegen botsen"
+  - id: F6
+    result: pass
+    evidence: "evidence/l1-lost.png"
+    item: "Beperkt aantal lanceringen per level, win- en verliesscherm, levelreset"
+  - id: F7
+    result: pass
+    evidence: "evidence/tests.txt"
+    item: "Vijf levels, elk met een opgenomen en geteste oplossing"
+  - id: F8
+    result: not_run
+    mark: not assessed
+    why: "the ring and flash show in evidence/l5-launch.png; shake and sound are in code but a still cannot show them and nothing here hears them"
+    evidence: "src/view/view.ts:247"
+    item: "Ontlading: schermtrilling, impacteffecten en geluid dat meeschaalt met de kracht"
+  - id: F9
+    result: pass
+    evidence: "evidence/tests.txt"
+    item: "Vaste tijdstap en dezelfde uitkomst bij dezelfde input, met minstens 80 balletjes tegelijk"
+  - id: M1
+    result: pass
+    evidence: "evidence/play.png"
+    item: "Acht balletjes vallen in een stroom links van boven."
+  - id: M2
+    result: pass
+    evidence: "evidence/l1-aim.png"
+    item: "De speler houdt de vinger op het scherm: de bak schuift eronder en vangt ze, de veer zakt zichtbaar in en een stippellijn boven de bak groeit tot de hoogte die de lancering gaat halen."
+  - id: M3
+    result: pass
+    evidence: "evidence/l1-launch.png"
+    item: "De speler sleept de bak onder het ene doel en laat los: de veer slaat terug, het scherm trilt kort en de groep schiet het doel in."
+  - id: M4
+    result: pass
+    evidence: "evidence/l1-won.png"
+    item: "Level gehaald."
+  - id: C1
+    result: pass
+    evidence: "evidence/l3-aim.png"
+    item: "Vanaf level 3 blokkeren hindernissen de rechte lijn naar een doel en is het aantal lanceringen krap."
+  - id: C2
+    result: pass
+    evidence: "evidence/tests.txt"
+    item: "Een hoog doel vraagt een grote, snelle vangst; een te kleine groep haalt de hoogte niet."
+  - id: C3
+    result: pass
+    evidence: "evidence/l1-lost.png"
+    item: "Zijn de lanceringen op zonder het doelaantal, dan is het level verloren en begint het opnieuw vanuit dezelfde uitgangssituatie."
+  - id: C4
+    result: pass
+    evidence: "evidence/l5-launch.png"
+    item: "Level 5 vraagt één grote lancering met tientallen balletjes tegelijk."
+measures:
+  - id: step-time
+    value: 2.600
+    unit: ms
+    by: browser
+    detail: "mean 0.071 ms, slowest 2.600 ms, 266 steps"

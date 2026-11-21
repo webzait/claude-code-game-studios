@@ -1,0 +1,20 @@
+L1	pass	evidence/l5-aim.png	cabinet with depth, glossy ivory balls, copper tray on a gold spring, navy board, turquoise goal; the spring is visibly pressed in under 48 balls
+L2	pass	evidence/play.png	no reference named, none used
+L3	pass	evidence/iphone-touch-aim.png	fixed tilted camera; the board fills the iPhone 13 screen below the HUD
+F1	pass	evidence/iphone-touch-aim.png	real touch events on an emulated iPhone: hold caught 8, drag moved the tray under the goal
+F2	pass	evidence/l1-aim.png	dotted line and chevron rise to the predicted height; tests/sim.test.ts checks E = 1/2 m v^2 and the launch formula
+F3	pass	evidence/l5-launch.png	48 balls leave the tray together, straight up
+F4	pass	evidence/tests.txt	balls that miss fall out, return to the top and are caught again; count conserved every tick (tests/sim.test.ts:125)
+F5	pass	evidence/l4-aim.png	three goals showing remaining capacity, a sliding door; pegs in evidence/l5-aim.png
+F6	pass	evidence/l1-lost.png	launch pips in the HUD, the lost screen with retry; the won screen in evidence/l1-won.png
+F7	pass	evidence/tests.txt	each of the 5 recorded clears wins in the simulation (evidence/tests.txt) (tests/solutions.test.ts:9)
+F8	not_assessed	src/view/view.ts:247	the ring and flash show in evidence/l5-launch.png; shake and sound are in code but a still cannot show them and nothing here hears them
+F9	pass	evidence/tests.txt	bit-identical replay, and 80 balls stepped within a frame (evidence/tests.txt) (tests/sim.test.ts:152)
+M1	pass	evidence/play.png	the first balls fall from the left chute
+M2	pass	evidence/l1-aim.png	8 caught, spring lower, dotted line up to the goal's height
+M3	pass	evidence/l1-launch.png	the group is in the goal's mouth just after release; the ring marks the launch
+M4	pass	evidence/l1-won.png	the won screen after 5 of 5
+C1	pass	evidence/l3-aim.png	level 3 has a bar under the goal and 3 launches; its naive straight shot needed all 3 in the simulation (src/sim/levels.ts:54)
+C2	pass	evidence/tests.txt	launch speed grows with the group; in level 2 nine balls could not reach the high goal (tests/sim.test.ts:90)
+C3	pass	evidence/l1-lost.png	3 small launches, 0 of 5: lost, retry reloads the same start
+C4	pass	evidence/l5-launch.png	48 balls in one launch; target 55 of 80 in 3 launches

@@ -1,0 +1,22 @@
+{
+  "name": "springbank-prototype",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --open /dev.html",
+    "build": "tsc --noEmit && vite build && node scripts/publish.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/three": "^0.187.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vite-plugin-singlefile": "^2.3.4",
+    "vitest": "^5.1.1"
+  },
+  "dependencies": {
+    "three": "^0.187.0"
+  }
+}

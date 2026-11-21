@@ -1,0 +1,42 @@
+time	2026-11-21 08:14:53
+keep	lines	0	pinned	0
+briefword	2D	shown	evidence/play.png
+briefword	3D	shown	evidence/play.png
+briefword	2.5D	shown	evidence/play.png
+checklist	L1	pass	evidence/l5-aim.png	Look: compacte, premium 2.5D-diorama in een staande kast; glanzende balletjes; de opvangbak met zichtbare veer is het grootste en warmste object; diep nachtblauw bord, koper en goud voor bak en veer, ivoorwitte balletjes, turquoise doelen *(guessed: het palet)*; signatuur: de veer die zichtbaar inzakt als de bak voller raakt en bij loslaten terugslaat; every figure drawn, no emoji, no plain circles.	cabinet with depth, glossy ivory balls, copper tray on a gold spring, navy board, turquoise goal; the spring is visibly pressed in under 48 balls
+checklist	L2	noevidence	brief.md	References: geen genoemd.	no reference named, none used
+checklist	L3	pass	evidence/iphone-touch-aim.png	View: 2.5D · Camera: vaste camera recht voor de baan met lichte kanteling, de baan vult vrijwel het hele smartphonescherm.	fixed tilted camera; the board fills the iPhone 13 screen below the HUD
+checklist	F1	pass	evidence/iphone-touch-aim.png	Opvangbak die met één vinger horizontaal schuift en bij vasthouden balletjes vangt	real touch events on an emulated iPhone: hold caught 8, drag moved the tray under the goal
+checklist	F2	pass	evidence/l1-aim.png	Energieopslag: snelheid en massa van elke vangst vullen de veer, zichtbaar in de veer en in een lijn die de verwachte hoogte toont	dotted line and chevron rise to the predicted height; tests/sim.test.ts checks E = 1/2 m v^2 and the launch formula
+checklist	F3	pass	evidence/l5-launch.png	Lancering van de hele verzamelde massa recht omhoog bij loslaten	48 balls leave the tray together, straight up
+checklist	F4	noevidence	tests/sim.test.ts:125	Kringloop: dezelfde balletjes vallen terug en komen opnieuw bovenaan, geen nieuwe voorraad	balls that miss fall out, return to the top and are caught again; count conserved every tick
+checklist	F5	pass	evidence/l4-aim.png	Opvangdoelen met een capaciteit, en hindernissen waar balletjes tegen botsen	three goals showing remaining capacity, a sliding door; pegs in evidence/l5-aim.png
+checklist	F6	pass	evidence/l1-lost.png	Beperkt aantal lanceringen per level, win- en verliesscherm, levelreset	launch pips in the HUD, the lost screen with retry; the won screen in evidence/l1-won.png
+checklist	F7	noevidence	tests/solutions.test.ts:9	Vijf levels, elk met een opgenomen en geteste oplossing	each of the 5 recorded clears wins in the simulation (evidence/tests.txt)
+checklist	F8	not_assessed	src/view/view.ts:247	Ontlading: schermtrilling, impacteffecten en geluid dat meeschaalt met de kracht	the ring and flash show in evidence/l5-launch.png; shake and sound are in code but a still cannot show them and nothing here hears them
+checklist	F9	noevidence	tests/sim.test.ts:152	Vaste tijdstap en dezelfde uitkomst bij dezelfde input, met minstens 80 balletjes tegelijk	bit-identical replay, and 80 balls stepped within a frame (evidence/tests.txt)
+checklist	M1	pass	evidence/play.png	Acht balletjes vallen in een stroom links van boven.	the first balls fall from the left chute
+checklist	M2	pass	evidence/l1-aim.png	De speler houdt de vinger op het scherm: de bak schuift eronder en vangt ze, de veer zakt zichtbaar in en een stippellijn boven de bak groeit tot de hoogte die de lancering gaat halen.	8 caught, spring lower, dotted line up to the goal's height
+checklist	M3	pass	evidence/l1-launch.png	De speler sleept de bak onder het ene doel en laat los: de veer slaat terug, het scherm trilt kort en de groep schiet het doel in.	the group is in the goal's mouth just after release; the ring marks the launch
+checklist	M4	pass	evidence/l1-won.png	Level gehaald.	the won screen after 5 of 5
+checklist	C1	noevidence	src/sim/levels.ts:54	Vanaf level 3 blokkeren hindernissen de rechte lijn naar een doel en is het aantal lanceringen krap.	level 3 has a bar under the goal and 3 launches; its naive straight shot needed all 3 in the simulation
+checklist	C2	noevidence	tests/sim.test.ts:90	Een hoog doel vraagt een grote, snelle vangst; een te kleine groep haalt de hoogte niet.	launch speed grows with the group; in level 2 nine balls could not reach the high goal
+checklist	C3	pass	evidence/l1-lost.png	Zijn de lanceringen op zonder het doelaantal, dan is het level verloren en begint het opnieuw vanuit dezelfde uitgangssituatie.	3 small launches, 0 of 5: lost, retry reloads the same start
+checklist	C4	pass	evidence/l5-launch.png	Level 5 vraagt één grote lancering met tientallen balletjes tegelijk.	48 balls in one launch; target 55 of 80 in 3 launches
+webgl	ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)
+browser	HeadlessChrome/153.0.0.0
+scene	play	0	title
+scene	play	1	play
+digits	log	bold 96px system-ui, -apple-system, "Segoe UI", sans-serif	proportional	23.531
+measure	step-time	play	0.071	2.600	266
+lane	play	stop	4.4	2788
+console	play	0	[.WebGL-0x1514001b5e00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+console	play	0	[.WebGL-0x1514001b5e00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)
+uncaught	play	0
+text	play	html	12,18,61,37	22.5	9.50	inside	Level 1
+text	play	html	627,10,649,46	43.5	16.63	inside	0
+text	play	html	657,17,681,38	27.0	9.50	inside	/ 5
+text	play	html	375,73,905,93	24.0	15.96	inside	Eerste worp. Houd vast om te vangen. Sleep onder het doel. L
+screen	play	drawn
+shot	play	prototypes/springbank/evidence/play.png
+responds	changed	4
