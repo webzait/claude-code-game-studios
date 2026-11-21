@@ -8,12 +8,12 @@ const CONFIG = { light: config.light };
 const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.toneMapping = THREE.NoToneMapping;
 function shot(color: 'red' | 'blue' | 'yellow', pos: [number, number, number], px: number, fov = 24): string {
-  renderer.setPixelRatio(2); renderer.setSize(px, px, false);
+  renderer.setPixelRatio(4); renderer.setSize(px, px, false);
   const scene = new THREE.Scene(); scene.background = new THREE.Color('#f4f3f8');
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture; scene.environmentIntensity = CONFIG.light.reflections;
   scene.add(new THREE.HemisphereLight(CONFIG.light.sky, CONFIG.light.ground, CONFIG.light.ambient));
-  const sun = new THREE.DirectionalLight('#fff', CONFIG.light.sun); sun.position.set(-2.5, 6, 3.5); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.radius = 6;
+  const sun = new THREE.DirectionalLight('#fff', CONFIG.light.sun); sun.position.set(-2.5, 6, 3.5); sun.castShadow = true; sun.shadow.mapSize.set(4096, 4096); sun.shadow.radius = 6;
   const c = sun.shadow.camera; c.left = c.bottom = -2; c.right = c.top = 2; sun.shadow.normalBias = 0.03; scene.add(sun);
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.ShadowMaterial({ color: '#3b3560', opacity: 0.22 })); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
   const bot = buildFlockbot(color); bot.symbol.rotation.y = Math.PI; scene.add(bot.root);

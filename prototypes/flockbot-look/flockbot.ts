@@ -65,8 +65,8 @@ function sideX(y: number, z: number): number {
 
 /** One half of the body, from the seam to the crown (`dome`) or down to the underside, as a closed skin. */
 function bodyHalf(dome: boolean): THREE.BufferGeometry {
-  const around = 176;
-  const up = 56;
+  const around = F.mesh.around;
+  const up = F.mesh.up;
   const [span, round] = dome ? [SHELL_H, F.shellRound] : [ROMP_H, F.rompRound];
   const positions: number[] = [];
   for (let v = 0; v <= up; v++) {
@@ -128,7 +128,7 @@ function sinkVisor(g: THREE.BufferGeometry): void {
  * the body instead of standing off it like a plate.
  */
 function wrapped(shape: THREE.Shape, depthAt: (x: number, y: number) => number): THREE.BufferGeometry {
-  const rim = shape.getSpacedPoints(96);
+  const rim = shape.getSpacedPoints(192);
   rim.pop();
   const rings = 14;
   const positions: number[] = [0, 0, depthAt(0, 0)];
@@ -163,8 +163,8 @@ function wrapped(shape: THREE.Shape, depthAt: (x: number, y: number) => number):
  * its inner edge, like the soft lip of a hollow.
  */
 function wrappedFrame(w: number, h: number, r: number, band: number, height: number, sink: number, depthAt: (x: number, y: number) => number): THREE.BufferGeometry {
-  const perCorner = 20;
-  const across = 12;
+  const perCorner = 40;
+  const across = 20;
   const centres = [
     [w / 2 - r, h / 2 - r, 0],
     [-(w / 2 - r), h / 2 - r, Math.PI / 2],
@@ -283,7 +283,7 @@ function triangleSlab(size: number, raise: number): THREE.BufferGeometry {
   return g;
 }
 
-const eyeBall = new THREE.SphereGeometry(1, 32, 24);
+const eyeBall = new THREE.SphereGeometry(1, 64, 48);
 const eyeBlack = new THREE.MeshPhysicalMaterial({ color: TONES.eye, roughness: 0.08, clearcoat: 1, clearcoatRoughness: 0.04, envMapIntensity: F.material.reflect });
 const eyeGlint = new THREE.MeshBasicMaterial({ color: TONES.eyeWhite });
 // The face looks sideways, away from the light from above; it glows a little so it stays light.
@@ -401,7 +401,7 @@ export function buildFlockbot(color: Color): FlockbotParts {
   const earMat = new THREE.MeshPhysicalMaterial({ color: F.colors.window, roughness: 0.3, clearcoat: 0.6, emissive: F.colors.window, emissiveIntensity: 0.55 });
   const seat = sideX(F.ear.centre, 0) - 0.01;
   const earThick = F.width / 2 - seat;
-  const earGeo = new THREE.CylinderGeometry(F.ear.radius * 0.94, F.ear.radius, earThick, 40);
+  const earGeo = new THREE.CylinderGeometry(F.ear.radius * 0.94, F.ear.radius, earThick, 96);
   for (const side of [-1, 1]) {
     const ear = new THREE.Mesh(earGeo, earMat);
     ear.rotation.z = (-side * Math.PI) / 2;
