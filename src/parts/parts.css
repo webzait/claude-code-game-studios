@@ -47,3 +47,109 @@ body { margin: 0; background: #eef3fb; color: var(--ink); font-family: ui-rounde
 .tf-action.blue { --top: #59a5ff; --main: #2e84f1; --side: #1a61be; --deep: #154c95; }
 .tf-action.yellow { --top: #ffe473; --main: #f4c62f; --side: #d29a0d; --deep: #b37b04; color: #3a3118; }
 .tf-action.forward { --top: #58638a; --main: #3d4769; --side: #29314a; --deep: #1e243a; }
+
+/* ---- Foreground decoration: bushes as their own layer (tf-decor-*) ----
+   .tf-decor-screen stands for the game screen. Everything below is sized from
+   that screen through container units, so the same rules hold in a phone frame
+   here and full-screen in the game. Zones (they follow the game's own clamps):
+     top     the top bar, 96 px on 390x844
+     bottom  the two button rows, 180 px on 390x844
+     board   a square, the column's width minus 24 px (366 px on 390x844)
+     band    the free strip above and below the board; 0 when the board fills the play zone
+     side    free space beside the 560 px column on wide screens
+     edge    how far in from a screen edge a bush may reach in a band without getting behind the hint line */
+.tf-decor-screen {
+  container-type: size; position: relative; overflow: hidden; flex: none; transform-origin: 0 0; isolation: isolate;
+  background: linear-gradient(180deg, #4EAFF8 0%, #CBEFFF 56%, #38B8E8 100%);
+  --tf-decor-col: min(100cqw, 560px);
+  --tf-decor-side: max(0px, (100cqw - 560px) / 2);
+  --tf-decor-top: clamp(56px, 11.4cqh, 96px);
+  --tf-decor-bottom: calc(clamp(62px, 11cqh, 92px) + 88px);
+  --tf-decor-board: calc(var(--tf-decor-col) - 24px);
+  --tf-decor-band: max(0px, (100cqh - var(--tf-decor-top) - var(--tf-decor-bottom) - var(--tf-decor-board)) / 2);
+  --tf-decor-edge: calc(var(--tf-decor-col) * .2 + var(--tf-decor-side) - 6px);
+}
+.tf-decor-layer { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+/* Shade in the two lower corners: the ground the near bushes stand on. */
+.tf-decor-layer::before {
+  content: ""; position: absolute; inset: auto 0 0 0; height: calc(var(--tf-decor-bottom) * 1.25);
+  background:
+    radial-gradient(ellipse 46% 100% at 0% 100%, rgba(16, 70, 78, .30), rgba(16, 70, 78, 0) 72%),
+    radial-gradient(ellipse 40% 86% at 100% 100%, rgba(16, 70, 78, .26), rgba(16, 70, 78, 0) 72%);
+}
+.tf-decor-piece { position: absolute; display: block; height: auto; pointer-events: none; -webkit-user-select: none; user-select: none; transform-origin: 50% 92%; }
+
+/* Near, bottom left: the small bush. As tall as the button rows, so it stands behind them and shows in the gutter, between the rows and, on a wide screen, in full beside the column. */
+.tf-decor-front-l { --w: calc(var(--tf-decor-bottom) * 1.38 + var(--tf-decor-side) * .5); width: var(--w); left: calc(var(--w) * -.34 + var(--tf-decor-side) * .12); bottom: calc(var(--w) * -.05); }
+/* Near, bottom right: the large bush, mirrored and lower than the left one, so the corners differ. */
+.tf-decor-front-r { --w: calc(var(--tf-decor-bottom) * .9 + var(--tf-decor-side) * .55); width: var(--w); right: calc(var(--w) * -.44 + var(--tf-decor-side) * .1); bottom: calc(var(--w) * -.06); transform: scaleX(-1); }
+/* Further back, left: the large bush rising out of the near one into the strip under the board. It grows with that strip and is gone when there is none. */
+.tf-decor-back-l {
+  --rise: clamp(0px, var(--tf-decor-band) - 14px, 104px);
+  --w: calc((var(--rise) + var(--tf-decor-bottom) * .2) / .87);
+  width: var(--w); left: min(var(--w) * -.46, var(--tf-decor-edge) - var(--w) * .98); top: calc(100cqh - var(--tf-decor-bottom) - var(--rise));
+  filter: saturate(.94) brightness(1.03);
+}
+/* Further back, right: the clover tuft, lower than the left side. */
+.tf-decor-back-r {
+  --rise: clamp(0px, var(--tf-decor-band) * .62 - 8px, 70px);
+  --w: calc((var(--rise) + var(--tf-decor-bottom) * .26) / .65);
+  width: var(--w); right: min(var(--w) * -.5, var(--tf-decor-edge) - var(--w) * .96); top: calc(100cqh - var(--tf-decor-bottom) - var(--rise));
+  transform: scaleX(-1);
+}
+/* Top left corner: the sprig hangs down from the corner, past the back button and left of the title, into the strip above the board. */
+.tf-decor-sprig-tl { width: calc(clamp(72px, 22cqw, 88px) + var(--tf-decor-side) * .3); left: calc(-13px + var(--tf-decor-side) * .04); top: -14px; transform: rotate(30deg); transform-origin: 14% 12%; }
+/* Upper right: a tuft leaning in from the edge in the strip above the board. */
+.tf-decor-tuft-tr {
+  --w: clamp(0px, var(--tf-decor-band) * 1.05 - 10px, 120px);
+  width: var(--w); right: calc(var(--w) * -.36); top: calc(var(--tf-decor-top) + var(--tf-decor-band) * .5 - var(--w) * .34);
+  transform: rotate(-74deg) scaleX(-1); transform-origin: 50% 50%; filter: saturate(.9) brightness(1.04); opacity: .96;
+}
+
+/* Optional: a very gentle sway, only with .tf-decor-sway on the layer and never under reduced motion. */
+@keyframes tf-decor-sway { from { rotate: -1.2deg; } to { rotate: 1.2deg; } }
+.tf-decor-sway .tf-decor-piece { animation: tf-decor-sway 7s ease-in-out infinite alternate; }
+.tf-decor-sway .tf-decor-front-r { animation-duration: 8.5s; animation-delay: -3s; }
+.tf-decor-sway .tf-decor-back-l { animation-duration: 6s; animation-delay: -1.5s; }
+.tf-decor-sway .tf-decor-back-r { animation-duration: 9s; animation-delay: -5s; }
+.tf-decor-sway .tf-decor-sprig-tl { animation-duration: 6.5s; animation-delay: -2s; }
+.tf-decor-sway .tf-decor-tuft-tr { animation-duration: 7.5s; animation-delay: -4s; }
+@media (prefers-reduced-motion: reduce) { .tf-decor-sway .tf-decor-piece { animation: none; } }
+
+/* Grey stand-ins for the game's controls, only for the check on this page. */
+.tf-decor-ui { position: absolute; inset: 0 var(--tf-decor-side); z-index: 1; font-size: 12px; font-weight: 800; color: #fff; }
+.tf-decor-ui [data-kind] { display: grid; place-items: center; }
+.tf-decor-ui [data-kind="panel"] { background: #c3c9d4; border-radius: 14px; }
+.tf-decor-ui [data-kind="face"] { background: #8f98a8; border-radius: 16px; }
+.tf-decor-ui [data-kind="board"] { background: #aab2c0; border-radius: 22px; color: #6c7586; font-size: 15px; }
+.tf-decor-ui [data-kind="text"], .tf-decor-ui [data-kind="label"] { color: #3c4658; }
+.tf-decor-ph-top { position: absolute; left: 14px; right: 14px; top: 10px; height: calc(var(--tf-decor-top) - 14px); display: flex; align-items: center; gap: 8px; }
+.tf-decor-ph-top [data-kind="panel"] { width: 44px; height: 44px; flex: none; }
+.tf-decor-ph-top [data-kind="panel"] ~ [data-kind="panel"] { width: 66px; }
+.tf-decor-ph-title { flex: 1; justify-items: start; font-size: 17px; line-height: 1.15; margin-left: 2px; }
+.tf-decor-ph-title small { font-size: 12px; font-weight: 600; }
+.tf-decor-ui .tf-decor-ph-title { display: block; flex: 0 1 auto; margin-right: auto; }
+.tf-decor-ph-board { position: absolute; left: 12px; width: var(--tf-decor-board); height: var(--tf-decor-board); top: calc(var(--tf-decor-top) + var(--tf-decor-band)); }
+.tf-decor-ph-hint { position: absolute; left: 20%; right: 20%; height: 22px; top: calc(100cqh - var(--tf-decor-bottom) - 26px); background: rgba(255, 255, 255, .55); border-radius: 6px; }
+.tf-decor-ph-utility, .tf-decor-ph-action { position: absolute; left: 14px; right: 14px; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
+.tf-decor-ph-utility { top: calc(100cqh - var(--tf-decor-bottom) + 8px); height: 48px; gap: 8px; }
+.tf-decor-ph-action { top: calc(100cqh - var(--tf-decor-bottom) + 68px); height: calc(var(--tf-decor-bottom) - 88px); gap: 10px; }
+.tf-decor-ph-action [data-kind="face"] { border-radius: 20px; }
+
+/* The cards around it. */
+.tf-decor-row { display: flex; flex-wrap: wrap; gap: 18px 16px; align-items: flex-start; margin-top: 8px; }
+.tf-decor-fit { flex: none; border-radius: 22px; overflow: hidden; box-shadow: 0 0 0 3px #24314f, 0 8px 18px rgba(24, 46, 110, .25); }
+.tf-decor-cell { margin: 0; max-width: 100%; }
+.tf-decor-cell figcaption { font-size: 12px; color: var(--muted); margin-top: 8px; max-width: 330px; line-height: 1.45; font-variant-numeric: tabular-nums; }
+.tf-decor-cell[data-ok="true"] figcaption b { color: #1f8a3b; }
+.tf-decor-cell[data-ok="false"] figcaption { color: #b92f31; }
+.tf-decor-pieces { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: flex-end; padding: 18px 16px; border-radius: 12px; background: linear-gradient(180deg, #4EAFF8 0%, #CBEFFF 70%, #9fdcf5 100%); }
+.tf-decor-pieces figure { margin: 0; text-align: center; }
+.tf-decor-pieces figure:nth-child(1) img { width: 240px; }
+.tf-decor-pieces figure:nth-child(2) img { width: 190px; }
+.tf-decor-pieces figure:nth-child(3) img { width: 140px; }
+.tf-decor-pieces figure:nth-child(4) img { width: 120px; }
+.tf-decor-pieces img { display: block; margin: 0 auto 6px; max-width: 100%; height: auto; }
+.tf-decor-pieces figcaption { font-size: 11.5px; color: #12305c; line-height: 1.4; }
+.tf-decor-toggle { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; min-height: 44px; }
+.tf-decor-toggle input { width: 22px; height: 22px; }
