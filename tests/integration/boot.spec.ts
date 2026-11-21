@@ -38,6 +38,8 @@ test('boots to the level selection, and level 1 opens with a drawn board and no 
   const errors = await open(page);
   expect((await snap(page)).screen).toBe('map');
   await expect(page.locator('.node')).toHaveCount(levels.length);
+  // The asset kit's 3D models really loaded; the game is not quietly on its built-in shapes.
+  await expect.poll(async () => (await snap(page)).kitReady, { timeout: 20000 }).toBe(true);
   await expect(page.locator('#node-1')).toBeEnabled();
   await expect(page.locator('#node-2')).toBeDisabled();
   await page.click('#node-1');

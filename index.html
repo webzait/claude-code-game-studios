@@ -9,6 +9,9 @@
     <title>Turnflock</title>
   </head>
   <body>
+    <div id="backdrop" aria-hidden="true"></div>
+    <img class="bush left" data-art="bush" alt="" aria-hidden="true" />
+    <img class="bush right" data-art="bush" alt="" aria-hidden="true" />
     <div id="app">
       <section class="screen" id="map">
         <header class="top">
@@ -16,7 +19,7 @@
             <div class="level-no brand">TURNFLOCK</div>
             <div class="level-name">Choose a level</div>
           </div>
-          <div class="pill" aria-label="Coins"><svg viewBox="0 0 24 24" class="ico coin"><circle cx="12" cy="12" r="9.5" fill="#FFD12F" stroke="#C99E12" stroke-width="2" /><circle cx="12" cy="12" r="5.2" fill="none" stroke="#C99E12" stroke-width="1.8" /></svg><span id="coins">0</span></div>
+          <div class="pill" aria-label="Coins"><img class="ico coin" data-art="coin" alt="" /><span id="coins">0</span></div>
           <div class="pill" id="mapCount"></div>
           <button class="back" id="toSettings" aria-label="Settings"><svg viewBox="0 0 24 24" class="ico"><path d="M4 7h10M18 7h2M4 17h2M10 17h10" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" /><circle cx="16" cy="7" r="2.4" fill="none" stroke="currentColor" stroke-width="2.4" /><circle cx="8" cy="17" r="2.4" fill="none" stroke="currentColor" stroke-width="2.4" /></svg></button>
         </header>
@@ -56,7 +59,7 @@
             <button class="tool" id="undo"><svg viewBox="0 0 24 24" class="ico"><path d="M9 7 4.5 11.5 9 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /><path d="M5 11.5h9a5 5 0 0 1 0 10h-3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" /></svg><span>Undo</span></button>
             <button class="tool" id="restart"><svg viewBox="0 0 24 24" class="ico"><path d="M19 12a7 7 0 1 1-2.3-5.2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" /><path d="M19.5 3.5v4.2h-4.2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /></svg><span>Restart</span></button>
             <button class="tool" id="replay"><svg viewBox="0 0 24 24" class="ico"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" /></svg><span>Replay</span></button>
-            <button class="tool" id="scan"><svg viewBox="0 0 24 24" class="ico"><circle cx="11" cy="11" r="6.2" fill="none" stroke="currentColor" stroke-width="2.4" /><path d="M16 16l4.5 4.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" /></svg><span id="hintLabel">Hint</span></button>
+            <button class="tool" id="scan"><img class="ico art" data-art="hint" alt="" /><span id="hintLabel">Hint</span></button>
           </div>
           <div class="commands" id="commands">
             <button class="cmd red" data-cmd="red" aria-label="Turn red, then all move"></button>
@@ -78,14 +81,14 @@
       <section class="overlay card" id="card" hidden>
         <div class="card-inner">
           <div class="stars" id="stars"></div>
-          <div class="wallet" id="cardCoins" hidden><svg viewBox="0 0 24 24" class="ico coin"><circle cx="12" cy="12" r="9.5" fill="#FFD12F" stroke="#C99E12" stroke-width="2" /><circle cx="12" cy="12" r="5.2" fill="none" stroke="#C99E12" stroke-width="1.8" /></svg><span id="cardCoinsText"></span></div>
+          <div class="wallet" id="cardCoins" hidden><img class="ico coin" data-art="coin" alt="" /><span id="cardCoinsText"></span></div>
           <h2 id="cardTitle"></h2>
           <p id="cardText"></p>
           <div class="card-actions">
             <button class="ghost" id="cardSecondary"></button>
             <button class="primary" id="cardPrimary"></button>
           </div>
-          <button class="ghost extra" id="cardExtra" hidden></button>
+          <button class="ghost extra" id="cardExtra" hidden><img class="ico art" id="cardExtraIcon" data-art="extra" alt="" hidden /><span id="cardExtraLabel"></span></button>
           <p class="note" id="cardNote" hidden></p>
         </div>
       </section>

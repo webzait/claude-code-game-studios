@@ -125,7 +125,16 @@ export class Hud {
   }
 
   /** Show the result card. `stars` 0 hides the star row. */
-  showCard(opts: { title: string; text: string; stars: number; primary: CardButton; secondary: CardButton; extra?: CardButton & { disabled?: boolean }; note?: string; coins?: string }): void {
+  showCard(opts: {
+    title: string;
+    text: string;
+    stars: number;
+    primary: CardButton;
+    secondary: CardButton;
+    extra?: CardButton & { disabled?: boolean; icon?: boolean };
+    note?: string;
+    coins?: string;
+  }): void {
     el('cardTitle').textContent = opts.title;
     el('cardText').textContent = opts.text;
     el('stars').innerHTML = opts.stars > 0 ? [1, 2, 3].map((i) => STAR.replace('<svg', `<svg class="${i <= opts.stars ? 'on' : ''}"`)).join('') : '';
@@ -137,7 +146,11 @@ export class Hud {
     };
     bind('cardPrimary', opts.primary);
     bind('cardSecondary', opts.secondary);
-    bind('cardExtra', opts.extra);
+    const extra = el<HTMLButtonElement>('cardExtra');
+    extra.hidden = !opts.extra;
+    extra.onclick = opts.extra?.action ?? null;
+    el('cardExtraLabel').textContent = opts.extra?.label ?? '';
+    el('cardExtraIcon').hidden = opts.extra?.icon !== true;
     el<HTMLButtonElement>('cardExtra').disabled = opts.extra?.disabled === true;
     el('cardCoins').hidden = !opts.coins;
     el('cardCoinsText').textContent = opts.coins ?? '';

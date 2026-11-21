@@ -17,6 +17,12 @@ export interface LabSettings {
   speed: number;
   /** Open every level regardless of progress. */
   unlockAll: boolean;
+  /** Harbour backdrop and bushes behind the game. */
+  decor: boolean;
+  /** Robots from the asset kit (`kit`) or the built-in ones (`builtin`). */
+  robots: 'kit' | 'builtin';
+  /** Board pieces from the asset kit (`kit`) or the built-in ones (`builtin`). */
+  boardPieces: 'kit' | 'builtin';
   /** Hints and extra moves cost no coins. */
   freeHelp: boolean;
   /** Board framing: `roomy` (steeper camera, thin frame, against the top) or `classic`. */
@@ -32,6 +38,9 @@ export const DEFAULT_LAB: LabSettings = {
   unlockAll: false,
   board: 'roomy',
   freeHelp: false,
+  decor: true,
+  robots: 'kit',
+  boardPieces: 'kit',
 };
 
 /** Rules the lab asks for. */

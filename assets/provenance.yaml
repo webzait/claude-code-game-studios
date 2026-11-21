@@ -1,0 +1,18 @@
+# Where every file in assets/ comes from.
+# origin: you = supplied by the project owner (TURNFLOCK Asset Kit and Modular Board zips, 2026-11-21).
+turnflock/bg/harbor.jpg: { origin: you, source: "Asset Kit bg/harbor.png", change: "resized to 810x1080, softly blurred so it stays behind the game, JPEG" }
+turnflock/decor/bush.webp: { origin: you, source: "Asset Kit decor/bush.png", change: "resized to 560 wide, WebP" }
+turnflock/ui/coin.webp: { origin: you, source: "Asset Kit ui/coin.png", change: "trimmed, 144x144, WebP" }
+turnflock/ui/hint.webp: { origin: you, source: "Asset Kit ui/hint.png", change: "trimmed, 144x144, WebP" }
+turnflock/ui/extra-moves.webp: { origin: you, source: "Asset Kit ui/extra-3-moves.png", change: "trimmed, 144x144, WebP" }
+turnflock/ui/plus.webp: { origin: you, source: "Asset Kit ui/plus.png", change: "trimmed, 144x144, WebP; not used yet (no way to buy coins)" }
+turnflock/3d/flockbot_red.glb: { origin: you, source: "Asset Kit", change: none }
+turnflock/3d/flockbot_blue.glb: { origin: you, source: "Asset Kit", change: none }
+turnflock/3d/flockbot_yellow.glb: { origin: you, source: "Asset Kit", change: none }
+turnflock/3d/board/base_cell.glb: { origin: you, source: "Modular Board", change: none }
+turnflock/3d/board/floor_light.glb: { origin: you, source: "Modular Board", change: none }
+turnflock/3d/board/floor_alt.glb: { origin: you, source: "Modular Board", change: none }
+turnflock/3d/board/wall_block.glb: { origin: you, source: "Modular Board", change: none }
+turnflock/3d/board/exit_tile.glb: { origin: you, source: "Modular Board", change: none }
+turnflock/3d/board/frame_edge.glb: { origin: you, source: "Modular Board", change: none }
+turnflock/3d/board/frame_corner.glb: { origin: you, source: "Modular Board", change: none }

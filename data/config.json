@@ -65,12 +65,12 @@
     "roomy": {
       "tilt": 24,
       "frame": 0.36,
-      "alignTop": true
+      "spareAbove": 0.66
     },
     "classic": {
       "tilt": 30,
       "frame": 0.62,
-      "alignTop": false
+      "spareAbove": 0.5
     }
   },
   "levelsPerPage": 20,

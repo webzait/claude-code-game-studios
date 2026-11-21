@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { CONFIG } from '../config';
 import type { Color } from '../engine/types';
+import { fuse } from './kit';
 
 /** A robot mesh plus the animated values the board view tweens. */
 export interface RobotView {
@@ -13,8 +14,9 @@ export interface RobotView {
   readonly body: THREE.Group;
   /** Head cap with the arrow: turns to show the heading. */
   readonly cap: THREE.Group;
-  readonly pupils: THREE.Object3D[];
   readonly lids: THREE.Mesh[];
+  /** Point the arrow (and the gaze) along a heading, in radians. */
+  readonly aim: (angle: number) => void;
   /** Cumulative heading in radians, so turns always animate clockwise. */
   angle: number;
   /** Seconds until the next blink. */
@@ -112,14 +114,71 @@ export function buildRobot(id: number, color: Color): RobotView {
   cap.add(arrow);
   body.add(cap);
 
-  return { id, color, root, body, cap, pupils, lids, angle: 0, blinkIn: 1 + ((id * 37) % 23) / 6, visibleScale: 1 };
+  const aim = (angle: number): void => {
+    cap.rotation.y = angle;
+    // Heading as seen by the player: -sin is right/left, cos is away/toward.
+    const dx = -Math.sin(angle);
+    const dz = -Math.cos(angle);
+    for (const pupil of pupils) pupil.position.set(dx * 0.045, -dz * 0.04, 0);
+  };
+  return { id, color, root, body, cap, lids, aim, angle: 0, blinkIn: 1 + ((id * 37) % 23) / 6, visibleScale: 1 };
 }
 
-/** Point the arrow along the heading and let the pupils glance the same way. */
-export function aimRobot(view: RobotView, angle: number): void {
-  view.cap.rotation.y = angle;
-  // Heading as seen by the player: -sin is right/left, cos is away/toward.
-  const dx = -Math.sin(angle);
-  const dz = -Math.cos(angle);
-  for (const pupil of view.pupils) pupil.position.set(dx * 0.045, -dz * 0.04, 0);
+/** Tuning of the asset-kit robot inside one cell. */
+const KIT_SCALE = 0.8;
+const KIT_TILT = -0.3;
+/** The kit's eyes are small; they are enlarged and raised to read as big eyes high on the front. */
+const KIT_EYE_SCALE = 1.55;
+const KIT_FACE_LIFT = 0.07;
+
+/** Scale a model part around its own middle rather than around the model's origin. */
+function growInPlace(node: THREE.Object3D, sx: number, sy: number, lift: number): void {
+  // The kit's parts carry no transform of their own, so the shape's own box is its place in the model.
+  const geometry = (node as THREE.Mesh).geometry as THREE.BufferGeometry;
+  geometry.computeBoundingBox();
+  const centre = geometry.boundingBox!.getCenter(new THREE.Vector3());
+  node.scale.set(sx, sy, 1);
+  node.position.set(centre.x * (1 - sx), centre.y * (1 - sy) + lift, 0);
+}
+
+/**
+ * Build a robot from the asset kit's model. The model's face looks at the
+ * player and its arrow points north, so the body stays put and only the arrow
+ * turns with the heading. The model is leaned back a little so the eyes on its
+ * front can be seen from the steep camera.
+ */
+export function buildKitRobot(id: number, color: Color, template: THREE.Group): RobotView {
+  const root = new THREE.Group();
+  const body = new THREE.Group();
+  root.add(body);
+  const model = template.clone(true);
+  const lean = new THREE.Group();
+  lean.rotation.x = KIT_TILT;
+  lean.scale.setScalar(KIT_SCALE);
+  // The model is centred on its middle; lift it so its feet stand on the tile.
+  lean.position.y = 0.45 * KIT_SCALE;
+  lean.add(model);
+  body.add(lean);
+  const cap = new THREE.Group();
+  const arrows: THREE.Object3D[] = [];
+  const face: THREE.Object3D[] = [];
+  model.traverse((node) => {
+    if (node.name.startsWith('direction_arrow')) arrows.push(node);
+    else if (node.name.startsWith('eye') || node.name === 'face_panel') face.push(node);
+  });
+  for (const part of face) {
+    if (part.name === 'face_panel') growInPlace(part, 1, 1.35, KIT_FACE_LIFT);
+    else growInPlace(part, KIT_EYE_SCALE, KIT_EYE_SCALE, KIT_FACE_LIFT);
+  }
+  // The arrow turns on its own; everything else is fused into a few meshes.
+  const arrowParts = new THREE.Group();
+  for (const arrow of arrows) arrowParts.add(arrow);
+  const still = fuse(model);
+  cap.add(fuse(arrowParts));
+  lean.remove(model);
+  lean.add(still, cap);
+  const aim = (angle: number): void => {
+    cap.rotation.y = angle;
+  };
+  return { id, color, root, body, cap, lids: [], aim, angle: 0, blinkIn: 1e9, visibleScale: 1 };
 }

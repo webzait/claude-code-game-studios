@@ -12,6 +12,12 @@ import { loadSave, resetProgress, writeSave, type KeyValueStore, type SaveData }
 import { Session } from './game/session';
 import { LEVELS, type GameLevel } from './levels/index';
 import { BoardView } from './render/boardView';
+import { loadKit } from './render/kit';
+import coinIcon from '../assets/turnflock/ui/coin.webp';
+import hintIcon from '../assets/turnflock/ui/hint.webp';
+import extraMovesIcon from '../assets/turnflock/ui/extra-moves.webp';
+import harborImage from '../assets/turnflock/bg/harbor.jpg';
+import bushImage from '../assets/turnflock/decor/bush.webp';
 import { SolverClient } from './solver/client';
 import type { CertifyResult } from './solver/requests';
 import { el, Hud } from './ui/hud';
@@ -34,6 +40,7 @@ export interface Snapshot {
   certified: boolean;
   best: Record<string, number>;
   coins: number;
+  kitReady: boolean;
   lab: LabSettings;
   events: MetricsEvent[];
 }
@@ -68,6 +75,8 @@ class Game {
   private solver = new SolverClient();
   private view = new BoardView(el<HTMLCanvasElement>('board'));
   private hud: Hud;
+  /** True once the asset kit's 3D models are in use. */
+  private kitReady = false;
   private screen: ScreenName = 'map';
   /** Page of the level selection on show; null opens the page of the current level. */
   private page: number | null = null;
@@ -115,8 +124,27 @@ class Game {
     el('continue').addEventListener('click', () => this.tap(() => this.startLevel(resumeIndex(LEVEL_IDS, this.save.best))));
     el('settingsBack').addEventListener('click', () => this.tap(() => this.show('map')));
     new ResizeObserver(() => this.view.resize()).observe(document.querySelector('.stage') as HTMLElement);
+    // Kit artwork: images are bundled; the page sets them here so one build works from any folder.
+    document.documentElement.style.setProperty('--harbor', `url("${harborImage}")`);
+    for (const img of Array.from(document.querySelectorAll<HTMLImageElement>('img[data-art]'))) {
+      img.src = { coin: coinIcon, hint: hintIcon, extra: extraMovesIcon, bush: bushImage }[img.dataset.art as 'coin' | 'hint' | 'extra' | 'bush'];
+    }
     this.applySettings();
     this.show('map');
+    // The 3D kit loads in the background; a level already on show is redrawn with it.
+    loadKit()
+      .then((kit) => {
+        this.kitReady = true;
+        this.view.setKit(kit);
+        if (this.screen === 'level' && this.session.commands.length === 0) {
+          this.view.loadLevel(this.level);
+          this.view.resize();
+        }
+      })
+      .catch(() => {
+        // The built-in shapes stay in use; nothing else depends on the kit.
+        this.kitReady = false;
+      });
   }
 
   private tap(action: () => void): void {
@@ -140,6 +168,8 @@ class Game {
     document.documentElement.classList.toggle('reduce-motion', this.reduced);
     this.view.setMotion(this.save.lab.speed, this.reduced);
     this.view.setLayout(CONFIG.board[this.save.lab.board]);
+    this.view.setStyle({ kitRobots: this.save.lab.robots === 'kit', kitBoard: this.save.lab.boardPieces === 'kit' });
+    document.documentElement.classList.toggle('no-decor', !this.save.lab.decor);
   }
 
   // ---------------------------------------------------------------- screens
@@ -411,7 +441,7 @@ class Game {
       primary: { label: 'Retry', action: () => this.restart() },
       secondary: { label: 'Undo', action: () => this.undo() },
       extra: offer
-        ? { label: price > 0 ? `+${CONFIG.extraMoves} moves · ${price} coins` : `+${CONFIG.extraMoves} moves`, action: () => this.useBackup(), disabled: !afford }
+        ? { label: price > 0 ? `+${CONFIG.extraMoves} moves · ${price} coins` : `+${CONFIG.extraMoves} moves`, action: () => this.useBackup(), disabled: !afford, icon: true }
         : {
             label: 'Hint',
             action: () => {
@@ -570,6 +600,7 @@ class Game {
       certified: this.certified,
       best: { ...this.save.best },
       coins: this.save.coins,
+      kitReady: this.kitReady,
       lab: { ...this.save.lab },
       events: [...this.metrics.events],
     };

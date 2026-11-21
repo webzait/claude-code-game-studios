@@ -82,6 +82,9 @@ export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
     if (typeof lab.unlockAll === 'boolean') save.lab.unlockAll = lab.unlockAll;
     if (lab.board === 'roomy' || lab.board === 'classic') save.lab.board = lab.board;
     if (typeof lab.freeHelp === 'boolean') save.lab.freeHelp = lab.freeHelp;
+    if (typeof lab.decor === 'boolean') save.lab.decor = lab.decor;
+    if (lab.robots === 'kit' || lab.robots === 'builtin') save.lab.robots = lab.robots;
+    if (lab.boardPieces === 'kit' || lab.boardPieces === 'builtin') save.lab.boardPieces = lab.boardPieces;
   }
   return save;
 }

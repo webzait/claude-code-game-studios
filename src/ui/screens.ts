@@ -198,6 +198,33 @@ export function renderSettings(save: SaveData, handlers: SettingsHandlers): void
           (v) => handlers.setLab({ speed: v }),
         ),
       ),
+      setting('Backdrop', 'Harbour and bushes behind the game', segmented('decor', onOff, save.lab.decor, (v) => handlers.setLab({ decor: v }))),
+      setting(
+        'Robots',
+        'Kit: the supplied 3D model. Built-in: drawn in code',
+        segmented(
+          'robots',
+          [
+            { label: 'Kit', value: 'kit' as const },
+            { label: 'Built-in', value: 'builtin' as const },
+          ],
+          save.lab.robots,
+          (v) => handlers.setLab({ robots: v }),
+        ),
+      ),
+      setting(
+        'Board pieces',
+        'Kit: the supplied modules. Built-in: drawn in code',
+        segmented(
+          'boardPieces',
+          [
+            { label: 'Kit', value: 'kit' as const },
+            { label: 'Built-in', value: 'builtin' as const },
+          ],
+          save.lab.boardPieces,
+          (v) => handlers.setLab({ boardPieces: v }),
+        ),
+      ),
       setting(
         'Board',
         'Roomy: larger, against the top. Classic: as before',

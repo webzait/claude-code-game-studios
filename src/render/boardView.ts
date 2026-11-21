@@ -4,7 +4,14 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import { CONFIG } from '../config';
 import { DIR_DX, DIR_DY, type Color, type GameState, type RobotEvent } from '../engine/types';
 import type { Level } from '../levels/parse';
-import { aimRobot, buildRobot, type RobotView } from './robot';
+import { fuse, type Kit } from './kit';
+import { buildKitRobot, buildRobot, type RobotView } from './robot';
+
+/** Which models the board is drawn with. */
+export interface BoardStyle {
+  readonly kitRobots: boolean;
+  readonly kitBoard: boolean;
+}
 
 /** How the board sits in the canvas. */
 export interface BoardLayout {
@@ -12,8 +19,8 @@ export interface BoardLayout {
   readonly tilt: number;
   /** Width of the frame around the tiles, in cells (both sides together). */
   readonly frame: number;
-  /** Push the board against the top of the canvas instead of centring it. */
-  readonly alignTop: boolean;
+  /** Share of the spare height that goes above the board: 0 = against the top, 0.5 = centred, 1 = against the controls. */
+  readonly spareAbove: number;
 }
 
 interface Tween {
@@ -74,6 +81,10 @@ export class BoardView {
   private last = 0;
   private particleGeo = new RoundedBoxGeometry(0.09, 0.09, 0.09, 2, 0.02);
   private layout: BoardLayout = CONFIG.board.roomy;
+  private kit: Kit | null = null;
+  private style: BoardStyle = { kitRobots: true, kitBoard: true };
+  /** Height of the tile surface the robots stand on. */
+  private floorY = 0.06;
   private speedScale = 1;
   private reduced = false;
 
@@ -111,6 +122,21 @@ export class BoardView {
     return y - ((this.level?.board.height ?? 1) - 1) / 2;
   }
 
+  /** Hand over the asset kit once it has loaded. Takes effect at the next level load. */
+  setKit(kit: Kit): void {
+    this.kit = kit;
+  }
+
+  /** Choose kit models or the built-in shapes. Takes effect at the next level load. */
+  setStyle(style: BoardStyle): void {
+    this.style = style;
+  }
+
+  /** The level on show, if any. */
+  get currentLevel(): Level | null {
+    return this.level;
+  }
+
   /** Choose how the board is framed; takes effect at the next resize or level load. */
   setLayout(layout: BoardLayout): void {
     this.layout = layout;
@@ -130,11 +156,83 @@ export class BoardView {
     this.robots.clear();
     for (const p of this.particles) this.scene.remove(p.mesh);
     this.particles = [];
+    const kitBoard = this.style.kitBoard ? this.kit?.board : undefined;
+    this.floorY = kitBoard ? 0.145 : 0.06;
+    if (kitBoard) this.buildKitBoard(level, kitBoard);
+    else this.buildPlainBoard(level);
+
+    for (const r of level.start.robots) {
+      const template = this.style.kitRobots ? this.kit?.robots[r.color] : undefined;
+      const view = template ? buildKitRobot(r.id, r.color, template) : buildRobot(r.id, r.color);
+      this.robots.set(r.id, view);
+      this.boardGroup.add(view.root);
+    }
+    this.sync(level.start, false);
+    this.fitCamera();
+  }
+
+  /** Half the frame width in cells, for the style in use. */
+  private get rim(): number {
+    return this.style.kitBoard && this.kit ? 0.52 : this.layout.frame;
+  }
+
+  /** Board from the asset kit's modules: one base and one floor tile per cell, frame segments around. */
+  private buildKitBoard(level: Level, pieces: Kit['board']): void {
+    const { width, height, walls, exitX, exitY } = level.board;
+    // Everything that never moves goes into one group and is fused into a few meshes.
+    const fixed = new THREE.Group();
+    const place = (piece: THREE.Group, x: number, z: number, turn = 0, parent: THREE.Object3D = fixed): THREE.Group => {
+      const copy = piece.clone(true);
+      copy.position.set(x, 0, z);
+      copy.rotation.y = turn;
+      parent.add(copy);
+      return copy;
+    };
+    // A plain tray under everything, so the frame does not hover past the base cells.
+    const tray = new THREE.Mesh(slab(width + 0.5, height + 0.5, 0.2, 0.2), new THREE.MeshStandardMaterial({ color: '#7896DB', roughness: 0.4 }));
+    tray.position.y = 0.02;
+    tray.castShadow = true;
+    tray.receiveShadow = true;
+    this.boardGroup.add(tray);
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const cx = this.cellX(x);
+        const cz = this.cellZ(y);
+        place(pieces.baseCell, cx, cz);
+        const isExit = x === exitX && y === exitY;
+        if (isExit) this.exitPad = place(pieces.exitTile, cx, cz, 0, this.boardGroup);
+        else place((x + y) % 2 ? pieces.floorAlt : pieces.floorLight, cx, cz);
+        if (walls[y * width + x]) place(pieces.wallBlock, cx, cz).scale.set(1, 0.72, 1);
+      }
+    }
+    const edgeX = width / 2 + 0.12;
+    const edgeZ = height / 2 + 0.12;
+    for (let x = 0; x < width; x++) {
+      place(pieces.frameEdge, this.cellX(x), -edgeZ, Math.PI);
+      place(pieces.frameEdge, this.cellX(x), edgeZ);
+    }
+    for (let y = 0; y < height; y++) {
+      place(pieces.frameEdge, edgeX, this.cellZ(y), Math.PI / 2);
+      place(pieces.frameEdge, -edgeX, this.cellZ(y), -Math.PI / 2);
+    }
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) place(pieces.frameCorner, sx * edgeX, sz * edgeZ);
+    this.boardGroup.add(fuse(fixed));
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(0.4, 0.47, 40),
+      new THREE.MeshBasicMaterial({ color: CONFIG.colors.green, transparent: true, opacity: 0.5, depthWrite: false }),
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(this.cellX(exitX), 0.26, this.cellZ(exitY));
+    this.exitRing = ring;
+    this.boardGroup.add(ring);
+  }
+
+  /** Board from built-in shapes, used when the kit is switched off or failed to load. */
+  private buildPlainBoard(level: Level): void {
     const { width, height, walls, exitX, exitY } = level.board;
     const c = CONFIG.colors;
     const mat = (color: string, roughness = 0.8): THREE.MeshStandardMaterial =>
       new THREE.MeshStandardMaterial({ color, roughness });
-
     const rim = this.layout.frame;
     const frame = new THREE.Mesh(
       slab(width + rim, height + rim, 0.22 + rim * 0.35, 0.34),
@@ -207,14 +305,6 @@ export class BoardView {
     this.exitPad = pad;
     this.exitRing = ring;
     this.boardGroup.add(pad);
-
-    for (const r of level.start.robots) {
-      const view = buildRobot(r.id, r.color);
-      this.robots.set(r.id, view);
-      this.boardGroup.add(view.root);
-    }
-    this.sync(level.start, false);
-    this.fitCamera();
   }
 
   /** Match the canvas size and frame the whole board. */
@@ -233,8 +323,8 @@ export class BoardView {
     const { width, height } = this.level.board;
     const tilt = (this.layout.tilt * Math.PI) / 180;
     const dir = new THREE.Vector3(0, Math.cos(tilt), Math.sin(tilt));
-    const hw = width / 2 + this.layout.frame / 2 + 0.04;
-    const hd = height / 2 + this.layout.frame / 2 + 0.04;
+    const hw = width / 2 + this.rim / 2 + 0.04;
+    const hd = height / 2 + this.rim / 2 + 0.04;
     const corners: THREE.Vector3[] = [];
     for (const x of [-hw, hw]) for (const z of [-hd, hd]) for (const y of [-0.34, 0.8]) corners.push(new THREE.Vector3(x, y, z));
     const target = new THREE.Vector3(0, 0, 0);
@@ -266,8 +356,8 @@ export class BoardView {
       dist = hi;
       // Re-centre vertically: slide the look-at point along z.
       const e = extent(dist);
-      // Centred, or pushed up so the top edge touches the top of the canvas.
-      const wanted = this.layout.alignTop ? CONFIG.camera.fill - (e.top - e.bottom) / 2 : 0;
+      // Where the board's centre should sit, from how the spare height is shared out.
+      const wanted = (CONFIG.camera.fill - (e.top - e.bottom) / 2) * (1 - 2 * this.layout.spareAbove);
       const offCentre = (e.top + e.bottom) / 2 - wanted;
       const halfHeight = Math.tan((CONFIG.camera.fov * Math.PI) / 360) * dist;
       target.z -= (offCentre * halfHeight) / Math.cos(tilt);
@@ -315,11 +405,11 @@ export class BoardView {
   }
 
   private pose(view: RobotView, x: number, z: number, angle: number, scale: number): void {
-    view.root.position.set(x, 0.06, z);
+    view.root.position.set(x, this.floorY, z);
     view.angle = angle;
     view.visibleScale = scale;
     view.body.rotation.set(0, 0, 0);
-    aimRobot(view, angle);
+    view.aim(angle);
     view.body.position.set(0, 0, 0);
     view.body.scale.setScalar(Math.max(scale, 0.0001));
     view.root.visible = scale > 0.001;
@@ -360,7 +450,7 @@ export class BoardView {
           const from = view.angle;
           return this.addTween(a.turnTime / speed, (k) => {
             view.angle = from - (Math.PI / 2) * easeOutBack(k);
-            aimRobot(view, view.angle);
+            view.aim(view.angle);
             view.body.position.y = Math.sin(Math.PI * k) * 0.07 * lively;
           });
         }),
