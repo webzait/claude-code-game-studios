@@ -11,6 +11,7 @@ import decorTuftClover from '../../assets/turnflock/decor/decor-tuft-clover.webp
 import decorSprigTop from '../../assets/turnflock/decor/decor-sprig-top.webp';
 import { buildExit, buildFloorTile, buildObstacle, buildRim, buildRimCorner, buildRimEdge, buildUnderlay } from '../render/parts/board';
 import { buildFlockbot } from '../render/parts/flockbot';
+import { addCoinCards } from './coins';
 import './parts.css';
 
 /**
@@ -557,5 +558,7 @@ for (const [cols, rows] of [[5, 5], [6, 6], [8, 8], [4, 7]] as const) {
     document.body.dataset.decorReady = 'true';
   });
 }
+// Coin controls: counter, plus button, price tags, reward and the icon at small sizes.
+addCoinCards(document.getElementById('sheet')!);
 
 document.body.dataset.ready = 'true';
