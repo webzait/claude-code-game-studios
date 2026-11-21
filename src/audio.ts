@@ -1,7 +1,7 @@
 import { CONFIG } from './config';
 
 /** Sounds the game can make. */
-export type SoundName = 'tap' | 'turn' | 'step' | 'bump' | 'exit' | 'win' | 'fail' | 'scan' | 'milestone';
+export type SoundName = 'tap' | 'turn' | 'step' | 'bump' | 'exit' | 'win' | 'fail' | 'scan';
 
 type Note = [frequency: number, start: number, length: number, type?: OscillatorType];
 
@@ -14,7 +14,6 @@ const SOUNDS: Record<SoundName, Note[]> = {
   win: [[523, 0, 0.12, 'triangle'], [659, 0.1, 0.12, 'triangle'], [784, 0.2, 0.12, 'triangle'], [1047, 0.3, 0.3, 'triangle']],
   fail: [[330, 0, 0.16, 'sine'], [247, 0.14, 0.26, 'sine']],
   scan: [[880, 0, 0.06, 'sine'], [1175, 0.07, 0.1, 'sine']],
-  milestone: [[392, 0, 0.18, 'triangle'], [523, 0.16, 0.18, 'triangle'], [659, 0.32, 0.18, 'triangle'], [784, 0.48, 0.5, 'triangle']],
 };
 
 /** Small synthesised sound effects (Web Audio, no files). Silent when muted or unsupported. */

@@ -10,41 +10,23 @@
   </head>
   <body>
     <div id="app">
-      <section class="screen" id="home">
-        <header class="home-head">
-          <h1>TURNFLOCK</h1>
-          <p>Guide the flock. Restore the city.</p>
-        </header>
-        <div class="hub-slot" id="hubSlotHome"><canvas id="hub" aria-label="Beacon Bay with its lighthouse"></canvas></div>
-        <div class="home-status" id="homeStatus"></div>
-        <button class="primary big" id="play">Play</button>
-        <div class="row">
-          <button class="tool wide" id="toMap">Map</button>
-          <button class="tool wide" id="toSettings">Settings</button>
-        </div>
-      </section>
-
-      <section class="screen" id="map" hidden>
+      <section class="screen" id="map">
         <header class="top">
-          <button class="back" id="mapBack" aria-label="Back to home"><svg viewBox="0 0 24 24" class="ico"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
           <div class="title">
-            <div class="level-no" id="mapName"></div>
-            <div class="level-name" id="mapTheme"></div>
+            <div class="level-no brand">TURNFLOCK</div>
+            <div class="level-name">Choose a level</div>
           </div>
           <div class="pill" id="mapCount"></div>
+          <button class="back" id="toSettings" aria-label="Settings"><svg viewBox="0 0 24 24" class="ico"><path d="M4 7h10M18 7h2M4 17h2M10 17h10" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" /><circle cx="16" cy="7" r="2.4" fill="none" stroke="currentColor" stroke-width="2.4" /><circle cx="8" cy="17" r="2.4" fill="none" stroke="currentColor" stroke-width="2.4" /></svg></button>
         </header>
         <div class="scroll">
-          <p class="lore" id="mapLore"></p>
-          <div class="landmark" id="landmarkLine"></div>
           <div class="nodes" id="nodes"></div>
-          <h2 class="section">More of Prismport</h2>
-          <div class="districts" id="districts"></div>
         </div>
       </section>
 
       <section class="screen" id="level" hidden>
         <header class="top">
-          <button class="back" id="levelBack" aria-label="Back to map"><svg viewBox="0 0 24 24" class="ico"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
+          <button class="back" id="levelBack" aria-label="Back to levels"><svg viewBox="0 0 24 24" class="ico"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
           <div class="title">
             <div class="level-no" id="levelNo">LEVEL 1</div>
             <div class="level-name" id="levelName"></div>
@@ -67,7 +49,7 @@
             <button class="tool" id="undo"><svg viewBox="0 0 24 24" class="ico"><path d="M9 7 4.5 11.5 9 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /><path d="M5 11.5h9a5 5 0 0 1 0 10h-3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" /></svg><span>Undo</span></button>
             <button class="tool" id="restart"><svg viewBox="0 0 24 24" class="ico"><path d="M19 12a7 7 0 1 1-2.3-5.2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" /><path d="M19.5 3.5v4.2h-4.2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /></svg><span>Restart</span></button>
             <button class="tool" id="replay"><svg viewBox="0 0 24 24" class="ico"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" /></svg><span>Replay</span></button>
-            <button class="tool" id="scan"><svg viewBox="0 0 24 24" class="ico"><circle cx="11" cy="11" r="6.2" fill="none" stroke="currentColor" stroke-width="2.4" /><path d="M16 16l4.5 4.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" /></svg><span>Scan</span></button>
+            <button class="tool" id="scan"><svg viewBox="0 0 24 24" class="ico"><circle cx="11" cy="11" r="6.2" fill="none" stroke="currentColor" stroke-width="2.4" /><path d="M16 16l4.5 4.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" /></svg><span>Hint</span></button>
           </div>
           <div class="commands" id="commands">
             <button class="cmd red" data-cmd="red" aria-label="Turn red, then all move"></button>
@@ -80,17 +62,10 @@
 
       <section class="screen" id="settings" hidden>
         <header class="top">
-          <button class="back" id="settingsBack" aria-label="Back to home"><svg viewBox="0 0 24 24" class="ico"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
+          <button class="back" id="settingsBack" aria-label="Back to levels"><svg viewBox="0 0 24 24" class="ico"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
           <div class="title"><div class="level-no">Settings</div></div>
         </header>
         <div class="scroll" id="settingsBody"></div>
-      </section>
-
-      <section class="overlay milestone" id="milestone" hidden>
-        <div class="hub-slot" id="hubSlotMilestone"></div>
-        <h2 id="msTitle"></h2>
-        <p id="msText"></p>
-        <button class="primary big" id="msNext">Continue</button>
       </section>
 
       <section class="overlay card" id="card" hidden>

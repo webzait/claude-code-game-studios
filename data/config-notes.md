@@ -14,13 +14,11 @@
 | `rules.exitAcceptsMany` | `true`: several robots may enter the exit in one turn |
 
 | `moveSlack` | Moves allowed over the shortest solution (the move budget is par + this) |
-| `backupSignals` | Extra moves one Backup Signals use gives |
-| `scan.maxVisited` | Positions a Route Scan or rescue check may examine before it reports "could not finish" |
+| `extraMoves` | Extra moves offered when out of moves, if proven to be enough |
+| `scan.maxVisited` | Positions a hint or rescue check may examine before it reports "could not finish" |
 | `lab.yellowEarlyLevels` | Levels recoloured blue to yellow by the "Yellow early" test switch |
 | `lab.slackOptions`, `lab.speedOptions` | Choices offered in the test lab |
 | `lab.certifyMaxVisited` | Positions examined when re-checking a level under a test rule |
 | `audio.volume` | Loudness of the sound effects |
-| `milestoneTime` | Seconds the landmark's repair moment takes |
 
 `data/levels.json`: `par` is the solver's shortest solution and `witness` is one command list that wins; both are checked by the tests.
-`data/districts.json`: the six districts, the level ids each contains, and the landmark milestones. A district with no levels is shown as "Not built yet".

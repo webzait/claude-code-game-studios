@@ -1,5 +1,4 @@
 import { CONFIG } from '../config';
-import type { District, Milestone } from '../levels/index';
 
 /** Best move count per solved level id. */
 export type Best = Readonly<Record<string, number>>;
@@ -16,20 +15,14 @@ export function resumeIndex(levelIds: readonly string[], best: Best): number {
   return open < 0 ? levelIds.length - 1 : open;
 }
 
-/** Stars for a win. Using Backup Signals caps the result at one star. */
+/** Stars for a win. Using extra moves caps the result at one star. */
 export function starsFor(moves: number, par: number, usedBackup: boolean): 1 | 2 | 3 {
   if (usedBackup) return 1;
   const over = moves - par;
   return over <= CONFIG.stars.three ? 3 : over <= CONFIG.stars.two ? 2 : 1;
 }
 
-/** How many of a district's levels are solved. */
-export function solvedIn(district: District, best: Best): number {
-  return district.levels.filter((id) => best[id] !== undefined).length;
-}
-
-/** Milestones the district has reached, in order. */
-export function reachedMilestones(district: District, best: Best): Milestone[] {
-  const solved = solvedIn(district, best);
-  return district.milestones.filter((m) => solved >= m.afterLevels);
+/** How many levels are solved. */
+export function solvedCount(levelIds: readonly string[], best: Best): number {
+  return levelIds.filter((id) => best[id] !== undefined).length;
 }

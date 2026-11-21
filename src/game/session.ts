@@ -7,7 +7,7 @@ export type Status = 'playing' | 'won' | 'lost';
 
 /** How an attempt is set up. */
 export interface SessionOptions {
-  /** Moves allowed before Backup Signals. */
+  /** Moves allowed before extra moves. */
   readonly budget: number;
   /** Rules for this attempt; the default rules when omitted. */
   readonly rules?: Rules;
@@ -22,7 +22,7 @@ export class Session {
   private log: Command[] = [];
   /** Current logical state. */
   state: GameState;
-  /** Moves granted on top of the budget by Backup Signals. */
+  /** Moves granted on top of the budget by extra moves. */
   bonusMoves = 0;
   readonly budget: number;
   readonly rules: Rules;
@@ -46,7 +46,7 @@ export class Session {
     return [...this.history, this.state];
   }
 
-  /** Budget plus Backup Signals. */
+  /** Budget plus extra moves. */
   get totalBudget(): number {
     return this.budget + this.bonusMoves;
   }
@@ -91,7 +91,7 @@ export class Session {
     return true;
   }
 
-  /** Back to the start of the level. Backup Signals are cleared too. */
+  /** Back to the start of the level. extra moves are cleared too. */
   restart(): void {
     this.history = [];
     this.log = [];
@@ -99,7 +99,7 @@ export class Session {
     this.state = this.level.start;
   }
 
-  /** Add extra moves (Backup Signals). */
+  /** Add extra moves  */
   grantBonus(moves: number): void {
     this.bonusMoves += moves;
   }

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { CONFIG } from '../../src/config';
 import { applyLab, DEFAULT_LAB, rulesFor, usesCertifiedRules, type LabSettings } from '../../src/game/lab';
-import { isUnlocked, reachedMilestones, resumeIndex, solvedIn, starsFor } from '../../src/game/progress';
+import { isUnlocked, resumeIndex, solvedCount, starsFor } from '../../src/game/progress';
 import { defaultSave, LEGACY_KEY, loadSave, migrate, resetProgress, SAVE_KEY, SAVE_VERSION, writeSave, type KeyValueStore } from '../../src/game/save';
 import { Session } from '../../src/game/session';
-import { DISTRICTS, LEVELS } from '../../src/levels/index';
+import { LEVELS } from '../../src/levels/index';
 import { solve } from '../../src/solver/bfs';
 
 const ids = LEVELS.map((l) => l.id);
@@ -34,6 +34,7 @@ describe('unlocks and resume', () => {
     expect(resumeIndex(ids, {})).toBe(0);
     expect(resumeIndex(ids, { [ids[0]]: 7, [ids[1]]: 8 })).toBe(2);
     expect(resumeIndex(ids, Object.fromEntries(ids.map((id) => [id, 1])))).toBe(ids.length - 1);
+    expect(solvedCount(ids, { [ids[0]]: 7, [ids[1]]: 8 })).toBe(2);
   });
 });
 
@@ -43,19 +44,8 @@ describe('stars', () => {
     expect(starsFor(9, 7, false)).toBe(2);
     expect(starsFor(10, 7, false)).toBe(1);
   });
-  it('a win with Backup Signals earns one star', () => {
+  it('a win with extra moves earns one star', () => {
     expect(starsFor(7, 7, true)).toBe(1);
-  });
-});
-
-describe('landmark milestones', () => {
-  const bay = DISTRICTS[0];
-  const solved = (n: number): Record<string, number> => Object.fromEntries(bay.levels.slice(0, n).map((id) => [id, 1]));
-  it('are reached only by really solved levels', () => {
-    expect(reachedMilestones(bay, solved(4)).length).toBe(0);
-    expect(reachedMilestones(bay, solved(5)).map((m) => m.id)).toEqual(['beacon-bay-lamp']);
-    expect(reachedMilestones(bay, solved(10)).length).toBe(2);
-    expect(solvedIn(bay, solved(3))).toBe(3);
   });
 });
 
@@ -107,15 +97,13 @@ describe('save', () => {
     expect(writeSave(broken, defaultSave())).toBe(false);
   });
 
-  it('reset clears progress and milestones but keeps settings and lab switches', () => {
+  it('reset clears progress but keeps settings and lab switches', () => {
     const save = defaultSave();
     save.best[ids[0]] = 7;
-    save.milestonesSeen.push('beacon-bay-lamp');
     save.settings.mute = true;
     save.lab.yellowEarly = true;
     const reset = resetProgress(save);
     expect(reset.best).toEqual({});
-    expect(reset.milestonesSeen).toEqual([]);
     expect(reset.settings.mute).toBe(true);
     expect(reset.lab.yellowEarly).toBe(true);
   });

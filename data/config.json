@@ -38,7 +38,7 @@
     "exitAcceptsMany": true
   },
   "moveSlack": 2,
-  "backupSignals": 3,
+  "extraMoves": 3,
   "scan": {
     "maxVisited": 1500000
   },
@@ -60,6 +60,5 @@
   },
   "audio": {
     "volume": 0.16
-  },
-  "milestoneTime": 2.6
+  }
 }

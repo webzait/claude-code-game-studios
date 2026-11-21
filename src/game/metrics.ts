@@ -5,10 +5,9 @@ export type MetricsEvent =
   | { type: 'level_start'; level: string }
   | { type: 'level_win'; level: string; moves: number; par: number; stars: number; usedBackup: boolean }
   | { type: 'level_fail'; level: string; rescuable: 'yes' | 'no' | 'not-assessed' }
-  | { type: 'route_scan'; level: string; result: 'on-route' | 'dead-end' | 'not-assessed'; rung: number }
-  | { type: 'backup_signals'; level: string }
-  | { type: 'command'; level: string; command: Command }
-  | { type: 'milestone'; id: string };
+  | { type: 'hint'; level: string; result: 'on-route' | 'dead-end' | 'not-assessed'; rung: number }
+  | { type: 'extra_moves'; level: string }
+  | { type: 'command'; level: string; command: Command };
 
 /** Where events go. A real analytics service would implement this later. */
 export interface MetricsSink {

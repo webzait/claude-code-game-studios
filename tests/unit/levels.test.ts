@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CONFIG } from '../../src/config';
 import { Session } from '../../src/game/session';
-import { DISTRICTS, LEVELS } from '../../src/levels/index';
+import { LEVELS } from '../../src/levels/index';
 import { solve } from '../../src/solver/bfs';
 import { board } from './helpers';
 
@@ -68,23 +68,5 @@ describe('levels', () => {
     expect(colours(last.id)).toEqual(['blue', 'red', 'yellow']);
     expect(last.start.robots.length).toBeGreaterThanOrEqual(10);
     expect(last.start.robots.length).toBeLessThanOrEqual(14);
-  });
-});
-
-describe('districts', () => {
-  it('lists six districts; only real levels are referenced, each at most once', () => {
-    expect(DISTRICTS.length).toBe(6);
-    const used = DISTRICTS.flatMap((d) => d.levels);
-    expect(new Set(used).size).toBe(used.length);
-    for (const id of used) expect(byId(id)).toBeDefined();
-    expect([...used].sort()).toEqual(LEVELS.map((l) => l.id).sort());
-  });
-
-  it('keeps a local map view to at most 12 level nodes', () => {
-    for (const d of DISTRICTS) expect(d.levels.length).toBeLessThanOrEqual(12);
-  });
-
-  it('places milestones inside the number of levels the district has', () => {
-    for (const d of DISTRICTS) for (const m of d.milestones) expect(m.afterLevels).toBeLessThanOrEqual(d.levels.length);
   });
 });

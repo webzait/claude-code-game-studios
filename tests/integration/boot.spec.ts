@@ -34,13 +34,13 @@ async function playWitness(page: Page, index: number): Promise<void> {
   for (const command of levels[index].witness) await press(page, command);
 }
 
-test('boots to Home, and Play opens level 1 with a drawn board and no errors @boot', async ({ page }) => {
+test('boots to the level selection, and level 1 opens with a drawn board and no errors @boot', async ({ page }) => {
   const errors = await open(page);
-  expect((await snap(page)).screen).toBe('home');
-  await expect(page.locator('#play')).toHaveText('Play · Level 1');
-  const hub = await page.locator('#hub').boundingBox();
-  expect(hub && hub.width > 300 && hub.height > 200).toBe(true);
-  await page.click('#play');
+  expect((await snap(page)).screen).toBe('map');
+  await expect(page.locator('.node')).toHaveCount(levels.length);
+  await expect(page.locator('#node-1')).toBeEnabled();
+  await expect(page.locator('#node-2')).toBeDisabled();
+  await page.click('#node-1');
   expect(await snap(page)).toMatchObject({ screen: 'level', level: 0, status: 'playing', movesLeft: budget(0), collected: 0 });
   await expect(page.locator('#levelName')).toHaveText(levels[0].name);
   const size = await page.locator('#board').boundingBox();
@@ -51,12 +51,8 @@ test('boots to Home, and Play opens level 1 with a drawn board and no errors @bo
   expect(errors).toEqual([]);
 });
 
-test('Home, Map, Level, Win, Next: no dead ends, and progress survives a reload', async ({ page }) => {
+test('Levels, Level, Win, Next: no dead ends, and progress survives a reload', async ({ page }) => {
   const errors = await open(page);
-  await page.click('#toMap');
-  await expect(page.locator('#node-1')).toBeEnabled();
-  await expect(page.locator('#node-2')).toBeDisabled();
-  await expect(page.locator('.district')).toHaveCount(5);
   await page.click('#node-1');
   await playWitness(page, 0);
   expect((await snap(page)).status).toBe('won');
@@ -64,20 +60,34 @@ test('Home, Map, Level, Win, Next: no dead ends, and progress survives a reload'
   await page.click('#cardPrimary');
   await expect(page.locator('#levelName')).toHaveText(levels[1].name);
   await page.click('#levelBack');
+  await expect(page.locator('#node-1')).toHaveClass(/done/);
   await expect(page.locator('#node-2')).toBeEnabled();
   await expect(page.locator('#node-3')).toBeDisabled();
-  await page.click('#mapBack');
-  await expect(page.locator('#play')).toHaveText('Play · Level 2');
   await page.reload();
   await expect.poll(() => page.evaluate(() => typeof window.turnflock?.snapshot)).toBe('function');
   expect((await snap(page)).best).toEqual({ [levels[0].id]: levels[0].par });
-  await expect(page.locator('#play')).toHaveText('Play · Level 2');
+  await expect(page.locator('#mapCount')).toHaveText(`1/${levels.length}`);
+  expect(errors).toEqual([]);
+});
+
+test('every level can be played to a win in order, ending back at the level selection', async ({ page }) => {
+  test.setTimeout(240_000); // ten levels of real animation
+  const errors = await open(page);
+  await page.click('#node-1');
+  for (let index = 0; index < levels.length; index++) {
+    await playWitness(page, index);
+    expect((await snap(page)).status).toBe('won');
+    await expect(page.locator('#card')).toBeVisible({ timeout: 30000 });
+    await page.click('#cardPrimary');
+  }
+  expect((await snap(page)).screen).toBe('map');
+  await expect(page.locator('.node.done')).toHaveCount(levels.length);
   expect(errors).toEqual([]);
 });
 
 test('undo and restart take moves back', async ({ page }) => {
   await open(page);
-  await page.click('#play');
+  await page.click('#node-1');
   await press(page, 'forward');
   await press(page, 'red');
   await page.click('#undo');
@@ -86,14 +96,14 @@ test('undo and restart take moves back', async ({ page }) => {
   expect((await snap(page)).movesLeft).toBe(budget(0));
 });
 
-test('out of moves in a hopeless position: free Retry, and no Backup Signals offered', async ({ page }) => {
+test('out of moves in a hopeless position: free Retry, and no extra moves offered', async ({ page }) => {
   await open(page);
-  await page.click('#play');
+  await page.click('#node-1');
   for (let i = 0; i < budget(0); i++) await press(page, 'red');
   expect((await snap(page)).status).toBe('lost');
   await expect(page.locator('#cardTitle')).toHaveText('Out of moves', { timeout: 15000 });
   await expect(page.locator('#cardPrimary')).toHaveText('Retry');
-  await expect(page.locator('#cardExtra')).toHaveText('Route Scan');
+  await expect(page.locator('#cardExtra')).toHaveText('Hint');
   await expect(page.locator('#cardNote')).toContainText('not offered');
   await page.click('#cardExtra');
   await expect(page.locator('#hint')).toContainText('Undo', { timeout: 15000 });
@@ -101,9 +111,9 @@ test('out of moves in a hopeless position: free Retry, and no Backup Signals off
   expect((await snap(page)).movesLeft).toBe(budget(0));
 });
 
-test('out of moves two steps from home: Backup Signals are offered and really win', async ({ page }) => {
+test('out of moves two steps from home: extra moves are offered and really win', async ({ page }) => {
   await open(page);
-  await page.click('#play');
+  await page.click('#node-1');
   // Level 1's witness is three forwards, red, three forwards. Spend the spare
   // moves standing at the wall, so the budget ends two steps short of the exit.
   const spare = budget(0) - levels[0].par + 2;
@@ -111,22 +121,22 @@ test('out of moves two steps from home: Backup Signals are offered and really wi
   expect(line.length).toBe(budget(0));
   for (const command of line) await press(page, command);
   expect((await snap(page)).status).toBe('lost');
-  await expect(page.locator('#cardExtra')).toHaveText(`+${config.backupSignals} Backup Signals`, { timeout: 15000 });
+  await expect(page.locator('#cardExtra')).toHaveText(`+${config.extraMoves} moves`, { timeout: 15000 });
   await page.click('#cardExtra');
-  expect(await snap(page)).toMatchObject({ status: 'playing', movesLeft: config.backupSignals });
-  for (let i = 0; i < config.backupSignals && (await snap(page)).status === 'playing'; i++) await press(page, 'forward');
+  expect(await snap(page)).toMatchObject({ status: 'playing', movesLeft: config.extraMoves });
+  for (let i = 0; i < config.extraMoves && (await snap(page)).status === 'playing'; i++) await press(page, 'forward');
   expect((await snap(page)).status).toBe('won');
-  await expect(page.locator('#cardText')).toContainText('Backup Signals', { timeout: 15000 });
+  await expect(page.locator('#cardText')).toContainText('extra moves', { timeout: 15000 });
 });
 
-test('Route Scan: first a status, then the next move, and following it wins', async ({ page }) => {
+test('Hint: first a status, then the next move, and following it wins', async ({ page }) => {
   await open(page);
-  await page.click('#play');
+  await page.click('#node-1');
   await press(page, 'red'); // leave the witness so the solver has to search
   await page.click('#undo');
   await press(page, 'forward');
   await page.click('#scan');
-  await expect(page.locator('#hint')).toContainText('On a route', { timeout: 15000 });
+  await expect(page.locator('#hint')).toContainText('Solvable from here', { timeout: 15000 });
   await page.click('#scan');
   await expect(page.locator('#hint')).toContainText('Next:');
   await expect(page.locator('.cmd.nudge')).toHaveCount(1);
@@ -138,23 +148,6 @@ test('Route Scan: first a status, then the next move, and following it wins', as
   expect((await snap(page)).status).toBe('won');
 });
 
-test('the lighthouse milestone appears after five real wins and can be skipped', async ({ page }) => {
-  await open(page);
-  await page.click('#play');
-  for (let index = 0; index < 5; index++) {
-    await playWitness(page, index);
-    expect((await snap(page)).status).toBe('won');
-    if (index < 4) {
-      await expect(page.locator('#cardPrimary')).toHaveText('Next', { timeout: 20000 });
-      await page.click('#cardPrimary');
-    }
-  }
-  await expect(page.locator('#msTitle')).toHaveText('Lamp repaired', { timeout: 20000 });
-  expect((await snap(page)).landmarkStage).toBe(1);
-  await page.click('#msNext');
-  await expect(page.locator('#cardPrimary')).toHaveText('Next');
-});
-
 test('settings: test lab switches change the next level, and reset needs two taps', async ({ page }) => {
   await open(page);
   await page.click('#toSettings');
@@ -162,23 +155,19 @@ test('settings: test lab switches change the next level, and reset needs two tap
   await page.click('#slack-3');
   await page.click('#unlockAll-on');
   await page.click('#settingsBack');
-  await page.click('#toMap');
   await page.click('#node-2');
   expect((await snap(page)).movesLeft).toBe(levels[1].par + 3);
   await expect(page.locator('.cmd[data-cmd=yellow]')).toBeVisible();
   await expect(page.locator('.cmd[data-cmd=blue]')).toBeHidden();
   await playWitness(page, 1).catch(() => undefined);
   await page.click('#levelBack');
-  await page.click('#mapBack');
   await page.click('#toSettings');
   await page.click('#exitRule-single');
   await page.click('#settingsBack');
-  await page.click('#toMap');
   await page.click('#node-5');
   await expect(page.locator('#hint')).toContainText('Test rule', { timeout: 20000 });
   expect((await snap(page)).budget).toBe(9 + 3); // single-file par for Queue Up is 9
   await page.click('#levelBack');
-  await page.click('#mapBack');
   await page.click('#toSettings');
   await page.click('#resetProgress');
   await page.click('#resetProgress');

@@ -12,8 +12,6 @@ export interface SaveData {
   version: number;
   /** Best move count per solved level id. */
   best: Record<string, number>;
-  /** Milestone ids whose repair moment has been shown. */
-  milestonesSeen: string[];
   settings: {
     mute: boolean;
     /** null follows the device's reduced-motion preference. */
@@ -31,7 +29,7 @@ export interface KeyValueStore {
 
 /** A fresh save. */
 export function defaultSave(): SaveData {
-  return { version: SAVE_VERSION, best: {}, milestonesSeen: [], settings: { mute: false, reduceMotion: null }, lab: { ...DEFAULT_LAB } };
+  return { version: SAVE_VERSION, best: {}, settings: { mute: false, reduceMotion: null }, lab: { ...DEFAULT_LAB } };
 }
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -57,7 +55,6 @@ export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
       if (levelIds.includes(id) && typeof moves === 'number' && moves >= 0) save.best[id] = moves;
     }
   }
-  if (Array.isArray(raw.milestonesSeen)) save.milestonesSeen = raw.milestonesSeen.filter((m): m is string => typeof m === 'string');
   if (isRecord(raw.settings)) {
     save.settings.mute = raw.settings.mute === true;
     save.settings.reduceMotion = typeof raw.settings.reduceMotion === 'boolean' ? raw.settings.reduceMotion : null;
@@ -93,7 +90,7 @@ export function writeSave(store: KeyValueStore, data: SaveData): boolean {
   }
 }
 
-/** Forget progress and milestones. Settings and lab switches are kept. */
+/** Forget progress. Settings and lab switches are kept. */
 export function resetProgress(data: SaveData): SaveData {
-  return { ...data, best: {}, milestonesSeen: [] };
+  return { ...data, best: {} };
 }

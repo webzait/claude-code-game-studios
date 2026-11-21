@@ -6,18 +6,17 @@ import type { Color, Command } from './engine/types';
 import { witnessNext, type RescueResult, type ScanResult } from './game/assist';
 import { applyLab, rulesFor, usesCertifiedRules, type LabSettings } from './game/lab';
 import { MemorySink, type MetricsEvent } from './game/metrics';
-import { isUnlocked, reachedMilestones, resumeIndex, solvedIn, starsFor } from './game/progress';
+import { isUnlocked, resumeIndex, starsFor } from './game/progress';
 import { loadSave, resetProgress, writeSave, type KeyValueStore, type SaveData } from './game/save';
 import { Session } from './game/session';
-import { DISTRICTS, LEVELS, type GameLevel, type Milestone } from './levels/index';
+import { LEVELS, type GameLevel } from './levels/index';
 import { BoardView } from './render/boardView';
-import { HubView } from './render/hubView';
 import { SolverClient } from './solver/client';
 import type { CertifyResult } from './solver/requests';
 import { el, Hud } from './ui/hud';
-import { renderHome, renderMap, renderSettings, type MapNode } from './ui/screens';
+import { renderLevels, renderSettings, type MapNode } from './ui/screens';
 
-type ScreenName = 'home' | 'map' | 'level' | 'settings';
+type ScreenName = 'map' | 'level' | 'settings';
 
 /** What automated checks may read from the running game. */
 export interface Snapshot {
@@ -33,7 +32,6 @@ export interface Snapshot {
   hint: string;
   certified: boolean;
   best: Record<string, number>;
-  landmarkStage: number;
   lab: LabSettings;
   events: MetricsEvent[];
 }
@@ -48,8 +46,6 @@ declare global {
 const wait = (seconds: number): Promise<void> => new Promise((r) => window.setTimeout(r, seconds * 1000));
 const COMMAND_LABEL: Record<Command, string> = { red: 'Red turn', blue: 'Blue turn', yellow: 'Yellow turn', forward: 'Forward' };
 const LEVEL_IDS = LEVELS.map((l) => l.id);
-/** The district this build contains. */
-const DISTRICT = DISTRICTS[0];
 
 /** `localStorage`, or a throwaway store when the browser blocks it. */
 function storage(): KeyValueStore {
@@ -69,9 +65,8 @@ class Game {
   private sfx = new Sfx(() => this.save.settings.mute);
   private solver = new SolverClient();
   private view = new BoardView(el<HTMLCanvasElement>('board'));
-  private hub = new HubView(el<HTMLCanvasElement>('hub'));
   private hud: Hud;
-  private screen: ScreenName = 'home';
+  private screen: ScreenName = 'map';
   private levelIndex = 0;
   private level: GameLevel = LEVELS[0];
   private session = new Session(LEVELS[0], { budget: LEVELS[0].par + CONFIG.moveSlack });
@@ -108,16 +103,11 @@ class Game {
       },
       () => this.screen === 'level',
     );
-    el('play').addEventListener('click', () => this.tap(() => this.startLevel(resumeIndex(LEVEL_IDS, this.save.best))));
-    el('toMap').addEventListener('click', () => this.tap(() => this.show('map')));
     el('toSettings').addEventListener('click', () => this.tap(() => this.show('settings')));
-    el('mapBack').addEventListener('click', () => this.tap(() => this.show('home')));
-    el('settingsBack').addEventListener('click', () => this.tap(() => this.show('home')));
+    el('settingsBack').addEventListener('click', () => this.tap(() => this.show('map')));
     new ResizeObserver(() => this.view.resize()).observe(document.querySelector('.stage') as HTMLElement);
-    new ResizeObserver(() => this.hub.resize()).observe(el('hubSlotHome'));
-    new ResizeObserver(() => this.hub.resize()).observe(el('hubSlotMilestone'));
     this.applySettings();
-    this.show('home');
+    this.show('map');
   }
 
   private tap(action: () => void): void {
@@ -127,10 +117,6 @@ class Game {
 
   private get reduced(): boolean {
     return this.save.settings.reduceMotion ?? window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  }
-
-  private landmarkStage(): number {
-    return reachedMilestones(DISTRICT, this.save.best).length;
   }
 
   private persist(): void {
@@ -144,7 +130,6 @@ class Game {
   private applySettings(): void {
     document.documentElement.classList.toggle('reduce-motion', this.reduced);
     this.view.setMotion(this.save.lab.speed, this.reduced);
-    this.hub.setReduced(this.reduced);
   }
 
   // ---------------------------------------------------------------- screens
@@ -155,22 +140,9 @@ class Game {
     this.replaying = false;
     this.busy = false;
     this.screen = screen;
-    for (const name of ['home', 'map', 'level', 'settings'] as const) el(name).hidden = name !== screen;
-    el('milestone').hidden = true;
+    for (const name of ['map', 'level', 'settings'] as const) el(name).hidden = name !== screen;
     this.hud.hideCard();
     this.view.skip();
-    if (screen === 'home') {
-      el('hubSlotHome').appendChild(el('hub'));
-      this.hub.setStage(this.landmarkStage(), false);
-      const all = solvedIn(DISTRICT, this.save.best) === DISTRICT.levels.length;
-      renderHome({
-        district: DISTRICT.name,
-        solved: solvedIn(DISTRICT, this.save.best),
-        total: DISTRICT.levels.length,
-        playLabel: all ? 'Play again' : `Play · Level ${resumeIndex(LEVEL_IDS, this.save.best) + 1}`,
-      });
-    }
-    this.hub.setActive(screen === 'home');
     if (screen === 'map') this.drawMap();
     if (screen === 'settings') this.drawSettings();
   }
@@ -178,10 +150,8 @@ class Game {
   private drawMap(): void {
     const best = this.save.best;
     const resume = resumeIndex(LEVEL_IDS, best);
-    const nodes: MapNode[] = DISTRICT.levels.map((id) => {
-      const index = LEVEL_IDS.indexOf(id);
-      const level = LEVELS[index];
-      const moves = best[id];
+    const nodes: MapNode[] = LEVELS.map((level, index) => {
+      const moves = best[level.id];
       return {
         number: index + 1,
         name: level.name,
@@ -192,17 +162,7 @@ class Game {
         current: index === resume && moves === undefined,
       };
     });
-    const reached = reachedMilestones(DISTRICT, best);
-    const next = DISTRICT.milestones[reached.length];
-    renderMap({
-      district: DISTRICT,
-      nodes,
-      landmarkOn: reached.length === DISTRICT.milestones.length,
-      landmarkText: reached.length ? `${DISTRICT.landmark}: ${reached[reached.length - 1].title.toLowerCase()}` : `${DISTRICT.landmark}: dark`,
-      landmarkNext: next ? `Solve ${next.afterLevels - solvedIn(DISTRICT, best)} more to reach "${next.title}"` : 'Fully restored',
-      others: DISTRICTS.slice(1),
-      onPick: (index) => this.tap(() => this.startLevel(index)),
-    });
+    renderLevels(nodes, (index) => this.tap(() => this.startLevel(index)));
   }
 
   private drawSettings(): void {
@@ -263,7 +223,7 @@ class Game {
           title: 'Not proven solvable',
           text: result.kind === 'unsolvable' ? 'With the single-file exit rule this level has no solution in a fair number of moves.' : 'The check for the single-file exit rule could not finish for this level.',
           stars: 0,
-          primary: { label: 'Back to map', action: () => this.show('map') },
+          primary: { label: 'Levels', action: () => this.show('map') },
           secondary: {
             label: 'Play anyway',
             action: () => {
@@ -364,12 +324,8 @@ class Game {
     const id = this.level.id;
     const moves = this.session.commands.length;
     const stars = starsFor(moves, this.par, this.usedBackup);
-    const before = reachedMilestones(DISTRICT, this.save.best).length;
     const previous = this.save.best[id];
     if (previous === undefined || previous === 0 || moves < previous) this.save.best[id] = moves;
-    const reached = reachedMilestones(DISTRICT, this.save.best);
-    const fresh = reached.filter((m) => !this.save.milestonesSeen.includes(m.id));
-    for (const m of fresh) this.save.milestonesSeen.push(m.id);
     this.persist();
     this.track({ type: 'level_win', level: id, moves, par: this.par, stars, usedBackup: this.usedBackup });
     this.sfx.play('win');
@@ -377,44 +333,23 @@ class Game {
     this.refresh();
     const generation = this.generation;
     void wait(this.reduced ? 0.2 : 0.55).then(() => {
-      if (generation !== this.generation) return;
-      if (fresh.length) this.showMilestone(fresh[fresh.length - 1], before, reached.length, () => this.showWin(moves, stars));
-      else this.showWin(moves, stars);
+      if (generation === this.generation) this.showWin(moves, stars);
     });
-  }
-
-  /** The landmark's repair moment. Tapping Continue at any time skips it. */
-  private showMilestone(milestone: Milestone, fromStage: number, toStage: number, then: () => void): void {
-    el('hubSlotMilestone').appendChild(el('hub'));
-    el('msTitle').textContent = milestone.title;
-    el('msText').textContent = milestone.text;
-    el('milestone').hidden = false;
-    this.hub.setStage(fromStage, false);
-    this.hub.setActive(true);
-    this.hub.resize();
-    this.hub.setStage(toStage, !this.reduced);
-    this.sfx.play('milestone');
-    this.track({ type: 'milestone', id: milestone.id });
-    el<HTMLButtonElement>('msNext').onclick = () => {
-      el('milestone').hidden = true;
-      this.hub.setActive(false);
-      then();
-    };
   }
 
   private showWin(moves: number, stars: number): void {
     const last = this.levelIndex === LEVELS.length - 1;
     this.hud.showCard({
       title: 'All home',
-      text: `${moves} moves${stars === 3 ? ' · perfect' : ''}${this.usedBackup ? ' · with Backup Signals' : ''}`,
+      text: `${moves} moves${stars === 3 ? ' · perfect' : ''}${this.usedBackup ? ' · with extra moves' : ''}`,
       stars,
-      primary: last ? { label: 'Map', action: () => this.tap(() => this.show('map')) } : { label: 'Next', action: () => this.tap(() => this.startLevel(this.levelIndex + 1)) },
+      primary: last ? { label: 'Levels', action: () => this.tap(() => this.show('map')) } : { label: 'Next', action: () => this.tap(() => this.startLevel(this.levelIndex + 1)) },
       secondary: { label: 'Replay', action: () => void this.replay() },
     });
   }
 
   /**
-   * Out of moves. Retry is always the main, free way on. Backup Signals are
+   * Out of moves. Retry is always the main, free way on. Extra moves are
    * offered only when the solver proved they are enough from this exact position.
    */
   private async onLost(): Promise<void> {
@@ -424,7 +359,7 @@ class Game {
       kind: 'rescue',
       board: this.level.board,
       state: this.session.state,
-      extraMoves: CONFIG.backupSignals,
+      extraMoves: CONFIG.extraMoves,
       rules: this.session.rules,
       maxVisited: CONFIG.scan.maxVisited,
     });
@@ -438,9 +373,9 @@ class Game {
       primary: { label: 'Retry', action: () => this.restart() },
       secondary: { label: 'Undo', action: () => this.undo() },
       extra: offer
-        ? { label: `+${CONFIG.backupSignals} Backup Signals`, action: () => this.useBackup() }
+        ? { label: `+${CONFIG.extraMoves} moves`, action: () => this.useBackup() }
         : {
-            label: 'Route Scan',
+            label: 'Hint',
             action: () => {
               this.hud.hideCard();
               void this.scan();
@@ -449,17 +384,17 @@ class Game {
       note: offer
         ? 'Prototype: free. Checked: this position can be solved with them.'
         : rescue.kind === 'hopeless'
-          ? 'Backup Signals would not solve this position, so they are not offered.'
-          : 'Could not check whether Backup Signals would help, so they are not offered.',
+          ? 'Extra moves would not solve this position, so they are not offered.'
+          : 'Could not check whether extra moves would help, so they are not offered.',
     });
   }
 
   private useBackup(): void {
-    this.session.grantBonus(CONFIG.backupSignals);
+    this.session.grantBonus(CONFIG.extraMoves);
     this.usedBackup = true;
     this.hud.hideCard();
     this.clearScan();
-    this.track({ type: 'backup_signals', level: this.level.id });
+    this.track({ type: 'extra_moves', level: this.level.id });
     this.sfx.play('scan');
     this.refresh();
   }
@@ -489,7 +424,7 @@ class Game {
   }
 
   /**
-   * Route Scan, a two-step hint ladder. First tap: is this position still on a
+   * Hint, in two steps. First tap: is this position still on a
    * route, and how far to go (or how many moves to undo). Second tap on the
    * same position: the next move is highlighted.
    */
@@ -499,7 +434,7 @@ class Game {
     if (this.scanKey === key && this.scanResult) {
       if (this.scanResult.kind === 'on-route') {
         this.nudge = this.scanResult.next;
-        this.track({ type: 'route_scan', level: this.level.id, result: 'on-route', rung: 2 });
+        this.track({ type: 'hint', level: this.level.id, result: 'on-route', rung: 2 });
         this.sfx.play('scan');
         this.setHint(`Next: ${COMMAND_LABEL[this.scanResult.next]}`, false);
       }
@@ -511,7 +446,7 @@ class Game {
     else {
       const generation = this.generation;
       this.busy = true;
-      this.setHint('Scanning…', false);
+      this.setHint('Thinking…', false);
       result = await this.solver.ask<ScanResult>({
         kind: 'scan',
         board: this.level.board,
@@ -525,11 +460,11 @@ class Game {
     }
     this.scanKey = key;
     this.scanResult = result;
-    this.track({ type: 'route_scan', level: this.level.id, result: result.kind, rung: 1 });
+    this.track({ type: 'hint', level: this.level.id, result: result.kind, rung: 1 });
     this.sfx.play('scan');
-    if (result.kind === 'on-route') this.setHint(`On a route · ${result.movesNeeded} to go. Scan again for the next move.`, false);
-    else if (result.kind === 'dead-end') this.setHint(`Dead end. Undo ${result.undo} move${result.undo === 1 ? '' : 's'} to get back on a route.`, true);
-    else this.setHint('The scan could not finish for this position.', true);
+    if (result.kind === 'on-route') this.setHint(`Solvable from here · ${result.movesNeeded} to go. Tap Hint again for the next move.`, false);
+    else if (result.kind === 'dead-end') this.setHint(`Dead end. Undo ${result.undo} move${result.undo === 1 ? '' : 's'} to make it solvable again.`, true);
+    else this.setHint('The hint could not be worked out for this position.', true);
   }
 
   /** Play the commands so far again from the start; the session is untouched. */
@@ -576,7 +511,6 @@ class Game {
       hint: this.hint,
       certified: this.certified,
       best: { ...this.save.best },
-      landmarkStage: this.landmarkStage(),
       lab: { ...this.save.lab },
       events: [...this.metrics.events],
     };

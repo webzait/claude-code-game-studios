@@ -10,7 +10,7 @@ export type RescueResult =
 
 /**
  * Fair-continuation check: can the exact current state be won within
- * `extraMoves` more moves? Backup Signals are only offered on `rescuable`.
+ * `extraMoves` more moves? extra moves are only offered on `rescuable`.
  */
 export function checkRescue(board: Board, state: GameState, extraMoves: number, rules: Rules, maxVisited: number): RescueResult {
   const result = solve(board, state, extraMoves, rules, false, maxVisited);
@@ -18,7 +18,7 @@ export function checkRescue(board: Board, state: GameState, extraMoves: number, 
   return result.capped ? { kind: 'not-assessed' } : { kind: 'hopeless' };
 }
 
-/** What a Route Scan found. */
+/** What a hint found. */
 export type ScanResult =
   /** The current position can still be won: `next` is the first move of a shortest way. */
   | { readonly kind: 'on-route'; readonly next: Command; readonly movesNeeded: number }
@@ -28,7 +28,7 @@ export type ScanResult =
   | { readonly kind: 'not-assessed' };
 
 /**
- * Route Scan: look at the current position, and if it is a dead end walk back
+ * hint: look at the current position, and if it is a dead end walk back
  * through the attempt's earlier positions to the latest one that is still winnable.
  * `states` is the attempt oldest first, ending with the current state.
  */

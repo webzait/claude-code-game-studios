@@ -1,13 +1,12 @@
 import { CONFIG } from '../config';
 import type { LabSettings } from '../game/lab';
 import type { SaveData } from '../game/save';
-import type { District } from '../levels/index';
 import { el, STAR } from './hud';
 
 const LOCK =
   '<svg viewBox="0 0 24 24" class="lock"><rect x="5" y="10.5" width="14" height="10" rx="3" fill="currentColor"/><path d="M8.2 10.5V8a3.8 3.8 0 0 1 7.6 0v2.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
 
-/** One level node on the map. */
+/** One level on the selection screen. */
 export interface MapNode {
   number: number;
   name: string;
@@ -18,36 +17,12 @@ export interface MapNode {
   current: boolean;
 }
 
-/** Draw the home screen's texts. */
-export function renderHome(model: { district: string; solved: number; total: number; playLabel: string }): void {
-  el('homeStatus').textContent = `${model.district} · ${model.solved}/${model.total} routes restored`;
-  el('play').textContent = model.playLabel;
-}
-
-/** Draw the district map: its level nodes, landmark status and the districts not built yet. */
-export function renderMap(model: {
-  district: District;
-  nodes: MapNode[];
-  landmarkText: string;
-  landmarkNext: string;
-  landmarkOn: boolean;
-  others: readonly District[];
-  onPick: (index: number) => void;
-}): void {
-  el('mapName').textContent = model.district.name;
-  el('mapTheme').textContent = model.district.theme;
-  el('mapLore').textContent = model.district.lore;
-  el('mapCount').textContent = `${model.nodes.filter((n) => n.solved).length}/${model.nodes.length}`;
-  el('landmarkLine').innerHTML = `<span class="lamp${model.landmarkOn ? ' on' : ''}"></span><span></span>`;
-  const line = el('landmarkLine').lastElementChild as HTMLElement;
-  line.textContent = model.landmarkText;
-  const small = document.createElement('small');
-  small.textContent = model.landmarkNext;
-  line.appendChild(small);
-
-  const nodes = el('nodes');
-  nodes.innerHTML = '';
-  model.nodes.forEach((node, index) => {
+/** Draw the level selection. */
+export function renderLevels(nodes: MapNode[], onPick: (index: number) => void): void {
+  el('mapCount').textContent = `${nodes.filter((n) => n.solved).length}/${nodes.length}`;
+  const box = el('nodes');
+  box.innerHTML = '';
+  nodes.forEach((node, index) => {
     const button = document.createElement('button');
     button.className = `node${node.solved ? ' done' : ''}${node.current ? ' current' : ''}`;
     button.id = `node-${node.number}`;
@@ -64,30 +39,10 @@ export function renderMap(model: {
         mini.innerHTML = [1, 2, 3].map((i) => STAR.replace('<svg', `<svg class="${i <= node.stars ? 'on' : ''}"`)).join('');
         button.appendChild(mini);
       }
-      button.addEventListener('click', () => model.onPick(index));
+      button.addEventListener('click', () => onPick(index));
     }
-    nodes.appendChild(button);
+    box.appendChild(button);
   });
-
-  const list = el('districts');
-  list.innerHTML = '';
-  for (const d of model.others) {
-    const row = document.createElement('div');
-    row.className = 'district';
-    const swatch = document.createElement('span');
-    swatch.className = 'swatch';
-    swatch.style.background = d.accent;
-    const text = document.createElement('div');
-    const name = document.createElement('b');
-    name.textContent = d.name;
-    const theme = document.createElement('span');
-    theme.textContent = d.theme;
-    text.append(name, theme);
-    const state = document.createElement('em');
-    state.textContent = 'Not built yet';
-    row.append(swatch, text, state);
-    list.appendChild(row);
-  }
 }
 
 /** What the settings screen can change. */
@@ -183,7 +138,7 @@ export function renderSettings(save: SaveData, handlers: SettingsHandlers): void
           handlers.setReduceMotion,
         ),
       ),
-      setting('Progress', 'Solved levels and the lighthouse', reset),
+      setting('Progress', 'Solved levels and stars', reset),
     ]),
     group('Test lab', 'For the test phase only. Changes apply when a level starts.', [
       setting(
