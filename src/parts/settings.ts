@@ -5,12 +5,12 @@ import pkg from '../../package.json';
 
 /**
  * The settings screen as a standalone mock-up for the parts sheet: player
- * settings, the test lab in two arrangements, and every control in every
+ * settings, the test lab on its own screen, and every control in every
  * state. It keeps its own state and is not wired to the game's save.
  */
 
-/** Where the test lab lives: its own screen behind a small entry, a collapsed section, or left out (public release). */
-type LabPlace = 'screen' | 'section' | 'none';
+/** Where the test lab lives: its own screen behind a small entry, or left out (public release). */
+type LabPlace = 'screen' | 'none';
 
 /** One phone frame to draw. */
 export interface SettingsFrame {
@@ -22,8 +22,6 @@ export interface SettingsFrame {
   lab?: LabPlace;
   /** Lab values that differ from the default at the start. */
   changed?: Partial<LabSettings>;
-  /** Start with the lab section open (lab: 'section'). */
-  open?: boolean;
   /** Start with the reset control armed. */
   armed?: boolean;
   /** Let the frame grow to its content instead of scrolling, to show everything at once. */
@@ -55,7 +53,6 @@ const ICON = {
   next: svg(line('M9.5 5l7 7-7 7', 3.2)),
   check: svg(line('M5 12.6l4.6 4.6L19 7.6', 3.6)),
   cross: svg(line('M6.5 6.5l11 11M17.5 6.5l-11 11', 3.4)),
-  down: svg(line('M5 9l7 7 7-7', 3.2)),
   warn: svg(`<path d="M12 3.2 22 20.4H2z" fill="#f4c62f" stroke="#7a5b00" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 9.4v5.2" fill="none" stroke="#3f2f00" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.3" fill="#3f2f00"/>`),
 };
 
@@ -402,31 +399,6 @@ export function settingsFrame(frame: SettingsFrame): HTMLElement {
     labScreen.back.addEventListener('click', () => show('settings', true));
     el.appendChild(labScreen.root);
     show(frame.view ?? 'settings', false);
-  } else if (place === 'section') {
-    const lab = labContent(frame.changed ?? {});
-    const id = uid('lab');
-    const count = h(`<span class="tf-set-chip changed" hidden></span>`);
-    const fold = h(`<section class="tf-set-panel tf-set-fold" aria-labelledby="${id}-t">
-      <h3 class="tf-set-fold-head"><button type="button" class="tf-set-entry" aria-expanded="false" aria-controls="${id}"><span class="tf-set-title" id="${id}-t">Test lab ${TEST}</span><span class="tf-set-entry-end"><span class="tf-set-chev down">${ICON.down}</span></span></button></h3>
-      <div class="tf-set-fold-body" id="${id}" hidden><p class="tf-set-intro">Switches for the test phase. Changes apply when a level starts.</p></div>
-    </section>`);
-    const button = fold.querySelector<HTMLButtonElement>('.tf-set-entry')!;
-    const body = fold.querySelector<HTMLElement>('.tf-set-fold-body')!;
-    fold.querySelector('.tf-set-entry-end')!.prepend(count);
-    body.append(lab.bar, ...lab.groups);
-    const sync = (n: number): void => {
-      count.hidden = n === 0;
-      count.textContent = `${n} changed`;
-    };
-    lab.onCount(sync);
-    sync(lab.count());
-    const setOpen = (open: boolean): void => {
-      button.setAttribute('aria-expanded', String(open));
-      body.hidden = !open;
-    };
-    button.addEventListener('click', () => setOpen(button.getAttribute('aria-expanded') !== 'true'));
-    setOpen(frame.open ?? false);
-    main.scroll.append(fold);
   }
   return el;
 }
@@ -549,11 +521,11 @@ export function addSettingsCards(sheet: HTMLElement): void {
     reset('Voortgang wissen · daarna', false, true);
   }
 
-  // 2. The recommended arrangement: the lab on its own screen behind a small entry.
+  // 2. The chosen arrangement: the lab on its own screen behind a small entry.
   {
     const stage = card(
       'settings-screen',
-      'Instellingenscherm · optie B (aanbevolen): testlab als apart scherm',
+      'Instellingenscherm · testlab als apart scherm',
       'telefoon 390×844 px · het scherm leeft: schakelaars, keuzes, “Back to defaults” en de wis-stap werken',
       'De speler ziet alleen zijn eigen instellingen; onderaan staat één kleine rij “Test lab”. Voor een publieke release vervalt alleen die rij (zie het vierde kader) en laadt de game altijd de standaardwaarden van het lab. De paarse labels “New idea” markeren voorstellen; ze horen niet in de game.',
     );
@@ -565,25 +537,11 @@ export function addSettingsCards(sheet: HTMLElement): void {
     );
   }
 
-  // 3. The alternative: the lab as a collapsed section at the bottom of the same screen.
-  {
-    const stage = card(
-      'settings-option-a',
-      'Instellingenscherm · optie A: testlab ingeklapt onderaan',
-      'telefoon 390×844 px · dezelfde elementen, het lab klapt open in hetzelfde scherm',
-      'Eén scherm minder, maar open is het een lange lijst (ruim drie schermen scrollen) en “Back to defaults” schuift uit beeld. Daarom is optie B de aanbeveling.',
-    );
-    stage.append(
-      titled('Ingeklapt (naar onderen gescrold)', settingsFrame({ width: 390, height: 844, lab: 'section' })),
-      titled('Opengeklapt · drie afwijkingen (volledige lengte)', settingsFrame({ width: 390, height: 844, lab: 'section', open: true, changed, full: true })),
-    );
-  }
-
-  // 4. The recommended arrangement at the other screen sizes.
+  // 3. The same screens at the other screen sizes.
   {
     const stage = card(
       'settings-sizes',
-      'Instellingenscherm · optie B op andere schermmaten',
+      'Instellingenscherm · andere schermmaten',
       '320×568 · 430×932 · 768×1024 px',
       'De terugknop zit in de vaste bovenbalk en scrolt niet mee; in het testlab blijft “Back to defaults” in de vaste onderbalk. Op een tablet blijft de kolom 520 px breed.',
     );
