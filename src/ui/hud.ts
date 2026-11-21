@@ -1,5 +1,6 @@
 import { CONFIG } from '../config';
 import { COMMANDS, type Color, type Command } from '../engine/types';
+import { mountHintButton, setHintPrice, type PriceState } from './coins';
 
 /** Five-point star used on the result card and the map. */
 export const STAR =
@@ -23,8 +24,10 @@ export interface HudModel {
   nudge: Command | null;
   hint: string;
   hintWarn: boolean;
-  /** Text on the hint button, e.g. "Hint" or "Hint · 10". */
-  hintLabel: string;
+  /** Price of the next move, shown on the Hint button before it is tapped. */
+  hintCost: number;
+  /** Whether that price can be paid, is waived, or the move is already revealed. */
+  hintState: PriceState;
 }
 
 /** Callbacks from the level HUD to the game. */
@@ -52,6 +55,7 @@ export class Hud {
   private lastCollected = -1;
 
   constructor(handlers: HudHandlers, isLevelOpen: () => boolean) {
+    mountHintButton(el<HTMLButtonElement>('scan'));
     for (const button of Array.from(document.querySelectorAll<HTMLButtonElement>('.cmd'))) {
       const command = button.dataset.cmd as Command;
       // pointerdown, not click: the game answers on touch, not on release.
@@ -101,8 +105,9 @@ export class Hud {
     el<HTMLButtonElement>('undo').disabled = !m.canUndo;
     el<HTMLButtonElement>('restart').disabled = !m.canUndo;
     el<HTMLButtonElement>('replay').disabled = !m.canReplay;
-    el<HTMLButtonElement>('scan').disabled = !m.canScan;
-    el('hintLabel').textContent = m.hintLabel;
+    const scan = el<HTMLButtonElement>('scan');
+    setHintPrice(scan, m.hintCost, m.hintState);
+    scan.disabled = !m.canScan || m.hintState === 'used';
     const hint = el('hint');
     hint.textContent = m.hint;
     hint.classList.toggle('warn', m.hintWarn);
@@ -128,9 +133,12 @@ export class Hud {
     stars: number;
     primary: CardButton;
     secondary: CardButton;
-    extra?: CardButton & { disabled?: boolean; icon?: boolean };
+    extra?: CardButton;
     note?: string;
-    coins?: string;
+    /** Markup of the reward display (see `rewardBlock`). */
+    reward?: string;
+    /** The paid offer: its button markup (element id `cardOfferButton`) and what a tap does. */
+    offer?: { html: string; action: () => void };
   }): void {
     el('cardTitle').textContent = opts.title;
     el('cardText').textContent = opts.text;
@@ -146,11 +154,14 @@ export class Hud {
     const extra = el<HTMLButtonElement>('cardExtra');
     extra.hidden = !opts.extra;
     extra.onclick = opts.extra?.action ?? null;
-    el('cardExtraLabel').textContent = opts.extra?.label ?? '';
-    el('cardExtraIcon').hidden = opts.extra?.icon !== true;
-    el<HTMLButtonElement>('cardExtra').disabled = opts.extra?.disabled === true;
-    el('cardCoins').hidden = !opts.coins;
-    el('cardCoinsText').textContent = opts.coins ?? '';
+    extra.textContent = opts.extra?.label ?? '';
+    const reward = el('cardReward');
+    reward.hidden = !opts.reward;
+    reward.innerHTML = opts.reward ?? '';
+    const offer = el('cardOffer');
+    offer.hidden = !opts.offer;
+    offer.innerHTML = opts.offer?.html ?? '';
+    if (opts.offer) el('cardOfferButton').onclick = opts.offer.action;
     const note = el('cardNote');
     note.hidden = !opts.note;
     note.textContent = opts.note ?? '';

@@ -26,7 +26,6 @@ export function renderLevels(model: {
   page: number;
   pageSize: number;
   continueLabel: string;
-  coins: number;
   onPick: (index: number) => void;
   onPage: (page: number) => void;
 }): void {
@@ -34,7 +33,6 @@ export function renderLevels(model: {
   const pages = Math.max(1, Math.ceil(nodes.length / pageSize));
   el('mapCount').textContent = `${nodes.filter((n) => n.solved).length}/${nodes.length}`;
   el('continue').textContent = model.continueLabel;
-  el('coins').textContent = String(model.coins);
   const pager = el('pager');
   pager.hidden = pages < 2;
   el('pageLabel').textContent = `${page * pageSize + 1}–${Math.min((page + 1) * pageSize, nodes.length)}`;
