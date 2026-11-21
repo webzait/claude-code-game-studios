@@ -135,10 +135,10 @@ describe('robots turn as a whole', () => {
 });
 
 describe('heading style in the test lab', () => {
-  it('the_default_is_the_whole_robot_turning_and_an_older_save_gets_it', () => {
-    expect(DEFAULT_LAB.heading).toBe('faceUp');
+  it('the_default_is_the_whole_robot_turning_towards_the_player_and_an_older_save_gets_it', () => {
+    expect(DEFAULT_LAB.heading).toBe('towardPlayer');
     const old = migrate({ version: SAVE_VERSION, best: {}, lab: { robots: 'builtin' } }, []);
-    expect(old.lab.heading).toBe('faceUp');
+    expect(old.lab.heading).toBe('towardPlayer');
     expect(old.lab.robots).toBe('builtin');
   });
 

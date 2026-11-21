@@ -46,7 +46,7 @@ export const DEFAULT_LAB: LabSettings = {
   freeHelp: false,
   decor: true,
   robots: 'kit',
-  heading: 'faceUp',
+  heading: 'towardPlayer',
   boardPieces: 'kit',
 };
 
