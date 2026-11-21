@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { CONFIG } from '../../config';
 import type { Color } from '../../engine/types';
 import parts from '../../../data/parts.json';
-import { roundedRect } from './shapes';
+import { roundedBlock, roundedRect } from './shapes';
 
 const F = parts.flockbot;
 
@@ -16,7 +16,7 @@ export interface FlockbotParts {
   readonly face: THREE.Group;
   /** Lower body. */
   readonly romp: THREE.Mesh;
-  /** The two feet. */
+  /** The four feet. */
   readonly feet: THREE.Group;
   /** The symbol on top; turn it around y to show the heading. It points north (-z) at rest. */
   readonly symbol: THREE.Group;
@@ -62,8 +62,8 @@ function sideX(y: number, z: number): number {
 
 /** One half of the body, from the seam to the crown (`dome`) or down to the underside, as a closed skin. */
 function bodyHalf(dome: boolean): THREE.BufferGeometry {
-  const around = 112;
-  const up = 40;
+  const around = 176;
+  const up = 56;
   const [span, round] = dome ? [SHELL_H, F.shellRound] : [ROMP_H, F.rompRound];
   const positions: number[] = [];
   for (let v = 0; v <= up; v++) {
@@ -119,6 +119,50 @@ function wrapped(shape: THREE.Shape, depthAt: (x: number, y: number) => number):
       const p = 1 + (k - 1) * n + u;
       const q = 1 + (k - 1) * n + ((u + 1) % n);
       index.push(p, p + n, q + n, p, q + n, q);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  g.setIndex(index);
+  g.computeVertexNormals();
+  return g;
+}
+
+/**
+ * A raised frame around a rounded rectangle (in x/y, around the origin) laid
+ * onto a curved surface: `band` wide, swelling to `height` in the middle and
+ * coming back down to the surface on both edges, like a soft tube.
+ */
+function wrappedFrame(w: number, h: number, r: number, band: number, height: number, depthAt: (x: number, y: number) => number): THREE.BufferGeometry {
+  const perCorner = 20;
+  const across = 12;
+  const centres = [
+    [w / 2 - r, h / 2 - r, 0],
+    [-(w / 2 - r), h / 2 - r, Math.PI / 2],
+    [-(w / 2 - r), -(h / 2 - r), Math.PI],
+    [w / 2 - r, -(h / 2 - r), Math.PI * 1.5],
+  ] as const;
+  const around = centres.length * (perCorner + 1);
+  const positions: number[] = [];
+  for (let j = 0; j <= across; j++) {
+    const s = j / across;
+    const radius = r - band * s;
+    const lift = height * Math.sin(Math.PI * s) ** 0.6;
+    for (const [cx, cy, from] of centres) {
+      for (let k = 0; k <= perCorner; k++) {
+        const angle = from + (k / perCorner) * (Math.PI / 2);
+        const x = cx + radius * Math.cos(angle);
+        const y = cy + radius * Math.sin(angle);
+        positions.push(x, y, depthAt(x, y) + lift);
+      }
+    }
+  }
+  const index: number[] = [];
+  for (let j = 0; j < across; j++) {
+    for (let u = 0; u < around; u++) {
+      const p = j * around + u;
+      const q = j * around + ((u + 1) % around);
+      index.push(p, q, q + around, p, q + around, p + around);
     }
   }
   const g = new THREE.BufferGeometry();
@@ -201,9 +245,9 @@ const windowMat = new THREE.MeshPhysicalMaterial({ color: F.colors.window, rough
 
 /**
  * Build one Flockbot from its modules, after the asset sheet: a rounded cube
- * split by a fine seam into a domed top shell (with the heading symbol) and a
- * lower body, a wide face window with two large eyes, an ear on each side and
- * two small feet underneath.
+ * split at a hidden seam into a domed top shell (with the heading symbol) and a
+ * lower body, a framed face window with two large eyes, an ear disc on each
+ * side and four small feet underneath.
  */
 export function buildFlockbot(color: Color): FlockbotParts {
   const tones = CONFIG.colors.robots[color];
@@ -238,9 +282,9 @@ export function buildFlockbot(color: Color): FlockbotParts {
   rompGeo.translate(0, -half, 0);
   const romp = new THREE.Mesh(rompGeo, bodyMat);
   // The seam: a dark plate just inside the outline, seen as a fine line between shell and body.
-  const plateGeo = new THREE.ExtrudeGeometry(seamPlate(0.008), { depth: F.seamGap * 2, bevelEnabled: false });
+  const plateGeo = new THREE.ExtrudeGeometry(seamPlate(0.008), { depth: Math.max(0.001, F.seamGap * 2), bevelEnabled: false });
   plateGeo.rotateX(-Math.PI / 2);
-  plateGeo.translate(0, F.seam - F.seamGap, 0);
+  plateGeo.translate(0, F.seam - Math.max(0.002, F.seamGap), 0);
   // And a lid right at the rim, so no view from above looks past the plate into the body.
   const rimLidGeo = new THREE.ShapeGeometry(seamPlate(0));
   rimLidGeo.rotateX(Math.PI / 2);
@@ -253,8 +297,8 @@ export function buildFlockbot(color: Color): FlockbotParts {
     shellGeo,
     [
       [F.seam, tones.main],
-      [F.seam + SHELL_H * 0.7, tones.main],
-      [SHELL_TOP, tones.top],
+      [F.seam + SHELL_H * 0.9, tones.main],
+      [SHELL_TOP, new THREE.Color(tones.main).lerp(new THREE.Color(tones.top), M.topTint).getStyle()],
     ],
     tones.side,
   );
@@ -265,13 +309,24 @@ export function buildFlockbot(color: Color): FlockbotParts {
   lidGeo.translate(0, F.seam + half, 0);
   shell.add(new THREE.Mesh(lidGeo, seamMat));
 
-  // Face module: a window that follows the curve of the front, a thin dark rim around it, two big eyes.
+  // Face module: a soft raised frame in the body colour, the light window sunk inside it, two big eyes.
   const face = new THREE.Group();
   const W = F.face;
   const onFront = (lift: number) => (x: number, y: number): number => frontZ(x, y + W.centre) + lift;
-  const rimMesh = new THREE.Mesh(wrapped(roundedRect(W.width, W.height, W.radius), onFront(W.depth * 0.45)), deepMat);
-  const pane = new THREE.Mesh(wrapped(roundedRect(W.width - 2 * W.rim, W.height - 2 * W.rim, W.radius - W.rim), onFront(W.depth)), windowMat);
-  face.add(rimMesh, pane);
+  const frameMat = new THREE.MeshPhysicalMaterial({
+    color: tones.main,
+    roughness: M.roughness,
+    clearcoat: M.clearcoat,
+    clearcoatRoughness: M.clearcoatRoughness,
+    envMapIntensity: M.reflect,
+    emissive: tones.main,
+    emissiveIntensity: M.glow,
+  });
+  const frame = new THREE.Mesh(wrappedFrame(W.width, W.height, W.radius, W.bezel, W.bezelHeight, onFront(0)), frameMat);
+  // The window reaches a little under the frame, so no body colour shows between them.
+  const inner = W.bezel * 0.8;
+  const pane = new THREE.Mesh(wrapped(roundedRect(W.width - 2 * inner, W.height - 2 * inner, W.radius - inner), onFront(W.depth)), windowMat);
+  face.add(frame, pane);
   const E = F.eye;
   for (const side of [-1, 1]) {
     const x = side * E.spread;
@@ -285,42 +340,35 @@ export function buildFlockbot(color: Color): FlockbotParts {
     ball.scale.set(E.radius, E.radius * 1.06, E.radius * E.bulge);
     const glint = new THREE.Mesh(eyeBall, eyeGlint);
     glint.scale.set(E.glint, E.glint, E.glint * 0.5);
-    glint.position.set(-E.radius * 0.34, E.radius * 0.4, E.radius * E.bulge * 0.8);
-    const spark = new THREE.Mesh(eyeBall, eyeGlint);
-    spark.scale.set(E.spark, E.spark, E.spark * 0.5);
-    spark.position.set(E.radius * 0.36, -E.radius * 0.36, E.radius * E.bulge * 0.78);
-    eye.add(ball, glint, spark);
+    glint.position.set(E.radius * 0.32, E.radius * 0.42, E.radius * E.bulge * 0.8);
+    eye.add(ball, glint);
     face.add(eye);
   }
   face.position.y = W.centre;
 
-  // Ears: a low button on each side, in the light tone of the body.
+  // Ears: a flat light disc on each side.
   const ears = new THREE.Group();
-  const earMat = new THREE.MeshPhysicalMaterial({ color: tones.top, roughness: 0.3, clearcoat: 0.8, emissive: tones.main, emissiveIntensity: M.glow });
-  const earGeo = new THREE.SphereGeometry(1, 28, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+  const earMat = new THREE.MeshPhysicalMaterial({ color: F.colors.window, roughness: 0.3, clearcoat: 0.6, emissive: F.colors.window, emissiveIntensity: 0.55 });
+  const seat = sideX(F.ear.centre, 0) - 0.01;
+  const earThick = F.width / 2 - seat;
+  const earGeo = new THREE.CylinderGeometry(F.ear.radius * 0.94, F.ear.radius, earThick, 40);
   for (const side of [-1, 1]) {
     const ear = new THREE.Mesh(earGeo, earMat);
-    const seat = sideX(F.ear.centre, 0) - 0.012;
-    ear.scale.set(F.ear.radius, F.width / 2 - seat, F.ear.radius);
     ear.rotation.z = (-side * Math.PI) / 2;
-    ear.position.set(side * seat, F.ear.centre, 0);
+    ear.position.set(side * (seat + earThick / 2), F.ear.centre, 0);
     ears.add(ear);
   }
 
-  // Feet: two small rounded pegs tucked under the body.
+  // Feet: four small rounded blocks tucked under the corners of the body.
   const feet = new THREE.Group();
   const P = F.foot;
-  const footTall = P.height + P.sink;
-  const footGeo = new THREE.CapsuleGeometry(P.radius, Math.max(0.001, footTall - P.radius), 8, 24);
-  // Flatten the sole a little so the foot stands instead of balancing on a point.
-  footGeo.translate(0, (footTall + P.radius) / 2, 0);
-  const sole = footGeo.getAttribute('position');
-  for (let i = 0; i < sole.count; i++) if (sole.getY(i) < P.radius) sole.setY(i, sole.getY(i) * 0.45);
-  footGeo.computeVertexNormals();
+  const footGeo = roundedBlock(P.width, P.depth, P.height + P.sink, P.corner, P.bevel);
   for (const side of [-1, 1]) {
-    const foot = new THREE.Mesh(footGeo, deepMat);
-    foot.position.set(side * P.spread, 0, P.forward);
-    feet.add(foot);
+    for (const end of [-1, 1]) {
+      const foot = new THREE.Mesh(footGeo, deepMat);
+      foot.position.set(side * P.spread, 0, end * P.forward);
+      feet.add(foot);
+    }
   }
 
   // Symbol: a raised arrowhead on the shell, turning with the heading.

@@ -131,7 +131,7 @@ function smallPreviews(id: string, color: Color): void {
 }
 
 for (const color of ['red', 'blue', 'yellow'] as const) {
-  card(NAMES[color], `bot-${color}`, buildFlockbot(color).root, 'Bovenschaal met symbool · gezichtsmodule · romp · 2 pootjes. Het symbool draait mee met de richting.');
+  card(NAMES[color], `bot-${color}`, buildFlockbot(color).root, 'Bovenschaal met symbool · gezichtsmodule · romp · 4 pootjes. Het symbool draait mee met de richting.');
   smallPreviews(`bot-${color}`, color);
 }
 
