@@ -91,13 +91,37 @@
   "exit": {
     "size": 1.0,
     "height": 0.2,
-    "radius": 0.15,
-    "bevel": 0.035,
-    "bezel": 0.93,
-    "bezelWidth": 0.1,
+    "radius": 0.17,
+    "bevel": 0.03,
+    "bezelWidth": 0.115,
+    "crestOuter": 0.05,
+    "crestInner": 0.035,
+    "crestShade": 0.45,
+    "rimLight": 0.55,
     "bezelHeight": 0.05,
-    "check": 0.56,
-    "checkDepth": 0.04
+    "check": 0.52,
+    "checkWidth": 0.125,
+    "checkDepth": 0.035,
+    "checkBevel": 0.012,
+    "checkPath": {
+      "start": [-0.42, -0.03],
+      "elbow": [-0.1, -0.32],
+      "end": [0.47, 0.34],
+      "fillet": 0.3
+    },
+    "glowReach": 0.34,
+    "glowFalloff": 1.3,
+    "glowLift": 0.006,
+    "glowPulse": {
+      "low": 0.6,
+      "high": 1.0,
+      "scale": 1.05,
+      "seconds": 2.4
+    },
+    "fieldView": {
+      "tilt": 14,
+      "cellPx": 42
+    }
   },
   "rim": {
     "width": 0.267,

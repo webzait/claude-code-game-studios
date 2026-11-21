@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { CONFIG } from '../../config';
 import parts from '../../../data/parts.json';
-import { profiledBlock, roundedBlock, roundedRect, slabOf, type ProfileRing } from './shapes';
+import { profiledBlock, roundedFrame, roundedRect, slabOf, type ProfileRing } from './shapes';
 
 const K = CONFIG.colors.kit;
 const P = parts;
@@ -16,10 +16,9 @@ const mats = {
   obstacle: new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.42, clearcoat: 0.3, clearcoatRoughness: 0.35 }),
   obstacleStud: new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.36, clearcoat: 0.45, clearcoatRoughness: 0.3 }),
   obstacleSeat: new THREE.MeshBasicMaterial({ color: K.obstacleBolt }),
-  exitBase: glossy(K.exitShadow),
-  exitFace: new THREE.MeshPhysicalMaterial({ color: K.exit, roughness: 0.25, clearcoat: 0.6, emissive: K.exit, emissiveIntensity: 0.35 }),
-  exitBezel: new THREE.MeshPhysicalMaterial({ color: K.exitTop, roughness: 0.25, clearcoat: 0.6, emissive: K.exitTop, emissiveIntensity: 0.3 }),
-  check: glossy(K.check, 0.3, 0.5),
+  exitBase: new THREE.MeshPhysicalMaterial({ color: '#FFFFFF', vertexColors: true, roughness: 0.3, clearcoat: 0.5, clearcoatRoughness: 0.3, emissive: K.exit, emissiveIntensity: 0.08 }),
+  exitFace: new THREE.MeshPhysicalMaterial({ color: K.exitTop, roughness: 0.3, clearcoat: 0.5, clearcoatRoughness: 0.3, emissive: K.exitTop, emissiveIntensity: 0.3 }),
+  check: new THREE.MeshPhysicalMaterial({ color: K.check, roughness: 0.3, clearcoat: 0.5, clearcoatRoughness: 0.3, emissive: K.check, emissiveIntensity: 0.25 }),
   rim: glossy(K.frame, 0.32, 0.5),
   underlay: glossy(K.frameShadow, 0.45, 0.1),
 };
@@ -220,36 +219,139 @@ export function buildObstacle(): THREE.Group {
   return shadowed(block);
 }
 
-/** Tick mark with square ends, as one outline. */
-function checkShape(size: number): THREE.Shape {
+/**
+ * Tick mark as one outline: a thick stroke from `a` through the elbow `b` to
+ * `c`, `width` wide, with round ends, a round outer elbow and a small fillet
+ * in the inner one. Sized by `size`, the tick's overall span.
+ */
+function checkShape(size: number, width: number): THREE.Shape {
+  const c = P.exit.checkPath;
+  const at = (p: number[]): THREE.Vector2 => new THREE.Vector2(p[0] * size, p[1] * size);
+  const [a, b, e] = [at(c.start), at(c.elbow), at(c.end)];
+  const w = width / 2;
+  const fillet = w * c.fillet;
+  const d1 = b.clone().sub(a).normalize();
+  const d2 = e.clone().sub(b).normalize();
+  const t1 = Math.atan2(d1.y, d1.x);
+  const t2 = Math.atan2(d2.y, d2.x);
+  // Left-hand normals; the stroke turns left at the elbow, so the inner corner lies on this side.
+  const n1 = new THREE.Vector2(-d1.y, d1.x);
+  const n2 = new THREE.Vector2(-d2.y, d2.x);
+  const inner = b.clone().add(n1.clone().add(n2).multiplyScalar((w + fillet) / (1 + n1.dot(n2))));
   const s = new THREE.Shape();
-  const k = size / 2;
-  s.moveTo(-0.92 * k, 0.02 * k);
-  s.lineTo(-0.62 * k, 0.32 * k);
-  s.lineTo(-0.22 * k, -0.08 * k);
-  s.lineTo(0.62 * k, 0.76 * k);
-  s.lineTo(0.92 * k, 0.46 * k);
-  s.lineTo(-0.22 * k, -0.68 * k);
+  s.moveTo(a.x - n1.x * w, a.y - n1.y * w);
+  s.lineTo(b.x - n1.x * w, b.y - n1.y * w);
+  s.absarc(b.x, b.y, w, t1 - Math.PI / 2, t2 - Math.PI / 2, false);
+  s.lineTo(e.x - n2.x * w, e.y - n2.y * w);
+  s.absarc(e.x, e.y, w, t2 - Math.PI / 2, t2 + Math.PI / 2, false);
+  s.lineTo(inner.x - n2.x * fillet, inner.y - n2.y * fillet);
+  s.absarc(inner.x, inner.y, fillet, t2 - Math.PI / 2, t1 - Math.PI / 2, true);
+  s.lineTo(a.x + n1.x * w, a.y + n1.y * w);
+  s.absarc(a.x, a.y, w, t1 + Math.PI / 2, t1 + Math.PI * 1.5, false);
   s.closePath();
   return s;
 }
 
-/** 6. Exit: a tile-high green pad with a raised bezel, an inset bright face and an embossed tick. */
+/** Distance from (x, y) to a rounded square of half-size `half` and corner radius `r`; negative inside. */
+function roundedSquareDistance(x: number, y: number, half: number, r: number): number {
+  const qx = Math.abs(x) - half + r;
+  const qy = Math.abs(y) - half + r;
+  return Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - r;
+}
+
+let exitGlowMap: THREE.DataTexture | null = null;
+/** Soft light around the pad: brightest at its edge, fading to nothing `glowReach` further out. Made once. */
+function exitGlowTexture(): THREE.DataTexture {
+  if (exitGlowMap) return exitGlowMap;
+  const e = P.exit;
+  const n = 128;
+  const span = e.size + 2 * e.glowReach;
+  const near = new THREE.Color(K.exitGlow);
+  const far = new THREE.Color(K.exitTop);
+  const mixed = new THREE.Color();
+  const data = new Uint8Array(n * n * 4);
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+    const x = ((i + 0.5) / n - 0.5) * span;
+    const y = ((j + 0.5) / n - 0.5) * span;
+    const out = Math.min(1, Math.max(0, roundedSquareDistance(x, y, e.size / 2, e.radius) / e.glowReach));
+    mixed.copy(near).lerp(far, out);
+    data.set([mixed.r * 255, mixed.g * 255, mixed.b * 255, 255 * (1 - out) ** e.glowFalloff], (j * n + i) * 4);
+  }
+  exitGlowMap = new THREE.DataTexture(data, n, n, THREE.RGBAFormat);
+  exitGlowMap.colorSpace = THREE.SRGBColorSpace;
+  exitGlowMap.magFilter = THREE.LinearFilter;
+  exitGlowMap.minFilter = THREE.LinearFilter;
+  exitGlowMap.needsUpdate = true;
+  return exitGlowMap;
+}
+
+/**
+ * 6. Exit: a green pad as high as a floor tile, so robots drive onto it. Its
+ * outer wall rises a little further into a rounded bezel; inside the bezel
+ * lies a bright face at floor height with a thick rounded tick in relief.
+ *
+ * A flat patch of light lies around the pad, just above the neighbouring
+ * tiles. It is the child named `exit-glow`, also at `userData.glow`, with a
+ * material of its own, so the game can pulse it: slowly swing its
+ * `material.opacity` between `glowPulse.low` and `glowPulse.high` and its
+ * x/z scale up to `glowPulse.scale`, one cycle per `glowPulse.seconds`. The
+ * glow is light, not body, and does not count towards the pad's measured size.
+ */
 export function buildExit(): THREE.Group {
   const e = P.exit;
   const pad = new THREE.Group();
-  pad.add(new THREE.Mesh(roundedBlock(e.size, e.size, e.height, e.radius, e.bevel), mats.exitBase));
-  const outer = roundedRect(e.size * e.bezel, e.size * e.bezel, e.radius);
-  const inner = e.size * e.bezel - 2 * e.bezelWidth;
-  outer.holes.push(roundedRect(inner, inner, Math.max(0.02, e.radius - e.bezelWidth)));
-  const bezel = new THREE.Mesh(slabOf(outer, e.bezelHeight, 0.012), mats.exitBezel);
-  bezel.position.y = e.height - 0.005;
-  const face = new THREE.Mesh(slabOf(roundedRect(inner + 0.01, inner + 0.01, Math.max(0.02, e.radius - e.bezelWidth)), 0.02), mats.exitFace);
-  face.position.y = e.height - 0.008;
-  const check = new THREE.Mesh(slabOf(checkShape(e.check), e.checkDepth, 0.01), mats.check);
-  check.position.y = e.height + 0.01;
-  pad.add(bezel, face, check);
-  return shadowed(pad);
+  const top = e.height + e.bezelHeight;
+  const inner = e.size - 2 * e.bezelWidth;
+  const innerRadius = Math.max(0.02, e.radius - e.bezelWidth);
+
+  // Wall and bezel in one piece. The cross-section runs from the foot up the outer wall, over the
+  // rounded crest and down the inner wall to the face; each point carries its own tone.
+  const profile: THREE.Vector2[] = [];
+  const tones: THREE.Color[] = [];
+  const tone = (hex: string, towards: string, by: number): THREE.Color => new THREE.Color(hex).lerp(new THREE.Color(towards), by);
+  const point = (inset: number, y: number, color: THREE.Color): void => {
+    profile.push(new THREE.Vector2(inset, y));
+    tones.push(color);
+  };
+  const arcSteps = 6;
+  const crest = tone(K.exit, K.exitShadow, e.crestShade).getStyle();
+  point(e.bevel, 0, new THREE.Color(K.exitShadow));
+  point(0, e.bevel, new THREE.Color(K.exitShadow));
+  for (let k = 0; k <= arcSteps; k++) {
+    const t = (k / arcSteps) * (Math.PI / 2);
+    // The shoulder catches the light: a bright line all round, as on the styled reference.
+    point(e.crestOuter * (1 - Math.cos(t)), top - e.crestOuter * (1 - Math.sin(t)), tone(K.exitGlow, crest, Math.abs(k / arcSteps - e.rimLight) / Math.max(e.rimLight, 1 - e.rimLight)));
+  }
+  for (let k = 0; k <= arcSteps; k++) {
+    const t = (k / arcSteps) * (Math.PI / 2);
+    point(e.bezelWidth - e.crestInner * (1 - Math.sin(t)), top - e.crestInner * (1 - Math.cos(t)), tone(crest, K.exitShadow, k / arcSteps));
+  }
+  point(e.bezelWidth, e.height - 0.01, new THREE.Color(K.exitShadow));
+  const wallShape = roundedFrame(e.size, e.radius, profile);
+  const colors = new Float32Array(wallShape.getAttribute('position').count * 3);
+  for (let i = 0; i < colors.length / 3; i++) tones[i % tones.length].toArray(colors, i * 3);
+  wallShape.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  const wall = new THREE.Mesh(wallShape, mats.exitBase);
+
+  const face = new THREE.Mesh(slabOf(roundedRect(inner + 0.01, inner + 0.01, innerRadius), e.height), mats.exitFace);
+  const check = new THREE.Mesh(slabOf(checkShape(e.check, e.checkWidth), e.checkDepth, e.checkBevel), mats.check);
+  check.position.y = e.height;
+  pad.add(wall, face, check);
+  shadowed(pad);
+  check.castShadow = false;
+
+  const span = e.size + 2 * e.glowReach;
+  const light = new THREE.PlaneGeometry(span, span);
+  light.rotateX(-Math.PI / 2);
+  // Keep the light out of the pad's bounding box: see the doc comment.
+  light.boundingBox = new THREE.Box3(new THREE.Vector3(-e.size / 2, 0, -e.size / 2), new THREE.Vector3(e.size / 2, 0, e.size / 2));
+  const glow = new THREE.Mesh(light, new THREE.MeshBasicMaterial({ map: exitGlowTexture(), transparent: true, opacity: e.glowPulse.high, depthWrite: false, toneMapped: false }));
+  glow.name = 'exit-glow';
+  glow.position.y = e.height + e.glowLift;
+  glow.renderOrder = 1;
+  pad.add(glow);
+  pad.userData.glow = glow;
+  return pad;
 }
 
 /** One point of the rim's cross-section: `u` outward from the inner face, `v` up from the floor. */
