@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { CONFIG } from '../../config';
 import type { Color } from '../../engine/types';
 import parts from '../../../data/parts.json';
-import { roundedRect } from './shapes';
+import { roundedBlock, roundedRect } from './shapes';
 
 const F = parts.flockbot;
 
@@ -359,16 +359,10 @@ export function buildFlockbot(color: Color): FlockbotParts {
     ears.add(ear);
   }
 
-  // Feet: four small rounded pegs tucked under the corners of the body.
+  // Feet: four small rounded blocks tucked under the corners of the body.
   const feet = new THREE.Group();
   const P = F.foot;
-  const footTall = P.height + P.sink;
-  const footGeo = new THREE.CapsuleGeometry(P.radius, Math.max(0.001, footTall - P.radius), 8, 24);
-  // Flatten the sole a little so the foot stands instead of balancing on a point.
-  footGeo.translate(0, (footTall + P.radius) / 2, 0);
-  const sole = footGeo.getAttribute('position');
-  for (let i = 0; i < sole.count; i++) if (sole.getY(i) < P.radius) sole.setY(i, sole.getY(i) * 0.45);
-  footGeo.computeVertexNormals();
+  const footGeo = roundedBlock(P.width, P.depth, P.height + P.sink, P.corner, P.bevel);
   for (const side of [-1, 1]) {
     for (const end of [-1, 1]) {
       const foot = new THREE.Mesh(footGeo, deepMat);
