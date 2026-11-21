@@ -7,6 +7,7 @@ import hintIcon from '../../assets/turnflock/ui/hint.webp';
 import { boardPixels, buildExit, buildFloorTile, buildObstacle, buildRim, buildRimCorner, buildRimEdge, buildUnderlay, rimLayout } from '../render/parts/board';
 import { buildFlockbot } from '../render/parts/flockbot';
 import '../ui/tf-buttons.css';
+import '../ui/tf-scene.css';
 import './parts.css';
 import decorBushLarge from '../../assets/turnflock/decor/decor-bush-large.webp';
 import decorBushSmall from '../../assets/turnflock/decor/decor-bush-small.webp';

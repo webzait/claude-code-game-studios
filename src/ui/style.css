@@ -22,18 +22,9 @@ html, body {
 }
 button { font: inherit; color: inherit; cursor: pointer; }
 button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
-#backdrop {
-  position: fixed; inset: 0; z-index: 0; background: var(--harbor) center top / cover no-repeat;
-  filter: saturate(1.35) contrast(1.08);
-}
-#backdrop::after {
-  content: ""; position: absolute; inset: 0;
-  background: linear-gradient(180deg, rgba(78, 175, 248, .10) 0%, rgba(203, 239, 255, .16) 40%, rgba(56, 184, 232, .14) 100%);
-}
-.bush { filter: saturate(1.2) contrast(1.05); position: fixed; bottom: -14px; width: min(44vw, 230px); z-index: 0; pointer-events: none; }
-.bush.left { left: -70px; }
-.bush.right { right: -70px; transform: scaleX(-1); }
-.no-decor #backdrop, .no-decor .bush { display: none; }
+/* The scene (backdrop and bushes, see tf-scene.css) fills the screen behind everything. */
+#backdrop { position: fixed; inset: 0; z-index: 0; width: auto; height: auto; transform: none; }
+.no-decor #backdrop { display: none; }
 #app {
   z-index: 1;
   position: fixed; inset: 0; display: flex; flex-direction: column;

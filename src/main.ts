@@ -1,5 +1,6 @@
 import './ui/style.css';
 import './ui/tf-buttons.css';
+import './ui/tf-scene.css';
 import { Sfx } from './audio';
 import { CONFIG } from './config';
 import { step } from './engine/engine';
@@ -17,8 +18,10 @@ import { loadKit } from './render/kit';
 import coinIcon from '../assets/turnflock/ui/coin.webp';
 import hintIcon from '../assets/turnflock/ui/hint.webp';
 import extraMovesIcon from '../assets/turnflock/ui/extra-moves.webp';
-import harborImage from '../assets/turnflock/bg/harbor.jpg';
-import bushImage from '../assets/turnflock/decor/bush.webp';
+import decorLarge from '../assets/turnflock/decor/decor-bush-large.webp';
+import decorSmall from '../assets/turnflock/decor/decor-bush-small.webp';
+import decorClover from '../assets/turnflock/decor/decor-tuft-clover.webp';
+import decorSprig from '../assets/turnflock/decor/decor-sprig-top.webp';
 import { SolverClient } from './solver/client';
 import type { CertifyResult } from './solver/requests';
 import { el, Hud } from './ui/hud';
@@ -129,9 +132,9 @@ class Game {
     el('settingsBack').addEventListener('click', () => this.tap(() => this.show('map')));
     new ResizeObserver(() => this.view.resize()).observe(document.querySelector('.stage') as HTMLElement);
     // Kit artwork: images are bundled; the page sets them here so one build works from any folder.
-    document.documentElement.style.setProperty('--harbor', `url("${harborImage}")`);
     for (const img of Array.from(document.querySelectorAll<HTMLImageElement>('img[data-art]'))) {
-      img.src = { coin: coinIcon, hint: hintIcon, extra: extraMovesIcon, bush: bushImage }[img.dataset.art as 'coin' | 'hint' | 'extra' | 'bush'];
+      const art: Record<string, string> = { coin: coinIcon, hint: hintIcon, extra: extraMovesIcon, 'decor-large': decorLarge, 'decor-small': decorSmall, 'decor-clover': decorClover, 'decor-sprig': decorSprig };
+      img.src = art[img.dataset.art ?? ''] ?? '';
     }
     this.applySettings();
     this.show('map');
