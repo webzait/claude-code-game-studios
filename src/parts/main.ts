@@ -352,4 +352,40 @@ for (const [cols, rows] of [[5, 5], [6, 6], [8, 8], [4, 7]] as const) {
   document.getElementById('sheet')!.appendChild(el);
 }
 
+// Backdrop: the sunny harbour in layers, shown in phone frames with grey blocks where the game's zones are.
+{
+  const scene = '<div class="tf-bg-scene"><i class="tf-bg-glint tf-bg-far"></i><i class="tf-bg-glint tf-bg-mid"></i><i class="tf-bg-glint tf-bg-near"></i><i class="tf-bg-quay tf-bg-left"></i><i class="tf-bg-quay tf-bg-right"></i></div>';
+  const ui = (board: boolean): string => `<div class="tf-bg-ui"><div class="tf-bg-top"><i></i><i></i><i></i></div><div class="tf-bg-play">${board ? '<i></i>' : ''}</div><div class="tf-bg-controls"><div><i></i><i></i><i></i></div><div><i></i><i></i><i></i><i></i></div></div></div>`;
+  /** One phone frame at its real size in CSS pixels. `inner` goes on top of the backdrop. */
+  const phone = (id: string, w: number, h: number, inner: string, label: string, variant = ''): string =>
+    `<figure class="tf-bg-shot"><div class="tf-bg-phone" id="${id}" style="width:${w}px;height:${h}px"><div class="tf-bg ${variant}">${scene}</div>${inner}</div><figcaption>${label}</figcaption></figure>`;
+  const SCREENS: [number, number][] = [[320, 568], [353, 768], [390, 844], [430, 932], [768, 1024]];
+  const add = (id: string, title: string, dims: string, body: string, note: string): HTMLElement => {
+    const el = document.createElement('section');
+    el.className = 'card wide';
+    el.id = id;
+    el.innerHTML = `<h2>${title}</h2><p class="dims">${dims}</p>${body}<p class="note">${note}</p>`;
+    document.getElementById('sheet')!.appendChild(el);
+    return el;
+  };
+  const row = (prefix: string, inner: string): string => `<div class="tf-bg-row">${SCREENS.map(([w, h]) => phone(`${prefix}-${w}`, w, h, inner, `${w} × ${h}`)).join('')}</div>`;
+
+  add('bg-zones', 'Achtergrond · zonnige haven met schermzones', 'grijze blokken: bovenbalk 96 px · bord tot 366 px · knoppen 180 px', row('bg-zones', ui(true)),
+    'De horizon ligt op 22% van de hoogte: in de strook tussen bovenbalk en bord. Huisjes en kranen staan alleen links en rechts; achter bord en knoppen is het alleen rustig water. Onderhoeken blijven vrij voor de struiken.');
+  add('bg-open', 'Achtergrond · bordvlak leeg', 'zelfde schermen, zonder bord', row('bg-open', ui(false)),
+    'Zonder bord: het midden is water met zachte glans, zonder voorwerpen.');
+  add('bg-layers', 'Achtergrond · lagen', 'lucht en water zijn CSS-kleurverlopen · 3 kleine afbeeldingen uit het origineel', `<div class="tf-bg-row">
+    ${phone('bg-layer-all', 390, 844, '', 'alles samen')}
+    ${phone('bg-layer-base', 390, 844, '', '1 · lucht, horizon en water (CSS)', 'tf-bg-only-base')}
+    ${phone('bg-layer-quays', 390, 844, '', '2 · kades links en rechts', 'tf-bg-only-quays')}
+    ${phone('bg-layer-glints', 390, 844, '', '3 · glans op het water', 'tf-bg-only-glints')}
+    <figure class="tf-bg-shot"><div class="tf-bg-phone" id="bg-layer-old" style="width:390px;height:844px"><div class="tf-bg-old"></div></div><figcaption>ter vergelijking: de achtergrond van nu</figcaption></figure>
+  </div>`, 'De kades zijn uit het originele beeld gesneden, licht onscherp gemaakt en lopen aan de randen doorzichtig uit, zodat ze op elk schermformaat aan de zijkant blijven staan.');
+  const motion = add('bg-motion', 'Achtergrond · optie: trage waterglans', 'staat standaard uit · uit bij "minder beweging" in de systeeminstellingen', `<label class="tf-bg-toggle"><input type="checkbox" id="bg-motion-toggle" /> Beweging aan</label><div class="tf-bg-row">${phone('bg-motion-390', 390, 844, ui(true), '390 × 844')}</div>`,
+    'Alleen de glans op het water schuift en ademt heel langzaam (38 s en 9 s). Alleen CSS, geen extra afbeeldingen.');
+  motion.querySelector<HTMLInputElement>('#bg-motion-toggle')!.addEventListener('change', (event) => {
+    motion.querySelector('.tf-bg')!.classList.toggle('tf-bg-motion', (event.target as HTMLInputElement).checked);
+  });
+}
+
 document.body.dataset.ready = 'true';
