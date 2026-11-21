@@ -97,7 +97,8 @@ describe('save', () => {
     const store = memory({ [LEGACY_KEY]: JSON.stringify({ solved: [0, 1], level: 2 }) });
     const save = loadSave(store, ids);
     expect(save.version).toBe(SAVE_VERSION);
-    expect(Object.keys(save.best)).toEqual([ids[0], ids[1]]);
+    // Positions are those of the first prototype's order, not of today's.
+    expect(Object.keys(save.best)).toEqual(['follow-the-arrow', 'one-color-turns']);
   });
 
   it('prefers the current format over the old one', () => {

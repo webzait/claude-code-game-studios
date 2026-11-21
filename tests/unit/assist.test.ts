@@ -28,13 +28,13 @@ describe('Backup Signals fairness', () => {
   });
 
   it('reports "not assessed" rather than "hopeless" when the search is cut short', () => {
-    const big = LEVELS[LEVELS.length - 1];
+    const big = LEVELS.find((l) => l.id === 'one-command-many-consequences')!;
     expect(checkRescue(big.board, big.start, 12, DEFAULT_RULES, 20).kind).toBe('not-assessed');
   });
 });
 
 describe('Route Scan', () => {
-  const level = LEVELS[0];
+  const level = LEVELS.find((l) => l.id === 'follow-the-arrow')!;
   const budget = level.par + 2;
 
   it('on a winnable position, names a first move that keeps it winnable', () => {
@@ -72,7 +72,7 @@ describe('Route Scan', () => {
   });
 
   it('is "not assessed" when cut short', () => {
-    const big = LEVELS[LEVELS.length - 1];
+    const big = LEVELS.find((l) => l.id === 'one-command-many-consequences')!;
     const session = new Session(big, { budget: big.par + 2 });
     session.apply('blue');
     expect(routeScan(big.board, session.states, session.totalBudget, session.rules, 20).kind).toBe('not-assessed');

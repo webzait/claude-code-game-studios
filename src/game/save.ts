@@ -44,7 +44,7 @@ const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'obj
 
 /**
  * Bring any stored value to the current format. Version 1 stored solved level
- * positions; they are mapped to ids through `levelIds`. Unknown or damaged
+ * positions; they are mapped to ids through `save.v1LevelOrder` in the config. Unknown or damaged
  * data gives a fresh save rather than an error.
  */
 export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
@@ -53,7 +53,9 @@ export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
   if (raw.version === undefined && Array.isArray(raw.solved)) {
     // Version 1: { solved: number[], level: number }. Best scores were not kept; record par-unknown wins as 0.
     for (const index of raw.solved) {
-      if (typeof index === 'number' && levelIds[index]) save.best[levelIds[index]] = 0;
+      // Positions meant the level order of that time, kept in config; today's order is a different one.
+      const id = typeof index === 'number' ? CONFIG.save.v1LevelOrder[index] : undefined;
+      if (id && levelIds.includes(id)) save.best[id] = 0;
     }
     return save;
   }
