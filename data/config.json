@@ -121,7 +121,7 @@
       "cornerRadius": 0.2,
       "wallFill": 0.9,
       "wallHeight": 0.72,
-      "robotFill": 0.84
+      "robotFill": 0.9
     }
   },
   "levelsPerPage": 20,
