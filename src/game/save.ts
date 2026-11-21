@@ -1,4 +1,5 @@
 import { CONFIG } from '../config';
+import { HEADING_STYLES, type HeadingStyle } from '../render/heading';
 import { DEFAULT_LAB, type LabSettings } from './lab';
 
 /** Current save format. Raise it and extend `migrate` when the shape changes. */
@@ -84,6 +85,8 @@ export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
     if (typeof lab.freeHelp === 'boolean') save.lab.freeHelp = lab.freeHelp;
     if (typeof lab.decor === 'boolean') save.lab.decor = lab.decor;
     if (lab.robots === 'kit' || lab.robots === 'builtin') save.lab.robots = lab.robots;
+    // Saves from before the switch existed have no heading style: they get the default, the whole robot turning.
+    if (HEADING_STYLES.includes(lab.heading as HeadingStyle)) save.lab.heading = lab.heading as HeadingStyle;
     if (lab.boardPieces === 'kit' || lab.boardPieces === 'builtin') save.lab.boardPieces = lab.boardPieces;
   }
   return save;

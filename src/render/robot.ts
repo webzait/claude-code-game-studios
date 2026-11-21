@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { CONFIG } from '../config';
 import type { Color } from '../engine/types';
+import { bodyYaw, travelAxis, type HeadingStyle } from './heading';
 import { fuse } from './kit';
 import { buildFlockbot } from './parts/flockbot';
 import PARTS from '../../data/parts.json';
@@ -12,12 +13,10 @@ export interface RobotView {
   readonly color: Color;
   /** Outer group: board position. */
   readonly root: THREE.Group;
-  /** Body: always faces the player; hops and squashes. */
+  /** Body: hops and squashes. It is never turned itself, so its axes stay the board's axes. */
   readonly body: THREE.Group;
-  /** Head cap with the arrow: turns to show the heading. */
-  readonly cap: THREE.Group;
   readonly lids: THREE.Mesh[];
-  /** Point the arrow (and the gaze) along a heading, in radians. */
+  /** Show a heading, in radians: turns the whole robot, or only its symbol in the `symbol` style. */
   readonly aim: (angle: number) => void;
   /** Cumulative heading in radians, so turns always animate clockwise. */
   angle: number;
@@ -52,15 +51,20 @@ function makeArrow(): THREE.BufferGeometry {
 }
 
 /**
- * Build one robot. The body and its big eyes always face the player; the
- * arrow on its head turns to show where it is heading, and the pupils glance
- * the same way.
+ * Build one built-in robot. It stands upright, so both turning styles are the
+ * same here: the whole robot turns to its heading, with the arrow on its head
+ * fixed pointing the way it faces. In the `symbol` style the body and its big
+ * eyes keep facing the player, only the arrow turns and the pupils glance
+ * along it.
  */
-export function buildRobot(id: number, color: Color): RobotView {
+export function buildRobot(id: number, color: Color, style: HeadingStyle = 'faceUp'): RobotView {
   const tint = new THREE.Color(CONFIG.colors[color]);
   const root = new THREE.Group();
+  const hop = new THREE.Group();
+  root.add(hop);
+  // Everything is built on `body`, which turns inside the group that hops and squashes.
   const body = new THREE.Group();
-  root.add(body);
+  hop.add(body);
 
   const shell = new THREE.Mesh(
     shared.body,
@@ -116,14 +120,20 @@ export function buildRobot(id: number, color: Color): RobotView {
   cap.add(arrow);
   body.add(cap);
 
+  // The arrow was drawn pointing away from the face; fixed to the body it points the way the robot faces.
+  if (style !== 'symbol') cap.rotation.y = Math.PI;
   const aim = (angle: number): void => {
+    if (style !== 'symbol') {
+      body.rotation.y = bodyYaw(angle);
+      return;
+    }
     cap.rotation.y = angle;
     // Heading as seen by the player: -sin is right/left, cos is away/toward.
     const dx = -Math.sin(angle);
     const dz = -Math.cos(angle);
     for (const pupil of pupils) pupil.position.set(dx * 0.045, -dz * 0.04, 0);
   };
-  return { id, color, root, body, cap, lids, aim, angle: 0, blinkIn: 1 + ((id * 37) % 23) / 6, visibleScale: 1 };
+  return { id, color, root, body: hop, lids, aim, angle: 0, blinkIn: 1 + ((id * 37) % 23) / 6, visibleScale: 1 };
 }
 
 /** The kit body is 0.89 wide; scaled so the robot fills the configured share of a tile. */
@@ -232,15 +242,28 @@ export function buildKitRobot(id: number, color: Color, template: THREE.Group): 
   const aim = (angle: number): void => {
     cap.rotation.y = angle;
   };
-  return { id, color, root, body, cap, lids: [], aim, angle: 0, blinkIn: 1e9, visibleScale: 1 };
+  return { id, color, root, body, lids: [], aim, angle: 0, blinkIn: 1e9, visibleScale: 1 };
 }
 
+/** Corners of the Flockbot part's bounding box in its own space: it stands on y = 0 and faces +z. */
+const PART_CORNERS = [-1, 1].flatMap((x) => [0, 1].flatMap((y) => [-1, 1].map((z) => new THREE.Vector3((x * PARTS.flockbot.width) / 2, y * PARTS.flockbot.height, (z * PARTS.flockbot.depth) / 2))));
+
 /**
- * Build a robot from the standalone Flockbot part. Its face looks at the
- * player and only the symbol on top turns with the heading. The camera looks
- * almost straight down, so the robot is leaned back to show its face.
+ * Build a robot from the standalone Flockbot part. The camera looks almost
+ * straight down (`viewTilt` radians away from it), so the robot is leaned to
+ * show more than its top.
+ *
+ * - `faceUp`: the whole robot turns, and leans back along its own axis, so its
+ *   face looks up at the camera in every heading and the symbol on top, fixed
+ *   to the body, points the way it faces. It turns around the line of sight
+ *   rather than the board's upright, so every heading is the same picture
+ *   turned a quarter: the eyes are as large facing away as facing the player.
+ * - `towardPlayer`: the whole robot turns inside a lean that always goes
+ *   towards the player. Facing the player it shows its face, facing away its
+ *   back, sideways an ear.
+ * - `symbol`: the face keeps looking at the player and only the symbol turns.
  */
-export function buildPartsRobot(id: number, color: Color): RobotView {
+export function buildPartsRobot(id: number, color: Color, style: HeadingStyle = 'faceUp', viewTilt = 0): RobotView {
   const bot = buildFlockbot(color);
   const scale = CONFIG.board.grid.robotFill;
   const tilt = CONFIG.robot.lean;
@@ -248,19 +271,70 @@ export function buildPartsRobot(id: number, color: Color): RobotView {
   const body = new THREE.Group();
   root.add(body);
   const lean = new THREE.Group();
-  lean.rotation.x = -tilt;
   // A little lower than the part's full height, so a leaned robot stays within its own cell on screen.
   lean.scale.set(scale, scale * CONFIG.robot.squash, scale);
-  // Leaning back pushes the rear bottom edge down; lift the robot so it still rests on the tile.
-  lean.position.y = (PARTS.flockbot.depth / 2) * Math.sin(tilt) * scale;
-  body.add(lean);
-  // The symbol turns on its own; everything else is fused into a few meshes.
-  bot.root.remove(bot.symbol);
-  const cap = new THREE.Group();
-  cap.add(bot.symbol);
-  lean.add(fuse(bot.root), cap);
+  if (style !== 'faceUp') {
+    lean.rotation.x = -tilt;
+    // Leaning back pushes the rear bottom edge down; lift the robot so it still rests on the tile.
+    lean.position.y = (PARTS.flockbot.depth / 2) * Math.sin(tilt) * scale;
+    body.add(lean);
+    if (style === 'symbol') {
+      // The symbol turns on its own; everything else is fused into a few meshes.
+      bot.root.remove(bot.symbol);
+      const cap = new THREE.Group();
+      cap.add(bot.symbol);
+      lean.add(fuse(bot.root), cap);
+      return { id, color, root, body, lids: [], aim: (angle) => void (cap.rotation.y = angle), angle: 0, blinkIn: 1e9, visibleScale: 1 };
+    }
+    // The symbol rests pointing to the back of the part; fixed to the body it points the way the robot faces.
+    bot.symbol.rotation.y = Math.PI;
+    const turn = new THREE.Group();
+    turn.add(fuse(bot.root));
+    lean.add(turn);
+    return { id, color, root, body, lids: [], aim: (angle) => void (turn.rotation.y = bodyYaw(angle)), angle: 0, blinkIn: 1e9, visibleScale: 1 };
+  }
+
+  const T = CONFIG.robot.faceUp;
+  // `sight` tips the turning axis from the board's upright to the line of sight; the lean is measured from there.
+  const sight = new THREE.Group();
+  sight.rotation.x = viewTilt * T.followCamera;
+  const turn = new THREE.Group();
+  lean.rotation.x = -(tilt + T.extraLean + viewTilt * T.followCamera);
+  bot.symbol.rotation.y = Math.PI;
+  lean.add(fuse(bot.root));
+  turn.add(lean);
+  sight.add(turn);
+  body.add(sight);
+  const corner = new THREE.Vector3();
   const aim = (angle: number): void => {
-    cap.rotation.y = angle;
+    turn.rotation.y = bodyYaw(angle);
+    // Leaning moves the robot off its cell and pushes an edge through the tile: find where its box
+    // ends up, as the camera sees it, then centre that on the cell and rest its lowest corner on the tile.
+    sight.position.set(0, 0, 0);
+    sight.updateMatrix();
+    turn.updateMatrix();
+    lean.updateMatrix();
+    let low = Infinity;
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minV = Infinity;
+    let maxV = -Infinity;
+    for (const c of PART_CORNERS) {
+      corner.copy(c).applyMatrix4(lean.matrix).applyMatrix4(turn.matrix).applyMatrix4(sight.matrix);
+      low = Math.min(low, corner.y);
+      // Across the screen, and up it: depth seen at the camera's angle less the height seen from above.
+      const v = corner.z * Math.cos(viewTilt) - corner.y * Math.sin(viewTilt);
+      minX = Math.min(minX, corner.x);
+      maxX = Math.max(maxX, corner.x);
+      minV = Math.min(minV, v);
+      maxV = Math.max(maxV, v);
+    }
+    const ahead = travelAxis(angle);
+    sight.position.set(
+      -(minX + maxX) / 2 + ahead.x * T.forward,
+      -low,
+      (-(minV + maxV) / 2 - low * Math.sin(viewTilt)) / Math.cos(viewTilt) + ahead.z * T.forward,
+    );
   };
-  return { id, color, root, body, cap, lids: [], aim, angle: 0, blinkIn: 1e9, visibleScale: 1 };
+  return { id, color, root, body, lids: [], aim, angle: 0, blinkIn: 1e9, visibleScale: 1 };
 }

@@ -217,6 +217,20 @@ export function renderSettings(save: SaveData, handlers: SettingsHandlers): void
         ),
       ),
       setting(
+        'Robot turns',
+        'Face up: the whole robot turns, eyes always in view. To player: it turns but leans to you. Symbol: only the arrow turns',
+        segmented(
+          'heading',
+          [
+            { label: 'Face up', value: 'faceUp' as const },
+            { label: 'To player', value: 'towardPlayer' as const },
+            { label: 'Symbol', value: 'symbol' as const },
+          ],
+          save.lab.heading,
+          (v) => handlers.setLab({ heading: v }),
+        ),
+      ),
+      setting(
         'Board pieces',
         'Kit: the supplied modules. Built-in: drawn in code',
         segmented(

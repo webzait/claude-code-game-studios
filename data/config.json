@@ -157,6 +157,11 @@
     "topLight": 0.2,
     "arrowScale": 0.95,
     "arrowForward": 0.05,
-    "squash": 0.86
+    "squash": 0.86,
+    "faceUp": {
+      "followCamera": 1,
+      "extraLean": -0.2,
+      "forward": 0
+    }
   }
 }

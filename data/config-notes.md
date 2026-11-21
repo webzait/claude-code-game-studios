@@ -34,6 +34,7 @@
 - `lab.previewMoves` — move budget on the board-size test boards (`data/test-boards.json`), which are not levels.
 - `light` — scene lighting: hemisphere `sky`/`ground` colours and `ambient` strength, `sun` strength, `reflections` (environment map strength) and ground `shadow` opacity. Tuned on screenshots so top faces show their colour token without blowing out.
 - `colors.robots` — per colour the top/main/side/deep tones the robot body is shaded with, plus eye colours. `robot` — lean towards the player (radians), eye size/spread/height, pupil size, gloss, how far the top lightens (`topLight`), arrow scale and offset.
+- `robot.faceUp` — the heading style in which the whole robot turns and its face keeps looking up at the camera (test lab "Robot turns: Face up", the default). `followCamera` — share (0–1) of the camera's tilt the turning axis follows: at 1 the robot turns around the line of sight, so every heading is the same picture turned a quarter and the eyes are as large facing away as facing the player; at 0 it turns around the board's upright and a robot facing away shows less face. `extraLean` — radians added to `robot.lean` in this style only; negative shows more of the top, so the symbol is seen whole, at the cost of a slightly lower face (tuned on screenshots at 53 px and 42 px cells). `forward` — cells the robot is moved along its heading after it has been centred on its cell, for fine-tuning by eye.
 
 ## data/parts.json
 

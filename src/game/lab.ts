@@ -1,6 +1,7 @@
 import { CONFIG } from '../config';
 import type { Color, Command, Rules } from '../engine/types';
 import type { GameLevel } from '../levels/index';
+import type { HeadingStyle } from '../render/heading';
 
 /**
  * Test-phase switches. They let open design questions be tried on a phone
@@ -21,6 +22,11 @@ export interface LabSettings {
   decor: boolean;
   /** Robots from the asset kit (`kit`) or the built-in ones (`builtin`). */
   robots: 'kit' | 'builtin';
+  /**
+   * How a robot shows its heading. `faceUp`: the whole robot turns and its face looks up at the camera.
+   * `towardPlayer`: it turns but always leans towards the player. `symbol`: only the symbol turns.
+   */
+  heading: HeadingStyle;
   /** Board pieces from the asset kit (`kit`) or the built-in ones (`builtin`). */
   boardPieces: 'kit' | 'builtin';
   /** Hints and extra moves cost no coins. */
@@ -40,6 +46,7 @@ export const DEFAULT_LAB: LabSettings = {
   freeHelp: false,
   decor: true,
   robots: 'kit',
+  heading: 'faceUp',
   boardPieces: 'kit',
 };
 

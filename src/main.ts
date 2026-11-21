@@ -175,7 +175,7 @@ class Game {
     document.documentElement.classList.toggle('reduce-motion', this.reduced);
     this.view.setMotion(this.save.lab.speed, this.reduced);
     this.view.setLayout(CONFIG.board[this.save.lab.board]);
-    this.view.setStyle({ kitRobots: this.save.lab.robots === 'kit', kitBoard: this.save.lab.boardPieces === 'kit' });
+    this.view.setStyle({ kitRobots: this.save.lab.robots === 'kit', kitBoard: this.save.lab.boardPieces === 'kit', heading: this.save.lab.heading });
     document.documentElement.classList.toggle('no-decor', !this.save.lab.decor);
   }
 
