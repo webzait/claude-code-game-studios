@@ -283,15 +283,15 @@ for (const [cols, rows] of [[5, 5], [6, 6], [8, 8], [4, 7]] as const) {
   card('Passing: alle losse delen samen (6×6)', 'assembly', board, 'Alleen een pascontrole van de losse onderdelen; dit is nog niet het speelbord van de game.', ['main', 'top'], true);
 }
 
-// Buttons: plain HTML and CSS. Sizes come from data/parts.json and reach the CSS as custom properties.
+// Buttons: plain HTML and CSS, each one solid block. Sizes come from data/parts.json and reach the CSS as custom properties.
 {
   type Size = { width: number; height: number; depth: number; radius: number };
   /** One icon: the shape drawn twice, a soft offset copy under the real one, so it sits embossed on the cap. */
   const icon = (shape: string): string => `<svg viewBox="0 0 24 24" aria-hidden="true"><g class="tf-ink-shadow" transform="translate(0 1.3)">${shape}</g><g>${shape}</g></svg>`;
   const stroke = (d: string, width: number): string => `<path d="${d}" fill="none" stroke="currentColor" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"/>`;
   const turnShape = (width: number): string => stroke('M17.1 16.9A7 7 0 1 1 15.5 8', width) + stroke('M18.4 3.2v6h-6', width);
-  const turn = icon(turnShape(3.9));
-  const up = icon(stroke('M12 20.6V6M5.2 11.4 12 4.6l6.8 6.8', 4.5));
+  const turn = icon(turnShape(3.6));
+  const up = icon(stroke('M12 20.6V6M5.2 11.4 12 4.6l6.8 6.8', 4));
   const undo = icon(`<path d="M9.4 4.2 3.6 9.3l5.8 5.1z" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>` + stroke('M9 9.3h5.4a5.3 5.3 0 0 1 0 10.6H9.6', 3.5));
   const restart = icon(turnShape(3.5));
   const replay = icon('<path d="M7.4 5v14l11.4-7z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>');
@@ -303,7 +303,7 @@ for (const [cols, rows] of [[5, 5], [6, 6], [8, 8], [4, 7]] as const) {
   type State = '' | 'pressed' | 'disabled' | 'nudge';
   /** One button. `state` only fixes a look for the sheet; in the game :active and the disabled attribute do it. */
   const button = (kind: string, s: Size, inner: string, name: string, state: State = '', extra = ''): string =>
-    `<button type="button" class="tf-btn ${kind}${state === 'pressed' || state === 'nudge' ? ` ${state}` : ''}" style="${vars(s)}${extra}" aria-label="${name}"${state === 'disabled' ? ' disabled' : ''}><span class="tf-face">${inner}</span></button>`;
+    `<button type="button" class="tf-btn ${kind}${state === 'pressed' || state === 'nudge' ? ` ${state}` : ''}" style="${vars(s)}${extra}" aria-label="${name}"${state === 'disabled' ? ' disabled' : ''}><span class="tf-clip"><span class="tf-face">${inner}</span></span></button>`;
   const label = (text: string): string => `<span class="tf-label">${text}</span>`;
   const utility = (s: Size, glyph: string, text: string, state: State = '', extra = ''): string => button('tf-utility', s, glyph + label(text), text, state, extra);
   const hint = (s: Size, state: State = '', kind = 'tf-hint'): string => button(kind, s, bulb + label('Hint'), 'Hint', state);
@@ -314,17 +314,12 @@ for (const [cols, rows] of [[5, 5], [6, 6], [8, 8], [4, 7]] as const) {
   const COLORS = ['red', 'blue', 'yellow', 'forward'] as const;
   const COLOR_NAMES = { red: 'rood', blue: 'blauw', yellow: 'geel', forward: 'vooruit' } as const;
 
-  const small = '--fs:12.5px;--icon:17px';
-  const utilityRow = (narrow: boolean): string => {
-    const s = narrow ? p.utilityNarrow : p.utility;
-    const extra = narrow ? `;${small}` : '';
-    return `<div class="tf-line">${utility(s, undo, 'Undo', '', extra)}${utility(s, restart, 'Restart', '', extra)}${utility(s, replay, 'Replay', '', extra)}${narrow ? button('tf-hint', s, bulb + label('Hint'), 'Hint', '', extra) : ''}</div>`;
-  };
+  const utilityRow = `<div class="tf-line">${utility(p.utility, undo, 'Undo')}${utility(p.utility, restart, 'Restart')}${utility(p.utility, replay, 'Replay')}</div>`;
   const actionRow = `<div class="tf-line">${COLORS.map((c) => action(p.action, c, c === 'blue' ? 'nudge' : '')).join('')}</div>`;
-  const phone = (id: string, withHintInBar: boolean): string => `<div class="tf-phone" id="${id}">
-      <div class="tf-bar"><span class="tf-pill grow">Level 5</span><span class="tf-pill">0 / 12</span><span class="tf-pill">12 zetten</span>${withHintInBar ? hint(p.hintCompact, '', 'tf-hint compact') : ''}</div>
+  const phone = `<div class="tf-phone" id="buttons-phone">
+      <div class="tf-bar"><span class="tf-pill grow">Level 5</span><span class="tf-pill">0 / 12</span><span class="tf-pill">12 zetten</span>${hint(p.hintCompact, '', 'tf-hint compact')}</div>
       <div class="tf-board">speelbord</div>
-      <div class="tf-controls">${utilityRow(!withHintInBar)}${actionRow}</div>
+      <div class="tf-controls">${utilityRow}${actionRow}</div>
     </div>`;
 
   const el = document.createElement('section');
@@ -351,11 +346,9 @@ for (const [cols, rows] of [[5, 5], [6, 6], [8, 8], [4, 7]] as const) {
     ${ACTION_STATES.map(([, n]) => `<span>${n}</span>`).join('')}
     ${COLORS.map((c) => ACTION_STATES.map(([s]) => action(p.action, c, s)).join('')).join('')}
   </div>
-  <h3 class="btn-title">Telefoon ${p.stripWidth} px · optie A: Hint compact in de bovenbalk</h3>
-  ${phone('buttons-phone-a', true)}
-  <h3 class="btn-title">Telefoon ${p.stripWidth} px · optie B: vier smallere utility-knoppen</h3>
-  ${phone('buttons-phone-b', false)}
-  <p class="note">Echte HTML-knoppen met CSS: tekst blijft tekst, maten komen uit <code>--w --h --d --r</code>. De kap zakt bij indrukken ${Math.round(b.pressFraction * 100)}% van de diepte in de zijwand; de voetafdruk en het raakvlak blijven gelijk. Blauw toont in de telefoonstroken de nudge.</p>`;
+  <h3 class="btn-title">Telefoon ${p.stripWidth} px · Hint compact in de bovenbalk</h3>
+  ${phone}
+  <p class="note">Echte HTML-knoppen met CSS: tekst blijft tekst, maten komen uit <code>--w --h --d --r</code>. Elke knop is één gegoten blok met een bovenvlak, een ronde rand en schuine flanken: bij indrukken zakt het hele blok ${Math.round(b.pressFraction * 100)}% van de diepte weg; de voetafdruk en het raakvlak blijven gelijk. Blauw toont in de telefoonstroken de nudge.</p>`;
   document.getElementById('sheet')!.appendChild(el);
 }
 

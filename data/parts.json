@@ -166,7 +166,7 @@
       "width": 120,
       "height": 48,
       "depth": 16,
-      "radius": 20
+      "radius": 22
     },
     "action": {
       "width": 96,
@@ -178,7 +178,7 @@
       "width": 120,
       "height": 48,
       "depth": 16,
-      "radius": 20
+      "radius": 22
     },
     "phone": {
       "stripWidth": 390,
@@ -188,13 +188,7 @@
         "width": 114,
         "height": 44,
         "depth": 12,
-        "radius": 18
-      },
-      "utilityNarrow": {
-        "width": 83,
-        "height": 44,
-        "depth": 12,
-        "radius": 17
+        "radius": 20
       },
       "action": {
         "width": 83,
