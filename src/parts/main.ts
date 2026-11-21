@@ -152,7 +152,7 @@ card('Onderplaat', 'underlay', buildUnderlay(6, 6, CONFIG.board.grid.gap, true),
   card('Passing: alle losse delen samen (6×6)', 'assembly', board, 'Alleen een pascontrole van de losse onderdelen; dit is nog niet het speelbord van de game.', ['main', 'top'], true);
 }
 
-// Buttons: plain HTML and CSS. Sizes come from data/parts.json and reach the CSS as custom properties.
+// Buttons: plain HTML and CSS, each one solid block. Sizes come from data/parts.json and reach the CSS as custom properties.
 {
   type Size = { width: number; height: number; depth: number; radius: number };
   /** One icon: the shape drawn twice, a soft offset copy under the real one, so it sits embossed on the cap. */
@@ -172,7 +172,7 @@ card('Onderplaat', 'underlay', buildUnderlay(6, 6, CONFIG.board.grid.gap, true),
   type State = '' | 'pressed' | 'disabled' | 'nudge';
   /** One button. `state` only fixes a look for the sheet; in the game :active and the disabled attribute do it. */
   const button = (kind: string, s: Size, inner: string, name: string, state: State = '', extra = ''): string =>
-    `<button type="button" class="tf-btn ${kind}${state === 'pressed' || state === 'nudge' ? ` ${state}` : ''}" style="${vars(s)}${extra}" aria-label="${name}"${state === 'disabled' ? ' disabled' : ''}><span class="tf-face">${inner}</span></button>`;
+    `<button type="button" class="tf-btn ${kind}${state === 'pressed' || state === 'nudge' ? ` ${state}` : ''}" style="${vars(s)}${extra}" aria-label="${name}"${state === 'disabled' ? ' disabled' : ''}><span class="tf-clip"><span class="tf-face">${inner}</span></span></button>`;
   const label = (text: string): string => `<span class="tf-label">${text}</span>`;
   const utility = (s: Size, glyph: string, text: string, state: State = '', extra = ''): string => button('tf-utility', s, glyph + label(text), text, state, extra);
   const hint = (s: Size, state: State = '', kind = 'tf-hint'): string => button(kind, s, bulb + label('Hint'), 'Hint', state);
@@ -224,7 +224,7 @@ card('Onderplaat', 'underlay', buildUnderlay(6, 6, CONFIG.board.grid.gap, true),
   ${phone('buttons-phone-a', true)}
   <h3 class="btn-title">Telefoon ${p.stripWidth} px · optie B: vier smallere utility-knoppen</h3>
   ${phone('buttons-phone-b', false)}
-  <p class="note">Echte HTML-knoppen met CSS: tekst blijft tekst, maten komen uit <code>--w --h --d --r</code>. De kap zakt bij indrukken ${Math.round(b.pressFraction * 100)}% van de diepte in de zijwand; de voetafdruk en het raakvlak blijven gelijk. Blauw toont in de telefoonstroken de nudge.</p>`;
+  <p class="note">Echte HTML-knoppen met CSS: tekst blijft tekst, maten komen uit <code>--w --h --d --r</code>. Elke knop is één blok: bij indrukken zakt het hele blok ${Math.round(b.pressFraction * 100)}% van de diepte weg; de voetafdruk en het raakvlak blijven gelijk. Blauw toont in de telefoonstroken de nudge.</p>`;
   document.getElementById('sheet')!.appendChild(el);
 }
 
