@@ -65,7 +65,9 @@ test('Levels, Level, Win, Next: no dead ends, and progress survives a reload', a
   await expect(page.locator('#node-3')).toBeDisabled();
   await page.reload();
   await expect.poll(() => page.evaluate(() => typeof window.turnflock?.snapshot)).toBe('function');
-  expect((await snap(page)).best).toEqual({ [levels[0].id]: levels[0].par });
+  const perfect = config.coins.win + config.moveSlack * config.coins.perSpareMove + config.coins.perfect;
+  expect(await snap(page)).toMatchObject({ best: { [levels[0].id]: levels[0].par }, coins: config.coins.start + perfect });
+  await expect(page.locator('#coins')).toHaveText(String(config.coins.start + perfect));
   await expect(page.locator('#mapCount')).toHaveText(`1/${levels.length}`);
   expect(errors).toEqual([]);
 });
@@ -121,31 +123,57 @@ test('out of moves two steps from home: extra moves are offered and really win',
   expect(line.length).toBe(budget(0));
   for (const command of line) await press(page, command);
   expect((await snap(page)).status).toBe('lost');
-  await expect(page.locator('#cardExtra')).toHaveText(`+${config.extraMoves} moves`, { timeout: 15000 });
+  await expect(page.locator('#cardExtra')).toHaveText(`+${config.extraMoves} moves · ${config.coins.extraMovesCost} coins`, { timeout: 15000 });
   await page.click('#cardExtra');
-  expect(await snap(page)).toMatchObject({ status: 'playing', movesLeft: config.extraMoves });
+  expect(await snap(page)).toMatchObject({ status: 'playing', movesLeft: config.extraMoves, coins: config.coins.start - config.coins.extraMovesCost });
   for (let i = 0; i < config.extraMoves && (await snap(page)).status === 'playing'; i++) await press(page, 'forward');
   expect((await snap(page)).status).toBe('won');
   await expect(page.locator('#cardText')).toContainText('extra moves', { timeout: 15000 });
+  // A helped win pays the base amount only.
+  expect((await snap(page)).coins).toBe(config.coins.start - config.coins.extraMovesCost + config.coins.win);
 });
 
-test('Hint: first a status, then the next move, and following it wins', async ({ page }) => {
+test('Hint: the status is free, the next move costs coins, and without coins it is refused', async ({ page }) => {
   await open(page);
   await page.click('#node-1');
   await press(page, 'red'); // leave the witness so the solver has to search
   await page.click('#undo');
   await press(page, 'forward');
   await page.click('#scan');
-  await expect(page.locator('#hint')).toContainText('Solvable from here', { timeout: 15000 });
+  await expect(page.locator('#hint')).toContainText('Solvable from here', { timeout: 30000 });
+  expect((await snap(page)).coins).toBe(config.coins.start);
   await page.click('#scan');
   await expect(page.locator('#hint')).toContainText('Next:');
   await expect(page.locator('.cmd.nudge')).toHaveCount(1);
+  expect((await snap(page)).coins).toBe(config.coins.start - config.coins.hintCost);
+  // Spend the rest, one revealed move at a time, until the wallet cannot pay.
+  const affordable = Math.floor(config.coins.start / config.coins.hintCost);
+  for (let i = 1; i < affordable; i++) {
+    await page.dispatchEvent('.cmd.nudge', 'pointerdown');
+    await page.click('#scan');
+    await page.click('#scan');
+    await expect(page.locator('.cmd.nudge')).toHaveCount(1);
+  }
+  await page.dispatchEvent('.cmd.nudge', 'pointerdown');
+  await page.click('#scan');
+  await page.click('#scan');
+  await expect(page.locator('#hint')).toContainText('costs');
+  await expect(page.locator('.cmd.nudge')).toHaveCount(0);
+  expect((await snap(page)).coins).toBe(config.coins.start - affordable * config.coins.hintCost);
+});
+
+test('with free help switched on in the test lab, following the hint wins the level', async ({ page }) => {
+  await open(page);
+  await page.click('#toSettings');
+  await page.click('#freeHelp-on');
+  await page.click('#settingsBack');
+  await page.click('#node-1');
   for (let i = 0; i < budget(0) && (await snap(page)).status === 'playing'; i++) {
     await page.click('#scan');
     await page.click('#scan');
     await page.dispatchEvent('.cmd.nudge', 'pointerdown');
   }
-  expect((await snap(page)).status).toBe('won');
+  expect(await snap(page)).toMatchObject({ status: 'won' });
 });
 
 test('settings: test lab switches change the next level, and reset needs two taps', async ({ page }) => {

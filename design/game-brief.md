@@ -45,7 +45,7 @@ Each level has a move budget of the shortest solution plus two. Running out ends
 - [x] Test lab: exit rule, yellow early, spare moves, speed, board framing, unlock all
 - [x] Level selection with a Continue button and pages of 20
 - [x] Robots always face the player with large eyes; the head arrow and pupils show the heading
-- [ ] Scoring (points or coins: to be decided)
+- [x] Coins: earned per win (base, spare moves, perfect bonus), spent on the next-move hint and on extra moves; no shop, no ads
 
 ## Keep
 -

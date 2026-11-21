@@ -26,6 +26,7 @@ export function renderLevels(model: {
   page: number;
   pageSize: number;
   continueLabel: string;
+  coins: number;
   onPick: (index: number) => void;
   onPage: (page: number) => void;
 }): void {
@@ -33,6 +34,7 @@ export function renderLevels(model: {
   const pages = Math.max(1, Math.ceil(nodes.length / pageSize));
   el('mapCount').textContent = `${nodes.filter((n) => n.solved).length}/${nodes.length}`;
   el('continue').textContent = model.continueLabel;
+  el('coins').textContent = String(model.coins);
   const pager = el('pager');
   pager.hidden = pages < 2;
   el('pageLabel').textContent = `${page * pageSize + 1}–${Math.min((page + 1) * pageSize, nodes.length)}`;
@@ -159,7 +161,7 @@ export function renderSettings(save: SaveData, handlers: SettingsHandlers): void
           handlers.setReduceMotion,
         ),
       ),
-      setting('Progress', 'Solved levels and stars', reset),
+      setting('Progress', 'Solved levels, stars and coins', reset),
     ]),
     group('Test lab', 'For the test phase only. Changes apply when a level starts.', [
       setting(
@@ -209,6 +211,7 @@ export function renderSettings(save: SaveData, handlers: SettingsHandlers): void
           (v) => handlers.setLab({ board: v }),
         ),
       ),
+      setting('Free help', 'Hints and extra moves cost no coins', segmented('freeHelp', onOff, save.lab.freeHelp, (v) => handlers.setLab({ freeHelp: v }))),
       setting('Unlock all', 'Open every level', segmented('unlockAll', onOff, save.lab.unlockAll, (v) => handlers.setLab({ unlockAll: v }))),
     ]),
   );

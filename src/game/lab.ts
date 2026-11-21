@@ -17,6 +17,8 @@ export interface LabSettings {
   speed: number;
   /** Open every level regardless of progress. */
   unlockAll: boolean;
+  /** Hints and extra moves cost no coins. */
+  freeHelp: boolean;
   /** Board framing: `roomy` (steeper camera, thin frame, against the top) or `classic`. */
   board: 'roomy' | 'classic';
 }
@@ -29,6 +31,7 @@ export const DEFAULT_LAB: LabSettings = {
   speed: 1,
   unlockAll: false,
   board: 'roomy',
+  freeHelp: false,
 };
 
 /** Rules the lab asks for. */

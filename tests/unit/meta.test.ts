@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CONFIG } from '../../src/config';
+import { extraMovesPrice, hintPrice, payout, rewardFor } from '../../src/game/coins';
 import { applyLab, DEFAULT_LAB, rulesFor, usesCertifiedRules, type LabSettings } from '../../src/game/lab';
 import { isUnlocked, resumeIndex, solvedCount, starsFor } from '../../src/game/progress';
 import { defaultSave, LEGACY_KEY, loadSave, migrate, resetProgress, SAVE_KEY, SAVE_VERSION, writeSave, type KeyValueStore } from '../../src/game/save';
@@ -49,11 +50,42 @@ describe('stars', () => {
   });
 });
 
+describe('coins', () => {
+  const c = CONFIG.coins;
+  it('a perfect win pays base, every spare move and the perfect bonus', () => {
+    const r = rewardFor(7, 7, 9, false);
+    expect(r).toEqual({ base: c.win, spareMoves: 2 * c.perSpareMove, perfect: c.perfect, total: c.win + 2 * c.perSpareMove + c.perfect });
+  });
+  it('a win on the last move pays the base amount only', () => {
+    expect(rewardFor(9, 7, 9, false).total).toBe(c.win);
+  });
+  it('a win with paid help pays the base amount only', () => {
+    expect(rewardFor(7, 7, 9, true).total).toBe(c.win);
+  });
+  it('a level pays its best reward once; a replay pays only the improvement', () => {
+    expect(payout(20, undefined)).toBe(20);
+    expect(payout(26, 20)).toBe(6);
+    expect(payout(20, 26)).toBe(0);
+  });
+  it('the test lab can make help free', () => {
+    expect(hintPrice(false)).toBe(c.hintCost);
+    expect(hintPrice(true)).toBe(0);
+    expect(extraMovesPrice(false)).toBe(c.extraMovesCost);
+    expect(extraMovesPrice(true)).toBe(0);
+  });
+  it('one perfect level pays for at least one hint, and extra moves cost more than a hint', () => {
+    expect(rewardFor(7, 7, 9, false).total).toBeGreaterThanOrEqual(c.hintCost);
+    expect(c.extraMovesCost).toBeGreaterThan(c.hintCost);
+  });
+});
+
 describe('save', () => {
   it('round-trips through storage', () => {
     const store = memory();
     const save = defaultSave();
     save.best[ids[0]] = 7;
+    save.coins = 73;
+    save.paid[ids[0]] = 26;
     save.settings.mute = true;
     save.lab.exitRule = 'single';
     expect(writeSave(store, save)).toBe(true);
@@ -72,6 +104,16 @@ describe('save', () => {
     current.best[ids[3]] = 9;
     const store = memory({ [SAVE_KEY]: JSON.stringify(current), [LEGACY_KEY]: JSON.stringify({ solved: [0] }) });
     expect(Object.keys(loadSave(store, ids).best)).toEqual([ids[3]]);
+  });
+
+  it('migrates version 2 (no coins): progress is kept and the wallet starts at the opening balance', () => {
+    const save = migrate({ version: 2, best: { [ids[0]]: 7 }, settings: { mute: true }, lab: { moveSlack: 3 } }, ids);
+    expect(save.version).toBe(SAVE_VERSION);
+    expect(save.best).toEqual({ [ids[0]]: 7 });
+    expect(save.coins).toBe(CONFIG.coins.start);
+    expect(save.paid).toEqual({});
+    expect(save.settings.mute).toBe(true);
+    expect(save.lab.moveSlack).toBe(3);
   });
 
   it('damaged, unknown or future data gives a fresh save, never an error', () => {
@@ -97,13 +139,17 @@ describe('save', () => {
     expect(writeSave(broken, defaultSave())).toBe(false);
   });
 
-  it('reset clears progress but keeps settings and lab switches', () => {
+  it('reset clears progress and coins but keeps settings and lab switches', () => {
     const save = defaultSave();
     save.best[ids[0]] = 7;
+    save.coins = 500;
+    save.paid[ids[0]] = 26;
     save.settings.mute = true;
     save.lab.yellowEarly = true;
     const reset = resetProgress(save);
     expect(reset.best).toEqual({});
+    expect(reset.coins).toBe(CONFIG.coins.start);
+    expect(reset.paid).toEqual({});
     expect(reset.settings.mute).toBe(true);
     expect(reset.lab.yellowEarly).toBe(true);
   });

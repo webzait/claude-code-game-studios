@@ -25,6 +25,8 @@ export interface HudModel {
   nudge: Command | null;
   hint: string;
   hintWarn: boolean;
+  /** Text on the hint button, e.g. "Hint" or "Hint · 10". */
+  hintLabel: string;
 }
 
 /** Callbacks from the level HUD to the game. */
@@ -103,6 +105,7 @@ export class Hud {
     el<HTMLButtonElement>('restart').disabled = !m.canUndo;
     el<HTMLButtonElement>('replay').disabled = !m.canReplay;
     el<HTMLButtonElement>('scan').disabled = !m.canScan;
+    el('hintLabel').textContent = m.hintLabel;
     const hint = el('hint');
     hint.textContent = m.hint;
     hint.classList.toggle('warn', m.hintWarn);
@@ -122,7 +125,7 @@ export class Hud {
   }
 
   /** Show the result card. `stars` 0 hides the star row. */
-  showCard(opts: { title: string; text: string; stars: number; primary: CardButton; secondary: CardButton; extra?: CardButton; note?: string }): void {
+  showCard(opts: { title: string; text: string; stars: number; primary: CardButton; secondary: CardButton; extra?: CardButton & { disabled?: boolean }; note?: string; coins?: string }): void {
     el('cardTitle').textContent = opts.title;
     el('cardText').textContent = opts.text;
     el('stars').innerHTML = opts.stars > 0 ? [1, 2, 3].map((i) => STAR.replace('<svg', `<svg class="${i <= opts.stars ? 'on' : ''}"`)).join('') : '';
@@ -135,6 +138,9 @@ export class Hud {
     bind('cardPrimary', opts.primary);
     bind('cardSecondary', opts.secondary);
     bind('cardExtra', opts.extra);
+    el<HTMLButtonElement>('cardExtra').disabled = opts.extra?.disabled === true;
+    el('cardCoins').hidden = !opts.coins;
+    el('cardCoinsText').textContent = opts.coins ?? '';
     const note = el('cardNote');
     note.hidden = !opts.note;
     note.textContent = opts.note ?? '';

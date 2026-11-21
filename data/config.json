@@ -73,5 +73,13 @@
       "alignTop": false
     }
   },
-  "levelsPerPage": 20
+  "levelsPerPage": 20,
+  "coins": {
+    "start": 30,
+    "win": 10,
+    "perSpareMove": 3,
+    "perfect": 10,
+    "hintCost": 10,
+    "extraMovesCost": 25
+  }
 }

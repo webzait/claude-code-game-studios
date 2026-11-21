@@ -6,7 +6,9 @@ export type MetricsEvent =
   | { type: 'level_win'; level: string; moves: number; par: number; stars: number; usedBackup: boolean }
   | { type: 'level_fail'; level: string; rescuable: 'yes' | 'no' | 'not-assessed' }
   | { type: 'hint'; level: string; result: 'on-route' | 'dead-end' | 'not-assessed'; rung: number }
-  | { type: 'extra_moves'; level: string }
+  | { type: 'extra_moves'; level: string; price: number }
+  | { type: 'coins_earned'; level: string; amount: number; balance: number }
+  | { type: 'coins_spent'; level: string; amount: number; on: 'hint' | 'extra_moves'; balance: number }
   | { type: 'command'; level: string; command: Command };
 
 /** Where events go. A real analytics service would implement this later. */

@@ -4,6 +4,7 @@ import { CONFIG } from './config';
 import { step } from './engine/engine';
 import type { Color, Command } from './engine/types';
 import { witnessNext, type RescueResult, type ScanResult } from './game/assist';
+import { extraMovesPrice, hintPrice, payout, rewardFor } from './game/coins';
 import { applyLab, rulesFor, usesCertifiedRules, type LabSettings } from './game/lab';
 import { MemorySink, type MetricsEvent } from './game/metrics';
 import { isUnlocked, resumeIndex, starsFor } from './game/progress';
@@ -32,6 +33,7 @@ export interface Snapshot {
   hint: string;
   certified: boolean;
   best: Record<string, number>;
+  coins: number;
   lab: LabSettings;
   events: MetricsEvent[];
 }
@@ -78,7 +80,11 @@ class Game {
   private witness: readonly Command[] | null = LEVELS[0].witness;
   /** False when the level could not be proven solvable under a test rule. */
   private certified = true;
+  /** Coins paid out by the latest win, shown on the result card. */
+  private earnedNow = 0;
   private usedBackup = false;
+  /** A paid hint revealed a move during this attempt. */
+  private usedHint = false;
   /** Animations still queued; more than one speeds playback up. */
   private pending = 0;
   private chain: Promise<void> = Promise.resolve();
@@ -176,6 +182,7 @@ class Game {
       nodes,
       page: this.page,
       pageSize,
+      coins: this.save.coins,
       continueLabel: allDone ? `Play again · Level ${resume + 1}` : best[LEVEL_IDS[0]] === undefined ? 'Play · Level 1' : `Continue · Level ${resume + 1}`,
       onPick: (index) => this.tap(() => this.startLevel(index)),
       onPage: (page) => {
@@ -262,6 +269,7 @@ class Game {
     this.witness = witness;
     this.certified = certified;
     this.usedBackup = false;
+    this.usedHint = false;
     this.touched = false;
     this.session = new Session(level, { budget: par + this.save.lab.moveSlack, rules: rulesFor(this.save.lab) });
     this.hud.resetCounter();
@@ -303,6 +311,7 @@ class Game {
       nudge: this.nudge ?? (this.levelIndex === 0 && !this.touched ? 'forward' : null),
       hint: this.hint,
       hintWarn: this.hintWarn,
+      hintLabel: this.scanResult?.kind === 'on-route' && this.nudge === null && hintPrice(this.save.lab.freeHelp) > 0 ? `Hint · ${hintPrice(this.save.lab.freeHelp)}` : 'Hint',
     });
   }
 
@@ -346,6 +355,12 @@ class Game {
     const stars = starsFor(moves, this.par, this.usedBackup);
     const previous = this.save.best[id];
     if (previous === undefined || previous === 0 || moves < previous) this.save.best[id] = moves;
+    const reward = rewardFor(moves, this.par, this.session.budget, this.usedBackup || this.usedHint);
+    const earned = payout(reward.total, this.save.paid[id]);
+    this.save.paid[id] = Math.max(this.save.paid[id] ?? 0, reward.total);
+    this.save.coins += earned;
+    this.earnedNow = earned;
+    if (earned > 0) this.track({ type: 'coins_earned', level: id, amount: earned, balance: this.save.coins });
     this.persist();
     this.track({ type: 'level_win', level: id, moves, par: this.par, stars, usedBackup: this.usedBackup });
     this.sfx.play('win');
@@ -363,6 +378,7 @@ class Game {
       title: 'All home',
       text: `${moves} moves${stars === 3 ? ' · perfect' : ''}${this.usedBackup ? ' · with extra moves' : ''}`,
       stars,
+      coins: this.earnedNow > 0 ? `+${this.earnedNow} · ${this.save.coins} in total` : `Best reward already paid · ${this.save.coins} in total`,
       primary: last ? { label: 'Levels', action: () => this.tap(() => this.show('map')) } : { label: 'Next', action: () => this.tap(() => this.startLevel(this.levelIndex + 1)) },
       secondary: { label: 'Replay', action: () => void this.replay() },
     });
@@ -386,6 +402,8 @@ class Game {
     if (generation !== this.generation || this.session.status !== 'lost') return;
     this.track({ type: 'level_fail', level: this.level.id, rescuable: rescue.kind === 'rescuable' ? 'yes' : rescue.kind === 'hopeless' ? 'no' : 'not-assessed' });
     const offer = rescue.kind === 'rescuable';
+    const price = extraMovesPrice(this.save.lab.freeHelp);
+    const afford = this.save.coins >= price;
     this.hud.showCard({
       title: 'Out of moves',
       text: `${this.session.total - this.session.collected} still on the board`,
@@ -393,7 +411,7 @@ class Game {
       primary: { label: 'Retry', action: () => this.restart() },
       secondary: { label: 'Undo', action: () => this.undo() },
       extra: offer
-        ? { label: `+${CONFIG.extraMoves} moves`, action: () => this.useBackup() }
+        ? { label: price > 0 ? `+${CONFIG.extraMoves} moves · ${price} coins` : `+${CONFIG.extraMoves} moves`, action: () => this.useBackup(), disabled: !afford }
         : {
             label: 'Hint',
             action: () => {
@@ -402,7 +420,9 @@ class Game {
             },
           },
       note: offer
-        ? 'Prototype: free. Checked: this position can be solved with them.'
+        ? afford
+          ? `Checked: this position can be solved with them. You have ${this.save.coins} coins.`
+          : `Checked: this position can be solved with them, but you have ${this.save.coins} coins.`
         : rescue.kind === 'hopeless'
           ? 'Extra moves would not solve this position, so they are not offered.'
           : 'Could not check whether extra moves would help, so they are not offered.',
@@ -410,11 +430,16 @@ class Game {
   }
 
   private useBackup(): void {
+    const price = extraMovesPrice(this.save.lab.freeHelp);
+    if (this.save.coins < price) return;
+    this.save.coins -= price;
+    this.persist();
+    if (price > 0) this.track({ type: 'coins_spent', level: this.level.id, amount: price, on: 'extra_moves', balance: this.save.coins });
     this.session.grantBonus(CONFIG.extraMoves);
     this.usedBackup = true;
     this.hud.hideCard();
     this.clearScan();
-    this.track({ type: 'extra_moves', level: this.level.id });
+    this.track({ type: 'extra_moves', level: this.level.id, price });
     this.sfx.play('scan');
     this.refresh();
   }
@@ -436,6 +461,7 @@ class Game {
     this.pending = 0;
     this.session.restart();
     this.usedBackup = false;
+    // usedHint stays: a move that was paid for is still known after a restart.
     this.hud.hideCard();
     this.clearScan();
     this.sfx.play('tap');
@@ -452,7 +478,19 @@ class Game {
     if (this.replaying || this.busy || this.session.status === 'won') return;
     const key = `${this.session.commands.join(',')}|${this.session.bonusMoves}`;
     if (this.scanKey === key && this.scanResult) {
-      if (this.scanResult.kind === 'on-route') {
+      if (this.scanResult.kind === 'on-route' && this.nudge === null) {
+        // Revealing the move is the paid step; the status before it is free.
+        const price = hintPrice(this.save.lab.freeHelp);
+        if (this.save.coins < price) {
+          this.setHint(`The next move costs ${price} coins. You have ${this.save.coins}.`, true);
+          return;
+        }
+        this.save.coins -= price;
+        this.persist();
+        if (price > 0) {
+          this.usedHint = true;
+          this.track({ type: 'coins_spent', level: this.level.id, amount: price, on: 'hint', balance: this.save.coins });
+        }
         this.nudge = this.scanResult.next;
         this.track({ type: 'hint', level: this.level.id, result: 'on-route', rung: 2 });
         this.sfx.play('scan');
@@ -482,7 +520,7 @@ class Game {
     this.scanResult = result;
     this.track({ type: 'hint', level: this.level.id, result: result.kind, rung: 1 });
     this.sfx.play('scan');
-    if (result.kind === 'on-route') this.setHint(`Solvable from here · ${result.movesNeeded} to go. Tap Hint again for the next move.`, false);
+    if (result.kind === 'on-route') this.setHint(`Solvable from here · ${result.movesNeeded} to go. Tap Hint again for the next move${hintPrice(this.save.lab.freeHelp) > 0 ? ` (${hintPrice(this.save.lab.freeHelp)} coins)` : ''}.`, false);
     else if (result.kind === 'dead-end') this.setHint(`Dead end. Undo ${result.undo} move${result.undo === 1 ? '' : 's'} to make it solvable again.`, true);
     else this.setHint('The hint could not be worked out for this position.', true);
   }
@@ -531,6 +569,7 @@ class Game {
       hint: this.hint,
       certified: this.certified,
       best: { ...this.save.best },
+      coins: this.save.coins,
       lab: { ...this.save.lab },
       events: [...this.metrics.events],
     };

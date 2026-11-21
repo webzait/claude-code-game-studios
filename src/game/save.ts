@@ -1,7 +1,8 @@
+import { CONFIG } from '../config';
 import { DEFAULT_LAB, type LabSettings } from './lab';
 
 /** Current save format. Raise it and extend `migrate` when the shape changes. */
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 /** Storage key of the current format. */
 export const SAVE_KEY = 'turnflock.save';
 /** Storage key of the first prototype's format (version 1). */
@@ -12,6 +13,10 @@ export interface SaveData {
   version: number;
   /** Best move count per solved level id. */
   best: Record<string, number>;
+  /** Coins in the wallet. */
+  coins: number;
+  /** Coins each level has already paid out, by level id. */
+  paid: Record<string, number>;
   settings: {
     mute: boolean;
     /** null follows the device's reduced-motion preference. */
@@ -29,7 +34,7 @@ export interface KeyValueStore {
 
 /** A fresh save. */
 export function defaultSave(): SaveData {
-  return { version: SAVE_VERSION, best: {}, settings: { mute: false, reduceMotion: null }, lab: { ...DEFAULT_LAB } };
+  return { version: SAVE_VERSION, best: {}, coins: CONFIG.coins.start, paid: {}, settings: { mute: false, reduceMotion: null }, lab: { ...DEFAULT_LAB } };
 }
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -49,10 +54,19 @@ export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
     }
     return save;
   }
-  if (raw.version !== SAVE_VERSION) return save;
+  // Version 2 had no coins: the player keeps progress and starts with the opening balance.
+  if (raw.version !== SAVE_VERSION && raw.version !== 2) return save;
   if (isRecord(raw.best)) {
     for (const [id, moves] of Object.entries(raw.best)) {
       if (levelIds.includes(id) && typeof moves === 'number' && moves >= 0) save.best[id] = moves;
+    }
+  }
+  if (raw.version === SAVE_VERSION) {
+    if (typeof raw.coins === 'number' && raw.coins >= 0) save.coins = Math.floor(raw.coins);
+    if (isRecord(raw.paid)) {
+      for (const [id, amount] of Object.entries(raw.paid)) {
+        if (levelIds.includes(id) && typeof amount === 'number' && amount >= 0) save.paid[id] = amount;
+      }
     }
   }
   if (isRecord(raw.settings)) {
@@ -67,6 +81,7 @@ export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
     if (typeof lab.speed === 'number' && lab.speed > 0.2 && lab.speed < 4) save.lab.speed = lab.speed;
     if (typeof lab.unlockAll === 'boolean') save.lab.unlockAll = lab.unlockAll;
     if (lab.board === 'roomy' || lab.board === 'classic') save.lab.board = lab.board;
+    if (typeof lab.freeHelp === 'boolean') save.lab.freeHelp = lab.freeHelp;
   }
   return save;
 }
@@ -91,7 +106,7 @@ export function writeSave(store: KeyValueStore, data: SaveData): boolean {
   }
 }
 
-/** Forget progress. Settings and lab switches are kept. */
+/** Forget progress and coins. Settings and lab switches are kept. */
 export function resetProgress(data: SaveData): SaveData {
-  return { ...data, best: {} };
+  return { ...data, best: {}, coins: CONFIG.coins.start, paid: {} };
 }
