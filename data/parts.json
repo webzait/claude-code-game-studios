@@ -74,12 +74,19 @@
   },
   "obstacle": {
     "size": 0.92,
-    "height": 0.4,
-    "radius": 0.2,
-    "bevel": 0.06,
-    "stud": 0.075,
-    "studHeight": 0.045,
-    "studSpread": 0.27
+    "height": 0.43,
+    "radius": 0.21,
+    "taper": 0.008,
+    "foot": 0.03,
+    "round": 0.08,
+    "rim": 0.02,
+    "plateDepth": 0.014,
+    "plateWall": 0.012,
+    "stud": 0.076,
+    "studHeight": 0.06,
+    "studRound": 0.02,
+    "studSpread": 0.245,
+    "studRing": 0.008
   },
   "exit": {
     "size": 1.0,

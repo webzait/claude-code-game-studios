@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { CONFIG } from '../../config';
 import parts from '../../../data/parts.json';
-import { roundedBlock, roundedRect, slabOf } from './shapes';
+import { profiledBlock, roundedBlock, roundedRect, slabOf, type ProfileRing } from './shapes';
 
 const K = CONFIG.colors.kit;
 const P = parts;
@@ -13,9 +13,9 @@ const mats = {
   tileTop: glossy(K.tileLight, 0.4, 0.2),
   tileAlt: glossy(K.tileMid, 0.4, 0.2),
   tileEdge: glossy(K.tileEdge, 0.45, 0),
-  obstacle: glossy(K.obstacle),
-  obstacleTop: glossy(K.obstacleTop),
-  stud: glossy(K.obstacleBolt, 0.3, 0.5),
+  obstacle: new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.42, clearcoat: 0.3, clearcoatRoughness: 0.35 }),
+  obstacleStud: new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.36, clearcoat: 0.45, clearcoatRoughness: 0.3 }),
+  obstacleSeat: new THREE.MeshBasicMaterial({ color: K.obstacleBolt }),
   exitBase: glossy(K.exitShadow),
   exitFace: new THREE.MeshPhysicalMaterial({ color: K.exit, roughness: 0.25, clearcoat: 0.6, emissive: K.exit, emissiveIntensity: 0.35 }),
   exitBezel: new THREE.MeshPhysicalMaterial({ color: K.exitTop, roughness: 0.25, clearcoat: 0.6, emissive: K.exitTop, emissiveIntensity: 0.3 }),
@@ -166,19 +166,56 @@ function paint(g: THREE.BufferGeometry, hex: string): void {
   g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 }
 
-/** 5. Obstacle block: a low rounded block with four round studs on top. Stands on the floor tile. */
+/** Points of a quarter round from (`inset`, `y`) turning inwards and up over radius `round`. */
+function roundOver(inset: number, y: number, round: number, color: (t: number) => string, steps = 8): ProfileRing[] {
+  const rings: ProfileRing[] = [];
+  for (let i = 0; i <= steps; i++) {
+    const a = (i / steps) * (Math.PI / 2);
+    rings.push({ inset: inset + round * (1 - Math.cos(a)), y: y + round * Math.sin(a), color: color(i / steps) });
+  }
+  return rings;
+}
+
+const blend = (from: string, to: string) => (t: number): string => `#${new THREE.Color(from).lerp(new THREE.Color(to), t).getHexString()}`;
+
+/**
+ * 5. Obstacle block: a dense rounded block, one skin from floor to top. Darker
+ * sides that lean in slightly, a soft rounded shoulder, a lighter top with a
+ * shallow inset plate, and four raised round studs. Stands on the floor tile.
+ */
 export function buildObstacle(): THREE.Group {
   const o = P.obstacle;
+  const shoulder = o.height - o.round;
+  const rimIn = o.taper + o.round + o.rim;
+  const plateY = o.height - o.plateDepth;
+  const rings: ProfileRing[] = [
+    { inset: o.foot, y: 0, color: K.obstacleShadow },
+    { inset: o.foot * 0.3, y: o.foot * 0.3, color: K.obstacleShadow },
+    { inset: 0, y: o.foot, color: K.obstacleSide },
+    { inset: o.taper * 0.5, y: shoulder * 0.5, color: blend(K.obstacleSide, K.obstacle)(0.5) },
+    ...roundOver(o.taper, shoulder, o.round, blend(K.obstacleSide, K.obstacle)),
+    { inset: rimIn, y: o.height, color: K.obstacle },
+    { inset: rimIn, y: o.height, color: K.obstacleShadow },
+    { inset: rimIn + o.plateWall, y: plateY, color: K.obstacleShadow },
+    { inset: rimIn + o.plateWall, y: plateY, color: K.obstacleTop },
+  ];
   const block = new THREE.Group();
-  block.add(new THREE.Mesh(roundedBlock(o.size, o.size, o.height, o.radius, o.bevel), mats.obstacle));
-  const plate = new THREE.Mesh(slabOf(roundedRect(o.size - 2 * o.bevel - 0.04, o.size - 2 * o.bevel - 0.04, o.radius - o.bevel), 0.012), mats.obstacleTop);
-  plate.position.y = o.height - 0.006;
-  block.add(plate);
-  const stud = new THREE.CylinderGeometry(o.stud * 0.92, o.stud, o.studHeight, 24);
+  block.add(new THREE.Mesh(profiledBlock(o.size, o.size, o.radius, rings), mats.obstacle));
+
+  // Stud: a low round button, the block's own colours, on a thin dark seat that reads as its shadow line.
+  const side = o.stud * 2;
+  const stud = profiledBlock(side, side, o.stud, [
+    { inset: 0, y: 0, color: K.obstacle },
+    ...roundOver(0, o.studHeight - o.studRound, o.studRound, blend(K.obstacle, K.obstacleTop), 6),
+  ], 8);
+  const seat = new THREE.CircleGeometry(o.stud + o.studRing, 40);
+  seat.rotateX(-Math.PI / 2);
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
-    const mesh = new THREE.Mesh(stud, mats.stud);
-    mesh.position.set(sx * o.studSpread, o.height + o.studHeight / 2, sz * o.studSpread);
-    block.add(mesh);
+    const mesh = new THREE.Mesh(stud, mats.obstacleStud);
+    mesh.position.set(sx * o.studSpread, plateY, sz * o.studSpread);
+    const ring = new THREE.Mesh(seat, mats.obstacleSeat);
+    ring.position.set(sx * o.studSpread, plateY + 0.0015, sz * o.studSpread);
+    block.add(mesh, ring);
   }
   return shadowed(block);
 }
