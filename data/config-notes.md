@@ -41,13 +41,3 @@
 ## data/parts.json
 
 Dimensions of the standalone game elements, in cell units (1 cell = `unitPx` 56 px on the asset sheet): the Flockbot's modules (shell, face, romp, feet, ears, symbol), floor tile, obstacle, exit, rim and underlay, and the three button sizes in CSS pixels. Shown one by one on the parts sheet (`npm run build:parts` → `dist-parts/parts.html`). The playable game reads the board, robot and button sizes from it, and from `coins` the sizes of the coin counter, plus button, price tags, offer and reward, and the lengths of the count-up (`countUpMs`) and the cannot-afford flash (`shortMs`).
-
-### `flockbot` (look of 2026-11-21: rounded cube after the owner's reference pictures)
-
-- `shellRound`, `rompRound` — side profile of the top shell and the lower body: 1 is round like a ball, towards 0 a box with tight edges. `squircle` — the same for the outline seen from above. Around 0.45–0.5 gives a cube whose faces run into each other in one rounding, without a rim line. `crownEase` — how late the outline eases to a circle at the very top (high = only at the crown).
-- `depth` is the body alone; the face lip stands `face.bezelHeight` proud of it, so the part is `depth / 2 + face.bezelHeight` deep at the front.
-- `face` — the visor: a raised lip (`bezel` wide, `bezelHeight` high) around the light window, which therefore reads as sunk. `eye.tall` — height of an eye relative to its width; above 1 because the camera looks down on the face and squeezes it, so tall eyes come out round on screen.
-- `symbol.style` — `"raised"`: a plain triangle standing `raise` proud of the shell, white on red and blue, dark on yellow. `"notch"`: the same triangle read as cut into the shell, a dark floor inside a light edge `notchEdge` wide. `size` and `soften` (corner rounding, share of the size) apply to both.
-- `material` — `roughness`, `clearcoat`, `clearcoatRoughness` and `reflect` (environment strength) set the sheen. The earlier sharp spot came from a nearly mirror-smooth clearcoat (`clearcoatRoughness` 0.07) at `reflect` 3; a rougher coat spreads the same light into a broad soft sheen and leaves the colour saturated.
-- `colors.robots` in `data/config.json` now holds the owner's tones (top / main / side / deep per colour). `board.grid.robotFill` went from 0.9 to 0.86: a cube fills the corners of its box where the dome did not, and at 0.9 it reached just outside its cell on screen.
-

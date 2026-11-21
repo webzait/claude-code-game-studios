@@ -1,32 +1,22 @@
-# Flockbot look: rounded cube, soft sheen, plain triangle
+# Flockbot look: design study, not in the game
 
-Owner request (2026-11-21): higher-resolution, more matt gloss; shape and edges closer to the buttons;
-the arrow a triangle. Refined over four flat sketches and then the owner's reference pictures to: a
-rounded cube whose top runs into the sides in one rounding (no rim line), taller, cuter, with a sunk
-visor, white ear discs and four small feet.
-
-Screenshots are of the single-file build (`npm run build:single`) opened from disk in headless
-Chromium with software WebGL, level 10. `@2x` is device pixel ratio 2. "large" files are a 1100 px
-wide page at pixel ratio 4, cropped.
+Owner request (2026-11-21): a new look for the Flockbot. Refined over four flat sketches and then the
+owner's reference pictures to a rounded cube whose top runs into the sides in one rounding (no rim
+line), with a visor sunk into the front, large eyes, white ear discs, four small feet and a plain
+triangle on top. The owner then asked to keep it out of the game for now: the game's robot is
+unchanged, and the design lives in `prototypes/flockbot-look/`.
 
 | File | Shows |
 |---|---|
-| `before-game-53px@2x.png`, `before-large.png` | The robot before this change |
-| `sketch-v1.png` … `sketch-v3.png`, `sketch.png` (v4), `sketch.html` | The four flat sketches shown to the owner, with their comments in the commit messages |
+| `design-sheet.png` | The 3D design on its own: three-quarter view, front, side, back, top, the game camera's angle, and blue and yellow. Rendered from `prototypes/flockbot-look/index.html` in headless Chromium with software WebGL, at pixel ratio 2, with the game's light settings |
+| `before-game-53px@2x.png`, `before-large.png` | The robot as it is in the game (unchanged) |
+| `sketch-v1.png` … `sketch-v3.png`, `sketch.png` (v4), `sketch.html`, `v3-crop.png` | The four flat sketches shown to the owner |
 | `owner-reference.jpg` | The first reference picture the owner sent |
-| `after-game-start-53px@2x.png`, `after-game-round1-53px@2x.png`, `after-game-round2-53px@2x.png` | The game on a 390 px wide phone: start, and after one and two rounds of red, blue, yellow, so every colour is seen in several headings |
-| `after-game-round1-42px@2x.png` | The same on a 320 px wide screen (42 px cells) |
-| `after-arrow-A-raised-large.png` | Arrow variant A, `symbol.style: "raised"` (the default) |
-| `after-arrow-B-notch-large.png`, `after-arrow-B-notch-53px@2x.png` | Arrow variant B, `symbol.style: "notch"` |
-
-## What was looked at
-
-- Every robot stays inside its own cell in the headings shown; `tests/unit/heading.test.ts` checks all four.
-- The sharp highlight spot is gone at both sizes; colours match the owner's tones.
-- The triangle shows the heading at 53 px and 42 px in variant A; variant B is weak on yellow.
 
 ## Not checked
 
 - A real phone or any GPU: everything here is software-rendered.
-- The parts sheet (`npm run build:parts`) was not re-screenshotted.
-- Frame rate: the mesh density and the number of draw calls per robot are unchanged, so no cost was measured.
+- The design inside the game. An earlier commit on this branch (`feat: Flockbot as a rounded cube…`)
+  had a first version in the game and was taken out again; from the game camera the face is a narrow
+  strip, and the cube needed `board.grid.robotFill` 0.86 to stay inside its cell.
+- The `"notch"` triangle on this final model.
