@@ -1,26 +1,39 @@
-import { collectedCount, isWon, step } from '../engine/engine';
-import type { Command, GameState, StepResult } from '../engine/types';
+import { collectedCount, DEFAULT_RULES, isWon, step } from '../engine/engine';
+import type { Command, GameState, Rules, StepResult } from '../engine/types';
 import type { Level } from '../levels/parse';
 
 /** Where a level attempt stands. */
 export type Status = 'playing' | 'won' | 'lost';
 
+/** How an attempt is set up. */
+export interface SessionOptions {
+  /** Moves allowed before Backup Signals. */
+  readonly budget: number;
+  /** Rules for this attempt; the default rules when omitted. */
+  readonly rules?: Rules;
+}
+
 /**
  * One attempt at one level: current state, undo history and the command log
- * used for replays. Holds no rendering or DOM code. Later features hook in
- * here: extra moves raise `bonusMoves`, a hint asks the solver from `state`,
- * and a daily challenge is just another `Level`.
+ * used for replays. Holds no rendering or DOM code.
  */
 export class Session {
   private history: GameState[] = [];
   private log: Command[] = [];
   /** Current logical state. */
   state: GameState;
-  /** Moves granted on top of the level budget (0 in the prototype). */
+  /** Moves granted on top of the budget by Backup Signals. */
   bonusMoves = 0;
+  readonly budget: number;
+  readonly rules: Rules;
 
-  constructor(readonly level: Level) {
+  constructor(
+    readonly level: Level,
+    options: SessionOptions,
+  ) {
     this.state = level.start;
+    this.budget = options.budget;
+    this.rules = options.rules ?? DEFAULT_RULES;
   }
 
   /** Commands applied so far, oldest first. */
@@ -28,9 +41,19 @@ export class Session {
     return this.log;
   }
 
+  /** Every state of this attempt, oldest first, ending with the current one. */
+  get states(): readonly GameState[] {
+    return [...this.history, this.state];
+  }
+
+  /** Budget plus Backup Signals. */
+  get totalBudget(): number {
+    return this.budget + this.bonusMoves;
+  }
+
   /** Moves the player may still make. */
   get movesLeft(): number {
-    return this.level.moveBudget + this.bonusMoves - this.state.movesUsed;
+    return this.totalBudget - this.state.movesUsed;
   }
 
   /** Robots collected so far. */
@@ -52,7 +75,7 @@ export class Session {
   /** Apply a command. Returns null when the level is already won or lost. */
   apply(command: Command): StepResult | null {
     if (this.status !== 'playing') return null;
-    const result = step(this.level.board, this.state, command);
+    const result = step(this.level.board, this.state, command, this.rules);
     this.history.push(this.state);
     this.log.push(command);
     this.state = result.state;
@@ -68,10 +91,16 @@ export class Session {
     return true;
   }
 
-  /** Back to the start of the level. */
+  /** Back to the start of the level. Backup Signals are cleared too. */
   restart(): void {
     this.history = [];
     this.log = [];
+    this.bonusMoves = 0;
     this.state = this.level.start;
+  }
+
+  /** Add extra moves (Backup Signals). */
+  grantBonus(moves: number): void {
+    this.bonusMoves += moves;
   }
 }

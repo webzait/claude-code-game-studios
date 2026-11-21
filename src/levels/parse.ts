@@ -8,7 +8,6 @@ import type { Board, Color, Dir, GameState, Robot } from '../engine/types';
 export interface LevelDef {
   readonly id: string;
   readonly name: string;
-  readonly moveBudget: number;
   readonly grid: readonly string[];
 }
 
@@ -16,7 +15,6 @@ export interface LevelDef {
 export interface Level {
   readonly id: string;
   readonly name: string;
-  readonly moveBudget: number;
   readonly board: Board;
   readonly start: GameState;
 }
@@ -49,11 +47,5 @@ export function parseLevel(def: LevelDef): Level {
   });
   if (exitX < 0) throw new Error(`${def.id}: no exit`);
   if (robots.length === 0) throw new Error(`${def.id}: no robots`);
-  return {
-    id: def.id,
-    name: def.name,
-    moveBudget: def.moveBudget,
-    board: { width, height, walls, exitX, exitY },
-    start: { robots, movesUsed: 0 },
-  };
+  return { id: def.id, name: def.name, board: { width, height, walls, exitX, exitY }, start: { robots, movesUsed: 0 } };
 }

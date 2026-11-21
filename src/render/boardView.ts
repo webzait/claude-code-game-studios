@@ -62,6 +62,8 @@ export class BoardView {
   private time = 0;
   private last = 0;
   private particleGeo = new RoundedBoxGeometry(0.09, 0.09, 0.09, 2, 0.02);
+  private speedScale = 1;
+  private reduced = false;
 
   constructor(private canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -89,6 +91,12 @@ export class BoardView {
   }
   private cellZ(y: number): number {
     return y - ((this.level?.board.height ?? 1) - 1) / 2;
+  }
+
+  /** Playback speed multiplier, and reduced motion (no hops, squash or confetti). */
+  setMotion(speed: number, reduced: boolean): void {
+    this.speedScale = speed;
+    this.reduced = reduced;
   }
 
   /** Build the diorama for a level and show its start state. */
@@ -300,8 +308,10 @@ export class BoardView {
    * Animate one resolved step: turn first, then everyone steps, bumps or exits.
    * The logical state is already final when this is called.
    */
-  async play(events: readonly RobotEvent[], speed: number): Promise<void> {
+  async play(events: readonly RobotEvent[], queueSpeed: number): Promise<void> {
     const a = CONFIG.anim;
+    const speed = queueSpeed * this.speedScale;
+    const lively = this.reduced ? 0 : 1;
     const turning = events.filter((e) => e.turned);
     if (turning.length) {
       await Promise.all(
@@ -311,8 +321,7 @@ export class BoardView {
           return this.addTween(a.turnTime / speed, (k) => {
             view.angle = from - (Math.PI / 2) * easeOutBack(k);
             view.body.rotation.y = view.angle;
-            view.body.position.y = Math.sin(Math.PI * k) * 0.07;
-            view.antenna.rotation.z = Math.sin(Math.PI * k) * 0.5;
+            view.body.position.y = Math.sin(Math.PI * k) * 0.07 * lively;
           });
         }),
       );
@@ -331,7 +340,7 @@ export class BoardView {
             const m = easeInOut(k);
             view.root.position.x = fx + (tx - fx) * m;
             view.root.position.z = fz + (tz - fz) * m;
-            const arc = Math.sin(Math.PI * k);
+            const arc = Math.sin(Math.PI * k) * lively;
             view.body.position.y = arc * a.hopHeight;
             view.body.scale.set(1 - arc * 0.05, 1 + arc * 0.09, 1 - arc * 0.05);
             view.antenna.rotation.x = arc * 0.45;
@@ -345,8 +354,8 @@ export class BoardView {
               const s = k < 0.25 ? 1 + k * 0.9 : 1.225 * (1 - easeInOut((k - 0.25) / 0.75));
               view.visibleScale = Math.max(s, 0);
               view.body.scale.setScalar(Math.max(s, 0.0001));
-              view.body.rotation.y = view.angle - k * Math.PI * 2;
-              view.body.position.y = Math.sin(Math.PI * k) * 0.35;
+              view.body.rotation.y = view.angle - k * Math.PI * 2 * lively;
+              view.body.position.y = Math.sin(Math.PI * k) * 0.35 * lively;
               if (k >= 1) view.root.visible = false;
             });
           });
@@ -354,10 +363,10 @@ export class BoardView {
         // Blocked: lunge, squash against the obstacle, spring back.
         return this.addTween((a.moveTime * 1.05) / speed, (k) => {
           const lunge = k < 0.35 ? easeOut(k / 0.35) : 1 - easeOutBack((k - 0.35) / 0.65);
-          const off = lunge * a.bumpDistance;
+          const off = lunge * a.bumpDistance * (this.reduced ? 0.5 : 1);
           view.root.position.x = fx + dx * off;
           view.root.position.z = fz + dz * off;
-          const squash = Math.max(0, Math.sin(Math.PI * Math.min(k / 0.6, 1))) * 0.14;
+          const squash = Math.max(0, Math.sin(Math.PI * Math.min(k / 0.6, 1))) * 0.14 * lively;
           const along = 1 - squash;
           const across = 1 + squash * 0.6;
           // Heading is a multiple of 90 degrees, so the body's local z is the travel axis.
@@ -377,6 +386,7 @@ export class BoardView {
   }
 
   private burst(x: number, z: number, color: Color): void {
+    if (this.reduced) return;
     const palette = [CONFIG.colors.green, CONFIG.colors[color], '#FFFFFF'];
     for (let i = 0; i < 14; i++) {
       // Deterministic spread: looks random, needs no random source.

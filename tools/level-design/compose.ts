@@ -55,7 +55,7 @@ base.forEach((row, y) =>
   row.forEach((cell, x) => {
     if (cell !== '..') return;
     for (const col of 'rby') for (const d of '^>v<') {
-      const lvl = parseLevel({ id: 'p', name: 'p', moveBudget: 99, grid: withRobots([[x, y, col + d]]) });
+      const lvl = parseLevel({ id: 'p', name: 'p', grid: withRobots([[x, y, col + d]]) });
       if (run(lvl).won) pool[col].push([x, y, col + d]);
     }
   }),
@@ -75,7 +75,7 @@ for (let i = 0; i < spec.tries && found < spec.want; i++) {
     for (let attempt = 0; attempt < 40 && !placed; attempt++) {
       const pick = pool[col][Math.floor(rnd() * pool[col].length)];
       if (used.has(pick[1] * 100 + pick[0])) continue;
-      const trial = parseLevel({ id: 't', name: 't', moveBudget: 99, grid: withRobots([...cells, pick]) });
+      const trial = parseLevel({ id: 't', name: 't', grid: withRobots([...cells, pick]) });
       if (!run(trial).won) continue;
       used.add(pick[1] * 100 + pick[0]);
       cells.push(pick);
@@ -88,7 +88,7 @@ for (let i = 0; i < spec.tries && found < spec.want; i++) {
   const left = cells.filter(([x]) => x < base[0].length / 2).length;
   if (low < (spec.minLow ?? 0) || left < (spec.minLeft ?? 0)) continue;
   const grid = withRobots(cells);
-  const level = parseLevel({ id: 'c', name: 'c', moveBudget: spec.sequence.length, grid });
+  const level = parseLevel({ id: 'c', name: 'c', grid });
   const r = run(level);
   if (!r.won) continue;
   joint++;

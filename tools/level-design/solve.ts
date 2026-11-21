@@ -13,14 +13,14 @@ let defs: LevelDef[];
 const file = process.argv[2];
 if (file && existsSync(file)) {
   const raw = JSON.parse(readFileSync(file, 'utf8')) as Record<string, string[]>;
-  defs = Object.entries(raw).map(([id, grid]) => ({ id, name: id, moveBudget: 16, grid }));
+  defs = Object.entries(raw).map(([id, grid]) => ({ id, name: id, grid }));
 } else {
-  defs = [...(await import("../../src/levels/index")).LEVEL_DEFS];
+  defs = JSON.parse(readFileSync("data/levels.json", "utf8")) as LevelDef[];
 }
 for (const def of defs) {
   const level = parseLevel(def);
   const t0 = Date.now();
-  const res = solve(level.board, level.start, Number(process.env.MAXM ?? Math.max(def.moveBudget, 16)), undefined, true, Number(process.env.CAP ?? 3_000_000));
+  const res = solve(level.board, level.start, Number(process.env.MAXM ?? 16), undefined, true, Number(process.env.CAP ?? 3_000_000));
   const tally: Partial<Record<Outcome, number>> = {};
   let st = level.start;
   for (const c of res.solution ?? []) {
@@ -29,7 +29,7 @@ for (const def of defs) {
     st = r.state;
   }
   console.log(
-    `${def.id}: robots=${level.start.robots.length} budget=${def.moveBudget} optimum=${res.solution?.length ?? 'NONE'} ` +
+    `${def.id}: robots=${level.start.robots.length} optimum=${res.solution?.length ?? 'NONE'} ` +
       `optimal-solutions=${res.optimalCount} visited=${res.visited} ${Date.now() - t0}ms\n   ${res.solution?.join(' ')}\n   ${JSON.stringify(tally)}`,
   );
 }

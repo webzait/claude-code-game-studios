@@ -39,6 +39,13 @@ Each level has a move budget of the shortest solution plus two. Running out ends
 - [x] Undo, Restart, Replay
 - [x] 3D diorama with turn, step, bump and exit animations
 - [x] Mobile portrait HUD: level, collected, moves left, four command buttons, Next level
+- [x] Beacon Bay: ten levels, each with a stored witness solution
+- [x] Home, district map, settings; progress saved on the device with a versioned format
+- [x] Lighthouse landmark that recovers at 5 and 10 solved levels
+- [x] Route Scan (two-step hint) and Backup Signals, offered only when proven to be enough
+- [x] Test lab: exit rule, yellow early, spare moves, speed, unlock all
+- [ ] Districts 2-6 (defined in data, no levels yet)
+- [ ] Collection, Daily Route
 
 ## Keep
 -
@@ -50,13 +57,13 @@ After play: Doorgaan (proceed). Next step chosen: make it a real project at the 
 - Changing the core mechanic without consulting.
 
 ## Out of scope
-- Hints, extra moves, rewarded ads, robot skins, daily challenges, metagame: later, after the core is judged.
-- Sound.
+- Rewarded ads, purchases, robot skins, daily challenges: later. Hints and extra moves exist as free prototype stubs.
 - Orange and purple robots.
 
 ## Build order
 1. Engine, solver, five levels, playable in the browser. (built)
 2. Grown into the project root as a Web project: `src/`, `data/`, `tests/`. (built)
+3. Beacon Bay vertical slice from the Master Build Prompt: world layer, fair assistance, test lab. (built)
 
 ---
 **Kill condition:** if the colour command still feels like trial and error after level tuning.

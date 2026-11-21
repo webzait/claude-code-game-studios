@@ -3,8 +3,8 @@ import { step } from '../../src/engine/engine';
 import { parseLevel, type Level } from '../../src/levels/parse';
 
 /** Build a level from grid rows (see parseLevel for the cell format). */
-export function board(grid: string[], moveBudget = 99): Level {
-  return parseLevel({ id: 'test', name: 'test', moveBudget, grid });
+export function board(grid: string[]): Level {
+  return parseLevel({ id: 'test', name: 'test', grid });
 }
 
 /** Apply one command to a level's start state. */

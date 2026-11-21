@@ -3,7 +3,7 @@
     "id": "follow-the-arrow",
     "name": "Follow the Arrow",
     "par": 7,
-    "moveBudget": 9,
+    "witness": ["forward","forward","forward","red","forward","forward","forward"],
     "grid": [
       ".. .. .. .. EX",
       "r^ .. .. .. ..",
@@ -15,7 +15,7 @@
     "id": "one-color-turns",
     "name": "One Color Turns",
     "par": 7,
-    "moveBudget": 9,
+    "witness": ["blue","forward","red","forward","blue","forward","forward"],
     "grid": [
       ".. .. .. .. EX",
       "r^ .. .. .. ..",
@@ -25,10 +25,24 @@
     ]
   },
   {
+    "id": "side-door",
+    "name": "Side Door",
+    "par": 6,
+    "witness": ["red","blue","forward","red","forward","forward"],
+    "grid": [
+      ".. .. .. .. .. ..",
+      ".. ## .. .. .. ..",
+      ".. .. .. .. .. EX",
+      ".. b^ .. .. .. ..",
+      ".. .. .. .. .. ..",
+      ".. .. r< .. r< .."
+    ]
+  },
+  {
     "id": "use-the-wall",
     "name": "Use the Wall",
     "par": 8,
-    "moveBudget": 10,
+    "witness": ["red","forward","blue","forward","red","forward","forward","forward"],
     "grid": [
       ".. .. .. .. .. EX",
       ".. .. .. .. .. ..",
@@ -38,10 +52,24 @@
     ]
   },
   {
+    "id": "queue-up",
+    "name": "Queue Up",
+    "par": 8,
+    "witness": ["forward","blue","red","yellow","forward","forward","forward","forward"],
+    "grid": [
+      ".. .. .. .. .. EX",
+      "b^ .. .. .. .. ..",
+      "r^ .. .. .. ## y<",
+      "y^ .. .. .. .. ..",
+      ".. .. .. .. ## r<",
+      ".. .. .. .. .. .."
+    ]
+  },
+  {
     "id": "traffic-jam",
     "name": "Traffic Jam",
     "par": 8,
-    "moveBudget": 10,
+    "witness": ["forward","yellow","red","blue","forward","forward","forward","forward"],
     "grid": [
       ".. .. .. .. .. EX",
       "y^ .. .. .. .. ..",
@@ -52,10 +80,50 @@
     ]
   },
   {
+    "id": "long-way-round",
+    "name": "Long Way Round",
+    "par": 10,
+    "witness": ["blue","red","forward","forward","forward","red","blue","forward","forward","forward"],
+    "grid": [
+      ".. .. .. .. .. EX",
+      ".. r^ .. .. .. ..",
+      ".. .. .. .. ## b<",
+      ".. .. .. .. .. ..",
+      ".. b< .. r< .. .."
+    ]
+  },
+  {
+    "id": "two-lanes",
+    "name": "Two Lanes",
+    "par": 11,
+    "witness": ["forward","forward","red","blue","forward","forward","red","red","red","red","forward"],
+    "grid": [
+      ".. .. .. .. .. EX",
+      ".. .. .. .. .. ..",
+      "b^ r^ .. .. ## b<",
+      "r^ b^ .. .. .. ..",
+      ".. .. .. .. ## r<"
+    ]
+  },
+  {
+    "id": "patience",
+    "name": "Patience",
+    "par": 12,
+    "witness": ["forward","red","blue","forward","forward","forward","red","red","blue","red","forward","forward"],
+    "grid": [
+      ".. .. .. .. .. EX",
+      "r^ .. .. .. .. ..",
+      ".. .. .. .. .. ..",
+      "r^ .. .. .. ## b<",
+      ".. .. .. b< .. ..",
+      ".. .. .. .. ## b<"
+    ]
+  },
+  {
     "id": "one-command-many-consequences",
     "name": "One Command, Many Consequences",
     "par": 10,
-    "moveBudget": 12,
+    "witness": ["forward","yellow","red","forward","blue","yellow","red","forward","forward","forward"],
     "grid": [
       ".. r^ y^ b> b> EX",
       ".. ## r^ ## .. y^",

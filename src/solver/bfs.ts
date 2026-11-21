@@ -9,6 +9,11 @@ export interface SolveResult {
   readonly visited: number;
   /** Number of distinct shortest solutions (only counted when requested). */
   readonly optimalCount: number;
+  /**
+   * True when the search stopped at `maxVisited` before finishing. A capped
+   * search with no solution proves nothing: it is "not assessed", not "unsolvable".
+   */
+  readonly capped: boolean;
 }
 
 /**
@@ -23,7 +28,7 @@ export function solve(
   countOptimal = false,
   maxVisited = Infinity,
 ): SolveResult {
-  if (isWon(start)) return { solution: [], visited: 1, optimalCount: 1 };
+  if (isWon(start)) return { solution: [], visited: 1, optimalCount: 1, capped: false };
   interface Node {
     state: GameState;
     parent: Node | null;
@@ -62,14 +67,14 @@ export function solve(
         next.push(child);
       }
       if (winner && !countOptimal) break;
-      if (seen.size > maxVisited) return { solution: null, visited: seen.size, optimalCount: 0 };
+      if (seen.size > maxVisited) return { solution: null, visited: seen.size, optimalCount: 0, capped: true };
     }
     if (winner) {
       const solution: Command[] = [];
       for (let n: Node | null = winner; n && n.command; n = n.parent) solution.unshift(n.command);
-      return { solution, visited: seen.size, optimalCount: winWays };
+      return { solution, visited: seen.size, optimalCount: winWays, capped: false };
     }
     frontier = next;
   }
-  return { solution: null, visited: seen.size, optimalCount: 0 };
+  return { solution: null, visited: seen.size, optimalCount: 0, capped: false };
 }

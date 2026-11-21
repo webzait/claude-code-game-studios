@@ -36,5 +36,30 @@
   "lowMoves": 2,
   "rules": {
     "exitAcceptsMany": true
-  }
+  },
+  "moveSlack": 2,
+  "backupSignals": 3,
+  "scan": {
+    "maxVisited": 1500000
+  },
+  "lab": {
+    "yellowEarlyLevels": [
+      "one-color-turns"
+    ],
+    "slackOptions": [
+      1,
+      2,
+      3
+    ],
+    "speedOptions": [
+      0.75,
+      1,
+      1.5
+    ],
+    "certifyMaxVisited": 400000
+  },
+  "audio": {
+    "volume": 0.16
+  },
+  "milestoneTime": 2.6
 }

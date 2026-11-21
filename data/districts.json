@@ -1,0 +1,86 @@
+[
+  {
+    "id": "beacon-bay",
+    "name": "Beacon Bay",
+    "lore": "Harbor lights out of sync; bring the first flock home.",
+    "theme": "Group commands and exits",
+    "landmark": "Beacon lighthouse",
+    "accent": "#2FB7C4",
+    "levels": [
+      "follow-the-arrow",
+      "one-color-turns",
+      "side-door",
+      "use-the-wall",
+      "queue-up",
+      "traffic-jam",
+      "long-way-round",
+      "two-lanes",
+      "patience",
+      "one-command-many-consequences"
+    ],
+    "milestones": [
+      {
+        "id": "beacon-bay-lamp",
+        "afterLevels": 5,
+        "title": "Lamp repaired",
+        "text": "The lighthouse has its lamp back."
+      },
+      {
+        "id": "beacon-bay-lit",
+        "afterLevels": 10,
+        "title": "Lighthouse restored",
+        "text": "Beacon Bay shines again."
+      }
+    ]
+  },
+  {
+    "id": "cog-garden",
+    "name": "Cog Garden",
+    "lore": "Garden paths tangled; one turn fixes many routes.",
+    "theme": "Use walls to hold groups",
+    "landmark": "Mechanical greenhouse",
+    "accent": "#6FAE5B",
+    "levels": [],
+    "milestones": []
+  },
+  {
+    "id": "parcel-plaza",
+    "name": "Parcel Plaza",
+    "lore": "Deliveries pile up when routes cross.",
+    "theme": "Traffic jams and ordering",
+    "landmark": "Parcel clock",
+    "accent": "#D9A441",
+    "levels": [],
+    "milestones": []
+  },
+  {
+    "id": "glow-station",
+    "name": "Glow Station",
+    "lore": "Coordinate the flock to bring the station back online.",
+    "theme": "Three-color combinations",
+    "landmark": "Luminous station",
+    "accent": "#E5B93C",
+    "levels": [],
+    "milestones": []
+  },
+  {
+    "id": "cloud-works",
+    "name": "Cloud Works",
+    "lore": "High pathways reconnect when groups travel together.",
+    "theme": "Long elegant solutions",
+    "landmark": "Sky signal tower",
+    "accent": "#9DB8D6",
+    "levels": [],
+    "milestones": []
+  },
+  {
+    "id": "prism-core",
+    "name": "Prism Core",
+    "lore": "The final routes will restore the city's heart.",
+    "theme": "Mastery combinations",
+    "landmark": "Central Prism Core",
+    "accent": "#9856E8",
+    "levels": [],
+    "milestones": []
+  }
+]
