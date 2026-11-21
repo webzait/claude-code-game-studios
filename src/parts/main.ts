@@ -3,19 +3,18 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import { CONFIG } from '../config';
 import type { Color } from '../engine/types';
 import parts from '../../data/parts.json';
-import coinIcon from '../../assets/turnflock/ui/coin.webp';
-import extraMovesIcon from '../../assets/turnflock/ui/extra-moves.webp';
 import hintIcon from '../../assets/turnflock/ui/hint.webp';
 import { boardPixels, buildExit, buildFloorTile, buildObstacle, buildRim, buildRimCorner, buildRimEdge, buildUnderlay, rimLayout } from '../render/parts/board';
+import { buildFlockbot } from '../render/parts/flockbot';
+import './parts.css';
 import decorBushLarge from '../../assets/turnflock/decor/decor-bush-large.webp';
 import decorBushSmall from '../../assets/turnflock/decor/decor-bush-small.webp';
 import decorTuftClover from '../../assets/turnflock/decor/decor-tuft-clover.webp';
 import decorSprigTop from '../../assets/turnflock/decor/decor-sprig-top.webp';
-import { buildExit, buildFloorTile, buildObstacle, buildRim, buildRimCorner, buildRimEdge, buildUnderlay } from '../render/parts/board';
-import { buildFlockbot } from '../render/parts/flockbot';
 import { addCoinCards } from './coins';
+import coinIcon from '../../assets/turnflock/ui/coin.webp';
+import extraMovesIcon from '../../assets/turnflock/ui/extra-moves.webp';
 import { addSettingsCards } from './settings';
-import './parts.css';
 
 /**
  * The parts sheet: every game element built on its own and shown from the
@@ -370,82 +369,6 @@ for (const [cols, rows] of [[5, 5], [6, 6], [8, 8], [4, 7]] as const) {
     `<figure class="tf-bg-shot"><div class="tf-bg-phone" id="${id}" style="width:${w}px;height:${h}px"><div class="tf-bg ${variant}">${scene}</div>${inner}</div><figcaption>${label}</figcaption></figure>`;
   const SCREENS: [number, number][] = [[320, 568], [353, 768], [390, 844], [430, 932], [768, 1024]];
   const add = (id: string, title: string, dims: string, body: string, note: string): HTMLElement => {
-// Level selection screen: the paged grid as a standalone mock-up. Plain HTML and CSS (tf-levels-*),
-// with made-up progress; nothing here reads the save or is wired into the game.
-{
-  type Situation = 'new' | 'mid' | 'all' | 'perfect';
-  const TOTAL = 200;
-  const PER_PAGE = CONFIG.levelsPerPage;
-  const DONE: Record<Situation, number> = { new: 0, mid: 37, all: TOTAL, perfect: TOTAL };
-  const SITUATIONS: [Situation, string][] = [['new', 'Nieuwe speler'], ['mid', 'Halverwege · 37 van 200'], ['all', 'Alles uitgespeeld'], ['perfect', 'Alles met drie sterren']];
-  /** Made-up but fixed star results, so every screenshot shows the same mix. */
-  const starsFor = (level: number, s: Situation): number => {
-    const h = (level * 7919 + 13) % 10;
-    if (s === 'perfect') return 3;
-    return s === 'all' ? (h < 9 ? 3 : 2) : h < 6 ? 3 : h < 9 ? 2 : 1;
-  };
-  type Model = { s: Situation; done: number; target: number; stars: number; label: string };
-  const model = (s: Situation): Model => {
-    const done = DONE[s];
-    let stars = 0;
-    let improve = 0;
-    for (let i = done; i >= 1; i--) {
-      stars += starsFor(i, s);
-      if (starsFor(i, s) < 3) improve = i;
-    }
-    // Everything played: point at the first level without three stars; with nothing left to improve, start over.
-    const target = done < TOTAL ? done + 1 : improve || 1;
-    return { s, done, target, stars, label: done < TOTAL ? `Play level ${target}` : improve ? `Improve level ${target}` : 'Play again' };
-  };
-
-  const playIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.4 5v14l11.4-7z" fill="currentColor" stroke="currentColor" stroke-width="3.4" stroke-linejoin="round"/></svg>';
-  const gearIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><circle cx="16" cy="7" r="2.4" fill="none" stroke="currentColor" stroke-width="2.6"/><circle cx="8" cy="17" r="2.4" fill="none" stroke="currentColor" stroke-width="2.6"/></svg>';
-  const chevron = (d: string): string => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-  /** A button from the existing family (tf-btn), sized through its custom properties. */
-  const famButton = (kind: string, size: string, inner: string, name: string, disabled = false): string =>
-    `<button type="button" class="tf-btn ${kind}" style="${size}" aria-label="${name}"${disabled ? ' disabled' : ''}><span class="tf-clip"><span class="tf-face">${inner}</span></span></button>`;
-  const SMALL = '--w:46px;--h:40px;--d:6px;--r:15px';
-
-  /** One level tile. `extra` adds a class, only to fix a look on the sheet. */
-  const tile = (level: number, m: Model, extra = ''): string => {
-    if (level > m.done + 1) return `<button type="button" class="tf-levels-tile is-locked ${extra}" aria-label="Level ${level}, locked" disabled>${level}<span class="tf-levels-mark"></span></button>`;
-    if (level === m.done + 1) return `<button type="button" class="tf-levels-tile is-next ${extra}" aria-label="Level ${level}, play next" aria-current="true">${level}<span class="tf-levels-mark"></span></button>`;
-    const n = starsFor(level, m.s);
-    const again = m.done === TOTAL && level === m.target ? ' is-target' : '';
-    return `<button type="button" class="tf-levels-tile s${n}${again} ${extra}" aria-label="Level ${level}, ${n} of 3 stars"${again ? ' aria-current="true"' : ''}>${level}<span class="tf-levels-stars"></span></button>`;
-  };
-
-  const head = (m: Model): string => `<header class="tf-levels-head">
-      <h3 class="tf-levels-title">TURNFLOCK</h3>
-      <span class="tf-levels-pill" aria-label="Coins"><i class="tf-levels-coin"></i>${m.s === 'new' ? 30 : m.s === 'mid' ? 485 : m.s === 'all' ? 2640 : 3120}</span>
-      <span class="tf-levels-pill tf-levels-progress" aria-label="${m.done} of ${TOTAL} levels, ${m.stars} of ${TOTAL * 3} stars"><span>${m.done}<small>/ ${TOTAL}</small></span><span><i class="tf-levels-star"></i>${m.stars}</span></span>
-      ${famButton('tf-utility', SMALL, gearIcon, 'Settings')}
-    </header>`;
-  const play = (m: Model): string => famButton('tf-action tf-levels-play', '--w:100%;--h:var(--tl-play-h);--d:var(--tl-play-d);--r:22px', `${playIcon}<span class="tf-label">${m.label}</span>`, m.label);
-  const phoneOpen = (kind: string, id: string, w: number, h: number): string => `<div class="tf-levels-phone tf-levels-${kind}" id="${id}" style="width:${w}px;height:${h}px">`;
-
-  /** A: one page of 20 at a time, pager in the dock. `perPage` only differs on wide screens (5×4 is still 20). */
-  const optionA = (s: Situation, id: string, w = 390, h = 844): string => {
-    const m = model(s);
-    const pages = Math.ceil(TOTAL / PER_PAGE);
-    const page = Math.floor((m.target - 1) / PER_PAGE);
-    const first = page * PER_PAGE + 1;
-    let tiles = '';
-    for (let i = first; i < first + PER_PAGE && i <= TOTAL; i++) tiles += tile(i, m);
-    const dots = Array.from({ length: pages }, (_, p) => `<i class="${p === page ? 'on' : (p + 1) * PER_PAGE <= m.done ? 'full' : ''}"></i>`).join('');
-    return `${phoneOpen('a', id, w, h)}${head(m)}
-      <div class="tf-levels-body"><div class="tf-levels-tray"><div class="tf-levels-grid">${tiles}</div></div></div>
-      <footer class="tf-levels-dock">
-        <div class="tf-levels-pager">${famButton('tf-utility', SMALL, chevron('M15 5l-7 7 7 7'), 'Previous levels', page === 0)}
-          <div class="tf-levels-pageinfo" aria-label="Page ${page + 1} of ${pages}"><span>Levels ${first}–${Math.min(first + PER_PAGE - 1, TOTAL)}</span><span class="tf-levels-dots">${dots}</span></div>
-          ${famButton('tf-utility', SMALL, chevron('M9 5l7 7-7 7'), 'Next levels', page === pages - 1)}</div>
-        ${play(m)}
-      </footer></div>`;
-  };
-
-  const fig = (html: string, caption: string): string => `<figure class="tf-levels-fig">${html}<figcaption>${caption}</figcaption></figure>`;
-  const sheet = document.getElementById('sheet')!;
-  const add = (id: string, title: string, dims: string, body: string, note: string): void => {
     const el = document.createElement('section');
     el.className = 'card wide';
     el.id = id;
@@ -470,6 +393,9 @@ for (const [cols, rows] of [[5, 5], [6, 6], [8, 8], [4, 7]] as const) {
     'Alleen de glans op het water schuift en ademt heel langzaam (38 s en 9 s). Alleen CSS, geen extra afbeeldingen.');
   motion.querySelector<HTMLInputElement>('#bg-motion-toggle')!.addEventListener('change', (event) => {
     motion.querySelector('.tf-bg')!.classList.toggle('tf-bg-motion', (event.target as HTMLInputElement).checked);
+  });
+}
+
 // Foreground decoration: bushes cut from the owner's one original, as their own layer.
 // Not in the playable game yet. Sizes and positions live in parts.css (.tf-decor-*).
 {
@@ -637,8 +563,10 @@ for (const [cols, rows] of [[5, 5], [6, 6], [8, 8], [4, 7]] as const) {
     document.body.dataset.decorReady = 'true';
   });
 }
+
 // Coin controls: counter, plus button, price tags, reward and the icon at small sizes.
 addCoinCards(document.getElementById('sheet')!);
+
 // Perks: a proposal (design/perks-proposal.md). Icons, buttons and placement only; none of this is in the game.
 {
   type Size = { width: number; height: number; depth: number; radius: number };
@@ -760,6 +688,88 @@ addCoinCards(document.getElementById('sheet')!);
   <div class="tf-perk-strips" id="perks-phone">${stripA}${stripB}${stripC}</div>
   <p class="note">Alleen mock-ups: geen van deze perks zit in de game. Tonen: hint-cyaan voor informatie, booster-paars voor de regelbuiger, plus-groen voor zetten, munt-goud voor de prijs. Linksom verandert de kernregel (altijd rechtsom) voor één zet en wacht op een besluit van de eigenaar.</p>`;
   document.getElementById('sheet')!.appendChild(el);
+}
+
+// Level selection screen: the paged grid as a standalone mock-up. Plain HTML and CSS (tf-levels-*),
+// with made-up progress; nothing here reads the save or is wired into the game.
+{
+  type Situation = 'new' | 'mid' | 'all' | 'perfect';
+  const TOTAL = 200;
+  const PER_PAGE = CONFIG.levelsPerPage;
+  const DONE: Record<Situation, number> = { new: 0, mid: 37, all: TOTAL, perfect: TOTAL };
+  const SITUATIONS: [Situation, string][] = [['new', 'Nieuwe speler'], ['mid', 'Halverwege · 37 van 200'], ['all', 'Alles uitgespeeld'], ['perfect', 'Alles met drie sterren']];
+  /** Made-up but fixed star results, so every screenshot shows the same mix. */
+  const starsFor = (level: number, s: Situation): number => {
+    const h = (level * 7919 + 13) % 10;
+    if (s === 'perfect') return 3;
+    return s === 'all' ? (h < 9 ? 3 : 2) : h < 6 ? 3 : h < 9 ? 2 : 1;
+  };
+  type Model = { s: Situation; done: number; target: number; stars: number; label: string };
+  const model = (s: Situation): Model => {
+    const done = DONE[s];
+    let stars = 0;
+    let improve = 0;
+    for (let i = done; i >= 1; i--) {
+      stars += starsFor(i, s);
+      if (starsFor(i, s) < 3) improve = i;
+    }
+    // Everything played: point at the first level without three stars; with nothing left to improve, start over.
+    const target = done < TOTAL ? done + 1 : improve || 1;
+    return { s, done, target, stars, label: done < TOTAL ? `Play level ${target}` : improve ? `Improve level ${target}` : 'Play again' };
+  };
+
+  const playIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.4 5v14l11.4-7z" fill="currentColor" stroke="currentColor" stroke-width="3.4" stroke-linejoin="round"/></svg>';
+  const gearIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><circle cx="16" cy="7" r="2.4" fill="none" stroke="currentColor" stroke-width="2.6"/><circle cx="8" cy="17" r="2.4" fill="none" stroke="currentColor" stroke-width="2.6"/></svg>';
+  const chevron = (d: string): string => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  /** A button from the existing family (tf-btn), sized through its custom properties. */
+  const famButton = (kind: string, size: string, inner: string, name: string, disabled = false): string =>
+    `<button type="button" class="tf-btn ${kind}" style="${size}" aria-label="${name}"${disabled ? ' disabled' : ''}><span class="tf-clip"><span class="tf-face">${inner}</span></span></button>`;
+  const SMALL = '--w:46px;--h:40px;--d:6px;--r:15px';
+
+  /** One level tile. `extra` adds a class, only to fix a look on the sheet. */
+  const tile = (level: number, m: Model, extra = ''): string => {
+    if (level > m.done + 1) return `<button type="button" class="tf-levels-tile is-locked ${extra}" aria-label="Level ${level}, locked" disabled>${level}<span class="tf-levels-mark"></span></button>`;
+    if (level === m.done + 1) return `<button type="button" class="tf-levels-tile is-next ${extra}" aria-label="Level ${level}, play next" aria-current="true">${level}<span class="tf-levels-mark"></span></button>`;
+    const n = starsFor(level, m.s);
+    const again = m.done === TOTAL && level === m.target ? ' is-target' : '';
+    return `<button type="button" class="tf-levels-tile s${n}${again} ${extra}" aria-label="Level ${level}, ${n} of 3 stars"${again ? ' aria-current="true"' : ''}>${level}<span class="tf-levels-stars"></span></button>`;
+  };
+
+  const head = (m: Model): string => `<header class="tf-levels-head">
+      <h3 class="tf-levels-title">TURNFLOCK</h3>
+      <span class="tf-levels-pill" aria-label="Coins"><i class="tf-levels-coin"></i>${m.s === 'new' ? 30 : m.s === 'mid' ? 485 : m.s === 'all' ? 2640 : 3120}</span>
+      <span class="tf-levels-pill tf-levels-progress" aria-label="${m.done} of ${TOTAL} levels, ${m.stars} of ${TOTAL * 3} stars"><span>${m.done}<small>/ ${TOTAL}</small></span><span><i class="tf-levels-star"></i>${m.stars}</span></span>
+      ${famButton('tf-utility', SMALL, gearIcon, 'Settings')}
+    </header>`;
+  const play = (m: Model): string => famButton('tf-action tf-levels-play', '--w:100%;--h:var(--tl-play-h);--d:var(--tl-play-d);--r:22px', `${playIcon}<span class="tf-label">${m.label}</span>`, m.label);
+  const phoneOpen = (kind: string, id: string, w: number, h: number): string => `<div class="tf-levels-phone tf-levels-${kind}" id="${id}" style="width:${w}px;height:${h}px">`;
+
+  /** A: one page of 20 at a time, pager in the dock. `perPage` only differs on wide screens (5×4 is still 20). */
+  const optionA = (s: Situation, id: string, w = 390, h = 844): string => {
+    const m = model(s);
+    const pages = Math.ceil(TOTAL / PER_PAGE);
+    const page = Math.floor((m.target - 1) / PER_PAGE);
+    const first = page * PER_PAGE + 1;
+    let tiles = '';
+    for (let i = first; i < first + PER_PAGE && i <= TOTAL; i++) tiles += tile(i, m);
+    const dots = Array.from({ length: pages }, (_, p) => `<i class="${p === page ? 'on' : (p + 1) * PER_PAGE <= m.done ? 'full' : ''}"></i>`).join('');
+    return `${phoneOpen('a', id, w, h)}${head(m)}
+      <div class="tf-levels-body"><div class="tf-levels-tray"><div class="tf-levels-grid">${tiles}</div></div></div>
+      <footer class="tf-levels-dock">
+        <div class="tf-levels-pager">${famButton('tf-utility', SMALL, chevron('M15 5l-7 7 7 7'), 'Previous levels', page === 0)}
+          <div class="tf-levels-pageinfo" aria-label="Page ${page + 1} of ${pages}"><span>Levels ${first}–${Math.min(first + PER_PAGE - 1, TOTAL)}</span><span class="tf-levels-dots">${dots}</span></div>
+          ${famButton('tf-utility', SMALL, chevron('M9 5l7 7-7 7'), 'Next levels', page === pages - 1)}</div>
+        ${play(m)}
+      </footer></div>`;
+  };
+
+  const fig = (html: string, caption: string): string => `<figure class="tf-levels-fig">${html}<figcaption>${caption}</figcaption></figure>`;
+  const sheet = document.getElementById('sheet')!;
+  const add = (id: string, title: string, dims: string, body: string, note: string): void => {
+    const el = document.createElement('section');
+    el.className = 'card wide';
+    el.id = id;
+    el.innerHTML = `<h2>${title}</h2><p class="dims">${dims}</p>${body}<p class="note">${note}</p>`;
     sheet.appendChild(el);
   };
 
@@ -790,6 +800,8 @@ addCoinCards(document.getElementById('sheet')!);
   add('levels-sizes', 'Levelscherm · vier schermmaten', SIZES.map(([w, h]) => `${w}×${h}`).join(' · '),
     `<div class="tf-levels-row">${SIZES.map(([w, h]) => fig(optionA('mid', `levels-a-${w}`, w, h), `${w}×${h}`)).join('')}</div>`,
     'De tegelhoogte volgt de schermhoogte; op een tablet wordt het 5×4. Kopregel en dok worden op lage schermen iets platter.');
+}
+
 // End-of-round pop-up: plain HTML and CSS (tf-end-*) in a phone frame over a stand-in for the board.
 // A mock-up of every situation the game's card has today; it is not wired into the playable game.
 {
@@ -972,6 +984,7 @@ addCoinCards(document.getElementById('sheet')!);
   }, { threshold: 0.6 }).observe(live);
   el.querySelector('.tf-end-again')!.addEventListener('click', play);
 }
+
 // The settings screen and its controls (src/parts/settings.ts).
 addSettingsCards(document.getElementById('sheet')!);
 
