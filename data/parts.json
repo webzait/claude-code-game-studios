@@ -157,20 +157,53 @@
     "gain": 1.15
   },
   "buttons": {
+    "pressFraction": 0.8,
     "utility": {
       "width": 120,
       "height": 48,
-      "depth": 16
+      "depth": 16,
+      "radius": 20
     },
     "action": {
       "width": 96,
       "height": 96,
-      "depth": 20
+      "depth": 20,
+      "radius": 24
     },
     "hint": {
       "width": 120,
       "height": 48,
-      "depth": 16
+      "depth": 16,
+      "radius": 20
+    },
+    "phone": {
+      "stripWidth": 390,
+      "padding": 14,
+      "gap": 10,
+      "utility": {
+        "width": 114,
+        "height": 44,
+        "depth": 12,
+        "radius": 18
+      },
+      "utilityNarrow": {
+        "width": 83,
+        "height": 44,
+        "depth": 12,
+        "radius": 17
+      },
+      "action": {
+        "width": 83,
+        "height": 83,
+        "depth": 17,
+        "radius": 21
+      },
+      "hintCompact": {
+        "width": 52,
+        "height": 40,
+        "depth": 8,
+        "radius": 15
+      }
     }
   }
 }

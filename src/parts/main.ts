@@ -283,29 +283,79 @@ for (const [cols, rows] of [[5, 5], [6, 6], [8, 8], [4, 7]] as const) {
   card('Passing: alle losse delen samen (6×6)', 'assembly', board, 'Alleen een pascontrole van de losse onderdelen; dit is nog niet het speelbord van de game.', ['main', 'top'], true);
 }
 
-// Buttons: plain HTML and CSS, each on its own at the sheet's size.
+// Buttons: plain HTML and CSS. Sizes come from data/parts.json and reach the CSS as custom properties.
 {
-  const turn = '<svg viewBox="0 0 24 24"><path d="M19.2 12a7.2 7.2 0 1 1-2.4-5.4" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/><path d="M20 3.2v5h-5" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  const up = '<svg viewBox="0 0 24 24"><path d="M12 20V5M5.5 11.5 12 5l6.5 6.5" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  const undo = '<svg viewBox="0 0 24 24"><path d="M9 7 4.5 11.5 9 16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 11.5h9a5 5 0 0 1 0 10h-3" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>';
-  const restart = '<svg viewBox="0 0 24 24"><path d="M19 12a7 7 0 1 1-2.3-5.2" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M19.5 3.5v4.2h-4.2" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  const replay = '<svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+  type Size = { width: number; height: number; depth: number; radius: number };
+  /** One icon: the shape drawn twice, a soft offset copy under the real one, so it sits embossed on the cap. */
+  const icon = (shape: string): string => `<svg viewBox="0 0 24 24" aria-hidden="true"><g class="tf-ink-shadow" transform="translate(0 1.3)">${shape}</g><g>${shape}</g></svg>`;
+  const stroke = (d: string, width: number): string => `<path d="${d}" fill="none" stroke="currentColor" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const turnShape = (width: number): string => stroke('M17.1 16.9A7 7 0 1 1 15.5 8', width) + stroke('M18.4 3.2v6h-6', width);
+  const turn = icon(turnShape(3.9));
+  const up = icon(stroke('M12 20.6V6M5.2 11.4 12 4.6l6.8 6.8', 4.5));
+  const undo = icon(`<path d="M9.4 4.2 3.6 9.3l5.8 5.1z" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>` + stroke('M9 9.3h5.4a5.3 5.3 0 0 1 0 10.6H9.6', 3.5));
+  const restart = icon(turnShape(3.5));
+  const replay = icon('<path d="M7.4 5v14l11.4-7z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>');
+  const bulb = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.7 15.4a5.9 5.9 0 1 1 6.6 0v1.9H8.7z" fill="#f4c62f" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M9.9 20.6h4.2" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M12 .9v1.4M4.3 3.6l1 1M19.7 3.6l-1 1M1.4 10.4h1.5M22.6 10.4h-1.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 9.6a2.6 2.6 0 0 1 2-2" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+
   const b = parts.buttons;
-  const cell = (html: string, label: string): string => `<div class="btn-cell">${html}<span>${label}</span></div>`;
+  const p = b.phone;
+  const vars = (s: Size): string => `--w:${s.width}px;--h:${s.height}px;--d:${s.depth}px;--r:${s.radius}px;--press-fraction:${b.pressFraction}`;
+  type State = '' | 'pressed' | 'disabled' | 'nudge';
+  /** One button. `state` only fixes a look for the sheet; in the game :active and the disabled attribute do it. */
+  const button = (kind: string, s: Size, inner: string, name: string, state: State = '', extra = ''): string =>
+    `<button type="button" class="tf-btn ${kind}${state === 'pressed' || state === 'nudge' ? ` ${state}` : ''}" style="${vars(s)}${extra}" aria-label="${name}"${state === 'disabled' ? ' disabled' : ''}><span class="tf-face">${inner}</span></button>`;
+  const label = (text: string): string => `<span class="tf-label">${text}</span>`;
+  const utility = (s: Size, glyph: string, text: string, state: State = '', extra = ''): string => button('tf-utility', s, glyph + label(text), text, state, extra);
+  const hint = (s: Size, state: State = '', kind = 'tf-hint'): string => button(kind, s, bulb + label('Hint'), 'Hint', state);
+  const action = (s: Size, color: string, state: State = ''): string => button(`tf-action ${color}`, s, color === 'forward' ? up : turn, color === 'forward' ? 'Vooruit' : `Draai ${color}`, state);
+  const cell = (html: string, text: string): string => `<div class="btn-cell">${html}<span>${text}</span></div>`;
+  const STATES: [State, string][] = [['', 'rust'], ['pressed', 'ingedrukt'], ['disabled', 'uit']];
+  const ACTION_STATES: [State, string][] = [...STATES, ['nudge', 'nudge']];
+  const COLORS = ['red', 'blue', 'yellow', 'forward'] as const;
+  const COLOR_NAMES = { red: 'rood', blue: 'blauw', yellow: 'geel', forward: 'vooruit' } as const;
+
+  const small = '--fs:12.5px;--icon:17px';
+  const utilityRow = (narrow: boolean): string => {
+    const s = narrow ? p.utilityNarrow : p.utility;
+    const extra = narrow ? `;${small}` : '';
+    return `<div class="tf-line">${utility(s, undo, 'Undo', '', extra)}${utility(s, restart, 'Restart', '', extra)}${utility(s, replay, 'Replay', '', extra)}${narrow ? button('tf-hint', s, bulb + label('Hint'), 'Hint', '', extra) : ''}</div>`;
+  };
+  const actionRow = `<div class="tf-line">${COLORS.map((c) => action(p.action, c, c === 'blue' ? 'nudge' : '')).join('')}</div>`;
+  const phone = (id: string, withHintInBar: boolean): string => `<div class="tf-phone" id="${id}">
+      <div class="tf-bar"><span class="tf-pill grow">Level 5</span><span class="tf-pill">0 / 12</span><span class="tf-pill">12 zetten</span>${withHintInBar ? hint(p.hintCompact, '', 'tf-hint compact') : ''}</div>
+      <div class="tf-board">speelbord</div>
+      <div class="tf-controls">${utilityRow(!withHintInBar)}${actionRow}</div>
+    </div>`;
+
   const el = document.createElement('section');
   el.className = 'card wide';
   el.id = 'buttons';
   el.innerHTML = `<h2>Knoppen</h2><p class="dims">utility ${b.utility.width}×${b.utility.height} px, ${b.utility.depth} px diep · actie ${b.action.width}×${b.action.height} px, ${b.action.depth} px diep · hint ${b.hint.width}×${b.hint.height} px, ${b.hint.depth} px diep</p>
-  <div class="btn-row">
-    ${cell(`<button class="tf-btn tf-utility" id="btn-undo">${undo}Undo</button>`, 'Kleine utility-knop')}
-    ${cell(`<button class="tf-btn tf-utility" id="btn-restart">${restart}Restart</button>`, 'Utility: Restart')}
-    ${cell(`<button class="tf-btn tf-utility" id="btn-replay">${replay}Replay</button>`, 'Utility: Replay')}
-    ${cell(`<button class="tf-btn tf-utility tf-hint" id="btn-hint"><img src="${hintIcon}" alt="" />Hint</button>`, 'Hint-knop')}
-    ${cell(`<button class="tf-btn tf-action red" id="btn-red">${turn}</button>`, 'Grote actieknop · rood')}
-    ${cell(`<button class="tf-btn tf-action blue">${turn}</button>`, 'blauw')}
-    ${cell(`<button class="tf-btn tf-action yellow">${turn}</button>`, 'geel')}
-    ${cell(`<button class="tf-btn tf-action forward" id="btn-forward">${up}</button>`, 'vooruit')}
-  </div><p class="note">Echte HTML-knoppen: indrukbaar, tekst blijft tekst. De "diepte" is de zichtbare zijkant onder het vlak.</p>`;
+  <h3 class="btn-title">Op bladmaat</h3>
+  <div class="btn-row" id="buttons-sheet">
+    ${cell(utility(b.utility, undo, 'Undo'), 'Utility: Undo')}
+    ${cell(utility(b.utility, restart, 'Restart'), 'Utility: Restart')}
+    ${cell(utility(b.utility, replay, 'Replay'), 'Utility: Replay')}
+    ${cell(hint(b.hint), 'Hint-knop')}
+    ${COLORS.map((c) => cell(action(b.action, c), `Actie · ${COLOR_NAMES[c]}`)).join('')}
+  </div>
+  <h3 class="btn-title">Toestanden · utility en hint</h3>
+  <div class="tf-states three" id="buttons-states-utility">
+    ${STATES.map(([, n]) => `<span>${n}</span>`).join('')}
+    ${STATES.map(([s]) => utility(b.utility, undo, 'Undo', s)).join('')}
+    ${STATES.map(([s]) => hint(b.hint, s)).join('')}
+    ${button('tf-hint', b.hint, `<img src="${hintIcon}" alt="" />` + label('Hint'), 'Hint')}<span class="wide">← alternatief met hint.webp</span>
+  </div>
+  <h3 class="btn-title">Toestanden · actieknop (telefoonmaat)</h3>
+  <div class="tf-states four" id="buttons-states-action">
+    ${ACTION_STATES.map(([, n]) => `<span>${n}</span>`).join('')}
+    ${COLORS.map((c) => ACTION_STATES.map(([s]) => action(p.action, c, s)).join('')).join('')}
+  </div>
+  <h3 class="btn-title">Telefoon ${p.stripWidth} px · optie A: Hint compact in de bovenbalk</h3>
+  ${phone('buttons-phone-a', true)}
+  <h3 class="btn-title">Telefoon ${p.stripWidth} px · optie B: vier smallere utility-knoppen</h3>
+  ${phone('buttons-phone-b', false)}
+  <p class="note">Echte HTML-knoppen met CSS: tekst blijft tekst, maten komen uit <code>--w --h --d --r</code>. De kap zakt bij indrukken ${Math.round(b.pressFraction * 100)}% van de diepte in de zijwand; de voetafdruk en het raakvlak blijven gelijk. Blauw toont in de telefoonstroken de nudge.</p>`;
   document.getElementById('sheet')!.appendChild(el);
 }
 
