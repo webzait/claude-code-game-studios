@@ -66,6 +66,7 @@ export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
     if (typeof lab.moveSlack === 'number' && lab.moveSlack >= 0 && lab.moveSlack <= 9) save.lab.moveSlack = lab.moveSlack;
     if (typeof lab.speed === 'number' && lab.speed > 0.2 && lab.speed < 4) save.lab.speed = lab.speed;
     if (typeof lab.unlockAll === 'boolean') save.lab.unlockAll = lab.unlockAll;
+    if (lab.board === 'roomy' || lab.board === 'classic') save.lab.board = lab.board;
   }
   return save;
 }

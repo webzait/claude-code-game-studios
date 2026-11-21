@@ -67,6 +67,8 @@ class Game {
   private view = new BoardView(el<HTMLCanvasElement>('board'));
   private hud: Hud;
   private screen: ScreenName = 'map';
+  /** Page of the level selection on show; null opens the page of the current level. */
+  private page: number | null = null;
   private levelIndex = 0;
   private level: GameLevel = LEVELS[0];
   private session = new Session(LEVELS[0], { budget: LEVELS[0].par + CONFIG.moveSlack });
@@ -104,6 +106,7 @@ class Game {
       () => this.screen === 'level',
     );
     el('toSettings').addEventListener('click', () => this.tap(() => this.show('settings')));
+    el('continue').addEventListener('click', () => this.tap(() => this.startLevel(resumeIndex(LEVEL_IDS, this.save.best))));
     el('settingsBack').addEventListener('click', () => this.tap(() => this.show('map')));
     new ResizeObserver(() => this.view.resize()).observe(document.querySelector('.stage') as HTMLElement);
     this.applySettings();
@@ -130,6 +133,7 @@ class Game {
   private applySettings(): void {
     document.documentElement.classList.toggle('reduce-motion', this.reduced);
     this.view.setMotion(this.save.lab.speed, this.reduced);
+    this.view.setLayout(CONFIG.board[this.save.lab.board]);
   }
 
   // ---------------------------------------------------------------- screens
@@ -143,7 +147,10 @@ class Game {
     for (const name of ['map', 'level', 'settings'] as const) el(name).hidden = name !== screen;
     this.hud.hideCard();
     this.view.skip();
-    if (screen === 'map') this.drawMap();
+    if (screen === 'map') {
+      this.page = null;
+      this.drawMap();
+    }
     if (screen === 'settings') this.drawSettings();
   }
 
@@ -162,7 +169,20 @@ class Game {
         current: index === resume && moves === undefined,
       };
     });
-    renderLevels(nodes, (index) => this.tap(() => this.startLevel(index)));
+    const pageSize = CONFIG.levelsPerPage;
+    this.page ??= Math.floor(resume / pageSize);
+    const allDone = nodes.every((n) => n.solved);
+    renderLevels({
+      nodes,
+      page: this.page,
+      pageSize,
+      continueLabel: allDone ? `Play again · Level ${resume + 1}` : best[LEVEL_IDS[0]] === undefined ? 'Play · Level 1' : `Continue · Level ${resume + 1}`,
+      onPick: (index) => this.tap(() => this.startLevel(index)),
+      onPage: (page) => {
+        this.page = page;
+        this.tap(() => this.drawMap());
+      },
+    });
   }
 
   private drawSettings(): void {

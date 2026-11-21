@@ -17,12 +17,33 @@ export interface MapNode {
   current: boolean;
 }
 
-/** Draw the level selection. */
-export function renderLevels(nodes: MapNode[], onPick: (index: number) => void): void {
+/**
+ * Draw the level selection: a Continue button and one page of level tiles.
+ * Pages keep the screen usable with hundreds or thousands of levels.
+ */
+export function renderLevels(model: {
+  nodes: MapNode[];
+  page: number;
+  pageSize: number;
+  continueLabel: string;
+  onPick: (index: number) => void;
+  onPage: (page: number) => void;
+}): void {
+  const { nodes, page, pageSize, onPick } = model;
+  const pages = Math.max(1, Math.ceil(nodes.length / pageSize));
   el('mapCount').textContent = `${nodes.filter((n) => n.solved).length}/${nodes.length}`;
+  el('continue').textContent = model.continueLabel;
+  const pager = el('pager');
+  pager.hidden = pages < 2;
+  el('pageLabel').textContent = `${page * pageSize + 1}–${Math.min((page + 1) * pageSize, nodes.length)}`;
+  el<HTMLButtonElement>('pagePrev').disabled = page === 0;
+  el<HTMLButtonElement>('pageNext').disabled = page >= pages - 1;
+  el('pagePrev').onclick = () => model.onPage(page - 1);
+  el('pageNext').onclick = () => model.onPage(page + 1);
   const box = el('nodes');
   box.innerHTML = '';
-  nodes.forEach((node, index) => {
+  nodes.slice(page * pageSize, (page + 1) * pageSize).forEach((node) => {
+    const index = node.number - 1;
     const button = document.createElement('button');
     button.className = `node${node.solved ? ' done' : ''}${node.current ? ' current' : ''}`;
     button.id = `node-${node.number}`;
@@ -173,6 +194,19 @@ export function renderSettings(save: SaveData, handlers: SettingsHandlers): void
           CONFIG.lab.speedOptions.map((n) => ({ label: `${n}x`, value: n })),
           save.lab.speed,
           (v) => handlers.setLab({ speed: v }),
+        ),
+      ),
+      setting(
+        'Board',
+        'Roomy: larger, against the top. Classic: as before',
+        segmented(
+          'boardLayout',
+          [
+            { label: 'Roomy', value: 'roomy' as const },
+            { label: 'Classic', value: 'classic' as const },
+          ],
+          save.lab.board,
+          (v) => handlers.setLab({ board: v }),
         ),
       ),
       setting('Unlock all', 'Open every level', segmented('unlockAll', onOff, save.lab.unlockAll, (v) => handlers.setLab({ unlockAll: v }))),

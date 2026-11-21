@@ -42,7 +42,10 @@ Each level has a move budget of the shortest solution plus two. Running out ends
 - [x] Ten levels, each with a stored witness solution
 - [x] Level selection as the start screen; settings; progress saved on the device with a versioned format
 - [x] Hint (two steps) and +3 extra moves, offered only when proven to be enough
-- [x] Test lab: exit rule, yellow early, spare moves, speed, unlock all
+- [x] Test lab: exit rule, yellow early, spare moves, speed, board framing, unlock all
+- [x] Level selection with a Continue button and pages of 20
+- [x] Robots always face the player with large eyes; the head arrow and pupils show the heading
+- [ ] Scoring (points or coins: to be decided)
 
 ## Keep
 -

@@ -1,9 +1,20 @@
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { CONFIG } from '../config';
 import { DIR_DX, DIR_DY, type Color, type GameState, type RobotEvent } from '../engine/types';
 import type { Level } from '../levels/parse';
-import { buildRobot, type RobotView } from './robot';
+import { aimRobot, buildRobot, type RobotView } from './robot';
+
+/** How the board sits in the canvas. */
+export interface BoardLayout {
+  /** Camera tilt away from straight down, in degrees. */
+  readonly tilt: number;
+  /** Width of the frame around the tiles, in cells (both sides together). */
+  readonly frame: number;
+  /** Push the board against the top of the canvas instead of centring it. */
+  readonly alignTop: boolean;
+}
 
 interface Tween {
   elapsed: number;
@@ -62,6 +73,7 @@ export class BoardView {
   private time = 0;
   private last = 0;
   private particleGeo = new RoundedBoxGeometry(0.09, 0.09, 0.09, 2, 0.02);
+  private layout: BoardLayout = CONFIG.board.roomy;
   private speedScale = 1;
   private reduced = false;
 
@@ -70,15 +82,21 @@ export class BoardView {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.toneMapping = THREE.NoToneMapping;
+    // Soft studio reflections give the glossy materials something to mirror.
+    const pmrem = new THREE.PMREMGenerator(this.renderer);
+    this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    this.scene.environmentIntensity = 0.22;
+    pmrem.dispose();
     this.scene.add(this.boardGroup);
-    this.scene.add(new THREE.HemisphereLight('#FFFFFF', '#D5DAE2', 1.55));
-    this.sun = new THREE.DirectionalLight('#FFFFFF', 1.9);
+    this.scene.add(new THREE.HemisphereLight('#FFFFFF', '#B9C8EE', 1.05));
+    this.sun = new THREE.DirectionalLight('#FFFFFF', 1.35);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(2048, 2048);
     this.sun.shadow.radius = 5;
     this.sun.shadow.bias = -0.0004;
     this.scene.add(this.sun, this.sun.target);
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.ShadowMaterial({ opacity: 0.13 }));
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.ShadowMaterial({ color: '#3A4C86', opacity: 0.16 }));
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.34;
     ground.receiveShadow = true;
@@ -91,6 +109,11 @@ export class BoardView {
   }
   private cellZ(y: number): number {
     return y - ((this.level?.board.height ?? 1) - 1) / 2;
+  }
+
+  /** Choose how the board is framed; takes effect at the next resize or level load. */
+  setLayout(layout: BoardLayout): void {
+    this.layout = layout;
   }
 
   /** Playback speed multiplier, and reduced motion (no hops, squash or confetti). */
@@ -112,19 +135,25 @@ export class BoardView {
     const mat = (color: string, roughness = 0.8): THREE.MeshStandardMaterial =>
       new THREE.MeshStandardMaterial({ color, roughness });
 
-    const frame = new THREE.Mesh(slab(width + 0.62, height + 0.62, 0.42, 0.34), mat(c.boardFrame, 0.65));
+    const rim = this.layout.frame;
+    const frame = new THREE.Mesh(
+      slab(width + rim, height + rim, 0.22 + rim * 0.35, 0.34),
+      new THREE.MeshPhysicalMaterial({ color: c.boardFrame, roughness: 0.45, clearcoat: 0.4, clearcoatRoughness: 0.5 }),
+    );
     frame.castShadow = true;
     frame.receiveShadow = true;
-    const grout = new THREE.Mesh(slab(width + 0.1, height + 0.1, 0.16, 0.05), mat(c.boardGrout));
+    const grout = new THREE.Mesh(slab(width + 0.1, height + 0.1, 0.16, 0.05), mat(c.boardGrout, 0.6));
     grout.position.y = 0.012;
     grout.receiveShadow = true;
     this.boardGroup.add(frame, grout);
 
-    const tileGeo = slab(0.94, 0.94, 0.1, 0.05);
-    const wallGeo = new RoundedBoxGeometry(0.84, 0.46, 0.84, 5, 0.15);
-    const tileA = mat(c.tileA);
-    const tileB = mat(c.tileB);
-    const wallMat = mat(c.wall, 0.6);
+    const tileGeo = slab(0.93, 0.93, 0.12, 0.05);
+    const wallGeo = new RoundedBoxGeometry(0.86, 0.44, 0.86, 5, 0.16);
+    const boltGeo = new THREE.CylinderGeometry(0.045, 0.045, 0.03, 14);
+    const tileA = mat(c.tileA, 0.55);
+    const tileB = mat(c.tileB, 0.55);
+    const wallMat = new THREE.MeshPhysicalMaterial({ color: c.wall, roughness: 0.5, clearcoat: 0.3, clearcoatRoughness: 0.6 });
+    const boltMat = mat(c.wallBolt, 0.5);
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const tile = new THREE.Mesh(tileGeo, (x + y) % 2 ? tileB : tileA);
@@ -137,6 +166,11 @@ export class BoardView {
           wall.castShadow = true;
           wall.receiveShadow = true;
           this.boardGroup.add(wall);
+          for (const bx of [-0.25, 0.25]) for (const bz of [-0.25, 0.25]) {
+            const bolt = new THREE.Mesh(boltGeo, boltMat);
+            bolt.position.set(this.cellX(x) + bx, 0.485, this.cellZ(y) + bz);
+            this.boardGroup.add(bolt);
+          }
         }
       }
     }
@@ -144,7 +178,10 @@ export class BoardView {
     // Exit: green pad with a white tick and a slow pulse ring.
     const pad = new THREE.Group();
     pad.position.set(this.cellX(exitX), 0.04, this.cellZ(exitY));
-    const padMesh = new THREE.Mesh(new RoundedBoxGeometry(0.86, 0.12, 0.86, 4, 0.06), mat(c.green, 0.45));
+    const padMesh = new THREE.Mesh(
+      new RoundedBoxGeometry(0.88, 0.14, 0.88, 4, 0.07),
+      new THREE.MeshPhysicalMaterial({ color: c.green, roughness: 0.4, clearcoat: 0.4, clearcoatRoughness: 0.5, emissive: c.green, emissiveIntensity: 0.25 }),
+    );
     padMesh.position.y = 0.04;
     padMesh.receiveShadow = true;
     padMesh.castShadow = true;
@@ -194,12 +231,12 @@ export class BoardView {
   private fitCamera(): void {
     if (!this.level) return;
     const { width, height } = this.level.board;
-    const tilt = (CONFIG.camera.tilt * Math.PI) / 180;
+    const tilt = (this.layout.tilt * Math.PI) / 180;
     const dir = new THREE.Vector3(0, Math.cos(tilt), Math.sin(tilt));
-    const hw = width / 2 + 0.36;
-    const hd = height / 2 + 0.36;
+    const hw = width / 2 + this.layout.frame / 2 + 0.04;
+    const hd = height / 2 + this.layout.frame / 2 + 0.04;
     const corners: THREE.Vector3[] = [];
-    for (const x of [-hw, hw]) for (const z of [-hd, hd]) for (const y of [-0.34, 0.85]) corners.push(new THREE.Vector3(x, y, z));
+    for (const x of [-hw, hw]) for (const z of [-hd, hd]) for (const y of [-0.34, 0.8]) corners.push(new THREE.Vector3(x, y, z));
     const target = new THREE.Vector3(0, 0, 0);
     let dist = 30;
     const extent = (d: number): { x: number; top: number; bottom: number } => {
@@ -229,7 +266,9 @@ export class BoardView {
       dist = hi;
       // Re-centre vertically: slide the look-at point along z.
       const e = extent(dist);
-      const offCentre = (e.top + e.bottom) / 2;
+      // Centred, or pushed up so the top edge touches the top of the canvas.
+      const wanted = this.layout.alignTop ? CONFIG.camera.fill - (e.top - e.bottom) / 2 : 0;
+      const offCentre = (e.top + e.bottom) / 2 - wanted;
       const halfHeight = Math.tan((CONFIG.camera.fov * Math.PI) / 360) * dist;
       target.z -= (offCentre * halfHeight) / Math.cos(tilt);
     }
@@ -279,7 +318,8 @@ export class BoardView {
     view.root.position.set(x, 0.06, z);
     view.angle = angle;
     view.visibleScale = scale;
-    view.body.rotation.set(0, angle, 0);
+    view.body.rotation.set(0, 0, 0);
+    aimRobot(view, angle);
     view.body.position.set(0, 0, 0);
     view.body.scale.setScalar(Math.max(scale, 0.0001));
     view.root.visible = scale > 0.001;
@@ -320,7 +360,7 @@ export class BoardView {
           const from = view.angle;
           return this.addTween(a.turnTime / speed, (k) => {
             view.angle = from - (Math.PI / 2) * easeOutBack(k);
-            view.body.rotation.y = view.angle;
+            aimRobot(view, view.angle);
             view.body.position.y = Math.sin(Math.PI * k) * 0.07 * lively;
           });
         }),
@@ -343,7 +383,6 @@ export class BoardView {
             const arc = Math.sin(Math.PI * k) * lively;
             view.body.position.y = arc * a.hopHeight;
             view.body.scale.set(1 - arc * 0.05, 1 + arc * 0.09, 1 - arc * 0.05);
-            view.antenna.rotation.x = arc * 0.45;
           });
           if (e.outcome === 'moved') return walk;
           // Collected: pop, spin and sink into the pad while confetti flies.
@@ -354,7 +393,7 @@ export class BoardView {
               const s = k < 0.25 ? 1 + k * 0.9 : 1.225 * (1 - easeInOut((k - 0.25) / 0.75));
               view.visibleScale = Math.max(s, 0);
               view.body.scale.setScalar(Math.max(s, 0.0001));
-              view.body.rotation.y = view.angle - k * Math.PI * 2 * lively;
+              view.body.rotation.y = -k * Math.PI * 2 * lively;
               view.body.position.y = Math.sin(Math.PI * k) * 0.35 * lively;
               if (k >= 1) view.root.visible = false;
             });
@@ -369,8 +408,9 @@ export class BoardView {
           const squash = Math.max(0, Math.sin(Math.PI * Math.min(k / 0.6, 1))) * 0.14 * lively;
           const along = 1 - squash;
           const across = 1 + squash * 0.6;
-          // Heading is a multiple of 90 degrees, so the body's local z is the travel axis.
-          view.body.scale.set(across, 1 + squash * 0.3, along);
+          // The body does not turn, so squash along the world axis it is travelling on.
+          if (dx !== 0) view.body.scale.set(along, 1 + squash * 0.3, across);
+          else view.body.scale.set(across, 1 + squash * 0.3, along);
         });
       }),
     );
@@ -439,15 +479,13 @@ export class BoardView {
         this.particles.splice(i, 1);
       }
     }
-    // Idle life: blinking and a slow antenna sway; exit ring breathes.
+    // Idle life: blinking; the exit ring breathes.
     for (const view of this.robots.values()) {
       view.blinkIn -= dt;
       const closed = view.blinkIn < 0.11;
       for (const lid of view.lids) lid.visible = closed;
       if (view.blinkIn < 0) view.blinkIn = 2.4 + ((view.id * 53 + Math.floor(this.time * 7)) % 17) / 5;
       if (!this.tweens.length) {
-        view.antenna.rotation.z = Math.sin(this.time * 2.1 + view.id) * 0.08;
-        view.antenna.rotation.x = 0;
         view.body.scale.setScalar(Math.max(view.visibleScale, 0.0001));
       }
     }

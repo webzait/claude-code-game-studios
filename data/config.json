@@ -6,13 +6,14 @@
     "green": "#2FC56C",
     "orange": "#FF9736",
     "purple": "#9856E8",
-    "background": "#F3F1EC",
-    "boardFrame": "#C6CDD7",
-    "boardGrout": "#D9DEE6",
-    "tileA": "#F6F7F9",
-    "tileB": "#EEF0F4",
-    "wall": "#7C8AA0",
-    "ink": "#2B3140"
+    "background": "#DCEBFA",
+    "boardFrame": "#93A9E6",
+    "boardGrout": "#B9C7F0",
+    "tileA": "#F1F3FC",
+    "tileB": "#E3E8F8",
+    "wall": "#7A829B",
+    "ink": "#22305C",
+    "wallBolt": "#5F667E"
   },
   "anim": {
     "turnTime": 0.17,
@@ -26,7 +27,6 @@
   },
   "camera": {
     "fov": 28,
-    "tilt": 30,
     "fill": 0.985
   },
   "stars": {
@@ -60,5 +60,18 @@
   },
   "audio": {
     "volume": 0.16
-  }
+  },
+  "board": {
+    "roomy": {
+      "tilt": 24,
+      "frame": 0.36,
+      "alignTop": true
+    },
+    "classic": {
+      "tilt": 30,
+      "frame": 0.62,
+      "alignTop": false
+    }
+  },
+  "levelsPerPage": 20
 }

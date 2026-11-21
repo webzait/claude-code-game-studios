@@ -8,7 +8,9 @@
 | `anim.hopHeight` | Hop height, in cells, while stepping |
 | `anim.queueSpeedup` | Extra playback speed per queued command, so fast tapping never waits |
 | `anim.replayGap` | Pause in seconds between commands during a replay |
-| `camera.fov`, `tilt`, `fill` | Field of view, tilt from straight down (degrees), share of the canvas the board may fill |
+| `camera.fov`, `fill` | Field of view, share of the canvas the board may fill |
+| `board.roomy`, `board.classic` | The two board framings of the test lab: camera tilt from straight down (degrees), frame width in cells, and whether the board sits against the top |
+| `levelsPerPage` | Level tiles per page of the level selection |
 | `stars.three`, `stars.two` | Moves over par that still earn 3 and 2 stars |
 | `lowMoves` | Moves left at which the counter turns into a warning |
 | `rules.exitAcceptsMany` | `true`: several robots may enter the exit in one turn |

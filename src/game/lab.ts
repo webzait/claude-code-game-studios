@@ -17,6 +17,8 @@ export interface LabSettings {
   speed: number;
   /** Open every level regardless of progress. */
   unlockAll: boolean;
+  /** Board framing: `roomy` (steeper camera, thin frame, against the top) or `classic`. */
+  board: 'roomy' | 'classic';
 }
 
 /** The lab as it ships: the certified default game. */
@@ -26,6 +28,7 @@ export const DEFAULT_LAB: LabSettings = {
   moveSlack: CONFIG.moveSlack,
   speed: 1,
   unlockAll: false,
+  board: 'roomy',
 };
 
 /** Rules the lab asks for. */

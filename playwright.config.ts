@@ -30,6 +30,8 @@ function bash(): string {
 
 export default defineConfig({
   testDir: 'tests/integration',
+  // Software-rendered 3D is slow in a headless browser; real devices are not.
+  timeout: 90_000,
   forbidOnly: !!process.env.CI,
   use: {
     // The game is a phone game in portrait.
