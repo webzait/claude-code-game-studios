@@ -3,6 +3,8 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import { CONFIG } from '../config';
 import type { Color } from '../engine/types';
 import parts from '../../data/parts.json';
+import coinIcon from '../../assets/turnflock/ui/coin.webp';
+import extraMovesIcon from '../../assets/turnflock/ui/extra-moves.webp';
 import hintIcon from '../../assets/turnflock/ui/hint.webp';
 import { buildExit, buildFloorTile, buildObstacle, buildRim, buildRimCorner, buildRimEdge, buildUnderlay } from '../render/parts/board';
 import { buildFlockbot } from '../render/parts/flockbot';
@@ -219,6 +221,189 @@ card('Onderplaat', 'underlay', buildUnderlay(6, 6, CONFIG.board.grid.gap, true),
   ${phone}
   <p class="note">Echte HTML-knoppen met CSS: tekst blijft tekst, maten komen uit <code>--w --h --d --r</code>. Elke knop is één gegoten blok met een bovenvlak, een ronde rand en schuine flanken: bij indrukken zakt het hele blok ${Math.round(b.pressFraction * 100)}% van de diepte weg; de voetafdruk en het raakvlak blijven gelijk. Blauw toont in de telefoonstroken de nudge.</p>`;
   document.getElementById('sheet')!.appendChild(el);
+}
+
+// End-of-round pop-up: plain HTML and CSS (tf-end-*) in a phone frame over a stand-in for the board.
+// A mock-up of every situation the game's card has today; it is not wired into the playable game.
+{
+  const STAR = 'M32 8 38.6 23.2 55 24.7 42.6 35.6 46.2 51.7 32 43.2 17.8 51.7 21.4 35.6 9 24.7 25.4 23.2Z';
+  const starPath = (fill: string, width: number, extra = ''): string => `<path d="${STAR}" fill="${fill}" stroke="${fill}" stroke-width="${width}" stroke-linejoin="round" ${extra}/>`;
+  /** The star: a gold block with a darker wall under it when earned, a sunk slot in the panel tones when not. */
+  const star = (on: boolean, extra = ''): string => `<svg class="tf-end-star ${on ? 'on' : 'off'}" viewBox="0 0 64 64" aria-hidden="true" ${extra}>${
+    on
+      ? starPath('#C9961A', 10, 'transform="translate(0 3.5)"') + starPath('#C9961A', 10) + starPath('url(#tf-end-gold)', 6.5) + starPath('#FFE48A', 5, 'transform="translate(32 29.5) scale(.46) translate(-32 -31)"') + '<path d="M16.5 24.6c3.4-.9 6.6-1.3 9.6-1.5" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" opacity=".85"/>'
+      : starPath('#C9D2E3', 11) + starPath('#E6EBF5', 5, 'transform="translate(0 2.2)"')
+  }</svg>`;
+  const defs = '<svg class="tf-end-defs" aria-hidden="true"><defs><linearGradient id="tf-end-gold" gradientUnits="userSpaceOnUse" x1="0" y1="6" x2="0" y2="56"><stop offset="0" stop-color="#FFE48A"/><stop offset=".45" stop-color="#F6C542"/><stop offset="1" stop-color="#EDB52C"/></linearGradient></defs></svg>';
+
+  const icon = (shape: string): string => `<svg viewBox="0 0 24 24" aria-hidden="true"><g class="tf-ink-shadow" transform="translate(0 1.3)">${shape}</g><g>${shape}</g></svg>`;
+  const stroke = (d: string, width: number): string => `<path d="${d}" fill="none" stroke="currentColor" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const ICONS = {
+    undo: icon(`<path d="M9.4 4.2 3.6 9.3l5.8 5.1z" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>` + stroke('M9 9.3h5.4a5.3 5.3 0 0 1 0 10.6H9.6', 3.5)),
+    retry: icon(stroke('M17.1 16.9A7 7 0 1 1 15.5 8', 3.5) + stroke('M18.4 3.2v6h-6', 3.5)),
+    replay: icon('<path d="M7.4 5v14l11.4-7z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>'),
+    next: icon(stroke('M4.5 12h13.5M12.4 5.4 19 12l-6.6 6.6', 3.8)),
+    levels: icon('<rect x="3.5" y="3.5" width="7" height="7" rx="2" fill="currentColor"/><rect x="13.5" y="3.5" width="7" height="7" rx="2" fill="currentColor"/><rect x="3.5" y="13.5" width="7" height="7" rx="2" fill="currentColor"/><rect x="13.5" y="13.5" width="7" height="7" rx="2" fill="currentColor"/>'),
+    none: '',
+  };
+  /** One button of the tf-btn family. `after` puts the icon behind the label (Next). */
+  const button = (kind: string, text: string, glyph: keyof typeof ICONS, opts: { name?: string; disabled?: boolean; after?: boolean; inner?: string } = {}): string => {
+    const label = `<span class="tf-label">${text}</span>`;
+    const inner = opts.inner ?? (opts.after ? label + ICONS[glyph] : ICONS[glyph] + label);
+    return `<button type="button" class="tf-btn ${kind}"${opts.name ? ` aria-label="${opts.name}"` : ''}${opts.disabled ? ' disabled' : ''}><span class="tf-clip"><span class="tf-face">${inner}</span></span></button>`;
+  };
+  const utility = (text: string, glyph: keyof typeof ICONS, size = 'tf-end-small'): string => button(`tf-utility ${size}`, text, glyph);
+
+  // The stand-in board: a 6x6 plate with walls, the exit and whoever is still on it.
+  const WALLS = new Set([7, 9, 22, 24, 32]);
+  const scene = (level: string, left: Record<number, string>, moves: string, even = false): string => {
+    let tiles = '';
+    for (let i = 0; i < 36; i++) tiles += `<i class="${i === 5 ? 'exit' : WALLS.has(i) ? 'wall' : (left[i] ?? ((i + Math.floor(i / 6)) % 2 ? 'alt' : ''))}"></i>`;
+    const count = Object.keys(left).length;
+    return `<div class="tf-end-scene" aria-hidden="true"><div class="bar"><span>${level}</span><span>${12 - count} / 12</span><span>${moves}</span></div><div class="plate">${tiles}</div><div class="pad"><i></i><i></i><i></i><i></i></div></div><div class="tf-end-dim${even ? ' even' : ''}"></div>`;
+  };
+  const STUCK = { 14: 'red', 20: 'blue', 27: 'yellow' };
+
+  let serial = 0;
+  type Layout = 'sheet' | 'centre';
+  /** The dialog itself. Reading order is title, result, then actions; the stars are only drawn above the title. */
+  const dialog = (layout: Layout, body: (id: string) => string): string => {
+    const id = `tf-end-${++serial}`;
+    return `<section class="tf-end-card ${layout}" role="dialog" aria-modal="true" aria-labelledby="${id}-t" aria-describedby="${id}-r">${body(id)}</section>`;
+  };
+  const phone = (sceneHtml: string, card: string, cls = ''): string => `<div class="tf-end-phone ${cls}">${sceneHtml}${card}</div>`;
+
+  const FLECKS = ['#F1454B', '#2E84F1', '#F4C62F', '#39E85C', '#7E6BFF', '#FFE48A'];
+  const confetti = (): string => {
+    let out = '';
+    for (let i = 0; i < 16; i++) {
+      const angle = Math.PI * (1.08 + (0.84 * i) / 15);
+      const reach = 92 + ((i * 37) % 60);
+      out += `<i style="--c:${FLECKS[i % FLECKS.length]};--x:${Math.round(Math.cos(angle) * reach * 1.25)}px;--y:${Math.round(Math.sin(angle) * reach + 46)}px;--r:${(i % 2 ? 1 : -1) * (160 + i * 23)}deg;--dl:${((i * 53) % 220) / 1000}s"></i>`;
+    }
+    return `<div class="tf-end-confetti" aria-hidden="true">${out}</div>`;
+  };
+
+  type Win = { level: string; stars: 1 | 2 | 3; moves: number; par: number; backup?: boolean; earned: number; total: number; parts?: string; paidNote?: string; last?: boolean };
+  const win = (layout: Layout, w: Win, live = false): string =>
+    phone(
+      scene(w.level, {}, `${w.moves} moves`, layout === 'centre'),
+      dialog(layout, (id) => {
+        const result = w.backup ? `<b>${w.moves} moves</b> · with extra moves` : w.moves <= w.par ? `<b>${w.moves} moves</b> · the shortest solution` : `<b>${w.moves} moves</b> · shortest is ${w.par}`;
+        const coins = w.earned > 0
+          ? `<p class="tf-end-earned"><img src="${coinIcon}" alt="" /><span class="tf-end-sr">Coins earned: </span><b class="tf-end-count" data-to="${w.earned}">+${w.earned}</b><span class="tf-end-total">${w.total} in total</span></p>${w.parts ? `<p class="tf-end-break">${w.parts}</p>` : ''}`
+          : `<p class="tf-end-earned none"><img src="${coinIcon}" alt="" /><span class="tf-end-total">${w.paidNote ?? ''} ${w.total} in total.</span></p>`;
+        const actions = w.last
+          ? `${button('tf-end-main tf-end-big wide', 'Levels', 'levels')}<div class="wide">${utility('Replay', 'replay')}</div>`
+          : `${button('tf-end-go tf-end-big wide', 'Next', 'next', { after: true })}${utility('Replay', 'replay')}${utility('Levels', 'levels')}`;
+        return `${live ? confetti() : ''}<div class="tf-end-head"><p class="tf-end-level">${w.level}</p><h3 class="tf-end-title" id="${id}-t">${w.last ? 'All home, all done' : 'All home'}</h3></div>
+          <div class="tf-end-stars" role="img" aria-label="${w.stars} of 3 stars">${[0, 1, 2].map((i) => `<span class="tf-end-slot${i < w.stars ? ' won' : ''}" style="--i:${i}">${star(false)}${i < w.stars ? star(true) : ''}</span>`).join('')}</div>
+          <p class="tf-end-result" id="${id}-r">${result}${w.backup ? '<br />One star when extra moves are used.' : ''}${w.last ? '<br />That was the last level.' : ''}</p>
+          <div class="tf-end-coins">${coins}</div>
+          <div class="tf-end-actions">${actions}</div>`;
+      }),
+      live ? 'tf-end-live' : '',
+    );
+
+  type Lost = { level?: string; offer?: 'afford' | 'short'; coins?: number; note?: string };
+  const lost = (l: Lost, layout: Layout = 'sheet'): string =>
+    phone(
+      scene(l.level ?? 'Level 5 · Queue Up', STUCK, '0 moves', layout === 'centre'),
+      dialog(layout, (id) => {
+        const offer = l.offer
+          ? `<div class="tf-end-offer"><img src="${extraMovesIcon}" alt="" /><div><strong>+3 moves</strong><span class="why">Checked: 3 more moves are enough from here.</span></div>
+              ${button('tf-end-buy tf-end-small', '25', 'none', { name: l.offer === 'afford' ? 'Get 3 more moves for 25 coins' : 'Get 3 more moves for 25 coins (not enough coins)', disabled: l.offer === 'short', inner: `<img src="${coinIcon}" alt="" /><span class="tf-label">25</span>` })}
+              <p class="tf-end-wallet">${l.offer === 'afford' ? `You have <b>${l.coins} coins</b>.` : `You have <b>${l.coins} coins</b>, so this is not available now.`}</p></div>`
+          : '';
+        return `<div class="tf-end-head"><h3 class="tf-end-title" id="${id}-t">Out of moves</h3></div>
+          <p class="tf-end-result" id="${id}-r"><span class="tf-end-left" aria-hidden="true"><i style="--c:#F1454B"></i><i style="--c:#2E84F1"></i><i style="--c:#F4C62F"></i></span>3 still on the board</p>
+          ${offer}${l.note ? `<p class="tf-end-note">${l.note}</p>` : ''}
+          <div class="tf-end-actions lead">${utility('Undo', 'undo', 'tf-end-mid')}${button('tf-end-main tf-end-mid', 'Retry', 'retry')}</div>`;
+      }),
+    );
+
+  /** The two plain cards of the test lab. */
+  const info = (title: string, text: string, second: string): string =>
+    phone(
+      scene('Test board 8×8', {}, 'Test'),
+      dialog('sheet', (id) => `<span class="tf-end-tag">Test lab</span><div class="tf-end-head"><h3 class="tf-end-title" id="${id}-t">${title}</h3></div><p class="tf-end-note" id="${id}-r">${text}</p>
+        <div class="tf-end-actions lead">${utility(second, 'none', 'tf-end-mid')}${button('tf-end-main tf-end-mid', 'Levels', 'levels')}</div>`),
+    );
+
+  const cell = (id: string, html: string, caption: string, extra = ''): string => `<figure class="tf-end-cell" id="${id}">${html}<figcaption>${caption}</figcaption>${extra}</figure>`;
+  const LEVEL = 'Level 5 · Queue Up';
+  const three: Win = { level: LEVEL, stars: 3, moves: 8, par: 8, earned: 32, total: 142, parts: 'Win 10 · 4 spare moves 12 · Shortest solution 10' };
+  const two: Win = { level: LEVEL, stars: 2, moves: 10, par: 8, earned: 16, total: 126, parts: 'Win 10 · 2 spare moves 6' };
+  const one: Win = { level: LEVEL, stars: 1, moves: 12, par: 8, earned: 10, total: 120, parts: 'Win 10' };
+  const sizes = [24, 32, 44, 64];
+
+  const el = document.createElement('section');
+  el.className = 'card wide';
+  el.id = 'endpopup';
+  el.innerHTML = `${defs}<h2>Eind-pop-up</h2><p class="dims">telefoonkader 390×844 px · echte HTML en CSS · nog niet in de game</p>
+  <h3 class="tf-end-group">De ster · gevuld en leeg, op 24, 32, 44 en 64 px</h3>
+  <div class="tf-end-row" id="endpopup-stars">
+    <div class="tf-end-starsheet">${sizes.map((s) => `<div>${star(true, `style="width:${s}px;height:${s}px"`)}<span>${s} px</span></div>`).join('')}${sizes.map((s) => `<div>${star(false, `style="width:${s}px;height:${s}px"`)}<span>${s} px</span></div>`).join('')}</div>
+    <div class="tf-end-starsheet dark">${sizes.map((s) => `<div>${star(true, `style="width:${s}px;height:${s}px"`)}<span>${s} px</span></div>`).join('')}${sizes.map((s) => `<div>${star(false, `style="width:${s}px;height:${s}px"`)}<span>${s} px</span></div>`).join('')}</div>
+  </div>
+  <h3 class="tf-end-group">Winst · twee indelingen</h3>
+  <div class="tf-end-row">
+    ${cell('endpopup-win-live', win('sheet', three, true), '<b>B · blad onderaan (aanbevolen), live.</b> De animatie speelt één keer zodra dit kader in beeld komt; de knoppen zijn vanaf het eerste beeld te gebruiken.', '<button type="button" class="tf-end-again">Animatie opnieuw afspelen</button>')}
+    ${cell('endpopup-win-sheet', win('sheet', three), '<b>B · blad onderaan, eindstand.</b> Het opgeloste bord blijft zichtbaar; alle knoppen liggen in de onderste duimzone.')}
+    ${cell('endpopup-win-centre', win('centre', three), '<b>A · kaart in het midden, eindstand.</b> Meer nadruk op de beloning, maar het bord is bedekt en de knoppen liggen hoger.')}
+  </div>
+  <h3 class="tf-end-group">Winst · 2 sterren, 1 ster en de varianten</h3>
+  <div class="tf-end-row">
+    ${cell('endpopup-win-2', win('sheet', two), '2 sterren: binnen twee zetten van de kortste oplossing.')}
+    ${cell('endpopup-win-1', win('sheet', one), '1 ster: opgelost, meer dan twee zetten boven de kortste oplossing.')}
+    ${cell('endpopup-win-extra', win('sheet', { level: LEVEL, stars: 1, moves: 14, par: 8, backup: true, earned: 10, total: 95, parts: 'Win 10' }), 'Gewonnen met extra zetten: hoogstens één ster, alleen het basisbedrag.')}
+    ${cell('endpopup-win-paid', win('sheet', { ...two, earned: 0, total: 142, paidNote: 'No new coins: your best reward for this level is already paid.' }), 'Opnieuw gespeeld, beloning al uitbetaald: geen nieuwe munten, eerlijk gezegd.')}
+    ${cell('endpopup-win-topup', win('sheet', { ...three, earned: 16, total: 158, parts: 'Better than before: 16 on top of the 16 already paid' }), 'Opnieuw gespeeld en beter dan eerst: alleen het verschil wordt uitbetaald.')}
+    ${cell('endpopup-win-last', win('sheet', { ...three, level: 'Level 40 · The Long Way Round the Very Crowded Corner Garden', last: true }), 'Laatste level: geen "Next"; "Levels" is de hoofdactie. Ook de proef met een lange levelnaam.')}
+  </div>
+  <h3 class="tf-end-group">Zetten op</h3>
+  <div class="tf-end-row">
+    ${cell('endpopup-lost-offer', lost({ offer: 'afford', coins: 142 }), '+3 zetten zijn bewezen genoeg en betaalbaar. Prijs staat op de knop; Retry blijft de hoofdactie.')}
+    ${cell('endpopup-lost-short', lost({ offer: 'short', coins: 12 }), '+3 zetten zijn bewezen genoeg, maar te duur: de knop staat uit, zonder aandrang en zonder koopaanbod.')}
+    ${cell('endpopup-lost-hopeless', lost({ note: 'Extra moves would not solve it from here, so there is no offer. Undo a step or start again: both are free.' }), '+3 zetten zouden niet genoeg zijn: geen betaald aanbod.')}
+    ${cell('endpopup-lost-unknown', lost({ note: 'We could not check in time whether extra moves would help, so there is no offer. Undo and Retry are free.' }), 'De controle kwam niet op tijd klaar: dat staat er eerlijk, geen betaald aanbod.')}
+  </div>
+  <h3 class="tf-end-group">Testlab · twee sobere kaarten</h3>
+  <div class="tf-end-row">
+    ${cell('endpopup-test-cleared', info('Test board cleared', 'This board only shows how the board scales. Nothing was saved.', 'Again'), 'Testbord opgelost.')}
+    ${cell('endpopup-test-unsolvable', info('Not proven solvable', 'With the single-file exit rule this level has no solution in a fair number of moves.', 'Play anyway'), 'Testregel: geen oplossing gevonden.')}
+    ${cell('endpopup-test-unfinished', info('Not proven solvable', 'The check for the single-file exit rule could not finish for this level.', 'Play anyway'), 'Testregel: controle niet afgerond.')}
+  </div>
+  <p class="note">Echte HTML en CSS: cijfers en labels zijn tekst, de knoppen zijn de bestaande <code>tf-btn</code>-blokken met eigen tinten (<code>tf-end-go</code>, <code>tf-end-main</code>, <code>tf-end-buy</code>). De kaart is een <code>role="dialog"</code> en leest als titel, uitslag, acties. Bij <code>prefers-reduced-motion</code> staat alles er in één keer.</p>`;
+  document.getElementById('sheet')!.appendChild(el);
+
+  // The live win: play once when it scrolls into view, and again on request. The numbers in the
+  // markup are the end state; the count-up only borrows the text while it runs.
+  const live = el.querySelector<HTMLElement>('.tf-end-live')!;
+  const count = live.querySelector<HTMLElement>('.tf-end-count')!;
+  const target = Number(count.dataset.to);
+  let frame = 0;
+  const play = (): void => {
+    cancelAnimationFrame(frame);
+    count.textContent = `+${target}`;
+    live.classList.remove('tf-end-play');
+    void live.offsetWidth;
+    live.classList.add('tf-end-play');
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const start = performance.now() + 700;
+    const tick = (now: number): void => {
+      const t = Math.min(1, Math.max(0, (now - start) / 600));
+      count.textContent = `+${Math.round(target * (1 - (1 - t) ** 2))}`;
+      if (t < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+  };
+  new IntersectionObserver((entries, observer) => {
+    if (!entries.some((e) => e.isIntersecting)) return;
+    observer.disconnect();
+    play();
+  }, { threshold: 0.6 }).observe(live);
+  el.querySelector('.tf-end-again')!.addEventListener('click', play);
 }
 
 document.body.dataset.ready = 'true';
