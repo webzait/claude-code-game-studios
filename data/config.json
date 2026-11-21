@@ -24,6 +24,8 @@
       "frameGlow": "#8CE8FF",
       "obstacleTop": "#A9B8D5",
       "obstacle": "#8FA0C3",
+      "obstacleSide": "#7083AB",
+      "obstacleShadow": "#5F6F96",
       "obstacleBolt": "#455271",
       "exitTop": "#6BFF76",
       "exit": "#39E85C",

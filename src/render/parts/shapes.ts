@@ -113,3 +113,60 @@ export function shadeByHeight(g: THREE.BufferGeometry, stops: readonly (readonly
   }
   g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 }
+
+/** One ring of a `profiledBlock`: how far it sits inside the footprint, how high, and its colour. */
+export interface ProfileRing {
+  readonly inset: number;
+  readonly y: number;
+  readonly color: string;
+}
+
+/**
+ * A block on a rounded-rectangle footprint (`w` by `d`, corner radius `r`)
+ * whose side follows `rings` from the floor up: each ring is the footprint
+ * shrunk by `inset` at height `y`. The last ring is closed with a flat cap.
+ * Consecutive rings are joined smoothly; repeat a ring (same inset and y) to
+ * get a crisp edge or a hard colour change there. Carries vertex colours.
+ */
+export function profiledBlock(w: number, d: number, r: number, rings: readonly ProfileRing[], arc = 12): THREE.BufferGeometry {
+  const around = 4 * (arc + 1);
+  const positions: number[] = [];
+  const colors: number[] = [];
+  const tone = new THREE.Color();
+  const corners: readonly (readonly [number, number])[] = [[1, 1], [-1, 1], [-1, -1], [1, -1]];
+  for (const ring of rings) {
+    const rr = Math.max(0, r - ring.inset);
+    const cx = Math.max(0, w / 2 - ring.inset - rr);
+    const cz = Math.max(0, d / 2 - ring.inset - rr);
+    tone.set(ring.color);
+    corners.forEach(([sx, sz], q) => {
+      for (let i = 0; i <= arc; i++) {
+        const a = (q + i / arc) * (Math.PI / 2);
+        positions.push(sx * cx + Math.cos(a) * rr, ring.y, -(sz * cz + Math.sin(a) * rr));
+        colors.push(tone.r, tone.g, tone.b);
+      }
+    });
+  }
+  const index: number[] = [];
+  for (let k = 0; k < rings.length - 1; k++) {
+    if (rings[k].inset === rings[k + 1].inset && rings[k].y === rings[k + 1].y) continue;
+    for (let u = 0; u < around; u++) {
+      const p = k * around + u;
+      const q = k * around + ((u + 1) % around);
+      index.push(p, q, q + around, p, q + around, p + around);
+    }
+  }
+  const last = rings[rings.length - 1];
+  const centre = positions.length / 3;
+  tone.set(last.color);
+  positions.push(0, last.y, 0);
+  colors.push(tone.r, tone.g, tone.b);
+  const top = (rings.length - 1) * around;
+  for (let u = 0; u < around; u++) index.push(top + u, top + ((u + 1) % around), centre);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  g.setIndex(index);
+  g.computeVertexNormals();
+  return g;
+}
