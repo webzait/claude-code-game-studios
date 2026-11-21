@@ -84,19 +84,19 @@
       "width": 120,
       "height": 48,
       "depth": 16,
-      "radius": 13
+      "radius": 22
     },
     "action": {
       "width": 96,
       "height": 96,
       "depth": 20,
-      "radius": 16
+      "radius": 24
     },
     "hint": {
       "width": 120,
       "height": 48,
       "depth": 16,
-      "radius": 13
+      "radius": 22
     },
     "phone": {
       "stripWidth": 390,
@@ -106,25 +106,25 @@
         "width": 114,
         "height": 44,
         "depth": 12,
-        "radius": 12
+        "radius": 20
       },
       "utilityNarrow": {
         "width": 83,
         "height": 44,
         "depth": 12,
-        "radius": 12
+        "radius": 18
       },
       "action": {
         "width": 83,
         "height": 83,
         "depth": 17,
-        "radius": 14
+        "radius": 21
       },
       "hintCompact": {
         "width": 52,
         "height": 40,
         "depth": 8,
-        "radius": 11
+        "radius": 15
       }
     }
   }

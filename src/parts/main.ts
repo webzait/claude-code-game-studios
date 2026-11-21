@@ -159,8 +159,8 @@ card('Onderplaat', 'underlay', buildUnderlay(6, 6, CONFIG.board.grid.gap, true),
   const icon = (shape: string): string => `<svg viewBox="0 0 24 24" aria-hidden="true"><g class="tf-ink-shadow" transform="translate(0 1.3)">${shape}</g><g>${shape}</g></svg>`;
   const stroke = (d: string, width: number): string => `<path d="${d}" fill="none" stroke="currentColor" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"/>`;
   const turnShape = (width: number): string => stroke('M17.1 16.9A7 7 0 1 1 15.5 8', width) + stroke('M18.4 3.2v6h-6', width);
-  const turn = icon(turnShape(3.9));
-  const up = icon(stroke('M12 20.6V6M5.2 11.4 12 4.6l6.8 6.8', 4.5));
+  const turn = icon(turnShape(3.6));
+  const up = icon(stroke('M12 20.6V6M5.2 11.4 12 4.6l6.8 6.8', 4));
   const undo = icon(`<path d="M9.4 4.2 3.6 9.3l5.8 5.1z" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>` + stroke('M9 9.3h5.4a5.3 5.3 0 0 1 0 10.6H9.6', 3.5));
   const restart = icon(turnShape(3.5));
   const replay = icon('<path d="M7.4 5v14l11.4-7z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>');
@@ -224,7 +224,7 @@ card('Onderplaat', 'underlay', buildUnderlay(6, 6, CONFIG.board.grid.gap, true),
   ${phone('buttons-phone-a', true)}
   <h3 class="btn-title">Telefoon ${p.stripWidth} px · optie B: vier smallere utility-knoppen</h3>
   ${phone('buttons-phone-b', false)}
-  <p class="note">Echte HTML-knoppen met CSS: tekst blijft tekst, maten komen uit <code>--w --h --d --r</code>. Elke knop is één blok: bij indrukken zakt het hele blok ${Math.round(b.pressFraction * 100)}% van de diepte weg; de voetafdruk en het raakvlak blijven gelijk. Blauw toont in de telefoonstroken de nudge.</p>`;
+  <p class="note">Echte HTML-knoppen met CSS: tekst blijft tekst, maten komen uit <code>--w --h --d --r</code>. Elke knop is één gegoten blok met een bovenvlak, een ronde rand en schuine flanken: bij indrukken zakt het hele blok ${Math.round(b.pressFraction * 100)}% van de diepte weg; de voetafdruk en het raakvlak blijven gelijk. Blauw toont in de telefoonstroken de nudge.</p>`;
   document.getElementById('sheet')!.appendChild(el);
 }
 
