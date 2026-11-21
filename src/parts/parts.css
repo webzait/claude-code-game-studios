@@ -189,11 +189,6 @@ body { margin: 0; background: #eef3fb; color: var(--ink); font-family: ui-rounde
 .tf-levels-tile.is-locked .tf-levels-mark { opacity: .7; background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 46 17'><path d='M19.6 7.6V5.4a3.4 3.4 0 0 1 6.8 0v2.2' fill='none' stroke='%2344548a' stroke-width='2.2' stroke-linecap='round'/><rect x='17' y='7.4' width='12' height='8.6' rx='2.6' fill='%2344548a'/></svg>"); }
 .tf-levels-tile:active:not(:disabled), .tf-levels-tile.is-pressed { transform: translateY(calc(var(--tl-d) - 1px)); box-shadow: inset 0 0 0 1.5px rgba(36, 49, 79, .16), inset 0 2px 0 rgba(255, 255, 255, .5), 0 1px 0 var(--tl-wall); background: linear-gradient(180deg, color-mix(in srgb, var(--tl-top) 92%, #24314f), color-mix(in srgb, var(--tl-face) 92%, #24314f)); }
 .tf-levels-tile:focus-visible, .tf-levels-tile.is-focus { outline: 3px solid #24314f; outline-offset: 3px; }
-/* Optional touches: best move count, a tiny board preview. */
-.tf-levels-best { font-size: 11px; font-weight: 800; letter-spacing: 0; color: #5d6a84; }
-.tf-levels-mini { width: 38px; height: 38px; flex: none; border-radius: 6px; }
-.tf-levels-tile.has-mini { flex-direction: row; gap: 6px; font-size: 22px; }
-
 /* Bottom dock: the main action, in thumb reach. */
 .tf-levels-dock { flex: none; display: grid; gap: 10px; justify-items: center; padding: 12px var(--tl-pad) 16px; border-radius: 24px 24px 0 0; background: #f8faff; box-shadow: inset 0 1.5px 0 #fff, 0 -3px 0 rgba(113, 138, 210, .35); }
 .tf-levels-play { --c-top: #7dfb86; --c-main: #39e85c; --c-side: #1fb241; --c-deep: #178a33; --glow: #a8ffae; --ink-c: #0b3d1c; --ink-shadow: rgba(255, 255, 255, .5); --icon: calc(var(--h) * .4); --fs: calc(var(--h) * .37); max-width: 420px; }
@@ -205,26 +200,12 @@ body { margin: 0; background: #eef3fb; color: var(--ink); font-family: ui-rounde
 .tf-levels-dots i.full { background: #f6c542; }
 .tf-levels-dots i.on { width: 20px; background: #24314f; }
 
-/* A: paged grid. Tile height follows the screen height so one page always fits without scrolling. */
+/* The paged grid. Tile height follows the screen height so one page always fits without scrolling. */
 .tf-levels-body { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; }
 .tf-levels-a { --tl-num: 30px; }
 .tf-levels-a .tf-levels-grid { --tl-tile-h: clamp(56px, calc((100cqh - var(--tl-chrome)) / var(--tl-rows) - var(--tl-gap) - var(--tl-d)), var(--tl-tile-max, 92px)); }
 .tf-levels-a .tf-levels-stars, .tf-levels-a .tf-levels-mark { width: 57px; height: 21px; }
 .tf-levels-a .tf-levels-tray { align-self: center; width: calc(100% - 2 * var(--tl-pad)); max-width: 620px; }
-
-/* B: one long scrolling list, a tray per 20 levels. */
-.tf-levels-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; padding: 2px 0 18px; }
-.tf-levels-scroll::-webkit-scrollbar { display: none; }
-.tf-levels-group { max-width: 620px; margin: 0 auto 16px; content-visibility: auto; contain-intrinsic-size: auto 420px; }
-.tf-levels-b { --tl-cols: 5; --tl-gap: 8px; --tl-tile-h: 62px; --tl-num: 23px; }
-.tf-levels-grouphead { display: flex; align-items: center; justify-content: space-between; margin: 0 4px 9px; font-weight: 900; font-size: 15px; line-height: 1; color: #2b3a66; font-variant-numeric: tabular-nums; }
-.tf-levels-grouphead span { display: inline-flex; align-items: center; gap: 4px; }
-
-/* C: winding path. Nodes are the same tiles, placed along a track. */
-.tf-levels-path { position: relative; max-width: 440px; margin: 0 auto; }
-.tf-levels-path svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.tf-levels-path polyline { fill: none; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
-.tf-levels-path .tf-levels-tile { position: absolute; width: 66px; margin-left: -33px; --tl-tile-h: 62px; --tl-num: 23px; }
 
 /* Container queries cannot restyle the container itself, so these set the measures on its children. */
 /* Wide screens (tablet): five columns of four in the paged grid, more air. */
@@ -233,14 +214,13 @@ body { margin: 0; background: #eef3fb; color: var(--ink); font-family: ui-rounde
   .tf-levels-a > * { --tl-cols: 5; --tl-rows: 4; --tl-tile-max: 108px; --tl-num: 34px; }
   .tf-levels-pill { font-size: 16px; }
 }
-/* Narrow screens: tighter gutters; the scrolling grid drops to four columns to keep 56 px tiles. */
+/* Narrow screens: tighter gutters. */
 @container tl (max-width: 359px) {
   .tf-levels-phone > * { --tl-pad: 10px; --tl-gap: 7px; }
   .tf-levels-head { gap: 5px; }
   .tf-levels-title { letter-spacing: 0; }
   .tf-levels-pill { padding: 0 7px; }
   .tf-levels-tray { padding: 9px; }
-  .tf-levels-b > * { --tl-cols: 4; }
 }
 /* Short screens: slimmer header and dock, smaller numbers. */
 @container tl (max-height: 620px) {

@@ -221,30 +221,32 @@ card('Onderplaat', 'underlay', buildUnderlay(6, 6, CONFIG.board.grid.gap, true),
   document.getElementById('sheet')!.appendChild(el);
 }
 
-// Level selection screen: three layout options as standalone mock-ups. Plain HTML and CSS (tf-levels-*),
+// Level selection screen: the paged grid as a standalone mock-up. Plain HTML and CSS (tf-levels-*),
 // with made-up progress; nothing here reads the save or is wired into the game.
 {
-  type Situation = 'new' | 'mid' | 'all';
+  type Situation = 'new' | 'mid' | 'all' | 'perfect';
   const TOTAL = 200;
   const PER_PAGE = CONFIG.levelsPerPage;
-  const DONE: Record<Situation, number> = { new: 0, mid: 37, all: TOTAL };
-  const SITUATIONS: [Situation, string][] = [['new', 'Nieuwe speler'], ['mid', 'Halverwege · 37 van 200'], ['all', 'Alles uitgespeeld']];
+  const DONE: Record<Situation, number> = { new: 0, mid: 37, all: TOTAL, perfect: TOTAL };
+  const SITUATIONS: [Situation, string][] = [['new', 'Nieuwe speler'], ['mid', 'Halverwege · 37 van 200'], ['all', 'Alles uitgespeeld'], ['perfect', 'Alles met drie sterren']];
   /** Made-up but fixed star results, so every screenshot shows the same mix. */
   const starsFor = (level: number, s: Situation): number => {
     const h = (level * 7919 + 13) % 10;
+    if (s === 'perfect') return 3;
     return s === 'all' ? (h < 9 ? 3 : 2) : h < 6 ? 3 : h < 9 ? 2 : 1;
   };
   type Model = { s: Situation; done: number; target: number; stars: number; label: string };
   const model = (s: Situation): Model => {
     const done = DONE[s];
     let stars = 0;
-    let improve = 1;
+    let improve = 0;
     for (let i = done; i >= 1; i--) {
       stars += starsFor(i, s);
       if (starsFor(i, s) < 3) improve = i;
     }
-    const target = done < TOTAL ? done + 1 : improve;
-    return { s, done, target, stars, label: done < TOTAL ? `Play level ${target}` : `Improve level ${target}` };
+    // Everything played: point at the first level without three stars; with nothing left to improve, start over.
+    const target = done < TOTAL ? done + 1 : improve || 1;
+    return { s, done, target, stars, label: done < TOTAL ? `Play level ${target}` : improve ? `Improve level ${target}` : 'Play again' };
   };
 
   const playIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.4 5v14l11.4-7z" fill="currentColor" stroke="currentColor" stroke-width="3.4" stroke-linejoin="round"/></svg>';
@@ -255,19 +257,18 @@ card('Onderplaat', 'underlay', buildUnderlay(6, 6, CONFIG.board.grid.gap, true),
     `<button type="button" class="tf-btn ${kind}" style="${size}" aria-label="${name}"${disabled ? ' disabled' : ''}><span class="tf-clip"><span class="tf-face">${inner}</span></span></button>`;
   const SMALL = '--w:46px;--h:40px;--d:6px;--r:15px';
 
-  /** One level tile. `extra` adds a class, `slot` replaces the line under the number (optional touches). */
-  const tile = (level: number, m: Model, extra = '', slot = '', style = ''): string => {
-    const st = style ? ` style="${style}"` : '';
-    if (level > m.done + 1) return `<button type="button" class="tf-levels-tile is-locked ${extra}"${st} aria-label="Level ${level}, locked" disabled>${level}<span class="tf-levels-mark"></span></button>`;
-    if (level === m.done + 1) return `<button type="button" class="tf-levels-tile is-next ${extra}"${st} aria-label="Level ${level}, play next" aria-current="true">${level}${slot || '<span class="tf-levels-mark"></span>'}</button>`;
+  /** One level tile. `extra` adds a class, only to fix a look on the sheet. */
+  const tile = (level: number, m: Model, extra = ''): string => {
+    if (level > m.done + 1) return `<button type="button" class="tf-levels-tile is-locked ${extra}" aria-label="Level ${level}, locked" disabled>${level}<span class="tf-levels-mark"></span></button>`;
+    if (level === m.done + 1) return `<button type="button" class="tf-levels-tile is-next ${extra}" aria-label="Level ${level}, play next" aria-current="true">${level}<span class="tf-levels-mark"></span></button>`;
     const n = starsFor(level, m.s);
     const again = m.done === TOTAL && level === m.target ? ' is-target' : '';
-    return `<button type="button" class="tf-levels-tile s${n}${again} ${extra}"${st} aria-label="Level ${level}, ${n} of 3 stars"${again ? ' aria-current="true"' : ''}>${level}${slot || '<span class="tf-levels-stars"></span>'}</button>`;
+    return `<button type="button" class="tf-levels-tile s${n}${again} ${extra}" aria-label="Level ${level}, ${n} of 3 stars"${again ? ' aria-current="true"' : ''}>${level}<span class="tf-levels-stars"></span></button>`;
   };
 
   const head = (m: Model): string => `<header class="tf-levels-head">
       <h3 class="tf-levels-title">TURNFLOCK</h3>
-      <span class="tf-levels-pill" aria-label="Coins"><i class="tf-levels-coin"></i>${m.s === 'new' ? 30 : m.s === 'mid' ? 485 : 2640}</span>
+      <span class="tf-levels-pill" aria-label="Coins"><i class="tf-levels-coin"></i>${m.s === 'new' ? 30 : m.s === 'mid' ? 485 : m.s === 'all' ? 2640 : 3120}</span>
       <span class="tf-levels-pill tf-levels-progress" aria-label="${m.done} of ${TOTAL} levels, ${m.stars} of ${TOTAL * 3} stars"><span>${m.done}<small>/ ${TOTAL}</small></span><span><i class="tf-levels-star"></i>${m.stars}</span></span>
       ${famButton('tf-utility', SMALL, gearIcon, 'Settings')}
     </header>`;
@@ -293,44 +294,6 @@ card('Onderplaat', 'underlay', buildUnderlay(6, 6, CONFIG.board.grid.gap, true),
       </footer></div>`;
   };
 
-  /** B: every level in one scrolling list, a tray per 20 with its own star count. */
-  const optionB = (s: Situation, id: string, w = 390, h = 844): string => {
-    const m = model(s);
-    let groups = '';
-    for (let first = 1; first <= TOTAL; first += PER_PAGE) {
-      let tiles = '';
-      let stars = 0;
-      for (let i = first; i < first + PER_PAGE && i <= TOTAL; i++) {
-        tiles += tile(i, m);
-        if (i <= m.done) stars += starsFor(i, s);
-      }
-      groups += `<section class="tf-levels-tray tf-levels-group"><h4 class="tf-levels-grouphead"><span>${first}–${Math.min(first + PER_PAGE - 1, TOTAL)}</span><span><i class="tf-levels-star"></i>${stars} / ${PER_PAGE * 3}</span></h4><div class="tf-levels-grid">${tiles}</div></section>`;
-    }
-    return `${phoneOpen('b', id, w, h)}${head(m)}<div class="tf-levels-scroll">${groups}</div><footer class="tf-levels-dock">${play(m)}</footer></div>`;
-  };
-
-  /** C: a winding path, one node per level. */
-  const optionC = (s: Situation, id: string, w = 390, h = 844): string => {
-    const m = model(s);
-    const xs = [18, 50, 82];
-    const cycle = [0, 1, 2, 1];
-    const pitch = 60;
-    const top = 12;
-    const at = (i: number): [number, number] => [xs[cycle[(i - 1) % cycle.length]], top + (i - 1) * pitch];
-    let nodes = '';
-    const points: string[] = [];
-    for (let i = 1; i <= TOTAL; i++) {
-      const [x, y] = at(i);
-      points.push(`${x},${y + 34}`);
-      nodes += tile(i, m, '', '', `left:${x}%;top:${y}px`);
-    }
-    const height = top + TOTAL * pitch + 24;
-    const reached = Math.min(m.done + 1, TOTAL);
-    return `${phoneOpen('c', id, w, h)}${head(m)}<div class="tf-levels-scroll"><div class="tf-levels-path" style="height:${height}px">
-        <svg viewBox="0 0 100 ${height}" preserveAspectRatio="none" aria-hidden="true"><polyline points="${points.join(' ')}" stroke="#8fa7e6" stroke-opacity=".55" stroke-width="16"/><polyline points="${points.slice(0, reached).join(' ')}" stroke="#f8faff" stroke-width="16"/><polyline points="${points.slice(0, reached).join(' ')}" stroke="#f6c542" stroke-width="5" stroke-dasharray="1 12"/></svg>
-        ${nodes}</div></div><footer class="tf-levels-dock">${play(m)}</footer></div>`;
-  };
-
   const fig = (html: string, caption: string): string => `<figure class="tf-levels-fig">${html}<figcaption>${caption}</figcaption></figure>`;
   const sheet = document.getElementById('sheet')!;
   const add = (id: string, title: string, dims: string, body: string, note: string): void => {
@@ -344,7 +307,6 @@ card('Onderplaat', 'underlay', buildUnderlay(6, 6, CONFIG.board.grid.gap, true),
   // The tile on its own, in every state, plus the optional touches.
   {
     const mid = model('mid');
-    const mini = `<svg class="tf-levels-mini" viewBox="0 0 30 30" aria-hidden="true"><rect width="30" height="30" rx="6" fill="#8fa7e6"/>${[0, 1, 2, 3].map((x) => [0, 1, 2, 3].map((y) => `<rect x="${2.5 + x * 6.5}" y="${2.5 + y * 6.5}" width="5.5" height="5.5" rx="1.4" fill="${x === 3 && y === 0 ? '#39e85c' : '#f7faff'}"/>`).join('')).join('')}<circle cx="5.25" cy="11.75" r="2.3" fill="#f1454b"/><circle cx="11.75" cy="24.75" r="2.3" fill="#2e84f1"/><circle cx="18.25" cy="11.75" r="2.3" fill="#f4c62f"/><rect x="15.5" y="15.5" width="5.5" height="5.5" rx="1.4" fill="#8fa0c3"/></svg>`;
     const states = [
       fig(tile(200, mid), 'op slot'),
       fig(tile(38, mid), 'open · volgende'),
@@ -356,38 +318,19 @@ card('Onderplaat', 'underlay', buildUnderlay(6, 6, CONFIG.board.grid.gap, true),
       fig(tile(4, { ...mid, done: TOTAL, target: 4 }), 'nog te verbeteren'),
     ].join('');
     const digits = [fig(tile(7, mid), '1 cijfer'), fig(tile(64, { ...mid, done: 200 }), '2 cijfers'), fig(tile(200, { ...mid, done: 200, s: 'all' }), '3 cijfers'), fig(tile(138, { ...mid, done: 137 }), '3 cijfers · open'), fig(tile(199, mid), '3 cijfers · slot')].join('');
-    const touches = [
-      fig(tile(38, mid, 'has-mini', mini, 'width:100px'), 'optie: mini-bord op de volgende tegel'),
-      fig(tile(16, mid, '', '<span class="tf-levels-best">12 zetten</span>'), 'optie: beste aantal zetten'),
-      fig(tile(16, mid), 'standaard'),
-    ].join('');
     add('levels-tiles', 'Levelscherm · de leveltegel', 'minimaal 56×56 px · wand 5 px · getal 23–34 px, vet · sterren 46×17 px',
       `<h3 class="btn-title">Toestanden</h3><div class="tf-levels-strip" id="levels-tile-states">${states}</div>
-       <h3 class="btn-title">Leesbaarheid · 1 tot 3 cijfers op de smalste maat (56 px)</h3><div class="tf-levels-strip" id="levels-tile-digits" style="--tl-tile-h:56px">${digits.replaceAll('class="tf-levels-tile', 'style="width:56px" class="tf-levels-tile')}</div>
-       <h3 class="btn-title">Optionele extra's (niet standaard)</h3><div class="tf-levels-strip" id="levels-tile-touches">${touches}</div>`,
+       <h3 class="btn-title">Leesbaarheid · 1 tot 3 cijfers op de smalste maat (56 px)</h3><div class="tf-levels-strip" id="levels-tile-digits" style="--tl-tile-h:56px">${digits.replaceAll('class="tf-levels-tile', 'style="width:56px" class="tf-levels-tile')}</div>`,
       'Echte <code>&lt;button&gt;</code>-elementen met tekst als getal. Een tegel is een laag kussen met een echte zijwand, uit dezelfde familie als de knoppen; drie sterren krijgt een gouden wand, de volgende tegel is uitgang-groen met een witte ring, en een tegel op slot is een lege uitsparing in de bak. Geen vervaging of filters per tegel, zodat 200 tegels soepel scrollen.');
   }
 
-  const options: [string, string, string, (s: Situation, id: string, w?: number, h?: number) => string, string][] = [
-    ['a', 'Levelscherm · optie A: raster per pagina (aanbevolen)', '20 levels per pagina · 4×5 · bladeren onderin', optionA, 'Eén pagina van 20 past altijd zonder scrollen. Het scherm opent op de pagina van het volgende level; bladeren en spelen zitten allebei onderin, binnen duimbereik. De stippen tonen 10 pagina’s: goud is helemaal uitgespeeld.'],
-    ['b', 'Levelscherm · optie B: doorlopend raster in groepen van 20', '200 tegels in één lijst · 5 kolommen (4 op smalle schermen)', optionB, 'Alles in één lijst die opent bij het volgende level. Elke groep van 20 is een eigen bak met een eigen sterrentelling.'],
-    ['c', 'Levelscherm · optie C: slingerpad', 'één level per stap · 60 px per stap · 200 levels = 12.000 px', optionC, 'Het bekende pad: speels, maar je ziet maar ±11 levels tegelijk en 200 levels is heel lang scrollen.'],
-  ];
-  for (const [key, title, dims, build, note] of options) {
-    add(`levels-${key}`, title, dims, `<div class="tf-levels-row">${SITUATIONS.map(([s, name]) => fig(build(s, `levels-${key}-${s}`), name)).join('')}</div>`, note);
-  }
+  add('levels-a', 'Levelscherm · raster per pagina', '20 levels per pagina · 4×5 · bladeren onderin',
+    `<div class="tf-levels-row">${SITUATIONS.map(([s, name]) => fig(optionA(s, `levels-a-${s}`), name)).join('')}</div>`,
+    'Eén pagina van 20 past altijd zonder scrollen. Het scherm opent op de pagina van het level waar de hoofdknop naar wijst; bladeren en spelen zitten allebei onderin, binnen duimbereik. De stippen tonen 10 pagina’s: goud is helemaal uitgespeeld. Is alles uitgespeeld, dan wijst de knop naar het eerste level zonder drie sterren; heeft alles drie sterren, dan begint hij opnieuw bij level 1.');
   const SIZES: [number, number][] = [[320, 568], [390, 844], [430, 932], [768, 1024]];
-  add('levels-sizes', 'Levelscherm · optie A op vier schermmaten', SIZES.map(([w, h]) => `${w}×${h}`).join(' · '),
+  add('levels-sizes', 'Levelscherm · vier schermmaten', SIZES.map(([w, h]) => `${w}×${h}`).join(' · '),
     `<div class="tf-levels-row">${SIZES.map(([w, h]) => fig(optionA('mid', `levels-a-${w}`, w, h), `${w}×${h}`)).join('')}</div>`,
     'De tegelhoogte volgt de schermhoogte; op een tablet wordt het 5×4. Kopregel en dok worden op lage schermen iets platter.');
-
-  // Open each scrolling option where the main action points: the level to play, in the middle of the screen.
-  for (const scroller of document.querySelectorAll<HTMLElement>('.tf-levels-scroll')) {
-    const target = scroller.querySelector<HTMLElement>('.is-next') ?? scroller.querySelector<HTMLElement>('.is-target');
-    for (let pass = 0; target && pass < 2; pass++) {
-      scroller.scrollTop += target.getBoundingClientRect().top - scroller.getBoundingClientRect().top - scroller.clientHeight / 2 + target.offsetHeight / 2;
-    }
-  }
 }
 
 document.body.dataset.ready = 'true';
