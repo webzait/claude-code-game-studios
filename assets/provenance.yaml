@@ -16,3 +16,6 @@ turnflock/3d/board/wall_block.glb: { origin: you, source: "Modular Board", chang
 turnflock/3d/board/exit_tile.glb: { origin: you, source: "Modular Board", change: none }
 turnflock/3d/board/frame_edge.glb: { origin: you, source: "Modular Board", change: none }
 turnflock/3d/board/frame_corner.glb: { origin: you, source: "Modular Board", change: none }
+turnflock/bg/harbor-left.webp: { origin: you, source: "design/reference/turnflock/source/harbor-original.png (Asset Kit bg/harbor.png)", change: "left quay, columns 0-560 and rows 0-800; sky and water regraded to the palette gradients, softly blurred, edges faded to transparent, 420x600, WebP; made by tools/asset-pipeline/build-backdrop.py; parts page only, not in the game yet" }
+turnflock/bg/harbor-right.webp: { origin: you, source: "design/reference/turnflock/source/harbor-original.png (Asset Kit bg/harbor.png)", change: "right quay, columns 600-1086 and rows 0-800; same treatment, 364x600, WebP; made by tools/asset-pipeline/build-backdrop.py; parts page only, not in the game yet" }
+turnflock/bg/water-glints.webp: { origin: you, source: "design/reference/turnflock/source/harbor-original.png (Asset Kit bg/harbor.png)", change: "highlights of the water in rows 930-1448 as white on transparent, blurred, 543x259, WebP; made by tools/asset-pipeline/build-backdrop.py; parts page only, not in the game yet" }

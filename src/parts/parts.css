@@ -47,3 +47,62 @@ body { margin: 0; background: #eef3fb; color: var(--ink); font-family: ui-rounde
 .tf-action.blue { --top: #59a5ff; --main: #2e84f1; --side: #1a61be; --deep: #154c95; }
 .tf-action.yellow { --top: #ffe473; --main: #f4c62f; --side: #d29a0d; --deep: #b37b04; color: #3a3118; }
 .tf-action.forward { --top: #58638a; --main: #3d4769; --side: #29314a; --deep: #1e243a; }
+
+/* ---- Backdrop: sunny harbour in layers (sky, far quays, water). Decoration only. ----
+   Layer order, back to front: sky and water gradients · horizon haze · water glints · the two quays.
+   The horizon is one number (--tf-bg-h); everything else hangs from it. The pictures are cut from
+   the owner's original by tools/asset-pipeline/build-backdrop.py, whose gradient stops match these. */
+.tf-bg { position: absolute; inset: 0; overflow: hidden; pointer-events: none; container-type: size; background: #38B8E8; }
+.tf-bg-scene {
+  position: absolute; inset: 0;
+  /* Horizon: 22% down, so it lands in the gap between the top bar and the board on a phone. */
+  --tf-bg-h: clamp(118px, 22cqh, 260px);
+  /* Height of a quay picture (800 rows of the original, horizon on row 520). Never wider than the
+     screen can hold both of them side by side: 800 / 1086 of the width. */
+  --tf-bg-q: min(calc(var(--tf-bg-h) * 1.5385), 73.66cqw);
+  background:
+    radial-gradient(ellipse 75cqw calc(var(--tf-bg-h) * .5) at 50% var(--tf-bg-h), rgba(255, 255, 255, .32), rgba(255, 255, 255, 0) 70%),
+    linear-gradient(180deg,
+      #4EAFF8 0, #76C8FF calc(var(--tf-bg-h) * .55), #CBEFFF calc(var(--tf-bg-h) - 1px),
+      #93DFFA calc(var(--tf-bg-h) + 1px), #6FD5F7 calc(var(--tf-bg-h) * 1.12), #4FC4EE calc(var(--tf-bg-h) * 1.54),
+      #38B8E8 max(55%, calc(var(--tf-bg-h) * 2.2)), #2298CF 100%);
+}
+.tf-bg-quay { position: absolute; top: calc(var(--tf-bg-h) - var(--tf-bg-q) * .65); height: var(--tf-bg-q); background: center / 100% 100% no-repeat; }
+.tf-bg-left { left: 0; width: calc(var(--tf-bg-q) * .7); background-image: url('../../assets/turnflock/bg/harbor-left.webp'); }
+.tf-bg-right { right: 0; width: calc(var(--tf-bg-q) * .6075); background-image: url('../../assets/turnflock/bg/harbor-right.webp'); }
+/* The same glint picture three times, small near the horizon and large near the viewer. */
+.tf-bg-glint { position: absolute; left: 50%; aspect-ratio: 543 / 259; translate: -50% 0; background: url('../../assets/turnflock/bg/water-glints.webp') center / 100% 100% no-repeat; }
+.tf-bg-far { top: calc(var(--tf-bg-h) * 1.2); width: max(100%, 62cqh); opacity: .4; }
+.tf-bg-mid { top: calc(var(--tf-bg-h) + (100% - var(--tf-bg-h)) * .3); width: max(150%, 93cqh); opacity: .32; scale: -1 1; }
+.tf-bg-near { bottom: -4%; width: max(210%, 130cqh); opacity: .24; }
+/* Option, off by default: add .tf-bg-motion to .tf-bg for a slow water shimmer. */
+@keyframes tf-bg-drift { from { translate: -52% 0; } to { translate: -48% 0; } }
+@keyframes tf-bg-shimmer { to { opacity: .12; } }
+.tf-bg-motion .tf-bg-glint { animation: tf-bg-drift 38s ease-in-out infinite alternate, tf-bg-shimmer 9s ease-in-out infinite alternate; }
+.tf-bg-motion .tf-bg-mid { animation-direction: alternate-reverse; animation-duration: 46s, 11s; }
+.tf-bg-motion .tf-bg-near { animation-duration: 54s, 13s; }
+@media (prefers-reduced-motion: reduce) { .tf-bg-motion .tf-bg-glint { animation: none; } }
+/* Layer views for the parts sheet. */
+.tf-bg-only-base .tf-bg-quay, .tf-bg-only-base .tf-bg-glint, .tf-bg-only-quays .tf-bg-glint, .tf-bg-only-glints .tf-bg-quay { display: none; }
+.tf-bg-only-quays .tf-bg-scene, .tf-bg-only-glints .tf-bg-scene { background: none; }
+.tf-bg.tf-bg-only-quays, .tf-bg.tf-bg-only-glints { background: #7d8aa3; }
+/* The backdrop the game has now, for comparison (copied from #backdrop in src/ui/style.css). */
+.tf-bg-old { position: absolute; inset: 0; background: url('../../assets/turnflock/bg/harbor.jpg') center top / cover no-repeat; filter: saturate(1.35) contrast(1.08); }
+.tf-bg-old::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(78, 175, 248, .10) 0%, rgba(203, 239, 255, .16) 40%, rgba(56, 184, 232, .14) 100%); }
+
+/* Phone frames with grey blocks where the game's zones are: top bar 96, board up to 366, controls 180. */
+.tf-bg-row { display: flex; gap: 18px; align-items: flex-start; overflow-x: auto; padding: 4px 2px 10px; }
+.tf-bg-shot { flex: none; margin: 0; text-align: center; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tf-bg-phone { position: relative; overflow: hidden; border-radius: 22px; box-shadow: 0 0 0 3px #24314f, 0 8px 18px rgba(24, 46, 110, .25); margin: 3px 3px 8px; }
+.tf-bg-ui { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 10px 12px 12px; max-width: 560px; margin: 0 auto; }
+.tf-bg-ui i { display: block; background: #dee3ec; border-radius: 16px; box-shadow: 0 3px 0 rgba(120, 134, 165, .8); }
+.tf-bg-top { height: 86px; flex: none; display: flex; gap: 8px; align-items: flex-start; }
+.tf-bg-top i { height: 48px; flex: 0 0 62px; }
+.tf-bg-top i:first-child { flex: 1; margin-right: 12%; }
+.tf-bg-play { flex: 1; min-height: 0; display: grid; place-items: center; container-type: size; }
+.tf-bg-play i { width: min(366px, 100cqw, 100cqh); aspect-ratio: 1; border-radius: 22px; }
+.tf-bg-controls { height: 168px; flex: none; display: grid; grid-template-rows: 48px 96px; gap: 16px 10px; align-content: end; }
+.tf-bg-controls div { display: flex; gap: 10px; justify-content: center; }
+.tf-bg-controls div:first-child i { flex: 0 1 112px; }
+.tf-bg-controls div:last-child i { flex: 0 1 96px; border-radius: 20px; }
+.tf-bg-toggle { display: inline-flex; gap: 8px; align-items: center; font-size: 14px; font-weight: 700; margin: 4px 0 10px; }
