@@ -14,13 +14,15 @@ export default defineConfig(({ mode }) => ({
   publicDir: false,
   // The asset kit's 3D models are imported from code like the images are.
   assetsInclude: ['**/*.glb'],
-  plugins: mode === 'single' ? [viteSingleFile()] : [],
+  plugins: mode === 'single' || mode === 'parts' ? [viteSingleFile()] : [],
   // The game's page only: other pages in the project (one-shots in prototypes/)
   // are not scanned for packages.
   optimizeDeps: { entries: ['index.html'] },
   build: {
-    outDir: mode === 'single' ? 'dist-single' : 'dist',
+    outDir: mode === 'single' ? 'dist-single' : mode === 'parts' ? 'dist-parts' : 'dist',
     emptyOutDir: true,
+    // npm run build:parts -> dist-parts/parts.html: every game element on its own, for review.
+    ...(mode === 'parts' ? { rollupOptions: { input: 'parts.html' } } : {}),
   },
   test: {
     include: ['tests/unit/**/*.test.ts'],

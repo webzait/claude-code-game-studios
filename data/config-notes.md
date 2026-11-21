@@ -34,3 +34,7 @@
 - `lab.previewMoves` — move budget on the board-size test boards (`data/test-boards.json`), which are not levels.
 - `light` — scene lighting: hemisphere `sky`/`ground` colours and `ambient` strength, `sun` strength, `reflections` (environment map strength) and ground `shadow` opacity. Tuned on screenshots so top faces show their colour token without blowing out.
 - `colors.robots` — per colour the top/main/side/deep tones the robot body is shaded with, plus eye colours. `robot` — lean towards the player (radians), eye size/spread/height, pupil size, gloss, how far the top lightens (`topLight`), arrow scale and offset.
+
+## data/parts.json
+
+Dimensions of the standalone game elements, in cell units (1 cell = `unitPx` 56 px on the asset sheet): the Flockbot's modules (shell, face, romp, feet, ears, symbol), floor tile, obstacle, exit, rim and underlay, and the three button sizes in CSS pixels. Shown one by one on the parts sheet (`npm run build:parts` → `dist-parts/parts.html`); not yet used by the playable game.

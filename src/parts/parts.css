@@ -1,0 +1,47 @@
+:root { --ink: #24314f; --muted: #5d6a84; --line: #cdd8ee; --card: #f8faff; }
+* { box-sizing: border-box; }
+body { margin: 0; background: #eef3fb; color: var(--ink); font-family: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif; }
+.sheet-head { padding: 18px 16px 6px; max-width: 1100px; margin: 0 auto; }
+.sheet-head h1 { margin: 0; font-size: 22px; letter-spacing: .02em; }
+.sheet-head p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+#sheet { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; padding: 12px 16px 40px; max-width: 1100px; margin: 0 auto; }
+.card { background: var(--card); border: 1.5px solid var(--line); border-radius: 18px; padding: 12px; }
+.card.wide { grid-column: 1 / -1; }
+.card h2 { margin: 0 0 2px; font-size: 17px; }
+.card .dims { margin: 0 0 8px; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.views { display: grid; grid-template-columns: 1.6fr 1fr 1fr; grid-template-rows: auto auto; gap: 6px; align-items: center; }
+.views figure { margin: 0; text-align: center; }
+.views figure.main { grid-row: 1 / 3; }
+.views canvas { width: 100%; height: auto; display: block; border-radius: 12px; background: linear-gradient(180deg, #70c4fb, #5ab6f3); }
+.views figcaption { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.card.wide .views { grid-template-columns: 1fr 1fr; grid-template-rows: auto; }
+.card.wide .views figure.main { grid-row: auto; }
+.note { margin: 8px 0 0; font-size: 12.5px; color: var(--muted); }
+
+/* ---- Buttons, each on its own, at the sheet's size in CSS pixels ---- */
+.btn-row { display: flex; flex-wrap: wrap; gap: 22px 18px; align-items: flex-start; padding: 14px 8px 22px; background: linear-gradient(180deg, #70c4fb, #5ab6f3); border-radius: 12px; }
+.btn-cell { display: flex; flex-direction: column; align-items: center; gap: 22px; font-size: 11px; color: #12305c; font-weight: 700; }
+.tf-btn { border: 0; padding: 0; font: inherit; cursor: pointer; position: relative; display: inline-flex; align-items: center; justify-content: center; transition: transform .06s, box-shadow .06s; -webkit-tap-highlight-color: transparent; }
+.tf-btn svg { position: relative; }
+/* Utility and hint: 120 x 48 face, 16 deep. */
+.tf-utility {
+  width: 120px; height: 48px; border-radius: 17px; gap: 7px; color: var(--ink); font-weight: 800; font-size: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, #eef3ff 100%);
+  box-shadow: 0 6px 0 #c3cfea, 0 12px 0 #a9b8dc, 0 16px 0 #8fa0c8, 0 22px 14px rgba(18, 36, 92, .3), inset 0 2px 0 #fff;
+}
+.tf-utility svg { width: 22px; height: 22px; }
+.tf-utility:active { transform: translateY(12px); box-shadow: 0 2px 0 #c3cfea, 0 4px 0 #8fa0c8, 0 6px 8px rgba(18, 36, 92, .3), inset 0 2px 0 #fff; }
+.tf-hint img { width: 30px; height: 30px; }
+/* Action: 96 x 96 face, 20 deep. */
+.tf-action {
+  width: 96px; height: 96px; border-radius: 20px; color: #fff;
+  background: linear-gradient(180deg, var(--top) 0%, var(--main) 60%);
+  box-shadow: 0 10px 0 var(--side), 0 20px 0 var(--deep), 0 28px 16px rgba(18, 36, 92, .38), inset 0 2px 0 rgba(255, 255, 255, .5), inset 0 -4px 6px rgba(0, 0, 0, .1);
+}
+.tf-action::before { content: ""; position: absolute; left: 7%; right: 7%; top: 5%; height: 40%; border-radius: 15px 15px 40% 40%; background: linear-gradient(180deg, rgba(255, 255, 255, .42), rgba(255, 255, 255, 0)); pointer-events: none; }
+.tf-action svg { width: 54px; height: 54px; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, .18)); }
+.tf-action:active { transform: translateY(16px); box-shadow: 0 2px 0 var(--side), 0 4px 0 var(--deep), 0 8px 8px rgba(18, 36, 92, .3), inset 0 2px 0 rgba(255, 255, 255, .4); }
+.tf-action.red { --top: #ff646b; --main: #f1454b; --side: #bd2732; --deep: #a21d28; }
+.tf-action.blue { --top: #59a5ff; --main: #2e84f1; --side: #1a61be; --deep: #154c95; }
+.tf-action.yellow { --top: #ffe473; --main: #f4c62f; --side: #d29a0d; --deep: #b37b04; color: #3a3118; }
+.tf-action.forward { --top: #58638a; --main: #3d4769; --side: #29314a; --deep: #1e243a; }

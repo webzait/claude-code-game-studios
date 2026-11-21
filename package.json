@@ -10,6 +10,7 @@
     "dev": "vite --host",
     "build": "tsc --noEmit && vite build",
     "build:single": "tsc --noEmit && vite build --mode single",
+    "build:parts": "tsc --noEmit && vite build --mode parts",
     "preview": "vite preview --host",
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "vitest run",
