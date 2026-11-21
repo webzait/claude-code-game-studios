@@ -6,6 +6,7 @@ import parts from '../../data/parts.json';
 import hintIcon from '../../assets/turnflock/ui/hint.webp';
 import { buildExit, buildFloorTile, buildObstacle, buildRim, buildRimCorner, buildRimEdge, buildUnderlay } from '../render/parts/board';
 import { buildFlockbot } from '../render/parts/flockbot';
+import { addSettingsCards } from './settings';
 import './parts.css';
 
 /**
@@ -220,5 +221,8 @@ card('Onderplaat', 'underlay', buildUnderlay(6, 6, CONFIG.board.grid.gap, true),
   <p class="note">Echte HTML-knoppen met CSS: tekst blijft tekst, maten komen uit <code>--w --h --d --r</code>. Elke knop is één gegoten blok met een bovenvlak, een ronde rand en schuine flanken: bij indrukken zakt het hele blok ${Math.round(b.pressFraction * 100)}% van de diepte weg; de voetafdruk en het raakvlak blijven gelijk. Blauw toont in de telefoonstroken de nudge.</p>`;
   document.getElementById('sheet')!.appendChild(el);
 }
+
+// The settings screen and its controls (src/parts/settings.ts).
+addSettingsCards(document.getElementById('sheet')!);
 
 document.body.dataset.ready = 'true';
