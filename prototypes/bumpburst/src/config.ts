@@ -70,8 +70,10 @@ export const SYMBOLS: Record<ColorId, SymbolKind> = {
 /** Look of the diorama. A future skin is another object of this shape. */
 export const theme = {
   background: '#EEEBE5',
-  floor: '#E6DFD3',
-  wall: '#FFFFFF',
+  floor: '#ECE8E1',
+  wall: '#D5DAE0',
+  /** The catch bin: the one place green appears until green bumpers exist. */
+  bin: '#5FB889',
   obstacle: '#C6CBD6',
   pocket: '#2A2E3A',
   marble: '#FFFFFF',

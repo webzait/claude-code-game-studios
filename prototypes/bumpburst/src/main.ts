@@ -144,7 +144,7 @@ function frame(now: number): void {
       acc -= tune.dt;
       for (const e of events) {
         if (e.type === 'collect') {
-          view.collect(e.id, e.x, e.y);
+          view.collect(e.id, e.x, e.y, e.catcher);
           sfx.collect(game.collected - 1);
           hud.update(game);
         } else if (e.type === 'hit') sfx.click(e.speed);

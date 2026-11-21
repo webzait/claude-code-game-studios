@@ -12,11 +12,13 @@ const WALL_H = 0.6;
 const BASE_H = 0.5;
 const BUMPER_H = 0.62;
 const SINK_TIME = 0.32;
+const BIN_DEPTH = 1.35;
 
 interface BumperView {
   body: THREE.Mesh;
   mat: THREE.MeshPhysicalMaterial;
   symbol: THREE.Mesh;
+  halo: THREE.Mesh;
   ring: THREE.Mesh;
   ringMat: THREE.MeshBasicMaterial;
   color: ColorId;
@@ -66,6 +68,10 @@ export class View {
   private pops: Pop[] = [];
   private sink: Float32Array = new Float32Array(0);
   private sinkFrom: Float32Array = new Float32Array(0);
+  /** Where each caught marble comes to lie in the bin (scene x, y, z). */
+  private binPos: Float32Array = new Float32Array(0);
+  private binCount: number[] = [];
+  private catchers: LevelDef['catchers'] = [];
   private dummy = new THREE.Object3D();
   private size = { w: 10, h: 10 };
   private bounce = 0;
@@ -155,6 +161,28 @@ export class View {
       this.board.add(rimMesh);
     }
 
+    // The catch bin: a green gate through the near wall and a tray outside it where caught marbles collect.
+    const binMat = new THREE.MeshPhysicalMaterial({ color: theme.bin, roughness: 0.5, clearcoat: 0.3, clearcoatRoughness: 0.4 });
+    const binInner = new THREE.MeshStandardMaterial({ color: new THREE.Color(theme.bin).multiplyScalar(0.72), roughness: 0.8 });
+    this.catchers = level.catchers;
+    this.binCount = level.catchers.map(() => 0);
+    for (const c of level.catchers) {
+      const cx = this.px(c.x + c.w / 2);
+      const gate = new THREE.Mesh(new RoundedBoxGeometry(c.w + 0.34, BASE_H + WALL_H + 0.05, WALL_T + 0.06, 4, 0.08), binMat);
+      gate.position.set(cx, (WALL_H - BASE_H) / 2 + 0.025, h / 2 + WALL_T / 2 + 0.02);
+      gate.castShadow = gate.receiveShadow = true;
+      this.board.add(gate);
+      const tray = new THREE.Mesh(new RoundedBoxGeometry(c.w + 0.34, BASE_H + 0.16, BIN_DEPTH, 4, 0.14), binMat);
+      tray.position.set(cx, -BASE_H / 2 + 0.08, h / 2 + WALL_T + BIN_DEPTH / 2 - 0.1);
+      tray.castShadow = tray.receiveShadow = true;
+      this.board.add(tray);
+      const bed = new THREE.Mesh(new THREE.ShapeGeometry(roundedRect(-c.w / 2, -(BIN_DEPTH - 0.35) / 2, c.w, BIN_DEPTH - 0.35, 0.14), 6), binInner);
+      bed.rotation.x = -Math.PI / 2;
+      bed.position.set(cx, 0.165, h / 2 + WALL_T + BIN_DEPTH / 2 - 0.02);
+      bed.receiveShadow = true;
+      this.board.add(bed);
+    }
+
     const obMat = new THREE.MeshPhysicalMaterial({ color: theme.obstacle, roughness: 0.55, clearcoat: 0.2 });
     for (const o of level.obstacles) {
       const m = new THREE.Mesh(new RoundedBoxGeometry(o.w, 0.56, o.h, 4, 0.1), obMat);
@@ -182,7 +210,7 @@ export class View {
       body.castShadow = body.receiveShadow = true;
       this.board.add(body);
 
-      const foot = new THREE.Mesh(new THREE.CircleGeometry(b.r + 0.07, 48), new THREE.MeshBasicMaterial({ color: color.clone().multiplyScalar(0.62) }));
+      const foot = new THREE.Mesh(new THREE.CircleGeometry(b.r + 0.13, 48), new THREE.MeshBasicMaterial({ color: 0xffffff }));
       foot.rotation.x = -Math.PI / 2;
       foot.position.set(this.px(b.x), 0.006, this.pz(b.y));
       this.board.add(foot);
@@ -194,12 +222,17 @@ export class View {
       symbol.scale.setScalar(b.r * 0.34);
       this.board.add(symbol);
 
+      const halo = new THREE.Mesh(new THREE.RingGeometry(0.47, 0.5, 48), new THREE.MeshBasicMaterial({ color: color.clone().lerp(new THREE.Color(0xffffff), 0.45) }));
+      halo.rotation.x = -Math.PI / 2;
+      halo.position.set(this.px(b.x), BUMPER_H + 0.004, this.pz(b.y));
+      halo.scale.setScalar(b.r);
+      this.board.add(halo);
       const ringMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0, depthWrite: false });
       const ring = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 48), ringMat);
       ring.rotation.x = -Math.PI / 2;
       ring.position.set(this.px(b.x), 0.012, this.pz(b.y));
       this.board.add(ring);
-      this.bumpers.push({ body, mat, symbol, ring, ringMat, color: b.color, r: b.r, fx: 99 });
+      this.bumpers.push({ body, mat, symbol, halo, ring, ringMat, color: b.color, r: b.r, fx: 99 });
     }
 
     const n = world.marbles.length;
@@ -210,6 +243,7 @@ export class View {
     this.board.add(this.marbles);
     this.sink = new Float32Array(n).fill(-1);
     this.sinkFrom = new Float32Array(n * 2);
+    this.binPos = new Float32Array(n * 3);
     this.fit();
   }
 
@@ -220,7 +254,21 @@ export class View {
   }
 
   /** A marble dropped into a catcher at tray position (x, y). */
-  collect(id: number, x: number, y: number): void {
+  collect(id: number, x: number, y: number, catcher = 0): void {
+    const c = this.catchers[catcher];
+    if (c) {
+      // Next free place in the bin: rows of marbles, then a second layer.
+      const k = this.binCount[catcher]++;
+      const cols = Math.max(1, Math.floor((c.w - 0.1) / 0.5));
+      const perLayer = cols * 2;
+      const layer = Math.floor(k / perLayer);
+      const row = Math.floor((k % perLayer) / cols);
+      const col = (k % perLayer) % cols;
+      const off = layer % 2 ? 0.25 : 0;
+      this.binPos[id * 3] = this.px(c.x + c.w / 2) + (col - (cols - 1) / 2) * 0.5 + (layer % 2 ? 0.12 : 0);
+      this.binPos[id * 3 + 1] = 0.165 + tune.marbleRadius + layer * 0.38;
+      this.binPos[id * 3 + 2] = this.size.h / 2 + WALL_T + 0.4 + row * 0.5 + off;
+    }
     this.sink[id] = 0;
     this.sinkFrom[id * 2] = x;
     this.sinkFrom[id * 2 + 1] = y;
@@ -253,8 +301,14 @@ export class View {
         if (t < 0) t = SINK_TIME; // collected before this view saw it
         else if (t < SINK_TIME) this.sink[i] = t = Math.min(SINK_TIME, t + dt);
         const k = t / SINK_TIME;
-        d.position.set(this.px(this.sinkFrom[i * 2]), r - k * k * (BASE_H + 0.3), this.pz(this.sinkFrom[i * 2 + 1]));
-        d.scale.setScalar(k >= 1 ? 0 : 1 - 0.35 * k);
+        if (k >= 1) {
+          // Through the gate: the marble now lies in the bin outside the tray.
+          d.position.set(this.binPos[i * 3], this.binPos[i * 3 + 1], this.binPos[i * 3 + 2]);
+          d.scale.setScalar(1);
+        } else {
+          d.position.set(this.px(this.sinkFrom[i * 2]), r - k * k * (BASE_H + 0.3), this.pz(this.sinkFrom[i * 2 + 1]));
+          d.scale.setScalar(1 - 0.35 * k);
+        }
       }
       d.updateMatrix();
       mesh.setMatrixAt(i, d.matrix);
@@ -267,6 +321,8 @@ export class View {
       const s = b.radius;
       v.body.scale.set(s, 1 + 0.22 * b.amount, s);
       v.symbol.position.y = BUMPER_H * (1 + 0.22 * b.amount) + 0.006;
+      v.halo.position.y = BUMPER_H * (1 + 0.22 * b.amount) + 0.004;
+      v.halo.scale.setScalar(s);
       v.symbol.scale.setScalar(v.r * 0.34 * (1 + 0.25 * b.amount));
       v.mat.emissiveIntensity = 0.38 * b.amount;
       v.fx += dt;
@@ -327,6 +383,8 @@ export class View {
     const hh = this.size.h / 2 + WALL_T;
     const pts: THREE.Vector3[] = [];
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) for (const y of [-BASE_H, WALL_H]) pts.push(new THREE.Vector3(sx * hw, y, sz * hh));
+    // Room for the catch bin that sticks out of the near wall.
+    for (const sx of [-1, 1]) pts.push(new THREE.Vector3(sx * hw * 0.6, 0.4, hh + BIN_DEPTH));
     const target = new THREE.Vector3(0, 0, 0);
     const v = new THREE.Vector3();
     const extent = (dist: number) => {

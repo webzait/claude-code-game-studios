@@ -27,8 +27,8 @@ Prioriteit: gameplayhelderheid, tactiele voldoening, sterke visuele feedback, go
 **Intent:**
 
 ## Look and references
-- Look: premium minimalist diorama. A white rounded tray on an off-white background, warm sand floor, glossy rubber bumper domes in red, blue and yellow, white pearl marbles, soft shadows, a dark cut-out catcher. Color carries the rule; each color also has a shape (red triangle, blue square, yellow star) on bumper and button. Every figure drawn in code, no emoji, no stock graphics, no neon.
-- References: none named. Avoid visual copies of existing games.
+- Look: premium minimalist diorama. A light grey rounded tray on an off-white background, pale floor, glossy rubber bumper domes in red, blue and yellow on white rims, white pearl marbles, soft shadows, and a green catch bin that sticks out of the near wall and fills with the caught marbles (from your playfield sketch). Color carries the rule; each color also has a shape (red triangle, blue square, yellow star) on bumper and button. Every figure drawn in code, no emoji, no stock graphics, no neon.
+- References: your concept sketch of the playfield (grey frame, white-rimmed bumpers, green bin outside the bottom wall, R/B/Y buttons). Avoid visual copies of existing games.
 - View: 2.5D/3D · Camera: fixed, angled top-down (about 63 degrees), portrait, tray fills the width.
 
 ## First minute
