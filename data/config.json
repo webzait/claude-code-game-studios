@@ -13,7 +13,20 @@
     "tileB": "#E3E8F8",
     "wall": "#7A829B",
     "ink": "#22305C",
-    "wallBolt": "#5F667E"
+    "wallBolt": "#5F667E",
+    "kit": {
+      "tileLight": "#F1F4FA",
+      "tileMid": "#E3E8F2",
+      "tileEdge": "#D4DBE7",
+      "frame": "#B9C9F2",
+      "frameShadow": "#95A8D8",
+      "obstacle": "#8C9AB3",
+      "obstacleShadow": "#6D7891",
+      "obstacleHighlight": "#B8C4DA",
+      "exit": "#42E86B",
+      "exitShadow": "#24B84A",
+      "exitGlow": "#8CFFAA"
+    }
   },
   "anim": {
     "turnTime": 0.17,
@@ -56,6 +69,7 @@
       1,
       1.5
     ],
+    "previewMoves": 99,
     "certifyMaxVisited": 400000
   },
   "audio": {
@@ -71,6 +85,17 @@
       "tilt": 30,
       "frame": 0.62,
       "spareAbove": 0.5
+    },
+    "grid": {
+      "tile": 1.0,
+      "gap": 0.055,
+      "rim": 0.16,
+      "rimHeight": 0.27,
+      "underlay": 0.2,
+      "cornerRadius": 0.16,
+      "wallFill": 0.9,
+      "wallHeight": 0.72,
+      "robotFill": 0.84
     }
   },
   "levelsPerPage": 20,

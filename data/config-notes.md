@@ -29,3 +29,6 @@
 `data/levels.json`: `par` is the solver's shortest solution and `witness` is one command list that wins; both are checked by the tests.
 
 - `board.<style>.spareAbove` — share of the spare stage height that goes above the board: 0 = against the HUD, 0.5 = centred, 1 = against the controls. Visual fidelity step 1 (2026-11-21).
+- `board.grid` — the modular board in world units (blueprint v1): `tile` 1.0, `gap` between tiles 0.055, `rim` width 0.16, `rimHeight`, `underlay` thickness, `cornerRadius`; `wallFill` and `robotFill` are the share of a tile an obstacle (0.88–0.93) and a robot (0.82–0.88) fill; `wallHeight` scales the kit obstacle's height.
+- `colors.kit` — fixed board colours from the style tokens (tiles, frame, obstacle, exit).
+- `lab.previewMoves` — move budget on the board-size test boards (`data/test-boards.json`), which are not levels.

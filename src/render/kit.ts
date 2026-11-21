@@ -1,20 +1,18 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { CONFIG } from '../config';
 import type { Color } from '../engine/types';
 import redBot from '../../assets/turnflock/3d/flockbot_red.glb?inline';
 import blueBot from '../../assets/turnflock/3d/flockbot_blue.glb?inline';
 import yellowBot from '../../assets/turnflock/3d/flockbot_yellow.glb?inline';
-import baseCell from '../../assets/turnflock/3d/board/base_cell.glb?inline';
 import floorLight from '../../assets/turnflock/3d/board/floor_light.glb?inline';
 import floorAlt from '../../assets/turnflock/3d/board/floor_alt.glb?inline';
 import wallBlock from '../../assets/turnflock/3d/board/wall_block.glb?inline';
 import exitTile from '../../assets/turnflock/3d/board/exit_tile.glb?inline';
-import frameEdge from '../../assets/turnflock/3d/board/frame_edge.glb?inline';
-import frameCorner from '../../assets/turnflock/3d/board/frame_corner.glb?inline';
 
-/** Board modules of the asset kit; each is one grid cell (or one frame segment) in size. */
-export type BoardPiece = 'baseCell' | 'floorLight' | 'floorAlt' | 'wallBlock' | 'exitTile' | 'frameEdge' | 'frameCorner';
+/** Board modules of the asset kit; each is one grid cell in size. The frame and underlay are built in code. */
+export type BoardPiece = 'floorLight' | 'floorAlt' | 'wallBlock' | 'exitTile';
 
 /** The asset kit's 3D models, loaded once and cloned wherever they are used. */
 export interface Kit {
@@ -62,6 +60,28 @@ function decode(dataUri: string): ArrayBuffer {
   return bytes.buffer;
 }
 
+/** Fixed board colours, by the name of the part inside a kit model. Parts not listed keep the file's colour. */
+const K = CONFIG.colors.kit;
+const PART_COLORS: Record<string, string> = {
+  'floor_light:top': K.tileLight,
+  'floor_light:sides': K.tileEdge,
+  'floor_alt:top': K.tileMid,
+  'floor_alt:sides': K.tileEdge,
+  'exit_tile:floor': K.tileEdge,
+  'exit_tile:green_bezel': K.exitShadow,
+  'exit_tile:green_face': K.exit,
+  'exit_tile:glow_ring_front': K.exitGlow,
+  'exit_tile:glow_ring_back': K.exitGlow,
+  'wall_block:body': K.obstacle,
+  'wall_block:top_plate': K.obstacle,
+  'wall_block:bolt1': K.obstacleShadow,
+  'wall_block:bolt2': K.obstacleShadow,
+  'wall_block:bolt3': K.obstacleShadow,
+  'wall_block:bolt4': K.obstacleShadow,
+};
+/** The loader drops the colon from part names, so parts are looked up without it. */
+const PART_BY_NODE = new Map(Object.entries(PART_COLORS).map(([name, color]) => [name.replace(/:/g, ''), color]));
+
 function parse(loader: GLTFLoader, dataUri: string): Promise<THREE.Group> {
   return new Promise((resolve, reject) => {
     loader.parse(decode(dataUri), '', (gltf) => {
@@ -75,7 +95,9 @@ function parse(loader: GLTFLoader, dataUri: string): Promise<THREE.Group> {
           material.metalness = 0;
           // The colour numbers in the files are screen (sRGB) values stored where glTF
           // expects linear ones, which shows red as pink. Read them as intended.
-          material.color.convertSRGBToLinear();
+          const fixed = PART_BY_NODE.get(node.name.replace(/:/g, ''));
+          if (fixed) material.color.set(fixed);
+          else material.color.convertSRGBToLinear();
           material.roughness = Math.max(material.roughness, 0.4);
         }
       });
@@ -87,11 +109,11 @@ function parse(loader: GLTFLoader, dataUri: string): Promise<THREE.Group> {
 /** Load every kit model. Rejects when a model cannot be read; the game then keeps its built-in shapes. */
 export async function loadKit(): Promise<Kit> {
   const loader = new GLTFLoader();
-  const [red, blue, yellow, base, light, alt, wall, exit, edge, corner] = await Promise.all(
-    [redBot, blueBot, yellowBot, baseCell, floorLight, floorAlt, wallBlock, exitTile, frameEdge, frameCorner].map((uri) => parse(loader, uri)),
+  const [red, blue, yellow, light, alt, wall, exit] = await Promise.all(
+    [redBot, blueBot, yellowBot, floorLight, floorAlt, wallBlock, exitTile].map((uri) => parse(loader, uri)),
   );
   return {
     robots: { red, blue, yellow },
-    board: { baseCell: base, floorLight: light, floorAlt: alt, wallBlock: wall, exitTile: exit, frameEdge: edge, frameCorner: corner },
+    board: { floorLight: light, floorAlt: alt, wallBlock: wall, exitTile: exit },
   };
 }

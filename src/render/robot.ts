@@ -125,7 +125,9 @@ export function buildRobot(id: number, color: Color): RobotView {
 }
 
 /** Tuning of the asset-kit robot inside one cell. */
-const KIT_SCALE = 0.8;
+/** The kit body is 0.89 wide; scaled so the robot fills the configured share of a tile. */
+const KIT_BODY_WIDTH = 0.89;
+const KIT_SCALE = CONFIG.board.grid.robotFill / KIT_BODY_WIDTH;
 const KIT_TILT = -0.3;
 /** The kit's eyes are small; they are enlarged and raised to read as big eyes high on the front. */
 const KIT_EYE_SCALE = 1.55;

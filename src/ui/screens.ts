@@ -73,6 +73,10 @@ export interface SettingsHandlers {
   setMute(mute: boolean): void;
   setReduceMotion(value: boolean | null): void;
   setLab(patch: Partial<LabSettings>): void;
+  /** Labels of the board-size test boards. */
+  readonly testBoards: readonly string[];
+  /** Open one of the board-size test boards. */
+  previewBoard(index: number): void;
   resetProgress(): void;
 }
 
@@ -223,6 +227,16 @@ export function renderSettings(save: SaveData, handlers: SettingsHandlers): void
           ],
           save.lab.boardPieces,
           (v) => handlers.setLab({ boardPieces: v }),
+        ),
+      ),
+      setting(
+        'Board size test',
+        'Opens a test board. Not a level; nothing is saved',
+        segmented(
+          'testBoard',
+          handlers.testBoards.map((label, value) => ({ label, value })),
+          -1,
+          (v) => handlers.previewBoard(v),
         ),
       ),
       setting(

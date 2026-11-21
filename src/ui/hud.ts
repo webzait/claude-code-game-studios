@@ -12,6 +12,8 @@ export const STAR =
 /** What the level HUD needs to draw one frame of status. */
 export interface HudModel {
   levelNumber: number;
+  /** Replaces `LEVEL n` in the header, for boards that are not levels. */
+  levelLabel?: string;
   levelName: string;
   collected: number;
   total: number;
@@ -83,7 +85,7 @@ export class Hud {
 
   /** Redraw status and button states. */
   update(m: HudModel): void {
-    el('levelNo').textContent = `LEVEL ${m.levelNumber}`;
+    el('levelNo').textContent = m.levelLabel ?? `LEVEL ${m.levelNumber}`;
     el('levelName').textContent = m.levelName;
     el('collected').textContent = `${m.collected}/${m.total}`;
     el('moves').textContent = String(Math.max(m.movesLeft, 0));

@@ -14,9 +14,14 @@ export interface BoardStyle {
 }
 
 /** Height range of the board itself, and of a robot standing on it, in world units. */
-const BOX_BOTTOM = -0.34;
+const BOX_BOTTOM = -0.2;
 const BOX_TOP = 0.3;
-const ROBOT_TOP = 0.8;
+const ROBOT_TOP = 1.0;
+
+const GRID = CONFIG.board.grid;
+/** Floor tiles of the kit are this wide in the file; they are scaled to exactly one tile. */
+const KIT_TILE_WIDTH = 0.948;
+const KIT_WALL_WIDTH = 0.84;
 
 /** How the board sits in the canvas. */
 export interface BoardLayout {
@@ -64,6 +69,40 @@ function slab(w: number, d: number, r: number, h: number): THREE.BufferGeometry 
   const g = new THREE.ExtrudeGeometry(s, { depth: h, bevelEnabled: false, curveSegments: 10 });
   g.rotateX(Math.PI / 2);
   return g;
+}
+
+/** Cross-section of the rim: `rim` wide, `rimHeight` tall, rounded on top. u runs outward, v up. */
+function rimProfile(): THREE.Vector2[] {
+  const r = Math.min(0.06, GRID.rim / 2);
+  const points: THREE.Vector2[] = [new THREE.Vector2(0, 0)];
+  const arc = (cu: number, cv: number, from: number, to: number): void => {
+    for (let i = 0; i <= 6; i++) {
+      const a = from + ((to - from) * i) / 6;
+      points.push(new THREE.Vector2(cu + Math.cos(a) * r, cv + Math.sin(a) * r));
+    }
+  };
+  arc(r, GRID.rimHeight - r, Math.PI, Math.PI / 2);
+  arc(GRID.rim - r, GRID.rimHeight - r, Math.PI / 2, 0);
+  points.push(new THREE.Vector2(GRID.rim, 0));
+  return points;
+}
+
+/** Straight rim module, one unit long on x, lying along the board's front edge (outward is +z). */
+function rimEdge(): THREE.BufferGeometry {
+  const shape = new THREE.Shape(rimProfile());
+  const g = new THREE.ExtrudeGeometry(shape, { depth: 1, bevelEnabled: false });
+  // Extruded along z with the profile in x/y: turn it so the length runs along x and outward is +z.
+  g.translate(0, 0, -0.5);
+  g.rotateY(-Math.PI / 2);
+  return g;
+}
+
+/** Corner rim module: the same profile swept a quarter turn, for the +x/+z corner. */
+function rimCorner(): THREE.BufferGeometry {
+  // Reversed so the surface faces outward.
+  const profile = rimProfile().reverse();
+  const g = new THREE.LatheGeometry(profile, 14, 0, Math.PI / 2);
+  return g.toNonIndexed();
 }
 
 /**
@@ -114,17 +153,31 @@ export class BoardView {
     this.scene.add(this.sun, this.sun.target);
     const ground = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.ShadowMaterial({ color: '#3A4C86', opacity: 0.16 }));
     ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -0.34;
+    ground.position.y = BOX_BOTTOM - 0.01;
     ground.receiveShadow = true;
     this.scene.add(ground);
     requestAnimationFrame((t) => this.frame(t));
   }
 
+  /** Distance between the centres of two neighbouring cells. */
+  private get pitch(): number {
+    return this.modular ? GRID.tile + GRID.gap : 1;
+  }
+  private get modular(): boolean {
+    return this.style.kitBoard && this.kit !== null;
+  }
   private cellX(x: number): number {
-    return x - ((this.level?.board.width ?? 1) - 1) / 2;
+    return (x - ((this.level?.board.width ?? 1) - 1) / 2) * this.pitch;
   }
   private cellZ(y: number): number {
-    return y - ((this.level?.board.height ?? 1) - 1) / 2;
+    return (y - ((this.level?.board.height ?? 1) - 1) / 2) * this.pitch;
+  }
+  /** Outer size of the whole board in world units: tiles, gaps between them and the rim on both sides. */
+  private boardSize(): { w: number; d: number } {
+    const { width, height } = this.level?.board ?? { width: 1, height: 1 };
+    if (!this.modular) return { w: width + this.layout.frame, d: height + this.layout.frame };
+    const side = (cells: number): number => cells * GRID.tile + (cells - 1) * GRID.gap + 2 * GRID.rim;
+    return { w: side(width), d: side(height) };
   }
 
   /** Hand over the asset kit once it has loaded. Takes effect at the next level load. */
@@ -176,55 +229,70 @@ export class BoardView {
     this.fitCamera();
   }
 
-  /** Half the frame width in cells, for the style in use. */
-  private get rim(): number {
-    return this.style.kitBoard && this.kit ? 0.52 : this.layout.frame;
-  }
-
-  /** Board from the asset kit's modules: one base and one floor tile per cell, frame segments around. */
+  /**
+   * Board from repeated modules, sized by the level: one underlay, one floor tile per cell, one rim
+   * segment per cell along each side, four corners, and a wall or the exit where the level has one.
+   */
   private buildKitBoard(level: Level, pieces: Kit['board']): void {
     const { width, height, walls, exitX, exitY } = level.board;
+    const { w, d } = this.boardSize();
+    const frameMat = new THREE.MeshStandardMaterial({ color: CONFIG.colors.kit.frame, roughness: 0.4 });
+    const underlayMat = new THREE.MeshStandardMaterial({ color: CONFIG.colors.kit.frameShadow, roughness: 0.45 });
     // Everything that never moves goes into one group and is fused into a few meshes.
     const fixed = new THREE.Group();
-    const place = (piece: THREE.Group, x: number, z: number, turn = 0, parent: THREE.Object3D = fixed): THREE.Group => {
+    const place = (piece: THREE.Object3D, x: number, z: number, turn = 0, parent: THREE.Object3D = fixed): THREE.Object3D => {
       const copy = piece.clone(true);
       copy.position.set(x, 0, z);
       copy.rotation.y = turn;
       parent.add(copy);
       return copy;
     };
-    // A plain tray under everything, so the frame does not hover past the base cells.
-    const tray = new THREE.Mesh(slab(width + 0.5, height + 0.5, 0.2, 0.2), new THREE.MeshStandardMaterial({ color: '#7896DB', roughness: 0.4 }));
-    tray.position.y = 0.02;
-    tray.castShadow = true;
-    tray.receiveShadow = true;
-    this.boardGroup.add(tray);
+    // 4. Underlay: one plate under the whole grid; its top shows in the gaps between tiles.
+    const underlay = new THREE.Mesh(slab(w, d, GRID.underlay, GRID.cornerRadius), underlayMat);
+    fixed.add(underlay);
+    const gapFill = new THREE.Mesh(slab(w - 2 * GRID.rim, d - 2 * GRID.rim, 0.01, 0.02), frameMat);
+    gapFill.position.y = 0.012;
+    fixed.add(gapFill);
+    // 1, 5, 6. Floor tile per cell; wall or exit from the level data.
+    const tileScale = GRID.tile / KIT_TILE_WIDTH;
+    const wallScale = (GRID.tile * GRID.wallFill) / KIT_WALL_WIDTH;
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const cx = this.cellX(x);
         const cz = this.cellZ(y);
-        place(pieces.baseCell, cx, cz);
-        const isExit = x === exitX && y === exitY;
-        if (isExit) this.exitPad = place(pieces.exitTile, cx, cz, 0, this.boardGroup);
-        else place((x + y) % 2 ? pieces.floorAlt : pieces.floorLight, cx, cz);
-        if (walls[y * width + x]) place(pieces.wallBlock, cx, cz).scale.set(1, 0.72, 1);
+        if (x === exitX && y === exitY) {
+          this.exitPad = place(pieces.exitTile, cx, cz, 0, this.boardGroup) as THREE.Group;
+          this.exitPad.scale.set(tileScale, 1, tileScale);
+        } else {
+          place((x + y) % 2 ? pieces.floorAlt : pieces.floorLight, cx, cz).scale.set(tileScale, 1, tileScale);
+        }
+        if (walls[y * width + x]) place(pieces.wallBlock, cx, cz).scale.set(wallScale, GRID.wallHeight, wallScale);
       }
     }
-    const edgeX = width / 2 + 0.12;
-    const edgeZ = height / 2 + 0.12;
+    // 2. Straight rim module: one per cell along each side, the same geometry turned four ways.
+    const innerW = w - 2 * GRID.rim;
+    const innerD = d - 2 * GRID.rim;
+    const edge = new THREE.Mesh(rimEdge(), frameMat);
     for (let x = 0; x < width; x++) {
-      place(pieces.frameEdge, this.cellX(x), -edgeZ, Math.PI);
-      place(pieces.frameEdge, this.cellX(x), edgeZ);
+      const cx = (x - (width - 1) / 2) * (innerW / width);
+      place(edge, cx, innerD / 2, 0).scale.x = innerW / width;
+      place(edge, cx, -innerD / 2, Math.PI).scale.x = innerW / width;
     }
     for (let y = 0; y < height; y++) {
-      place(pieces.frameEdge, edgeX, this.cellZ(y), Math.PI / 2);
-      place(pieces.frameEdge, -edgeX, this.cellZ(y), -Math.PI / 2);
+      const cz = (y - (height - 1) / 2) * (innerD / height);
+      place(edge, innerW / 2, cz, Math.PI / 2).scale.x = innerD / height;
+      place(edge, -innerW / 2, cz, -Math.PI / 2).scale.x = innerD / height;
     }
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) place(pieces.frameCorner, sx * edgeX, sz * edgeZ);
+    // 3. Corner module: one geometry, four turns.
+    const corner = new THREE.Mesh(rimCorner(), frameMat);
+    place(corner, innerW / 2, innerD / 2, 0);
+    place(corner, innerW / 2, -innerD / 2, Math.PI / 2);
+    place(corner, -innerW / 2, -innerD / 2, Math.PI);
+    place(corner, -innerW / 2, innerD / 2, -Math.PI / 2);
     this.boardGroup.add(fuse(fixed));
     const ring = new THREE.Mesh(
-      new THREE.RingGeometry(0.4, 0.47, 40),
-      new THREE.MeshBasicMaterial({ color: CONFIG.colors.green, transparent: true, opacity: 0.5, depthWrite: false }),
+      new THREE.RingGeometry(0.42, 0.5, 40),
+      new THREE.MeshBasicMaterial({ color: CONFIG.colors.kit.exitGlow, transparent: true, opacity: 0.5, depthWrite: false }),
     );
     ring.rotation.x = -Math.PI / 2;
     ring.position.set(this.cellX(exitX), 0.26, this.cellZ(exitY));
@@ -333,8 +401,9 @@ export class BoardView {
     const { width, height } = this.level.board;
     const tilt = (this.layout.tilt * Math.PI) / 180;
     const dir = new THREE.Vector3(0, Math.cos(tilt), Math.sin(tilt));
-    const hw = width / 2 + this.rim / 2;
-    const hd = height / 2 + this.rim / 2;
+    const size = this.boardSize();
+    const hw = size.w / 2;
+    const hd = size.d / 2;
     // On screen the board is its depth seen at an angle, plus the visible part of its thickness.
     const boxHeight = 2 * hd * Math.cos(tilt) + (BOX_TOP - BOX_BOTTOM) * Math.sin(tilt);
     const headroom = (ROBOT_TOP - BOX_TOP) * Math.sin(tilt);

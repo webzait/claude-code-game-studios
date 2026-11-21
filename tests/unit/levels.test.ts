@@ -70,3 +70,12 @@ describe('levels', () => {
     expect(last.start.robots.length).toBeLessThanOrEqual(14);
   });
 });
+
+describe('board-size test boards', () => {
+  it('cover_the_four_sizes_and_parse_cleanly', async () => {
+    const { TEST_BOARDS } = await import('../../src/levels/index');
+    const sizes = TEST_BOARDS.map((b) => `${b.board.width}x${b.board.height}`);
+    expect(sizes).toEqual(['5x5', '6x6', '8x8', '4x7']);
+    for (const b of TEST_BOARDS) expect(b.start.robots.length).toBeGreaterThan(0);
+  });
+});

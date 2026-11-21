@@ -10,7 +10,7 @@ import { MemorySink, type MetricsEvent } from './game/metrics';
 import { isUnlocked, resumeIndex, starsFor } from './game/progress';
 import { loadSave, resetProgress, writeSave, type KeyValueStore, type SaveData } from './game/save';
 import { Session } from './game/session';
-import { LEVELS, type GameLevel } from './levels/index';
+import { LEVELS, TEST_BOARDS, type GameLevel } from './levels/index';
 import { BoardView } from './render/boardView';
 import { loadKit } from './render/kit';
 import coinIcon from '../assets/turnflock/ui/coin.webp';
@@ -81,6 +81,9 @@ class Game {
   /** Page of the level selection on show; null opens the page of the current level. */
   private page: number | null = null;
   private levelIndex = 0;
+  /** A board-size test board is open instead of a level. */
+  private preview = false;
+  private previewIndex = 0;
   private level: GameLevel = LEVELS[0];
   private session = new Session(LEVELS[0], { budget: LEVELS[0].par + CONFIG.moveSlack });
   /** Shortest solution length under the rules in play. */
@@ -232,6 +235,8 @@ class Game {
         this.save.settings.reduceMotion = value;
         this.afterSetting();
       },
+      testBoards: TEST_BOARDS.map((b) => `${b.board.width}×${b.board.height}`),
+      previewBoard: (index) => this.tap(() => this.startPreview(index)),
       setLab: (patch) => {
         Object.assign(this.save.lab, patch);
         this.afterSetting();
@@ -292,12 +297,22 @@ class Game {
       });
   }
 
+  /** Open a board-size test board: playable, but never scored, saved or paid. */
+  private startPreview(index: number): void {
+    const board = TEST_BOARDS[index];
+    this.previewIndex = index;
+    this.begin({ ...board, par: CONFIG.lab.previewMoves, witness: [] }, CONFIG.lab.previewMoves, null, false);
+    this.preview = true;
+    this.setHint(`${board.name} — a size test, not a level`, false);
+  }
+
   private begin(level: GameLevel, par: number, witness: readonly Command[] | null, certified: boolean): void {
     this.show('level');
     this.level = level;
     this.par = par;
     this.witness = witness;
     this.certified = certified;
+    this.preview = false;
     this.usedBackup = false;
     this.usedHint = false;
     this.touched = false;
@@ -329,6 +344,7 @@ class Game {
     const status = this.session.status;
     this.hud.update({
       levelNumber: this.levelIndex + 1,
+      levelLabel: this.preview ? 'TEST' : undefined,
       levelName: this.level.name,
       collected: this.session.collected,
       total: this.session.total,
@@ -380,6 +396,11 @@ class Game {
   }
 
   private onWin(): void {
+    if (this.preview) {
+      this.view.celebrate();
+      this.hud.showCard({ title: 'Test board cleared', text: 'This board only shows how the board scales. Nothing was saved.', stars: 0, primary: { label: 'Levels', action: () => this.tap(() => this.show('map')) }, secondary: { label: 'Again', action: () => this.tap(() => this.startPreview(this.previewIndex)) } });
+      return;
+    }
     const id = this.level.id;
     const moves = this.session.commands.length;
     const stars = starsFor(moves, this.par, this.usedBackup);
@@ -505,6 +526,10 @@ class Game {
    * same position: the next move is highlighted.
    */
   private async scan(): Promise<void> {
+    if (this.preview) {
+      this.setHint('No hints on a test board', false);
+      return;
+    }
     if (this.replaying || this.busy || this.session.status === 'won') return;
     const key = `${this.session.commands.join(',')}|${this.session.bonusMoves}`;
     if (this.scanKey === key && this.scanResult) {
