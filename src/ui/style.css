@@ -29,8 +29,8 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
   z-index: 1;
   position: fixed; inset: 0; display: flex; flex-direction: column;
 }
-/* The puzzle and the old settings list keep a phone-wide column; the designed screens bring their own gutters. */
-#level, #settings {
+/* The puzzle keeps a phone-wide column; the designed screens bring their own gutters. */
+#level {
   width: 100%; max-width: 560px; margin: 0 auto;
   padding: max(10px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
 }
@@ -103,19 +103,12 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 .commands { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 10px; justify-items: center; }
 .cmd[hidden] { display: none; }
 
-/* Settings */
-.group { background: var(--panel); border-radius: 20px; padding: 6px 14px; margin-top: 12px; box-shadow: 0 2px 0 var(--shade); }
-.group h2 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 10px 0 2px; }
-.group p.about { margin: 0 0 6px; color: var(--muted); font-weight: 600; font-size: 13px; }
-.setting { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
-.setting:first-of-type { border-top: 0; }
-.setting .label { font-weight: 700; min-width: 0; }
-.setting .label small { display: block; color: var(--muted); font-weight: 600; font-size: 12px; }
-.seg { display: flex; background: #e6ecfa; border-radius: 12px; padding: 3px; flex: none; }
-.seg button { border: 0; background: transparent; border-radius: 10px; min-height: 38px; min-width: 46px; padding: 0 10px; font-weight: 800; font-size: 14px; color: var(--muted); }
-.seg button[aria-pressed="true"] { background: var(--ink); color: #fff; }
-.danger { border: 0; border-radius: 12px; min-height: 44px; padding: 0 14px; font-weight: 800; background: #fbe4e4; color: #b92f31; }
-.danger.armed { background: var(--red); color: #fff; }
+/* Settings and the test lab: the designed screens (tf-settings.css) fill the page over the game's backdrop. */
+#settings.tf-set-frame, #lab.tf-set-frame { flex: 1; width: auto; height: auto; border-radius: 0; box-shadow: none; background: none; }
+.no-decor #settings.tf-set-frame, .no-decor #lab.tf-set-frame { background: linear-gradient(180deg, #4eaff8 0%, #8fd0fb 45%, #cbefff 100%); }
+.tf-set-frame .tf-set-top { padding-top: max(14px, env(safe-area-inset-top)); padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); }
+.tf-set-frame .tf-set-scroll { padding-bottom: max(22px, env(safe-area-inset-bottom)); }
+.tf-set-frame .tf-set-screen > .tf-set-bar { padding-bottom: max(14px, env(safe-area-inset-bottom)); }
 
 /* Overlays */
 .overlay { position: absolute; inset: 0; z-index: 5; }

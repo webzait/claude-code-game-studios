@@ -25,6 +25,7 @@
 | `lab.slackOptions`, `lab.speedOptions` | Choices offered in the test lab |
 | `lab.certifyMaxVisited` | Positions examined when re-checking a level under a test rule |
 | `audio.volume` | Loudness of the sound effects |
+| `haptics.move`, `haptics.win` | Vibration patterns in milliseconds (buzz, pause, buzz, …) for a move and for a win; used only when the player's Vibration setting is on and the device can vibrate |
 
 `data/levels.json`: `par` is the solver's shortest solution and `witness` is one command list that wins; both are checked by the tests.
 
@@ -37,4 +38,4 @@
 
 ## data/parts.json
 
-Dimensions of the standalone game elements, in cell units (1 cell = `unitPx` 56 px on the asset sheet): the Flockbot's modules (shell, face, romp, feet, ears, symbol), floor tile, obstacle, exit, rim and underlay, and the three button sizes in CSS pixels. Shown one by one on the parts sheet (`npm run build:parts` → `dist-parts/parts.html`); not yet used by the playable game.
+Dimensions of the standalone game elements, in cell units (1 cell = `unitPx` 56 px on the asset sheet): the Flockbot's modules (shell, face, romp, feet, ears, symbol), floor tile, obstacle, exit, rim and underlay, and the three button sizes in CSS pixels. Shown one by one on the parts sheet (`npm run build:parts` → `dist-parts/parts.html`). The playable game reads the board, robot and button sizes from it, and from `coins` the sizes of the coin counter, plus button, price tags, offer and reward, and the lengths of the count-up (`countUpMs`) and the cannot-afford flash (`shortMs`).

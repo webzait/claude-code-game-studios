@@ -3,8 +3,10 @@ import './ui/tf-buttons.css';
 import './ui/tf-coins.css';
 import './ui/tf-levels.css';
 import './ui/tf-end.css';
+import './ui/tf-settings.css';
 import './ui/tf-scene.css';
 import { Sfx } from './audio';
+import { deviceVibrate, Haptics } from './haptics';
 import { CONFIG } from './config';
 import { step } from './engine/engine';
 import type { Color, Command } from './engine/types';
@@ -26,9 +28,10 @@ import { SolverClient } from './solver/client';
 import type { CertifyResult } from './solver/requests';
 import { CoinCounters, coinInfo, type RewardView } from './ui/coins';
 import { el, Hud } from './ui/hud';
-import { renderLevels, renderSettings, type MapNode } from './ui/screens';
+import { renderLevels, type MapNode } from './ui/screens';
+import { labChangedCount, labScreen, playerScreen } from './ui/settingsView';
 
-type ScreenName = 'map' | 'level' | 'settings';
+type ScreenName = 'map' | 'level' | 'settings' | 'lab';
 
 /** What automated checks may read from the running game. */
 export interface Snapshot {
@@ -77,6 +80,7 @@ class Game {
   private save: SaveData = loadSave(this.store, LEVEL_IDS);
   private metrics = new MemorySink();
   private sfx = new Sfx(() => this.save.settings.mute);
+  private haptics = new Haptics(() => this.save.settings.vibration, deviceVibrate(window.navigator));
   private solver = new SolverClient();
   private view = new BoardView(el<HTMLCanvasElement>('board'));
   private hud: Hud;
@@ -118,6 +122,8 @@ class Game {
   private scanResult: ScanResult | null = null;
   /** The button that opened the coin explainer; focus returns to it. */
   private coinInfoOpener: HTMLElement | null = null;
+  /** The settings screen is being opened from the test lab. */
+  private fromLab = false;
 
   constructor() {
     this.hud = new Hud(
@@ -141,7 +147,6 @@ class Game {
       if (e.key === 'Escape') this.closeCoinInfo();
     });
     el('toSettings').addEventListener('click', () => this.tap(() => this.show('settings')));
-    el('settingsBack').addEventListener('click', () => this.tap(() => this.show('map')));
     new ResizeObserver(() => this.view.resize()).observe(document.querySelector('.stage') as HTMLElement);
     // Kit artwork: images are bundled; the page sets them here so one build works from any folder.
     for (const img of Array.from(document.querySelectorAll<HTMLImageElement>('img[data-art]'))) {
@@ -213,7 +218,7 @@ class Game {
     this.replaying = false;
     this.busy = false;
     this.screen = screen;
-    for (const name of ['map', 'level', 'settings'] as const) el(name).hidden = name !== screen;
+    for (const name of ['map', 'level', 'settings', 'lab'] as const) el(name).hidden = name !== screen;
     this.hud.hideCard();
     this.closeCoinInfo();
     this.view.skip();
@@ -223,6 +228,7 @@ class Game {
       this.drawMap();
     }
     if (screen === 'settings') this.drawSettings();
+    if (screen === 'lab') this.drawLab();
   }
 
   private drawMap(): void {
@@ -253,34 +259,56 @@ class Game {
     });
   }
 
+  /** The player's own settings. The controls keep their own state, so a change only saves and applies. */
   private drawSettings(): void {
-    renderSettings(this.save, {
-      setMute: (mute) => {
-        this.save.settings.mute = mute;
-        this.afterSetting();
-      },
-      setReduceMotion: (value) => {
-        this.save.settings.reduceMotion = value;
-        this.afterSetting();
-      },
-      testBoards: TEST_BOARDS.map((b) => `${b.board.width}×${b.board.height}`),
-      previewBoard: (index) => this.tap(() => this.startPreview(index)),
-      setLab: (patch) => {
-        Object.assign(this.save.lab, patch);
-        this.afterSetting();
-      },
-      resetProgress: () => {
-        this.save = resetProgress(this.save);
-        this.afterSetting();
-      },
+    const change = (apply: () => void): void => {
+      apply();
+      this.persist();
+      this.applySettings();
+      this.sfx.play('tap');
+    };
+    const screen = playerScreen({
+      mute: this.save.settings.mute,
+      reduceMotion: this.save.settings.reduceMotion,
+      vibration: this.save.settings.vibration,
+      canVibrate: this.haptics.supported,
+      labChanged: labChangedCount(this.save.lab),
+      setMute: (mute) => change(() => (this.save.settings.mute = mute)),
+      setReduceMotion: (value) => change(() => (this.save.settings.reduceMotion = value)),
+      setVibration: (on) =>
+        change(() => {
+          this.save.settings.vibration = on;
+          this.haptics.play('move');
+        }),
+      resetProgress: () => change(() => (this.save = resetProgress(this.save))),
+      back: () => this.tap(() => this.show('map')),
+      openLab: () => this.tap(() => this.show('lab')),
     });
+    el('settings').replaceChildren(screen.root);
+    // Coming back from the lab, keyboard focus returns to the row that led there.
+    if (this.fromLab) screen.entry.focus();
+    this.fromLab = false;
   }
 
-  private afterSetting(): void {
-    this.persist();
-    this.applySettings();
-    this.sfx.play('tap');
-    this.drawSettings();
+  /** The test lab, on a screen of its own behind the entry at the bottom of the settings. */
+  private drawLab(): void {
+    const screen = labScreen(this.save.lab, {
+      boards: TEST_BOARDS.map((b) => `${b.board.width}×${b.board.height}`),
+      openBoard: (index) => this.tap(() => this.startPreview(index)),
+      onChange: (lab) => {
+        this.save.lab = lab;
+        this.persist();
+        this.applySettings();
+        this.sfx.play('tap');
+      },
+      back: () =>
+        this.tap(() => {
+          this.fromLab = true;
+          this.show('settings');
+        }),
+    });
+    el('lab').replaceChildren(screen.root);
+    screen.back.focus();
   }
 
   // ----------------------------------------------------------------- level
@@ -404,6 +432,7 @@ class Game {
     this.clearScan();
     this.refresh();
     this.track({ type: 'command', level: this.level.id, command });
+    this.haptics.play('move');
     this.playSounds(command, result.events.map((e) => e.outcome));
     const generation = this.generation;
     this.pending++;
@@ -459,6 +488,7 @@ class Game {
     this.persist();
     this.track({ type: 'level_win', level: id, moves, par: this.par, stars, usedBackup: this.usedBackup });
     this.sfx.play('win');
+    this.haptics.play('win');
     this.view.celebrate();
     this.refresh();
     const generation = this.generation;

@@ -2,7 +2,7 @@ import { CONFIG } from '../config';
 import { DEFAULT_LAB, type LabSettings } from './lab';
 
 /** Current save format. Raise it and extend `migrate` when the shape changes. */
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 /** Storage key of the current format. */
 export const SAVE_KEY = 'turnflock.save';
 /** Storage key of the first prototype's format (version 1). */
@@ -21,6 +21,8 @@ export interface SaveData {
     mute: boolean;
     /** null follows the device's reduced-motion preference. */
     reduceMotion: boolean | null;
+    /** A short buzz on moves and wins, on devices that can vibrate. */
+    vibration: boolean;
   };
   lab: LabSettings;
 }
@@ -34,7 +36,7 @@ export interface KeyValueStore {
 
 /** A fresh save. */
 export function defaultSave(): SaveData {
-  return { version: SAVE_VERSION, best: {}, coins: CONFIG.coins.start, paid: {}, settings: { mute: false, reduceMotion: null }, lab: { ...DEFAULT_LAB } };
+  return { version: SAVE_VERSION, best: {}, coins: CONFIG.coins.start, paid: {}, settings: { mute: false, reduceMotion: null, vibration: true }, lab: { ...DEFAULT_LAB } };
 }
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -55,13 +57,14 @@ export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
     return save;
   }
   // Version 2 had no coins: the player keeps progress and starts with the opening balance.
-  if (raw.version !== SAVE_VERSION && raw.version !== 2) return save;
+  // Version 3 had no vibration setting: everything is kept and vibration starts at its default.
+  if (raw.version !== SAVE_VERSION && raw.version !== 3 && raw.version !== 2) return save;
   if (isRecord(raw.best)) {
     for (const [id, moves] of Object.entries(raw.best)) {
       if (levelIds.includes(id) && typeof moves === 'number' && moves >= 0) save.best[id] = moves;
     }
   }
-  if (raw.version === SAVE_VERSION) {
+  if (raw.version === SAVE_VERSION || raw.version === 3) {
     if (typeof raw.coins === 'number' && raw.coins >= 0) save.coins = Math.floor(raw.coins);
     if (isRecord(raw.paid)) {
       for (const [id, amount] of Object.entries(raw.paid)) {
@@ -72,6 +75,7 @@ export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
   if (isRecord(raw.settings)) {
     save.settings.mute = raw.settings.mute === true;
     save.settings.reduceMotion = typeof raw.settings.reduceMotion === 'boolean' ? raw.settings.reduceMotion : null;
+    if (typeof raw.settings.vibration === 'boolean') save.settings.vibration = raw.settings.vibration;
   }
   if (isRecord(raw.lab)) {
     const lab = raw.lab;
