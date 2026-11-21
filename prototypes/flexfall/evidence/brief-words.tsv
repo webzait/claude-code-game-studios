@@ -1,0 +1,7 @@
+3D	three.js scene: a tray, a deforming floor mesh, instanced sphere marbles	evidence/play.png
+premium, minimalistische 3D-diorama	one toy tray on a table, soft shadows, rounded cream walls, glass front, calm sand background	evidence/play.png
+Mobiele portretweergave	the camera fits the whole tray under the HUD at any aspect; portrait shot	evidence/portrait-level5.png
+rubberachtige vloer	matte teal floor with a grid that stretches with the height field, springing on each tap	evidence/portrait-level5.png
+Glanzende, afgeronde knikkers	clearcoat glass spheres with a swirl band, coral, amber and ivory	evidence/portrait-level5.png
+Rustige achtergrond	one flat sand-coloured table, a light vignette	evidence/play.png
+zachte schaduwen	one soft shadow-mapped key light (off in the cheap render the checks use)	evidence/portrait-level5.png

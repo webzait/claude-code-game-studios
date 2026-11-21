@@ -1,0 +1,27 @@
+L1	pass	evidence/portrait-level5.png	toy tray on a sand table, teal rubber floor with grid, glossy coral/amber/ivory marbles, brass clamps with coral (up) or teal (down) knobs, dark catcher with pale rim, soft shadows
+L2	pass	evidence/portrait-level4-start.png	the grid lines bend over every bump; the spring overshoot is anchor_damping in config.js, stepped in app/src/sim/world.ts
+L3	pass	evidence/nearest-game.txt	no game's look or rules used; nearest game and the difference written down
+L4	pass	evidence/figures.png	marble, both clamp states, catcher, wall and peg each drawn in 3D or SVG; no emoji in the code
+L5	pass	evidence/portrait-level5.png	fixed tilted camera; the whole tray fits under the HUD in portrait (and in the 1280x720 play.png)
+F1	pass	app/src/sim/world.ts	height = base + bumps + clamp height x (1-d^2/r^2)^2; clamps move on a damped spring; fixed 1/120 s step; tests/rules.test.ts
+F2	pass	evidence/portrait-level5.png	70 marbles mid-avalanche around walls and pegs; collisions and rest in world.ts; tests cover no-overlap and staying in the tray
+F3	pass	evidence/play.png	counter 9 / 9 and '1 tap left' with pips on screen during play
+F4	pass	evidence/portrait-level4-start.png	a pale ring on the floor shows each clamp's reach before a tap; Session.canTap refuses taps while moving (tests/rules.test.ts)
+F5	pass	app/src/levels/index.ts	five JSON levels, each with a solution the tests replay; npm run solve proves each by exhaustive search
+F6	pass	evidence/portrait-results.png	three-star results card with Next level and Replay; out-of-taps card in portrait-over.png; pause card in main.ts
+F7	not_assessed	app/src/ui/audio.ts	sound is built (clicks, floor, catch, win, lose, mute) but no check can hear it
+S1	pass	evidence/portrait-level4-start.png	four clamps with rings, three holding marbles in dips, one raised as a gate
+S2	pass	app/src/sim/world.ts	slope acceleration, rolling friction, drag, marble/wall/peg/clamp collisions; 41 tests pass
+S3	pass	app/src/game/session.ts	target, tap limit, win at target, loss at rest with no taps, exact reset; tests/rules.test.ts
+S4	pass	tools/solver.ts	levels are data; the solver searches every tap sequence; tests fail if a level cannot be cleared at par
+S5	pass	app/src/game/progress.ts	best stars and furthest level kept in localStorage (the check saw flexfall.progress.v1 saved); tests/progress.test.ts
+S6	pass	app/src/game/services.ts	ads, store, analytics and skins behind interfaces with do-nothing stand-ins; Session.grantMoves is the extra-taps hook; no SDK
+M1	pass	evidence/portrait-level4-start.png	marbles rest in dips around their clamp, ring visible, chevron bobbing; level 1 is the same with one clamp (play.png after the tap)
+M2	pass	evidence/play.png	after one tap the dip is a hill, marbles are in and around the catcher and the counter reads 9 / 9
+M3	pass	evidence/portrait-results.png	level 1 cleared 6.6 s after the tap in the scripted run; one hint line, no tutorial
+M4	pass	evidence/portrait-over.png	the wrong clamp in level 2 ends in 'Out of taps' with Try again; tests assert clamp 0 wins and clamp 1 loses
+C1	pass	evidence/portrait-level3-trap.png	the clamp straight behind the marbles sends them into the cup, 0 caught; the side clamp clears (tests/levels.test.ts)
+C2	pass	tests/levels.test.ts	level 5: neither tap alone clears, the two together do; level 4 needs all four clamps and some orders need a fifth tap
+C3	pass	evidence/portrait-over.png	a loss offers Try again at once; R restarts at any time
+C4	not_assessed	-	about later levels: nothing to check in this build
+C5	not_assessed	-	a mark on the paragraph, not a sentence of its own

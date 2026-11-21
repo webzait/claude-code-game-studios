@@ -1,0 +1,1 @@
+Nearest game: Marble Madness (tilting-slope marble arcade) and labyrinth tilt toys; this one differs in that the player never steers a marble or tilts the whole board: taps on fixed clamps reshape an elastic floor locally, dozens of marbles react at once, and the goal is a count caught within a tap limit, judged at rest.

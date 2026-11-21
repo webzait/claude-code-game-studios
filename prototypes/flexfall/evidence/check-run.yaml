@@ -1,0 +1,151 @@
+# The one-shot's small check (check-run/1).
+# Written by one-shot-check.sh --record: the results are /prototype's reading of
+# evidence/self-check.tsv; never edited by hand.
+kind: check-run/1
+engine: web
+browser: "HeadlessChrome/153.0.0.0"
+time: "2026-11-21 08:31:01"
+checks:
+  - id: boots
+    result: pass
+    evidence:
+      - "evidence/self-check.tsv"
+  - id: shot
+    result: pass
+    evidence:
+      - "evidence/play.png"
+  - id: outlines
+    result: pass
+    evidence:
+      - "evidence/figures.png"
+  - id: brief-words
+    result: pass
+    evidence:
+      - "evidence/brief-words.tsv"
+  - id: emoji
+    result: pass
+    evidence:
+      - "evidence/self-check.tsv"
+  - id: nearest-game
+    result: pass
+    evidence:
+      - "evidence/nearest-game.txt"
+brief_checklist:
+  - id: L1
+    result: pass
+    evidence: "evidence/portrait-level5.png"
+    item: "Look: premium, minimalistische 3D-diorama; een speelgoedbak als fysiek object op een tafel. Ronde, zachte vormen. Mat rubberen vloer met fijn raster dat het hoogteverschil leesbaar maakt; glanzende glazen knikkers als helderste element; warm lichte bak; rustige achtergrond. Palet met rollen: vloer diep blauwgroen (dalen donkerder, toppen lichter), knikkers warm koraal/amber/ivoor (de massa), klemmen messing met een gekleurde kop (omhoog = koraal, omlaag = blauwgroen), opvangbak donker met lichte rand, bak en tafel crème/zand. Schaduwen koeler, licht warmer. Zachte schaduwen, subtiele reflecties, geen neon. *(inferred (strong))*"
+  - id: L2
+    result: pass
+    evidence: "evidence/portrait-level4-start.png"
+    item: "Signature: het raster op de vloer rekt zichtbaar mee en de vloer veert na bij elke tik. *(guessed)*"
+  - id: L3
+    result: pass
+    evidence: "evidence/nearest-game.txt"
+    item: "References: geen spel als voorbeeld voor de look. De zes genoemde spellen leveren alleen inzichten: ruimtelijke keuzes, massa die zichtbaar verdwijnt, tactiele oorzaak-gevolg, veel objecten tegelijk in beweging, progressie."
+  - id: L4
+    result: pass
+    evidence: "evidence/figures.png"
+    item: "Every figure drawn, no emoji, no plain circles."
+  - id: L5
+    result: pass
+    evidence: "evidence/portrait-level5.png"
+    item: "View: 3D · Camera: vast, schuin van boven, portret; de hele bak past altijd in beeld."
+  - id: F1
+    result: pass
+    evidence: "app/src/sim/world.ts"
+    item: "Elastische vloer: elke klem vervormt een gebied eromheen, met vering, deterministisch op een vaste tijdstap"
+  - id: F2
+    result: pass
+    evidence: "evidence/portrait-level5.png"
+    item: "Tientallen knikkers die rollen op hellingen, botsen op elkaar, wanden en pinnen, en tot rust komen"
+  - id: F3
+    result: pass
+    evidence: "evidence/play.png"
+    item: "Opvangbak met teller: verzameld / doel, en resterende handelingen altijd in beeld"
+  - id: F4
+    result: pass
+    evidence: "evidence/portrait-level4-start.png"
+    item: "Tik op een klem met vooraf zichtbare invloedsring; invoer wacht tot de beweging stilligt"
+  - id: F5
+    result: pass
+    evidence: "app/src/levels/index.ts"
+    item: "Vijf handgemaakte levels uit JSON, elk met een opgenomen oplossing die een test naspeelt"
+  - id: F6
+    result: pass
+    evidence: "evidence/portrait-results.png"
+    item: "Winst met sterren voor minder tikken, verlies, opnieuw, volgend level, pauze"
+  - id: F7
+    result: not_run
+    mark: not assessed
+    why: "sound is built (clicks, floor, catch, win, lose, mute) but no check can hear it"
+    evidence: "app/src/ui/audio.ts"
+    item: "Geluid: knikkertikken, de vloer, het vallen in de bak; uit te zetten"
+  - id: S1
+    result: pass
+    evidence: "evidence/portrait-level4-start.png"
+    item: "elastische vloer met klemmen · in the slice"
+  - id: S2
+    result: pass
+    evidence: "app/src/sim/world.ts"
+    item: "knikkerphysics (hellingen, wrijving, botsingen) · in the slice"
+  - id: S3
+    result: pass
+    evidence: "app/src/game/session.ts"
+    item: "opvangbak en spelregels (doel, handelingen, winst/verlies, reset) · in the slice"
+  - id: S4
+    result: pass
+    evidence: "tools/solver.ts"
+    item: "data-driven levels (JSON) met controleerbare oplosbaarheid · in the slice"
+  - id: S5
+    result: pass
+    evidence: "app/src/game/progress.ts"
+    item: "voortgang (hoogste level, sterren, lokaal bewaard) · thin stand-in *(guessed)*"
+  - id: S6
+    result: pass
+    evidence: "app/src/game/services.ts"
+    item: "commerciële diensten (rewarded ads, extra handelingen, boosters, IAP, skins) · thin stand-in *(guessed)*"
+  - id: M1
+    result: pass
+    evidence: "evidence/portrait-level4-start.png"
+    item: "De bak staat er al, met een dozijn knikkers in een kuil en één klem die zacht pulseert; een ring op de vloer toont zijn invloedsgebied."
+  - id: M2
+    result: pass
+    evidence: "evidence/play.png"
+    item: "Je tikt de klem aan: de vloer veert omhoog, de kuil wordt een heuvel en alle knikkers rollen tegelijk naar de opvangbak en tikken er één voor één in, terwijl de teller oploopt."
+  - id: M3
+    result: pass
+    evidence: "evidence/portrait-results.png"
+    item: "Level gehaald binnen tien seconden, met hooguit één regel hint onder de bak."
+  - id: M4
+    result: pass
+    evidence: "evidence/portrait-over.png"
+    item: "Level 2 laat je kiezen tussen twee klemmen: de verkeerde stuurt de knikkers een doodlopende hoek in en je probeert het meteen opnieuw."
+  - id: C1
+    result: pass
+    evidence: "evidence/portrait-level3-trap.png"
+    item: "De eerste echte moeite komt in level 3 (rond minuut 1-2): een wand maakt de voor de hand liggende tik de verkeerde, je moet eerst iets anders doen."
+  - id: C2
+    result: pass
+    evidence: "tests/levels.test.ts"
+    item: "Level 4 vraagt een volgorde over meerdere groepen, level 5 een combinatie van twee tikken voor de grote lawine."
+  - id: C3
+    result: pass
+    evidence: "evidence/portrait-over.png"
+    item: "Verlies kost alleen een herstart van het level, direct."
+  - id: C4
+    result: not_run
+    mark: not assessed
+    why: "about later levels: nothing to check in this build"
+    item: "Later groeien levels in aantal klemmen, obstakels en krapte van het aantal handelingen."
+  - id: C5
+    result: not_run
+    mark: not assessed
+    why: "a mark on the paragraph, not a sentence of its own"
+    item: "*(inferred (strong))*"
+measures:
+  - id: step-time
+    value: 17.100
+    unit: ms
+    by: browser
+    detail: "mean 0.104 ms, slowest 17.100 ms, 398 steps"

@@ -1,0 +1,58 @@
+time	2026-11-21 08:31:01
+keep	lines	0	pinned	0
+briefword	3D	shown	evidence/play.png
+checklist	L1	unlisted	-	Look: premium, minimalistische 3D-diorama; een speelgoedbak als fysiek object op een tafel. Ronde, zachte vormen. Mat rubberen vloer met fijn raster dat het hoogteverschil leesbaar maakt; glanzende glazen knikkers als helderste element; warm lichte bak; rustige achtergrond. Palet met rollen: vloer diep blauwgroen (dalen donkerder, toppen lichter), knikkers warm koraal/amber/ivoor (de massa), klemmen messing met een gekleurde kop (omhoog = koraal, omlaag = blauwgroen), opvangbak donker met lichte rand, bak en tafel crème/zand. Schaduwen koeler, licht warmer. Zachte schaduwen, subtiele reflecties, geen neon. *(inferred (strong))*	
+checklist	L2	unlisted	-	Signature: het raster op de vloer rekt zichtbaar mee en de vloer veert na bij elke tik. *(guessed)*	
+checklist	L3	unlisted	-	References: geen spel als voorbeeld voor de look. De zes genoemde spellen leveren alleen inzichten: ruimtelijke keuzes, massa die zichtbaar verdwijnt, tactiele oorzaak-gevolg, veel objecten tegelijk in beweging, progressie.	
+checklist	L4	unlisted	-	Every figure drawn, no emoji, no plain circles.	
+checklist	L5	unlisted	-	View: 3D · Camera: vast, schuin van boven, portret; de hele bak past altijd in beeld.	
+checklist	F1	unlisted	-	Elastische vloer: elke klem vervormt een gebied eromheen, met vering, deterministisch op een vaste tijdstap	
+checklist	F2	unlisted	-	Tientallen knikkers die rollen op hellingen, botsen op elkaar, wanden en pinnen, en tot rust komen	
+checklist	F3	unlisted	-	Opvangbak met teller: verzameld / doel, en resterende handelingen altijd in beeld	
+checklist	F4	unlisted	-	Tik op een klem met vooraf zichtbare invloedsring; invoer wacht tot de beweging stilligt	
+checklist	F5	unlisted	-	Vijf handgemaakte levels uit JSON, elk met een opgenomen oplossing die een test naspeelt	
+checklist	F6	unlisted	-	Winst met sterren voor minder tikken, verlies, opnieuw, volgend level, pauze	
+checklist	F7	unlisted	-	Geluid: knikkertikken, de vloer, het vallen in de bak; uit te zetten	
+checklist	S1	unlisted	-	elastische vloer met klemmen · in the slice	
+checklist	S2	unlisted	-	knikkerphysics (hellingen, wrijving, botsingen) · in the slice	
+checklist	S3	unlisted	-	opvangbak en spelregels (doel, handelingen, winst/verlies, reset) · in the slice	
+checklist	S4	unlisted	-	data-driven levels (JSON) met controleerbare oplosbaarheid · in the slice	
+checklist	S5	unlisted	-	voortgang (hoogste level, sterren, lokaal bewaard) · thin stand-in *(guessed)*	
+checklist	S6	unlisted	-	commerciële diensten (rewarded ads, extra handelingen, boosters, IAP, skins) · thin stand-in *(guessed)*	
+checklist	M1	unlisted	-	De bak staat er al, met een dozijn knikkers in een kuil en één klem die zacht pulseert; een ring op de vloer toont zijn invloedsgebied.	
+checklist	M2	unlisted	-	Je tikt de klem aan: de vloer veert omhoog, de kuil wordt een heuvel en alle knikkers rollen tegelijk naar de opvangbak en tikken er één voor één in, terwijl de teller oploopt.	
+checklist	M3	unlisted	-	Level gehaald binnen tien seconden, zonder tekstuitleg.	
+checklist	M4	unlisted	-	Level 2 laat je kiezen tussen twee klemmen: de verkeerde stuurt de knikkers een doodlopende hoek in en je probeert het meteen opnieuw.	
+checklist	C1	unlisted	-	De eerste echte moeite komt in level 3 (rond minuut 1-2): een wand maakt de voor de hand liggende tik de verkeerde, je moet eerst iets anders doen.	
+checklist	C2	unlisted	-	Level 4 vraagt een volgorde over meerdere groepen, level 5 een combinatie van twee tikken voor de grote lawine.	
+checklist	C3	unlisted	-	Verlies kost alleen een herstart van het level, direct.	
+checklist	C4	unlisted	-	Later groeien levels in aantal klemmen, obstakels en krapte van het aantal handelingen.	
+checklist	C5	unlisted	-	*(inferred (strong))*	
+webgl	ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)
+browser	HeadlessChrome/153.0.0.0
+scene	play	0	title
+scene	play	1	play
+saved	play	390	localstorage	flexfall.progress.v1
+measure	step-time	play	0.104	17.100	398
+lane	play	stop	6.6	2964
+console	play	0	[.WebGL-0x124001aec00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+console	play	0	[.WebGL-0x124001aec00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)
+uncaught	play	0
+text	play	html	330,16,399,35	15.0	4.23	inside	Level 1
+text	play	html	330,36,415,59	15.0	8.71	inside	First Pull
+text	play	html	640,71,659,107	15.0	12.31	inside	9
+text	play	html	659,81,678,105	15.0	5.98	inside	/
+text	play	html	678,81,691,105	15.0	5.98	inside	9
+text	play	html	626,124,691,143	15.0	5.98	inside	1 tap left
+text	play	html	540,243,740,283	15.0	12.31	inside	FLEXFALL
+text	play	html	522,290,758,309	15.0	5.98	inside	Tap a clamp. The floor bends.
+text	play	html	522,337,758,356	15.0	5.98	inside	Touch or click a clamp · keys 1-9
+text	play	html	619,404,661,427	15.0	3.70	inside	Play
+text	play	html	537,468,549,488	15.0	4.94	inside	1
+text	play	html	586,468,597,488	15.0	9.77	inside	2
+text	play	html	634,468,646,488	15.0	9.77	inside	3
+text	play	html	683,468,694,488	15.0	9.77	inside	4
+text	play	html	731,468,743,488	15.0	9.77	inside	5
+screen	play	drawn
+shot	play	prototypes/flexfall/evidence/play.png
+responds	changed	64

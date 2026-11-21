@@ -1,0 +1,48 @@
+{
+ "id": "01-first-pull",
+ "name": "First Pull",
+ "hint": "Tap the clamp",
+ "moves": 2,
+ "par": 1,
+ "target": 9,
+ "bumps": [
+  {
+   "x": 0,
+   "z": 3.6,
+   "r": 5.2,
+   "h": -0.8
+  }
+ ],
+ "anchors": [
+  {
+   "x": 0,
+   "z": -2.6,
+   "r": 2.4,
+   "heights": [
+    -0.6,
+    0.9
+   ]
+  }
+ ],
+ "catchers": [
+  {
+   "x": 0,
+   "z": 3.6,
+   "r": 0.75
+  }
+ ],
+ "marbles": [
+  {
+   "x": 0,
+   "z": -2.6,
+   "count": 12
+  }
+ ],
+ "solution": [
+  0
+ ],
+ "base": {
+  "tiltZ": -0.1,
+  "bowlX": 0.02
+ }
+}
