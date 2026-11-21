@@ -13,8 +13,8 @@ function spow(t: number, e: number): number {
  * at y = 0; a dome rises to +h, a bowl hangs to -h.
  */
 export function halfSuperquadric(a: number, h: number, c: number, roundV: number, roundH: number, dome: boolean): THREE.BufferGeometry {
-  const around = 48;
-  const up = 16;
+  const around = 96;
+  const up = 32;
   const positions: number[] = [];
   for (let v = 0; v <= up; v++) {
     const theta = (v / up) * (Math.PI / 2);
@@ -72,8 +72,8 @@ export function roundedBlock(w: number, d: number, h: number, r: number, bevel: 
     bevelEnabled: true,
     bevelThickness: bevel,
     bevelSize: bevel,
-    bevelSegments: 4,
-    curveSegments: 10,
+    bevelSegments: 6,
+    curveSegments: 20,
   });
   // Extruded along z; stand it up so the extrusion runs along +y from the floor.
   g.rotateX(-Math.PI / 2);

@@ -15,7 +15,8 @@ import './parts.css';
  */
 
 const PX = parts.unitPx;
-const SIZE = 420;
+/** Pixels per picture: drawn large so the parts stay sharp on a phone screen and when zoomed in. */
+const SIZE = 1200;
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
 renderer.setPixelRatio(1);
@@ -30,7 +31,7 @@ scene.add(new THREE.HemisphereLight(CONFIG.light.sky, CONFIG.light.ground, CONFI
 const sun = new THREE.DirectionalLight('#FFFFFF', CONFIG.light.sun);
 sun.position.set(-4.5, 9, 3.5);
 sun.castShadow = true;
-sun.shadow.mapSize.set(1024, 1024);
+sun.shadow.mapSize.set(4096, 4096);
 sun.shadow.radius = 4;
 sun.shadow.bias = -0.0005;
 scene.add(sun, sun.target);

@@ -29,7 +29,8 @@ const FACE_LIGHT = '#F4F8FF';
 const eyeBall = new THREE.SphereGeometry(1, 28, 20);
 const eyeBlack = new THREE.MeshPhysicalMaterial({ color: CONFIG.colors.robots.eye, roughness: 0.1, clearcoat: 1, clearcoatRoughness: 0.05 });
 const eyeGlint = new THREE.MeshBasicMaterial({ color: CONFIG.colors.robots.eyeWhite });
-const faceMat = new THREE.MeshPhysicalMaterial({ color: FACE_LIGHT, roughness: 0.3, clearcoat: 0.4 });
+// The face looks sideways, away from the light from above; it glows a little so it stays light.
+const faceMat = new THREE.MeshPhysicalMaterial({ color: FACE_LIGHT, roughness: 0.3, clearcoat: 0.4, emissive: FACE_LIGHT, emissiveIntensity: 0.38 });
 const bodyMat = new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.34, clearcoat: CONFIG.robot.gloss, clearcoatRoughness: 0.1, envMapIntensity: 0.6 });
 
 /** Solid triangle with softened corners, pointing to +y of the shape plane. */
