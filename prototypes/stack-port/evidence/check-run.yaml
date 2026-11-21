@@ -1,0 +1,151 @@
+# The one-shot's small check (check-run/1).
+# Written by one-shot-check.sh --record: the results are /prototype's reading of
+# evidence/self-check.tsv; never edited by hand.
+kind: check-run/1
+engine: web
+browser: "HeadlessChrome/153.0.0.0"
+time: "2026-11-21 07:37:57"
+checks:
+  - id: boots
+    result: pass
+    evidence:
+      - "evidence/self-check.tsv"
+  - id: shot
+    result: pass
+    evidence:
+      - "evidence/play.png"
+  - id: outlines
+    result: pass
+    evidence:
+      - "evidence/figures.png"
+  - id: brief-words
+    result: pass
+    evidence:
+      - "evidence/brief-words.tsv"
+  - id: emoji
+    result: pass
+    evidence:
+      - "evidence/self-check.tsv"
+  - id: nearest-game
+    result: pass
+    evidence:
+      - "evidence/nearest-game.txt"
+brief_checklist:
+  - id: L1
+    result: pass
+    evidence: "evidence/level5-berth-pad.png"
+    item: "Look: zacht speelgoed-diorama *(provisional)*. Afgeronde, matte vormen, een kleine kade op kalm blauwgroen water, zacht daglicht met subtiele schaduwen. De containers zijn het felste op het scherm (geel, rood, blauw, groen, later paars), elk met een eigen getekend symbool op de zijkant en bovenkant. Kade en water blijven in gedempte pasteltinten, de kraan is één herkenbaar oranje silhouet. Signatuur: de symbolen op het schip lichten één voor één op terwijl het ruim volloopt. Every figure drawn, no emoji, no plain circles."
+  - id: L2
+    result: pass
+    evidence: "evidence/play.png"
+    item: "References: Color Block Jam (eenvoud, leesbaarheid, moeilijkheidsopbouw), Tower of Hanoi (alleen de bovenste mag bewegen), Unblock Me (vrijmaken zonder jezelf vast te zetten)."
+  - id: L3
+    result: pass
+    evidence: "evidence/play.png"
+    item: "View: 3D · Camera: vast, licht isometrisch en dichtbij, staand formaat voor mobiel."
+  - id: F1
+    result: pass
+    evidence: "logic.js:33"
+    item: "Stapels met maximale hoogte; alleen de bovenste container beweegt"
+  - id: F2
+    result: pass
+    evidence: "evidence/play.png"
+    item: "Schip als stapel, dat alleen de volgende kleur van de opdracht accepteert"
+  - id: F3
+    result: pass
+    evidence: "index.html:573"
+    item: "Zettenlimiet, onbeperkte undo, herstart"
+  - id: F4
+    result: pass
+    evidence: "evidence/level5-berth-pad.png"
+    item: "Lege ligplaats als tijdelijke opslag na vertrek"
+  - id: F5
+    result: pass
+    evidence: "levels.js:6"
+    item: "5 opbouwende levels, het laatste met twee schepen"
+  - id: F6
+    result: pass
+    evidence: "evidence/solver.txt"
+    item: "Solver die per level oplosbaarheid en het minimale aantal zetten bewijst"
+  - id: F7
+    result: not_run
+    mark: not assessed
+    why: "crane arc, load click, refusal shake, departure and results are built; how they feel and sound needs a person"
+    evidence: "index.html:435"
+    item: "Gamefeel: snelle kraanboog, klik bij laden, schudden bij een ongeldige zet, vertrek, level complete; een tik tijdens een animatie wordt onthouden"
+  - id: F8
+    result: pass
+    evidence: "evidence/figures.png"
+    item: "Kleur plus symbool op elke container"
+  - id: S1
+    result: pass
+    evidence: "evidence/play.png"
+    item: "Kraan die containers verplaatst · in the slice"
+  - id: S2
+    result: pass
+    evidence: "evidence/play.png"
+    item: "Schepen met laadopdrachten · in the slice"
+  - id: S3
+    result: pass
+    evidence: "evidence/play.png"
+    item: "Beperkt aantal verplaatsingen · in the slice"
+  - id: S4
+    result: pass
+    evidence: "evidence/play.png"
+    item: "Beperkte stapelhoogte · in the slice"
+  - id: S5
+    result: pass
+    evidence: "evidence/level5-berth-pad.png"
+    item: "Extra tijdelijke opslagplaatsen · in the slice *(guessed)*"
+  - id: M1
+    result: pass
+    evidence: "levels.js:8"
+    item: "Level 1 toont één schip met de opdracht Geel → Rood → Blauw en drie stapels waarop die containers al bovenop liggen."
+  - id: M2
+    result: pass
+    evidence: "evidence/play.png"
+    item: "De speler tikt geel aan, de kraan tilt hem op, hij tikt het schip aan en de container klikt vast terwijl het symbool oplicht."
+  - id: M3
+    result: not_run
+    mark: not assessed
+    why: "the ship sails off with confetti and a horn in code (index.html:448); the check's shot is after it, and sound cannot be heard here"
+    evidence: "index.html:541"
+    item: "Drie zetten later vaart het schip weg met een hoorn en confetti."
+  - id: M4
+    result: pass
+    evidence: "evidence/play.png"
+    item: "Level 2 begraaft de gele container onder een rode, dus de speler moet voor het eerst iets opzij zetten."
+  - id: M5
+    result: pass
+    evidence: "levels.js:16"
+    item: "Level 3 verlaagt de stapelhoogte, zodat \"opzij zetten\" een keuze wordt."
+  - id: M6
+    result: not_run
+    mark: not assessed
+    why: "whether level 3 is where the hook pays off needs a person"
+    evidence: "levels.js:16"
+    item: "Dat is het eerste moment waarop de hook zich uitbetaalt."
+  - id: C1
+    result: not_run
+    mark: not assessed
+    why: "levels 3 and 4 need 5 and 8 moves with 2 spare; when that arrives in minutes needs a person's play"
+    evidence: "evidence/solver.txt"
+    item: "De eerste echte moeite komt in level 3–4 (ongeveer minuut 2–3): te weinig vrije ruimte, zodat de volgorde van opzij zetten ertoe doet *(provisional)*."
+  - id: C2
+    result: pass
+    evidence: "evidence/level5-berth-pad.png"
+    item: "Level 5 heeft twee schepen na elkaar, waarbij de lege ligplaats tussendoor opslag is."
+  - id: C3
+    result: pass
+    evidence: "index.html:573"
+    item: "Een verlies (zetten op) kost alleen het level: undo is gratis en onbeperkt, herstart is direct *(provisional)*."
+  - id: C4
+    result: pass
+    evidence: "evidence/solver.txt"
+    item: "De zettenlimiet is het door de solver bewezen minimum plus een marge die per level krimpt."
+measures:
+  - id: step-time
+    value: 4.500
+    unit: ms
+    by: browser
+    detail: "mean 0.046 ms, slowest 4.500 ms, 378 steps"

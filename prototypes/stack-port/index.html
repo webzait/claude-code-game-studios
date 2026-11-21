@@ -1,0 +1,854 @@
+<!doctype html>
+<!-- PROTOTYPE - NOT FOR PRODUCTION -->
+<!-- Question: Is het beladen van schepen in volgorde, met beperkte stapelruimte, zo leuk dat je na level 5 direct een zesde wilt? -->
+<!-- Date: 2026-11-21 -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Stack Port</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #16323a; overflow: hidden; }
+  body { font-variant-numeric: tabular-nums; touch-action: none; -webkit-user-select: none; user-select: none; }
+  #wrap { position: relative; margin: 0 auto; }
+  canvas { display: block; position: absolute; left: 0; top: 0; }
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="gl"></canvas><canvas id="game"></canvas></div>
+<script src="vendor/three.js"></script>
+<script src="config.js"></script>
+<script src="logic.js"></script>
+<script src="levels.js"></script>
+<script>
+'use strict';
+// Stack Port. Files: logic.js (rules + solver), levels.js (level data), config.js (tuning),
+// this file (view, input, screens). The rules never live in here.
+
+// ---- Built to be checked ----------------------------------------------------------------
+const params = new URLSearchParams(location.search);
+const tune = new Proxy({}, { get: (_, k) => CONFIG[k].value }); // live: tune.speed is CONFIG.speed.value
+const STEP = 1 / 60;            // simulation step in seconds; motion is per second, never per frame
+const W = 720, H = 1280;        // logical size: portrait, for a phone
+const FONT = '"Trebuchet MS", "Avenir Next", "Segoe UI", sans-serif';
+const TITLE = 'Stack Port';
+const CONTROLS = ['Tap a stack to lift its top container', 'Tap another stack, or the ship, to set it down',
+  'Keys: 1-5 stacks, S ship, Z undo, R restart, M mute'];
+const clock = window.GAME_CLOCK || { now: () => performance.now() / 1000 }; // a check may inject one
+const CHEAP = params.get('render') === 'cheap'; // a headless shot or check: 3D draws cheap; players never see it
+let seed;
+function rng() { // mulberry32; every gameplay random call reads this, never Math.random
+  seed = (seed + 0x6D2B79F5) | 0;
+  let t = Math.imul(seed ^ (seed >>> 15), seed | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+const events = []; // window.game.events: anything the game wants a run to see
+
+// ---- Screen: a WebGL canvas for the harbour, a 2D canvas over it for the HUD ---------------
+const wrap = document.getElementById('wrap');
+const glCanvas = document.getElementById('gl');
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const renderer = new THREE.WebGLRenderer({ canvas: glCanvas, antialias: !CHEAP });
+renderer.shadowMap.enabled = !CHEAP;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+let viewScale = 1;
+function fit() { // fills the window at any size and pixel ratio
+  const s = Math.min(innerWidth / W, innerHeight / H);
+  const r = s * (devicePixelRatio || 1);
+  viewScale = s;
+  wrap.style.width = Math.round(W * s) + 'px'; wrap.style.height = Math.round(H * s) + 'px';
+  wrap.style.marginTop = Math.max(0, Math.floor((innerHeight - H * s) / 2)) + 'px';
+  canvas.width = Math.round(W * r); canvas.height = Math.round(H * r);
+  canvas.style.width = Math.round(W * s) + 'px'; canvas.style.height = Math.round(H * s) + 'px';
+  ctx.setTransform(r, 0, 0, r, 0, 0);
+  renderer.setPixelRatio(CHEAP ? 0.5 : Math.min(2, devicePixelRatio || 1));
+  renderer.setSize(Math.round(W * s), Math.round(H * s), true);
+}
+addEventListener('resize', fit); fit();
+function text(s, x, y, size, c, align = 'center', weight = '700') {
+  ctx.fillStyle = c; ctx.font = `${weight} ${size}px ${FONT}`; ctx.textAlign = align;
+  ctx.textBaseline = 'middle'; ctx.fillText(s, x, y);
+}
+function rrect(x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+
+// ---- The look: palette with roles ---------------------------------------------------------
+const PAL = {
+  sky: '#cfeceb', water: '#7cc9cf', waterDeep: '#63b4bd', quay: '#ece4d2', quayEdge: '#d9cfb8',
+  line: '#ffffff', crane: '#f08a24', craneDark: '#c86a12', ink: '#17343c', card: '#fffaf0',
+  bad: '#e5484d', good: '#2fa66a',
+};
+const BOX = { // the containers are the brightest things on screen
+  Y: { name: 'Yellow', col: '#ffc928', dark: '#d99e00', sym: 'star' },
+  R: { name: 'Red', col: '#f0504a', dark: '#c0302c', sym: 'diamond' },
+  B: { name: 'Blue', col: '#3d8bf2', dark: '#1f63c4', sym: 'wave' },
+  G: { name: 'Green', col: '#39b86b', dark: '#1f8e49', sym: 'cross' },
+  P: { name: 'Purple', col: '#9a63e0', dark: '#7440b8', sym: 'ring' },
+};
+const HULLS = ['#2c4a66', '#8a3b3b', '#2f6b62'];
+
+/** Each colour's own drawn symbol, so colour is never the only cue. Used on boxes and HUD. */
+function drawSymbol(c, kind, x, y, r, fill = '#fff', stroke = null) {
+  c.save(); c.translate(x, y); c.fillStyle = fill; c.strokeStyle = stroke || fill;
+  c.lineJoin = 'round'; c.lineCap = 'round';
+  c.beginPath();
+  if (kind === 'star') {
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI / 2 + i * Math.PI / 5, q = i % 2 ? r * 0.45 : r;
+      c[i ? 'lineTo' : 'moveTo'](Math.cos(a) * q, Math.sin(a) * q);
+    }
+    c.closePath(); c.fill();
+  } else if (kind === 'diamond') {
+    c.moveTo(0, -r); c.lineTo(r * 0.72, 0); c.lineTo(0, r); c.lineTo(-r * 0.72, 0); c.closePath(); c.fill();
+  } else if (kind === 'wave') {
+    c.lineWidth = r * 0.3;
+    for (const dy of [-r * 0.45, r * 0.45]) {
+      c.moveTo(-r, dy); c.bezierCurveTo(-r * 0.5, dy - r * 0.6, -r * 0.1, dy + r * 0.6, 0, dy);
+      c.bezierCurveTo(r * 0.1, dy - r * 0.6, r * 0.5, dy + r * 0.6, r, dy);
+    }
+    c.stroke();
+  } else if (kind === 'cross') {
+    const a = r * 0.34;
+    c.moveTo(-a, -r); c.lineTo(a, -r); c.lineTo(a, -a); c.lineTo(r, -a); c.lineTo(r, a); c.lineTo(a, a);
+    c.lineTo(a, r); c.lineTo(-a, r); c.lineTo(-a, a); c.lineTo(-r, a); c.lineTo(-r, -a); c.lineTo(-a, -a);
+    c.closePath(); c.fill();
+  } else { // ring: a thick hexagon outline
+    c.lineWidth = r * 0.34;
+    for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; c[i ? 'lineTo' : 'moveTo'](Math.cos(a) * r * 0.82, Math.sin(a) * r * 0.82); }
+    c.closePath(); c.stroke();
+  }
+  c.restore();
+}
+
+// ---- Input: keys by position (event.code), taps in logical pixels -------------------------
+const down = new Set(), hit = new Set();
+const pressed = code => hit.has(code); // true for one step after the key goes down
+const taps = []; // {x, y} in logical pixels, eaten by the scene on its next step
+addEventListener('keydown', e => {
+  startAudio();
+  if (!e.repeat) { down.add(e.code); hit.add(e.code); }
+  if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
+});
+addEventListener('keyup', e => down.delete(e.code));
+addEventListener('pointerdown', e => {
+  startAudio();
+  const b = canvas.getBoundingClientRect();
+  taps.push({ x: (e.clientX - b.left) / b.width * W, y: (e.clientY - b.top) / b.height * H });
+  e.preventDefault();
+});
+addEventListener('blur', () => down.clear());
+
+// ---- Audio: started on first input, mute on M --------------------------------------------
+let audio = null, muted = false;
+function startAudio() {
+  if (!audio) {
+    const ac = window.GAME_AUDIO || new (window.AudioContext || window.webkitAudioContext)(); // a check may inject one
+    const out = ac.createGain(); out.gain.value = muted ? 0 : tune.volume;
+    out.connect(ac.destination); audio = { ac, out };
+  }
+  if (audio.ac.state === 'suspended') audio.ac.resume();
+}
+function setMuted(m) { muted = m; if (audio) audio.out.gain.value = m ? 0 : tune.volume; }
+addEventListener('tune', () => setMuted(muted));
+function tone(freq, dur, type = 'square', vol = 0.3, to = 0) {
+  if (!audio || muted) return;
+  const t = audio.ac.currentTime, o = audio.ac.createOscillator(), g = audio.ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  if (to) o.frequency.exponentialRampToValueAtTime(to, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g).connect(audio.out); o.start(t); o.stop(t + dur);
+}
+const later = []; // sounds scheduled on the step: {in: seconds, fn}
+function after(sec, fn) { later.push({ in: sec, fn }); }
+const sfx = {
+  pick() { tone(540, 0.07, 'triangle', 0.25, 760); },
+  drop() { tone(170, 0.12, 'sine', 0.5, 90); tone(900, 0.03, 'square', 0.06); },
+  load() { tone(190, 0.1, 'sine', 0.5, 100); tone(1250, 0.05, 'square', 0.12); after(0.06, () => tone(880, 0.16, 'triangle', 0.25)); },
+  bad() { tone(140, 0.16, 'sawtooth', 0.2, 90); },
+  undo() { tone(420, 0.08, 'triangle', 0.2, 300); },
+  horn() { tone(147, 0.7, 'sawtooth', 0.16); tone(110, 0.7, 'sawtooth', 0.16); },
+  win() { [523, 659, 784, 1047].forEach((f, i) => after(i * 0.1, () => tone(f, 0.25, 'triangle', 0.3))); },
+  lose() { tone(330, 0.25, 'triangle', 0.25, 220); after(0.2, () => tone(220, 0.4, 'triangle', 0.25, 150)); },
+};
+
+// ---- The harbour, in three.js --------------------------------------------------------------
+const CW = 1.0, CH = 0.9, CL = 2.0;        // a container: width (x), height (y), length (z), metres
+const DECK_Y = 0.05, WATER_Y = -0.75;
+const scene3 = new THREE.Scene();
+scene3.background = new THREE.Color(PAL.sky);
+const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 200);
+scene3.add(new THREE.HemisphereLight(0xffffff, 0xbfd8d2, 1.25));
+const sun = new THREE.DirectionalLight(0xfff1dc, 1.9);
+sun.position.set(-7, 16, 9); sun.castShadow = !CHEAP;
+sun.shadow.mapSize.set(2048, 2048); sun.shadow.radius = 5; sun.shadow.bias = -0.0008;
+Object.assign(sun.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, near: 1, far: 50 });
+scene3.add(sun, sun.target);
+
+const mat = (c, o = {}) => new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: 0.85, metalness: 0 }, o));
+function shadowed(m, cast = true, recv = true) { m.castShadow = cast; m.receiveShadow = recv; return m; }
+function roundedBox(w, h, l, r) { // a soft-edged box, centred
+  const s = new THREE.Shape(), x = -w / 2 + r, y = -h / 2 + r, a = w - 2 * r, b = h - 2 * r;
+  s.moveTo(x, y); s.lineTo(x + a, y); s.lineTo(x + a, y + b); s.lineTo(x, y + b); s.closePath();
+  const g = new THREE.ExtrudeGeometry(s, { depth: l - 2 * r, bevelEnabled: true, bevelSize: r, bevelThickness: r, bevelSegments: CHEAP ? 1 : 3, curveSegments: 4 });
+  g.translate(0, 0, -(l - 2 * r) / 2); return g;
+}
+function canvasTex(w, h, paint) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h; paint(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
+}
+// One container kit per colour: body, corrugated side decal with the symbol badge, top decal.
+const boxGeo = roundedBox(CW, CH, CL, 0.07);
+const kits = {};
+for (const id in BOX) {
+  const k = BOX[id];
+  const badge = (c, x, y, r) => {
+    c.fillStyle = 'rgba(255,255,255,0.96)';
+    c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+    drawSymbol(c, k.sym, x, y, r * 0.66, k.dark);
+  };
+  const side = canvasTex(512, 230, (c, w, h) => {
+    c.clearRect(0, 0, w, h); c.fillStyle = k.dark; c.globalAlpha = 0.55;
+    for (let x = 14; x < w; x += 36) c.fillRect(x, 16, 12, h - 32);          // corrugation
+    c.globalAlpha = 1; c.fillStyle = k.col; c.fillRect(w / 2 - 92, 0, 184, h);
+    badge(c, w / 2, h / 2, 80);
+  });
+  const end = canvasTex(256, 230, (c, w, h) => {
+    c.clearRect(0, 0, w, h); c.strokeStyle = k.dark; c.lineWidth = 7; c.globalAlpha = 0.7;
+    c.strokeRect(20, 18, w / 2 - 24, h - 36); c.strokeRect(w / 2 + 4, 18, w / 2 - 24, h - 36); // doors
+    c.globalAlpha = 1; badge(c, w / 2, h / 2, 66);
+  });
+  const top = canvasTex(256, 512, (c, w, h) => {
+    c.clearRect(0, 0, w, h); c.fillStyle = k.dark; c.globalAlpha = 0.4;
+    for (let y = 20; y < h; y += 40) c.fillRect(22, y, w - 44, 10);
+    c.globalAlpha = 1; c.fillStyle = k.col; c.fillRect(0, h / 2 - 96, w, 192);
+    badge(c, w / 2, h / 2, 82);
+  });
+  const dm = t => new THREE.MeshStandardMaterial({ map: t, transparent: true, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -2 });
+  kits[id] = { body: mat(k.col), side: dm(side), end: dm(end), top: dm(top),
+    ghost: new THREE.MeshStandardMaterial({ color: k.col, transparent: true, opacity: 0.22, roughness: 1, depthWrite: false }),
+    ghostSide: new THREE.MeshBasicMaterial({ map: side, transparent: true, opacity: 0.6, depthWrite: false }),
+    ghostTop: new THREE.MeshBasicMaterial({ map: top, transparent: true, opacity: 0.6, depthWrite: false }) };
+}
+const sideGeo = new THREE.PlaneGeometry(CL - 0.16, CH - 0.14), endGeo = new THREE.PlaneGeometry(CW - 0.14, CH - 0.14);
+const topGeo = new THREE.PlaneGeometry(CW - 0.14, CL - 0.16);
+function makeContainer(id) {
+  const g = new THREE.Group(), k = kits[id];
+  g.add(shadowed(new THREE.Mesh(boxGeo, k.body)));
+  const s = new THREE.Mesh(sideGeo, k.side); s.rotation.y = Math.PI / 2; s.position.x = CW / 2 + 0.002; g.add(s);
+  const e = new THREE.Mesh(endGeo, k.end); e.position.z = CL / 2 + 0.002; g.add(e);
+  const t = new THREE.Mesh(topGeo, k.top); t.rotation.x = -Math.PI / 2; t.position.y = CH / 2 + 0.002; g.add(t);
+  g.userData = { id, rest: new THREE.Vector3(), busy: 0 };
+  return g;
+}
+function makeGhost(id) { // an empty slot on the ship that shows which colour it wants
+  const g = new THREE.Group(), k = kits[id];
+  g.add(new THREE.Mesh(boxGeo, k.ghost.clone()));
+  const s = new THREE.Mesh(sideGeo, k.ghostSide.clone()); s.rotation.y = Math.PI / 2; s.position.x = CW / 2 + 0.004; g.add(s);
+  const t = new THREE.Mesh(topGeo, k.ghostTop.clone()); t.rotation.x = -Math.PI / 2; t.position.y = CH / 2 + 0.004; g.add(t);
+  return g;
+}
+function makeShip(order, hullCol) {
+  const outer = new THREE.Group(), g = new THREE.Group(); outer.add(g);
+  const s = new THREE.Shape(), hw = 1.05;
+  s.moveTo(-hw, -2.5); s.lineTo(hw, -2.5); s.lineTo(hw, 1.7); s.quadraticCurveTo(hw * 0.9, 2.7, 0, 3.15);
+  s.quadraticCurveTo(-hw * 0.9, 2.7, -hw, 1.7); s.closePath();
+  const hullG = new THREE.ExtrudeGeometry(s, { depth: 0.75, bevelEnabled: true, bevelSize: 0.08, bevelThickness: 0.08, bevelSegments: 2 });
+  hullG.rotateX(-Math.PI / 2); // bow away from the camera, the way it sails off; the bridge sits forward, behind the cargo
+  const hull = shadowed(new THREE.Mesh(hullG, mat(hullCol))); hull.position.y = WATER_Y + 0.02; g.add(hull);
+  const stripe = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.14, 5.1), mat('#f6efe0')); stripe.position.set(0, DECK_Y - 0.1, -0.1); g.add(stripe);
+  const deck = shadowed(new THREE.Mesh(new THREE.BoxGeometry(1.75, 0.06, 4.6), mat('#d7c9a8')), false); deck.position.set(0, DECK_Y - 0.03, -0.1); g.add(deck);
+  const cabin = shadowed(new THREE.Mesh(roundedBox(1.5, 1.0, 0.9, 0.1), mat('#fbf6ea'))); cabin.position.set(0, DECK_Y + 0.5, -1.55); g.add(cabin);
+  const bridge = shadowed(new THREE.Mesh(roundedBox(1.7, 0.42, 0.7, 0.08), mat('#fbf6ea'))); bridge.position.set(0, DECK_Y + 1.2, -1.5); g.add(bridge);
+  const glass = new THREE.Mesh(new THREE.BoxGeometry(1.72, 0.2, 0.5), mat('#5fb6c9', { roughness: 0.3 })); glass.position.set(0, DECK_Y + 1.22, -1.42); g.add(glass);
+  const funnel = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.24, 0.6, 14), mat(PAL.crane))); funnel.position.set(0, DECK_Y + 1.7, -1.75); g.add(funnel);
+  const ghosts = order.map((id, i) => { const gh = makeGhost(id); gh.position.set(0, DECK_Y + (i + 0.5) * CH, 0.7); outer.add(gh); return gh; });
+  outer.userData = { ghosts, loaded: [], order, stripe };
+  return outer;
+}
+function makeCrane(x0, x1, height) { // one gantry: legs on the quay, a boom reaching over the ship
+  const g = new THREE.Group(), m = mat(PAL.crane), dk = mat(PAL.craneDark);
+  const legZ = -1.75;
+  for (const x of [x0, x1]) {
+    const leg = shadowed(new THREE.Mesh(roundedBox(0.3, height + 0.5, 0.3, 0.06), m)); leg.position.set(x, (height + 0.5) / 2, legZ); g.add(leg);
+    const foot = shadowed(new THREE.Mesh(roundedBox(0.6, 0.22, 0.9, 0.06), dk)); foot.position.set(x, 0.11, legZ); g.add(foot);
+    const arm = shadowed(new THREE.Mesh(roundedBox(0.22, 0.22, 2.3, 0.05), m)); arm.position.set(x, height + 0.25, legZ + 1.05); g.add(arm);
+    const brace = shadowed(new THREE.Mesh(roundedBox(0.14, 0.14, 1.9, 0.04), dk)); brace.position.set(x, height - 0.45, legZ + 0.72); brace.rotation.x = -0.72; g.add(brace);
+  }
+  const rail = shadowed(new THREE.Mesh(roundedBox(x1 - x0 + 0.3, 0.2, 0.2, 0.05), m)); rail.position.set((x0 + x1) / 2, height * 0.55, legZ); g.add(rail);
+  return g;
+}
+
+// The world is rebuilt for each level; `world` holds everything that changes.
+let world = null;
+const v3 = new THREE.Vector3();
+function slotY(k) { return (k + 0.5) * CH; }
+function buildWorld(level) {
+  if (world) scene3.remove(world.root);
+  const root = new THREE.Group(); scene3.add(root);
+  const n = level.stacks.length, gap = tune.stack_gap;
+  const xs = level.stacks.map((_, i) => (i - (n - 1) / 2) * gap - 1.7);
+  const edge = xs[n - 1] + 1.05, bx = edge + 1.45;         // quay edge, berth centre
+  const maxCap = Math.max(...level.stacks.map((_, i) => Logic.capOf(level, i)), ...level.ships.map(s => s.length));
+  const craneH = maxCap * CH + 2.7;
+
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), mat(PAL.water, { roughness: 0.6 }));
+  water.rotation.x = -Math.PI / 2; water.position.y = WATER_Y; water.receiveShadow = true; root.add(water);
+  const ripples = [];
+  for (let i = 0; i < 14; i++) { // quiet lighter streaks, the only motion in the background
+    const r = new THREE.Mesh(new THREE.PlaneGeometry(1.2 + (i % 3) * 0.7, 0.08), new THREE.MeshBasicMaterial({ color: '#a9e0e2', transparent: true, opacity: 0.7 }));
+    r.rotation.x = -Math.PI / 2; r.rotation.z = 0.5;
+    r.position.set(edge + 1 + ((i * 37) % 11) * 1.1, WATER_Y + 0.01, -9 + ((i * 53) % 19));
+    r.userData.x0 = r.position.x; root.add(r); ripples.push(r);
+  }
+  const quay = shadowed(new THREE.Mesh(new THREE.BoxGeometry(40, 1.4, 34), mat(PAL.quay)), false);
+  quay.position.set(edge - 20, -0.7, -17 + 2.9); root.add(quay);
+  const lip = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.12, 34), mat('#f2b63c')); lip.position.set(edge - 0.17, 0.06, -17 + 2.9); root.add(lip);
+  for (let i = 0; i < 4; i++) { // bollards along the edge
+    const b = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.17, 0.3, 12), mat(PAL.ink)));
+    b.position.set(edge - 0.2, 0.2, 2.3 - i * 2.9 - 0.2 * (i > 0)); if (Math.abs(b.position.z) > 1.6) root.add(b);
+  }
+  // Each yard stack: a painted bay on the ground and a thin frame as tall as it may be stacked.
+  const pads = xs.map((x, i) => {
+    const cap = Logic.capOf(level, i), g = new THREE.Group(); g.position.x = x; root.add(g);
+    const bay = new THREE.Mesh(new THREE.PlaneGeometry(CW + 0.22, CL + 0.22), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.75 }));
+    bay.rotation.x = -Math.PI / 2; bay.position.y = 0.012; g.add(bay);
+    const inner = new THREE.Mesh(new THREE.PlaneGeometry(CW + 0.06, CL + 0.06), new THREE.MeshBasicMaterial({ color: PAL.quayEdge }));
+    inner.rotation.x = -Math.PI / 2; inner.position.y = 0.016; g.add(inner);
+    const frame = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(CW + 0.14, cap * CH + 0.06, CL + 0.14)),
+      new THREE.LineBasicMaterial({ color: '#8fa7a6', transparent: true, opacity: 0.55 }));
+    frame.position.y = cap * CH / 2 + 0.03; g.add(frame);
+    return { g, bay, flash: 0 };
+  });
+  // The berth's storage pad: a pontoon that lies there only while no ship does.
+  const pontoon = new THREE.Group(); pontoon.position.set(bx, 0, 0); root.add(pontoon);
+  const pb = shadowed(new THREE.Mesh(roundedBox(1.9, 0.6, 2.9, 0.1), mat('#f2b63c'))); pb.position.y = -0.3; pontoon.add(pb);
+  const pt = new THREE.Mesh(new THREE.PlaneGeometry(CW + 0.22, CL + 0.22), new THREE.MeshBasicMaterial({ color: '#fff7df' }));
+  pt.rotation.x = -Math.PI / 2; pt.position.y = 0.012; pontoon.add(pt);
+  if (level.berthCap > 0) {
+    const fr = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(CW + 0.14, level.berthCap * CH + 0.06, CL + 0.14)),
+      new THREE.LineBasicMaterial({ color: '#b98a1e', transparent: true, opacity: 0.7 }));
+    fr.position.y = level.berthCap * CH / 2 + 0.03; pontoon.add(fr);
+  }
+  // The crane.
+  const crane = makeCrane(xs[0] - 1.15, edge - 0.55, craneH); root.add(crane);
+  const boomL = bx + 1.3 - (xs[0] - 1.6);
+  const boom = shadowed(new THREE.Mesh(roundedBox(boomL, 0.34, 0.5, 0.08), mat(PAL.crane)));
+  boom.position.set(xs[0] - 1.6 + boomL / 2, craneH + 0.25, 0); root.add(boom);
+  const cab = shadowed(new THREE.Mesh(roundedBox(0.7, 0.6, 0.8, 0.1), mat('#fbf6ea'))); cab.position.set(edge - 0.55, craneH - 0.35, -1.75); root.add(cab);
+  const trolley = shadowed(new THREE.Mesh(roundedBox(0.7, 0.3, 0.9, 0.08), mat(PAL.craneDark))); trolley.position.set(xs[0], craneH, 0); root.add(trolley);
+  const cable = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1, 6), mat(PAL.ink)); root.add(cable);
+  const spreader = shadowed(new THREE.Mesh(roundedBox(CW * 0.9, 0.12, CL * 0.9, 0.04), mat(PAL.craneDark))); root.add(spreader);
+  // Ships.
+  const ships = level.ships.map((order, i) => { const s = makeShip(order, HULLS[i % HULLS.length]); root.add(s); return s; });
+  world = { root, level, xs, edge, bx, craneH, pads, pontoon, pontoonY: -1.2, trolley, cable, spreader, ships, maxCap,
+    ripples, stacks: [], berth: [], boxes: [], confetti: [], padFlash: 0, trolleyX: xs[0], hookY: craneH - 0.9 };
+
+  // Camera: fixed, slightly isometric, close.
+  const half = tune.view_size + Math.max(0, n - 3) * tune.view_per_stack, hh = half * H / W;
+  camera.left = -half; camera.right = half; camera.top = hh; camera.bottom = -hh;
+  const yaw = tune.cam_yaw * Math.PI / 180, pitch = tune.cam_pitch * Math.PI / 180;
+  // the docked ship's bow is the rightmost thing: keep it just inside the frame
+  const cx = bx - ((half - 0.25 - 4.75 * Math.sin(yaw)) / Math.cos(yaw) - 1.05) + tune.cam_shift_x, target = new THREE.Vector3(cx, craneH * 0.5 - tune.cam_shift_y, 0.9);
+  camera.position.set(target.x + Math.sin(yaw) * Math.cos(pitch) * 40, target.y + Math.sin(pitch) * 40, target.z + Math.cos(yaw) * Math.cos(pitch) * 40);
+  camera.lookAt(target); camera.updateProjectionMatrix();
+  sun.position.set(cx - 7, 16, 9); sun.target.position.set(cx, 0, 0);
+}
+const WAIT_Z = 5.2, BERTH_Z = -0.7, GONE_Z = -24, SLOT_Z = 0.7;
+
+/** Put every mesh where the rules' state says it is, with no animation. */
+function syncWorld(st) {
+  const w = world, lv = w.level;
+  for (const b of w.boxes) b.parent.remove(b);
+  w.boxes = []; queue.length = 0; w.confetti.forEach(c => w.root.remove(c)); w.confetti = [];
+  const put = (id, parent, x, y, z) => { const m = makeContainer(id); m.userData.rest.set(x, y, z); m.position.set(x, y, z); parent.add(m); w.boxes.push(m); return m; };
+  w.stacks = st.stacks.map((s, i) => s.map((id, k) => put(id, w.root, w.xs[i], slotY(k), 0)));
+  w.berth = st.berth.map((id, k) => put(id, w.root, w.bx, slotY(k), 0));
+  w.ships.forEach((ship, i) => {
+    const u = ship.userData; u.loaded = [];
+    ship.visible = i >= st.ship && i <= st.ship + 1;
+    const here = i === st.ship && st.docked;
+    ship.position.set(w.bx, 0, here ? BERTH_Z : i === st.ship ? WAIT_Z : WAIT_Z + (st.docked ? 0 : 30));
+    if (i > st.ship && !st.docked) ship.visible = false;
+    const n = here ? st.loaded : 0;
+    u.ghosts.forEach((g, k) => { g.visible = k >= n; });
+    for (let k = 0; k < n; k++) u.loaded.push(put(u.order[k], ship, 0, DECK_Y + slotY(k), SLOT_Z));
+  });
+  w.pontoonY = (!st.docked && lv.berthCap > 0 && !st.won) ? 0 : -1.4;
+  w.pontoon.position.y = w.pontoonY;
+}
+
+// ---- Animation: a queue the step works through; the rules are always already ahead ---------
+const queue = [];
+const ease = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+function stepQueue(dt) {
+  const w = world; let budget = dt;
+  while (queue.length && budget > 0) {
+    const a = queue[0];
+    if (!a.started) { a.started = true; a.t = 0; if (a.begin) a.begin(); }
+    const rate = (1 + tune.queue_rush * (queue.length - 1)) / a.dur;
+    a.t = Math.min(1, a.t + budget * rate); budget = 0;
+    a.apply(a.t);
+    if (a.t >= 1) { queue.shift(); if (a.end) a.end(); }
+  }
+  if (!w) return;
+  // the pontoon, the selection lift, refusals and the crane follow on their own
+  w.pontoon.position.y += (w.pontoonY - w.pontoon.position.y) * Math.min(1, dt * 9);
+  w.pontoon.visible = w.pontoon.position.y > -1.3;
+  for (const p of w.pads) p.flash = Math.max(0, p.flash - dt / tune.shake_time);
+  w.padFlash = Math.max(0, w.padFlash - dt / tune.shake_time);
+  state.shake = Math.max(0, state.shake - dt / tune.shake_time);
+  const sel = selectedMesh();
+  state.lift += ((sel ? tune.select_lift : 0) - state.lift) * Math.min(1, dt * tune.lift_speed);
+  for (const b of w.boxes) {
+    if (b.userData.busy) continue;
+    b.position.copy(b.userData.rest);
+    if (b === sel) { b.position.y += state.lift; b.position.x += Math.sin(state.shake * 40) * tune.shake_size * state.shake; }
+  }
+  const carried = queue.length && queue[0].mesh && queue[0].started ? queue[0].mesh : null;
+  const held = carried || sel;
+  let tx = w.trolleyX, hy = w.craneH - 0.9;
+  if (held) { held.getWorldPosition(v3); tx = v3.x; hy = v3.y + CH / 2 + 0.07; }
+  w.trolleyX += (tx - w.trolleyX) * (carried ? 1 : Math.min(1, dt * 16));
+  w.hookY += (hy - w.hookY) * (carried ? 1 : Math.min(1, dt * 16));
+  w.trolley.position.x = w.trolleyX; w.spreader.position.set(w.trolleyX, w.hookY, 0);
+  const top = w.craneH - 0.15, len = Math.max(0.05, top - w.hookY);
+  w.cable.scale.y = len; w.cable.position.set(w.trolleyX, w.hookY + len / 2, 0);
+  w.ripples.forEach((r, i) => { r.position.x = r.userData.x0 + Math.sin(state.t * 0.5 + i) * 0.5; });
+  w.ships.forEach((s, i) => { if (s.visible) s.position.y = Math.sin(state.t * 1.3 + i * 2) * 0.03; s.rotation.z = Math.sin(state.t * 1.1 + i) * 0.008; });
+  for (const c of w.confetti) {
+    const u = c.userData; u.v.y -= 9 * dt; c.position.addScaledVector(u.v, dt); c.rotation.x += u.s * dt; c.rotation.z += u.s * 0.7 * dt;
+    u.life -= dt; if (u.life <= 0) { c.visible = false; }
+  }
+  // ghosts: the next wanted slot breathes
+  w.ships.forEach((ship, i) => ship.userData.ghosts.forEach((g, k) => {
+    const here = i === state.s.ship && state.s.docked;
+    g.visible = here && k >= ship.userData.loaded.length; // a waiting ship shows its order on its tag, not as slots
+    const next = here && k === state.s.loaded;
+    g.children[0].material.opacity = next ? 0.3 + 0.16 * Math.sin(state.t * 6) : 0.16;
+    g.children[1].material.opacity = g.children[2].material.opacity = next ? 0.95 : 0.5;
+  }));
+}
+function animMove(mesh, from, to, peak, end) { // lift, carry, set down
+  mesh.userData.busy++;
+  queue.push({ mesh, dur: tune.move_time,
+    apply(t) {
+      const e = ease(t), up = Math.sin(Math.PI * Math.min(1, t * 1.02));
+      const baseY = from.y + (to.y - from.y) * e, arc = Math.max(peak - Math.max(from.y, to.y), 0.3) + Math.abs(to.y - from.y) * 0.5;
+      const lift = Math.min(peak - baseY, arc) * Math.pow(up, 0.7);
+      const squash = t > 0.92 ? 1 - (1 - (1 - t) / 0.08) * 0.06 : 1;
+      mesh.position.set(from.x + (to.x - from.x) * e, baseY + Math.max(0, lift), from.z + (to.z - from.z) * e);
+      mesh.scale.set(1 + (1 - squash) * 0.6, squash, 1);
+    },
+    end() { mesh.userData.busy--; mesh.scale.set(1, 1, 1); if (end) end(); } });
+}
+function burst(x, y, z) {
+  const w = world, cols = Object.values(BOX).map(b => b.col).concat('#ffffff');
+  for (let i = 0; i < tune.confetti; i++) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.1), new THREE.MeshBasicMaterial({ color: cols[Math.floor(rng() * cols.length)], side: THREE.DoubleSide }));
+    m.position.set(x + (rng() - 0.5) * 1.2, y + rng() * 0.6, z + (rng() - 0.5) * 2);
+    m.userData = { v: new THREE.Vector3((rng() - 0.5) * 5, 4 + rng() * 5, (rng() - 0.5) * 5), s: 4 + rng() * 10, life: 1.6 + rng() };
+    w.root.add(m); w.confetti.push(m);
+  }
+}
+
+// ---- The game: state, moves, undo -----------------------------------------------------------
+let scene, state;
+const LEVELS = window.LEVELS;
+const progress = { stars: [] }; // this sitting only: nothing is saved yet
+function loadLevel(i) {
+  const level = LEVELS[i], solved = Logic.solve(level);
+  events.push({ type: 'level', level: i + 1, solvable: solved.solvable, min: solved.min });
+  state = Object.assign(state || {}, {
+    level: i, def: level, min: solved.min, solvable: solved.solvable,
+    limit: solved.min + Math.round(level.margin * tune.margin_scale),
+    s: Logic.start(level), history: [], sel: null, lift: 0, shake: 0, stuck: false,
+    endIn: -1, stars: 0, score: 0, gained: '', msg: '', msgT: 0,
+  });
+  buildWorld(level); syncWorld(state.s);
+}
+function reset() {
+  seed = Number(params.get('seed')) || CONFIG.seed;
+  state = { t: 0 };
+  const want = Number(params.get('level')) || 1;
+  loadLevel(Math.min(LEVELS.length, Math.max(1, want)) - 1);
+}
+const movesLeft = () => state.limit - state.s.moves;
+function selectedMesh() {
+  if (state.sel === null || !world) return null;
+  const col = state.sel === 'S' ? world.berth : world.stacks[state.sel];
+  return col && col.length ? col[col.length - 1] : null;
+}
+function say(msg) { state.msg = msg; state.msgT = 2.2; }
+function refuseFx(place, why) {
+  state.shake = 1; sfx.bad();
+  if (place === 'S') world.padFlash = 1; else if (world.pads[place]) world.pads[place].flash = 1;
+  if (why === 'wrong-colour') say('The ship wants ' + BOX[state.def.ships[state.s.ship][state.s.loaded]].name.toLowerCase() + ' next');
+  else if (why === 'full') say('That stack is full');
+  else if (why === 'ship-locked') say('Loaded cargo stays on board');
+  events.push({ type: 'refused', why });
+}
+function tapPlace(place) {
+  const s = state.s, lv = state.def;
+  if (s.won || movesLeft() <= 0) return;
+  if (place === 'dock') { callShip(); return; }
+  if (place === 'S' && !s.docked && !(lv.berthCap > 0)) return;
+  const count = place === 'S' ? (s.docked ? 0 : s.berth.length) : s.stacks[place].length;
+  if (state.sel === null) {
+    if (place === 'S' && s.docked) { world.padFlash = 0.6; say('Pick a container on the quay first'); return; }
+    if (!count) return;
+    state.sel = place; sfx.pick(); return;
+  }
+  if (state.sel === place) { state.sel = null; return; }
+  const why = Logic.refuse(lv, s, state.sel, place);
+  if (why === '') { doMove(state.sel, place); return; }
+  if (why === 'full' && place !== 'S') { state.sel = place; sfx.pick(); return; } // a full stack can only be a new pick
+  refuseFx(place, why);
+}
+function doMove(from, to) {
+  const w = world, s = state.s, lv = state.def;
+  state.history.push(Logic.clone(s));
+  const n = Logic.move(lv, s, from, to);
+  const src = from === 'S' ? w.berth : w.stacks[from], mesh = src.pop();
+  mesh.getWorldPosition(v3); const a = v3.clone();
+  let b, end;
+  const tops = w.stacks.map(c => c.length * CH).concat([(s.docked ? s.loaded : w.berth.length) * CH + 0.2]);
+  const peak = Math.max(...tops) + CH / 2 + tune.hop_height;
+  if (to === 'S' && s.docked) {
+    const ship = w.ships[s.ship], k = s.loaded;
+    b = new THREE.Vector3(w.bx, DECK_Y + slotY(k), BERTH_Z + SLOT_Z);
+    end = () => {
+      ship.attach(mesh); mesh.userData.rest.set(0, DECK_Y + slotY(k), SLOT_Z); ship.userData.loaded.push(mesh);
+      ship.userData.ghosts[k].visible = false; sfx.load();
+    };
+  } else if (to === 'S') {
+    b = new THREE.Vector3(w.bx, slotY(w.berth.length), 0); w.berth.push(mesh); end = () => sfx.drop();
+  } else {
+    b = new THREE.Vector3(w.xs[to], slotY(w.stacks[to].length), 0); w.stacks[to].push(mesh); end = () => sfx.drop();
+  }
+  mesh.userData.rest.copy(b);
+  a.y += state.lift; state.lift = 0;
+  animMove(mesh, a, b, peak, end);
+  state.s = n; state.sel = null;
+  events.push({ type: 'move', from, to, moves: n.moves });
+  if (n.departed) shipLeaves(n.ship - 1);
+  if (n.won) { state.endIn = -2; queue.push({ dur: Math.max(0.01, tune.win_delay), apply() {}, end: finishLevel }); }
+  else afterMove();
+}
+function shipLeaves(i) {
+  const w = world, ship = w.ships[i], next = w.ships[i + 1], lv = state.def;
+  queue.push({ dur: tune.depart_time,
+    begin() { sfx.horn(); burst(w.bx, 2.2, 0); events.push({ type: 'departed', ship: i + 1 }); },
+    apply(t) { const e = t * t; ship.position.z = BERTH_Z + (GONE_Z - BERTH_Z) * e; },
+    end() { ship.visible = false; if (next) { next.visible = true; next.position.z = WAIT_Z; } if (lv.berthCap > 0 && next) w.pontoonY = 0; } });
+  if (next && !(lv.berthCap > 0)) shipArrives(i + 1);
+  const after2 = w.ships[i + 2]; if (after2) queue.push({ dur: 0.01, apply() {}, end() { after2.visible = true; after2.position.z = WAIT_Z + 6; } });
+}
+function shipArrives(i) {
+  const w = world, ship = w.ships[i];
+  queue.push({ dur: tune.arrive_time,
+    begin() { ship.visible = true; w.pontoonY = -1.4; },
+    apply(t) { ship.position.z = WAIT_Z + (BERTH_Z - WAIT_Z) * ease(t); } });
+}
+function callShip() {
+  const s = state.s, lv = state.def;
+  if (s.docked || s.ship >= lv.ships.length) return;
+  if (!Logic.canDock(lv, s)) { state.shake = 1; world.padFlash = 1; sfx.bad(); say('Clear the berth before the ship comes in'); return; }
+  state.history.push(Logic.clone(s));
+  state.s = Logic.dock(lv, s); state.sel = null; sfx.pick();
+  events.push({ type: 'docked', ship: s.ship + 1 });
+  shipArrives(s.ship);
+}
+function afterMove() {
+  state.stuck = false;
+  if (movesLeft() <= 0) { state.endIn = -2; queue.push({ dur: 0.35, apply() {}, end() { sfx.lose(); state.gained = 'Out of moves'; scene = 'over'; } }); return; }
+  if (tune.dead_end_warn) { // the solver, asked again from here: can it still be done in the moves left?
+    const r = Logic.solve(state.def, state.s, 120000);
+    state.stuck = r.solvable === false || (r.solvable === true && r.min > movesLeft());
+  }
+}
+function undo() {
+  if (!state.history.length) return false;
+  state.s = state.history.pop(); state.sel = null; state.lift = 0; state.endIn = -1;
+  syncWorld(state.s); afterMove(); sfx.undo(); events.push({ type: 'undo' });
+  return true;
+}
+function restart() { loadLevel(state.level); sfx.undo(); }
+function finishLevel() {
+  const over = state.s.moves - state.min;
+  state.stars = over <= tune.star3_over ? 3 : over <= tune.star2_over ? 2 : 1;
+  progress.stars[state.level] = Math.max(progress.stars[state.level] || 0, state.stars);
+  state.score = progress.stars.reduce((a, b) => a + (b || 0), 0);
+  state.gained = state.level === LEVELS.length - 1 ? 'Port cleared' : 'Ship loaded';
+  sfx.win(); scene = 'results';
+  events.push({ type: 'won', level: state.level + 1, moves: state.s.moves, min: state.min, stars: state.stars });
+}
+
+// ---- HUD ------------------------------------------------------------------------------------
+const buttons = []; // rebuilt every draw: {x, y, w, h, act}
+function button(x, y, w, h, label, act, o = {}) {
+  buttons.push({ x, y, w, h, act });
+  ctx.fillStyle = 'rgba(23,52,60,0.18)'; rrect(x, y + 5, w, h, 22); ctx.fill();
+  ctx.fillStyle = o.fill || PAL.card; rrect(x, y, w, h, 22); ctx.fill();
+  const ink = o.ink || PAL.ink, ix = label ? x + 44 : x + w / 2, iy = y + h / 2;
+  ctx.strokeStyle = ink; ctx.fillStyle = ink; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  if (o.icon === 'undo') { // a drawn arrow curling back
+    ctx.beginPath(); ctx.arc(ix + 2, iy + 3, 15, Math.PI * 1.05, Math.PI * 0.35); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ix - 22, iy - 10); ctx.lineTo(ix - 12, iy + 4); ctx.lineTo(ix - 2, iy - 9); ctx.closePath(); ctx.fill();
+  } else if (o.icon === 'restart') {
+    ctx.beginPath(); ctx.arc(ix, iy, 15, Math.PI * 1.75, Math.PI * 1.35); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ix + 2, iy - 26); ctx.lineTo(ix + 18, iy - 14); ctx.lineTo(ix + 1, iy - 6); ctx.closePath(); ctx.fill();
+  } else if (o.icon === 'sound') {
+    ctx.beginPath(); ctx.moveTo(ix - 18, iy - 7); ctx.lineTo(ix - 8, iy - 7); ctx.lineTo(ix + 3, iy - 17); ctx.lineTo(ix + 3, iy + 17); ctx.lineTo(ix - 8, iy + 7); ctx.lineTo(ix - 18, iy + 7); ctx.closePath(); ctx.fill();
+    if (muted) { ctx.beginPath(); ctx.moveTo(ix + 10, iy - 9); ctx.lineTo(ix + 24, iy + 9); ctx.moveTo(ix + 24, iy - 9); ctx.lineTo(ix + 10, iy + 9); ctx.stroke(); }
+    else { ctx.beginPath(); ctx.arc(ix + 4, iy, 13, -0.8, 0.8); ctx.stroke(); ctx.beginPath(); ctx.arc(ix + 4, iy, 22, -0.8, 0.8); ctx.stroke(); }
+  }
+  if (label) text(label, o.icon ? x + 44 + (w - 44) / 2 - 6 : x + w / 2, y + h / 2 + 1, o.size || 30, ink);
+}
+function chip(id, x, y, size, mode) { // mode: done | next | todo
+  ctx.globalAlpha = mode === 'done' ? 0.4 : 1;
+  ctx.fillStyle = BOX[id].dark; rrect(x - size / 2, y - size / 2 + 4, size, size, size * 0.22); ctx.fill();
+  ctx.fillStyle = BOX[id].col; rrect(x - size / 2, y - size / 2, size, size, size * 0.22); ctx.fill();
+  drawSymbol(ctx, BOX[id].sym, x, y, size * 0.27, '#fff');
+  ctx.globalAlpha = 1;
+  if (mode === 'next') { ctx.strokeStyle = PAL.ink; ctx.lineWidth = 5; rrect(x - size / 2 - 6, y - size / 2 - 6, size + 12, size + 16, size * 0.28); ctx.stroke(); }
+  if (mode === 'done') { // a drawn tick
+    ctx.strokeStyle = PAL.good; ctx.lineWidth = 8; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(x - size * 0.24, y + 2); ctx.lineTo(x - size * 0.05, y + size * 0.2); ctx.lineTo(x + size * 0.27, y - size * 0.2); ctx.stroke();
+  }
+}
+function orderStrip(order, loaded, cx, y, size, live) {
+  const gap = size * 0.5, total = order.length * size + (order.length - 1) * gap;
+  let x = cx - total / 2 + size / 2;
+  order.forEach((id, i) => {
+    chip(id, x, y, size, !live ? 'todo' : i < loaded ? 'done' : i === loaded ? 'next' : 'todo');
+    if (i < order.length - 1) { // a drawn arrowhead between chips
+      ctx.fillStyle = PAL.ink; ctx.globalAlpha = 0.55; const ax = x + size / 2 + gap / 2;
+      ctx.beginPath(); ctx.moveTo(ax - 7, y - 10); ctx.lineTo(ax + 8, y); ctx.lineTo(ax - 7, y + 10); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+    }
+    x += size + gap;
+  });
+}
+function star(x, y, r, on) {
+  ctx.save(); ctx.translate(x, y); ctx.beginPath();
+  for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, q = i % 2 ? r * 0.46 : r; ctx[i ? 'lineTo' : 'moveTo'](Math.cos(a) * q, Math.sin(a) * q); }
+  ctx.closePath(); ctx.fillStyle = on ? '#ffc928' : '#d9d2c0'; ctx.fill();
+  ctx.lineWidth = 5; ctx.lineJoin = 'round'; ctx.strokeStyle = on ? '#d99e00' : '#bdb49c'; ctx.stroke(); ctx.restore();
+}
+function drawHud(live) {
+  const s = state.s, lv = state.def;
+  // top card: level, moves, the order
+  ctx.fillStyle = 'rgba(23,52,60,0.16)'; rrect(24, 30, W - 48, 212, 30); ctx.fill();
+  ctx.fillStyle = PAL.card; rrect(24, 24, W - 48, 212, 30); ctx.fill();
+  text(`LEVEL ${state.level + 1}`, 56, 66, 30, PAL.ink, 'left');
+  const left = Math.max(0, movesLeft()), low = left <= 2 && !s.won;
+  text('MOVES', W - 150, 66, 26, low ? PAL.bad : '#5b7479', 'right');
+  text(String(left), W - 56, 64, 48, low ? PAL.bad : PAL.ink, 'right', '800');
+  const cur = Math.min(s.ship, lv.ships.length - 1);
+  const order = lv.ships[cur], size = Math.min(84, (W - 150) / (order.length * 1.5));
+  if (lv.ships.length > 1) text(`SHIP ${cur + 1} OF ${lv.ships.length}`, W / 2, 66, 24, '#5b7479');
+  orderStrip(order, s.won ? order.length : s.docked ? s.loaded : 0, W / 2, 158, size, s.docked || s.won);
+  // the waiting ship's order, small, over the ship itself
+  const nxt = s.docked ? cur + 1 : cur;
+  if (nxt < lv.ships.length && world.ships[nxt].visible && !s.won && (nxt !== cur || !s.docked)) {
+    const p = project(world.bx, 1.5, world.ships[nxt].position.z + 0.6); p.y = Math.min(p.y, H - 250);
+    {
+      const o = lv.ships[nxt], wd = o.length * 60 + 28;
+      ctx.fillStyle = PAL.card; rrect(Math.min(W - wd - 12, Math.max(12, p.x - wd / 2)), p.y - 62, wd, 84, 18); ctx.fill();
+      const cx = Math.min(W - wd / 2 - 12, Math.max(12 + wd / 2, p.x));
+      text(s.docked ? 'NEXT' : 'TAP TO CALL IN', cx, p.y - 44, 15 + 0, PAL.ink);
+      orderStrip(o, 0, cx, p.y - 8, 40, false);
+    }
+  }
+  // bottom: hint or warning, and the three buttons
+  let line = state.msgT > 0 ? state.msg : state.stuck ? 'Not enough moves left from here: undo' : lv.hint;
+  if (line && live) {
+    const warn = state.stuck && state.msgT <= 0;
+    let fs = 26; ctx.font = `700 ${fs}px ${FONT}`;
+    while (ctx.measureText(line).width > W - 96 && fs > 18) { fs--; ctx.font = `700 ${fs}px ${FONT}`; }
+    const tw = ctx.measureText(line).width + 48;
+    ctx.fillStyle = warn ? PAL.bad : 'rgba(23,52,60,0.82)'; rrect(W / 2 - tw / 2, H - 236, tw, 56, 28); ctx.fill();
+    text(line, W / 2, H - 207, fs, '#fff');
+  }
+  if (live) {
+    button(40, H - 150, 230, 96, 'Undo', () => undo(), { icon: 'undo' });
+    button(290, H - 150, 260, 96, 'Restart', () => restart(), { icon: 'restart' });
+    button(570, H - 150, 110, 96, '', () => setMuted(!muted), { icon: 'sound' });
+  }
+}
+function project(x, y, z) { v3.set(x, y, z).project(camera); return { x: (v3.x + 1) / 2 * W, y: (1 - v3.y) / 2 * H }; }
+function render3() {
+  if (!world) return;
+  const flash = world.padFlash;
+  world.pads.forEach(p => p.bay.material.color.set(p.flash > 0 ? PAL.bad : '#ffffff'));
+  world.ships.forEach(s => s.userData.stripe.material.color.set(flash > 0 && s === world.ships[state.s.ship] && state.s.docked ? PAL.bad : '#f6efe0'));
+  renderer.render(scene3, camera);
+}
+function clearHud() { buttons.length = 0; ctx.clearRect(0, 0, W, H); }
+function card(y, h) {
+  ctx.fillStyle = 'rgba(23,52,60,0.45)'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(23,52,60,0.25)'; rrect(60, y + 8, W - 120, h, 36); ctx.fill();
+  ctx.fillStyle = PAL.card; rrect(60, y, W - 120, h, 36); ctx.fill();
+}
+function hitButtons() { // true when a tap landed on a HUD button
+  let used = false;
+  for (let i = taps.length - 1; i >= 0; i--) {
+    const t = taps[i], b = buttons.find(b => t.x >= b.x && t.x <= b.x + b.w && t.y >= b.y && t.y <= b.y + b.h);
+    if (b) { taps.splice(i, 1); b.act(); used = true; }
+  }
+  return used;
+}
+function tapWorld(t) {
+  // The nearest column on screen wins: each place is the line from its foot to just above its
+  // top box. (Tall 3D hit boxes would hide the stacks behind them from this camera.)
+  const st = state.s, w = world, cand = [];
+  const col = (place, x, y0, n, z) => cand.push({ place, a: project(x, y0, z), b: project(x, y0 + Math.max(1, n) * CH + 0.5, z) });
+  st.stacks.forEach((c, i) => col(i, w.xs[i], 0, c.length, 0));
+  if (st.docked) col('S', w.bx, DECK_Y, st.loaded + 1, 0);
+  else if (state.def.berthCap > 0) col('S', w.bx, 0, st.berth.length, 0);
+  if (!st.docked && st.ship < state.def.ships.length) cand.push({ place: 'dock', a: project(w.bx, 0.6, WAIT_Z - 2.2), b: project(w.bx, 0.6, WAIT_Z + 1.2) });
+  let best = null, bd = tune.tap_reach;
+  for (const c of cand) {
+    const vx = c.b.x - c.a.x, vy = c.b.y - c.a.y, k = Math.max(0, Math.min(1, ((t.x - c.a.x) * vx + (t.y - c.a.y) * vy) / (vx * vx + vy * vy)));
+    const d = Math.hypot(t.x - c.a.x - vx * k, t.y - c.a.y - vy * k);
+    if (d < bd) { bd = d; best = c; }
+  }
+  if (!best) { state.sel = null; return; }
+  tapPlace(best.place);
+}
+
+// ---- Scenes ---------------------------------------------------------------------------------
+const anyStart = () => pressed('Enter') || pressed('Space');
+const scenes = {
+  figures: { // every container kind, the ship and the crane, each with its name
+    enter() {
+      loadLevel(0);
+      const fig = { stacks: [['Y'], ['R'], ['B'], ['G'], ['P']], cap: 1, ships: [['Y', 'R']], berthCap: 0, margin: 0, hint: '' };
+      state.def = fig; state.s = Logic.start(fig); buildWorld(fig); syncWorld(state.s);
+    },
+    update(dt) { state.t += dt; stepQueue(dt); },
+    draw() {
+      render3(); clearHud();
+      ctx.fillStyle = PAL.card; rrect(24, 24, W - 48, 90, 26); ctx.fill();
+      text('Figures: each container kind, the ship, the crane', W / 2, 70, 26, PAL.ink);
+      const tag = (s, x, y, z) => { const p = project(x, y, z); ctx.font = `700 24px ${FONT}`; const tw = ctx.measureText(s).width + 24;
+        ctx.fillStyle = PAL.card; rrect(p.x - tw / 2, p.y - 20, tw, 40, 14); ctx.fill(); text(s, p.x, p.y, 24, PAL.ink); };
+      world.xs.forEach((x, i) => tag(BOX['YRBGP'[i]].name, x, 1.6 + (i % 2) * 1.0, 0));
+      tag('Ship', world.bx, -0.3, 3.2); tag('Crane', world.xs[4], world.craneH + 1.1, 0);
+    },
+  },
+  title: {
+    update(dt) {
+      state.t += dt; stepQueue(dt);
+      if (anyStart() || taps.length) { taps.length = 0; scene = 'play'; }
+    },
+    draw() {
+      render3(); clearHud();
+      ctx.fillStyle = 'rgba(207,236,235,0.55)'; ctx.fillRect(0, 0, W, H);
+      card(250, 660);
+      ['Y', 'R', 'B'].forEach((id, i) => chip(id, W / 2 - 110 + i * 110, 340, 84, 'todo'));
+      text(TITLE, W / 2, 470, 84, PAL.ink, 'center', '800');
+      text('Load every ship in the order it asks for', W / 2, 545, 27, '#3d5a61');
+      CONTROLS.forEach((c, i) => text(c, W / 2, 625 + i * 48, i === 2 ? 21 : 25, i === 2 ? '#5b7479' : PAL.ink, 'center', '600'));
+      ctx.fillStyle = PAL.crane; rrect(160, 780, W - 320, 92, 28); ctx.fill();
+      text('Tap to start', W / 2, 827, 36, '#fff');
+    },
+  },
+  play: {
+    update(dt) {
+      state.t += dt; state.msgT = Math.max(0, state.msgT - dt);
+      if (state.endIn > -2) { // input is taken even while the crane is still moving
+        if (!hitButtons()) for (const t of taps) tapWorld(t);
+        taps.length = 0;
+        for (let i = 0; i < 5; i++) if (pressed('Digit' + (i + 1)) && i < state.def.stacks.length) tapPlace(i);
+        if (pressed('KeyS') || pressed('Digit0')) tapPlace('S');
+        if (pressed('KeyD') || pressed('Enter')) callShip();
+        if (pressed('KeyZ')) undo();
+        if (pressed('KeyR')) restart();
+        if (pressed('Escape')) state.sel = null;
+      } else taps.length = 0;
+      stepQueue(dt);
+    },
+    draw() { render3(); clearHud(); drawHud(true); },
+  },
+  over: { // out of moves: nothing is lost but the level
+    update(dt) {
+      state.t += dt; stepQueue(dt); hitButtons(); taps.length = 0;
+      if (pressed('KeyZ')) { undo(); scene = 'play'; } else if (pressed('KeyR') || pressed('Enter')) { restart(); scene = 'play'; }
+    },
+    draw() {
+      render3(); clearHud(); drawHud(false); card(430, 400);
+      text('Out of moves', W / 2, 510, 56, PAL.ink, 'center', '800');
+      text(`It can be done in ${state.min}`, W / 2, 580, 28, '#5b7479');
+      button(100, 660, 250, 110, 'Undo', () => { undo(); scene = 'play'; }, { icon: 'undo' });
+      button(370, 660, 250, 110, 'Retry', () => { restart(); scene = 'play'; }, { icon: 'restart', fill: PAL.crane, ink: '#fff' });
+    },
+  },
+  results: {
+    update(dt) {
+      state.t += dt; stepQueue(dt); hitButtons(); taps.length = 0;
+      if (pressed('Enter') || pressed('Space')) this.next(); else if (pressed('KeyR')) { restart(); scene = 'play'; }
+    },
+    next() {
+      if (state.level < LEVELS.length - 1) loadLevel(state.level + 1); else { progress.stars = []; loadLevel(0); }
+      scene = 'play';
+    },
+    draw() {
+      render3(); clearHud(); drawHud(false);
+      const last = state.level === LEVELS.length - 1; card(400, last ? 500 : 450);
+      [0, 1, 2].forEach(i => star(W / 2 - 120 + i * 120, 490 - (i === 1 ? 14 : 0), 48, i < state.stars));
+      text(state.gained, W / 2, 600, 56, PAL.ink, 'center', '800');
+      text(`${state.s.moves} moves · best possible ${state.min}`, W / 2, 660, 27, '#5b7479');
+      if (last) text(`All ships away · ${state.score} of ${LEVELS.length * 3} stars`, W / 2, 706, 27, PAL.ink);
+      const y = last ? 760 : 720;
+      button(100, y, 190, 100, '', () => { restart(); scene = 'play'; }, { icon: 'restart' });
+      button(310, y, 310, 100, last ? 'Play again' : 'Next level', () => scenes.results.next(), { fill: PAL.crane, ink: '#fff', size: 34 });
+    },
+  },
+};
+
+// ---- Loop: fixed step, frame time clamped ---------------------------------------------
+function step() {
+  if (pressed('KeyM')) { setMuted(!muted); hit.delete('KeyM'); }
+  for (let i = later.length - 1; i >= 0; i--) { later[i].in -= STEP; if (later[i].in <= 0) { later[i].fn(); later.splice(i, 1); } }
+  scenes[scene].update(STEP); hit.clear();
+}
+let last, acc = 0, ALPHA = 1;
+function tick() {
+  const now = clock.now();
+  acc += Math.min(now - last, 0.25); last = now; // a stall never fast-forwards the game
+  while (acc >= STEP) { step(); acc -= STEP; }
+  ALPHA = acc / STEP;
+  drawFrame();
+}
+function drawFrame() { scenes[scene].draw(); }
+function frame() { tick(); requestAnimationFrame(frame); }
+// A headless browser on a time budget runs timers but almost no animation frames: a timer
+// ticks when no frame has come for 100 ms on a visible page; a hidden tab stays paused.
+function timer() { if (document.visibilityState === 'visible' && clock.now() - last > 0.1) tick(); }
+
+// ---- What a check can read and drive (?manual=1 stops the loop; players never see it) ----
+window.game = {
+  get scene() { return scene; },
+  get state() { return state; },
+  press(code) { hit.add(code); },
+  hold(code, on) { on ? down.add(code) : down.delete(code); },
+  get events() { return events; },
+  step(n = 1, draw = true, alpha = 1) {
+    for (let i = 0; i < n; i++) step();
+    if (draw) { ALPHA = alpha; drawFrame(); }
+  },
+};
+
+reset();
+scene = params.get('scene') || 'title';
+if (scenes[scene].enter) scenes[scene].enter();
+last = clock.now();
+if (params.get('manual') === '1') drawFrame();
+else { requestAnimationFrame(frame); setInterval(timer, 50); }
+</script>
+</body>
+</html>

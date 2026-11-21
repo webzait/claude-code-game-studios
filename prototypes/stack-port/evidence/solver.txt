@@ -1,0 +1,10 @@
+level 1	solvable	min 3	limit 6	states 117
+	0>S 1>S 2>S
+level 2	solvable	min 4	limit 7	states 68
+	0>1 0>S 1>S 1>S
+level 3	solvable	min 5	limit 7	states 104
+	1>2 0>2 1>S 0>S 2>S
+level 4	solvable	min 8	limit 10	states 17526
+	1>0 1>0 1>S 2>1 2>S 0>S 0>S 2>S
+level 5	solvable	min 11	limit 13	states 362	without the berth pad: unsolvable
+	1>S 0>S 0>S 0>1 S>0 S>0 dock 1>S 0>S 1>S 1>S 0>S

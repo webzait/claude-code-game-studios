@@ -1,0 +1,26 @@
+L1	pass	evidence/level5-berth-pad.png	rounded matte boxes, small quay on blue-green water, soft shadows, bright containers with drawn symbols, orange crane; slots on the ship light as it fills (evidence/play.png)
+L2	pass	evidence/play.png	one verb, bright blocks on a quiet ground; top-only moves; buried boxes
+L3	pass	evidence/play.png	3D, fixed tilted orthographic camera, close, portrait 720x1280
+F1	pass	logic.js:33	cap checked per stack; only the top box is popped; cap frames drawn index.html:321
+F2	pass	evidence/play.png	ship holds a stack, takes only the next colour (logic.js:33)
+F3	pass	index.html:573	move limit in loadLevel index.html:462; undo pops an unlimited history; restart reloads
+F4	pass	evidence/level5-berth-pad.png	two boxes stored on the pontoon at the empty berth
+F5	pass	levels.js:6	five levels, level 5 has two ships
+F6	pass	evidence/solver.txt	every level solvable with its minimum; the game solves each level again when it loads (index.html:462)
+F7	not_assessed	index.html:435	crane arc, load click, refusal shake, departure and results are built; how they feel and sound needs a person
+F8	pass	evidence/figures.png	five colours, five different drawn symbols on side, end and top
+S1	pass	evidence/play.png	trolley, cable and spreader follow the carried box
+S2	pass	evidence/play.png	order strip and slots on the ship
+S3	pass	evidence/play.png	MOVES counter counts down; out of moves screen index.html:565
+S4	pass	evidence/play.png	frames show each stack's height; level 3 caps at two
+S5	pass	evidence/level5-berth-pad.png	the empty berth holds two boxes
+M1	pass	levels.js:8	level 1: ship Y R B, each on top of a stack
+M2	pass	evidence/play.png	yellow loaded: its chip is ticked and its slot filled; the click is a sound (not assessed)
+M3	not_assessed	index.html:541	the ship sails off with confetti and a horn in code (index.html:448); the check's shot is after it, and sound cannot be heard here
+M4	pass	evidence/play.png	level 2: yellow under red
+M5	pass	levels.js:16	level 3: cap 2
+M6	not_assessed	levels.js:16	whether level 3 is where the hook pays off needs a person
+C1	not_assessed	evidence/solver.txt	levels 3 and 4 need 5 and 8 moves with 2 spare; when that arrives in minutes needs a person's play
+C2	pass	evidence/level5-berth-pad.png	two ships; unsolvable without the berth pad (evidence/solver.txt)
+C3	pass	index.html:573	out of moves offers undo and retry; nothing else is lost
+C4	pass	evidence/solver.txt	limit = solver minimum + margin 3,3,2,2,2

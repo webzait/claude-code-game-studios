@@ -1,0 +1,1 @@
+Nearest game: Ball Sort Puzzle; this one differs in that nothing is sorted by colour: one ship is loaded in a fixed order under a move limit, loaded cargo is locked, and a departed ship leaves an empty berth that is storage until the next ship is called in.

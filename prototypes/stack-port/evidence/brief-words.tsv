@@ -1,0 +1,9 @@
+3D	the harbour is a three.js scene: quay, crane, ship and containers are 3D meshes	evidence/play.png
+diorama	one small quay corner on calm water, nothing else in the world	evidence/play.png
+isometrisch	fixed orthographic camera, 33 degrees down and 38 degrees turned (config.js cam_pitch, cam_yaw)	evidence/play.png
+schuin bovenaanzicht	the same fixed tilted camera	evidence/play.png
+minimalistische	flat matte colours, one crane, one ship, no buildings	evidence/play.png
+Color Block Jam	values only: one verb, bright blocks on a quiet ground, a move-limited level; none of its art, name or UI	evidence/play.png
+Tower of Hanoi	only the top container of a stack can move	logic.js:36
+Unblock Me	bury-and-free puzzles: a wanted container lies under others (levels 2 to 5)	levels.js
+symbolen	every colour has its own drawn symbol on the box sides, top and the order strip	evidence/figures.png

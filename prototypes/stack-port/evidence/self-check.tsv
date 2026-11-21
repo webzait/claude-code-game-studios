@@ -1,0 +1,54 @@
+time	2026-11-21 07:37:57
+keep	lines	0	pinned	0
+briefword	3D	shown	evidence/play.png
+checklist	L1	unlisted	-	Look: zacht speelgoed-diorama *(provisional)*. Afgeronde, matte vormen, een kleine kade op kalm blauwgroen water, zacht daglicht met subtiele schaduwen. De containers zijn het felste op het scherm (geel, rood, blauw, groen, later paars), elk met een eigen getekend symbool op de zijkant en bovenkant. Kade en water blijven in gedempte pasteltinten, de kraan is één herkenbaar oranje silhouet. Signatuur: de symbolen op het schip lichten één voor één op terwijl het ruim volloopt. Every figure drawn, no emoji, no plain circles.	
+checklist	L2	unlisted	-	References: Color Block Jam (eenvoud, leesbaarheid, moeilijkheidsopbouw), Tower of Hanoi (alleen de bovenste mag bewegen), Unblock Me (vrijmaken zonder jezelf vast te zetten).	
+checklist	L3	unlisted	-	View: 3D · Camera: vast, licht isometrisch en dichtbij, staand formaat voor mobiel.	
+checklist	F1	unlisted	-	Stapels met maximale hoogte; alleen de bovenste container beweegt	
+checklist	F2	unlisted	-	Schip als stapel, dat alleen de volgende kleur van de opdracht accepteert	
+checklist	F3	unlisted	-	Zettenlimiet, onbeperkte undo, herstart	
+checklist	F4	unlisted	-	Lege ligplaats als tijdelijke opslag na vertrek	
+checklist	F5	unlisted	-	5 opbouwende levels, het laatste met twee schepen	
+checklist	F6	unlisted	-	Solver die per level oplosbaarheid en het minimale aantal zetten bewijst	
+checklist	F7	unlisted	-	Gamefeel: snelle kraanboog, klik bij laden, schudden bij een ongeldige zet, vertrek, level complete; een tik tijdens een animatie wordt onthouden	
+checklist	F8	unlisted	-	Kleur plus symbool op elke container	
+checklist	S1	unlisted	-	Kraan die containers verplaatst · in the slice	
+checklist	S2	unlisted	-	Schepen met laadopdrachten · in the slice	
+checklist	S3	unlisted	-	Beperkt aantal verplaatsingen · in the slice	
+checklist	S4	unlisted	-	Beperkte stapelhoogte · in the slice	
+checklist	S5	unlisted	-	Extra tijdelijke opslagplaatsen · in the slice *(guessed)*	
+checklist	M1	unlisted	-	Level 1 toont één schip met de opdracht Geel → Rood → Blauw en drie stapels waarop die containers al bovenop liggen.	
+checklist	M2	unlisted	-	De speler tikt geel aan, de kraan tilt hem op, hij tikt het schip aan en de container klikt vast terwijl het symbool oplicht.	
+checklist	M3	unlisted	-	Drie zetten later vaart het schip weg met een hoorn en confetti.	
+checklist	M4	unlisted	-	Level 2 begraaft de gele container onder een rode, dus de speler moet voor het eerst iets opzij zetten.	
+checklist	M5	unlisted	-	Level 3 verlaagt de stapelhoogte, zodat "opzij zetten" een keuze wordt.	
+checklist	M6	unlisted	-	Dat is het eerste moment waarop de hook zich uitbetaalt.	
+checklist	C1	unlisted	-	De eerste echte moeite komt in level 3–4 (ongeveer minuut 2–3): te weinig vrije ruimte, zodat de volgorde van opzij zetten ertoe doet *(provisional)*.	
+checklist	C2	unlisted	-	Level 5 heeft twee schepen na elkaar, waarbij de lege ligplaats tussendoor opslag is.	
+checklist	C3	unlisted	-	Een verlies (zetten op) kost alleen het level: undo is gratis en onbeperkt, herstart is direct *(provisional)*.	
+checklist	C4	unlisted	-	De zettenlimiet is het door de solver bewezen minimum plus een marge die per level krimpt.	
+webgl	ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)
+browser	HeadlessChrome/153.0.0.0
+console	play	1590	[.WebGL-0xc8c00196400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+scene	play	0	title
+scene	play	1	play
+scene	play	108	results
+scene	play	209	play
+digits	log	600 21px "Trebuchet MS", "Avenir Next", "Segoe UI", sans-serif	proportional	5.106
+digits	log	bold 30px "Trebuchet MS", "Avenir Next", "Segoe UI", sans-serif	proportional	7.354
+digits	log	800 48px "Trebuchet MS", "Avenir Next", "Segoe UI", sans-serif	proportional	12.023
+digits	log	bold 27px "Trebuchet MS", "Avenir Next", "Segoe UI", sans-serif	proportional	6.618
+measure	step-time	play	0.046	4.500	378
+lane	play	stop	6.3	664
+console	play	0	[.WebGL-0xc8c00196400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+console	play	0	[.WebGL-0xc8c00196400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)
+uncaught	play	0
+text	play	canvas	470,29,536,42	24.5	12.67	inside	LEVEL 2
+text	play	canvas	705,30,758,42	21.1	4.78	inside	MOVES
+text	play	canvas	795,24,810,45	38.8	12.67	inside	5
+text	play	canvas	517,597,764,609	21.1	13.25	inside	Yellow is buried: set red aside first
+text	play	canvas	512,656,555,669	24.5	12.67	inside	Undo
+text	play	canvas	653,656,713,669	24.5	12.67	inside	Restart
+screen	play	drawn
+shot	play	prototypes/stack-port/evidence/play.png
+responds	changed	4
