@@ -8,7 +8,7 @@
 | `anim.hopHeight` | Hop height, in cells, while stepping |
 | `anim.queueSpeedup` | Extra playback speed per queued command, so fast tapping never waits |
 | `anim.replayGap` | Pause in seconds between commands during a replay |
-| `camera.fov`, `fill` | Field of view, share of the canvas the board may fill |
+| `camera.marginX`, `marginY` | Space kept free left/right and above/below the board inside the play zone, in CSS pixels (blueprint: 12 and 18) |
 | `board.roomy`, `board.classic` | The two board framings of the test lab: camera tilt from straight down (degrees), frame width in cells, and whether the board sits against the top |
 | `coins.start` | Coins a new player begins with |
 | `coins.win`, `perSpareMove`, `perfect` | Reward for a win: base, per unused move, and bonus for the shortest solution |

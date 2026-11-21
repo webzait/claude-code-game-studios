@@ -26,8 +26,8 @@
     "replayGap": 0.12
   },
   "camera": {
-    "fov": 28,
-    "fill": 0.985
+    "marginX": 12,
+    "marginY": 18
   },
   "stars": {
     "three": 0,
@@ -63,9 +63,9 @@
   },
   "board": {
     "roomy": {
-      "tilt": 24,
+      "tilt": 20,
       "frame": 0.36,
-      "spareAbove": 0.66
+      "spareAbove": 0.5
     },
     "classic": {
       "tilt": 30,

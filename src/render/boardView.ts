@@ -13,6 +13,11 @@ export interface BoardStyle {
   readonly kitBoard: boolean;
 }
 
+/** Height range of the board itself, and of a robot standing on it, in world units. */
+const BOX_BOTTOM = -0.34;
+const BOX_TOP = 0.3;
+const ROBOT_TOP = 0.8;
+
 /** How the board sits in the canvas. */
 export interface BoardLayout {
   /** Camera tilt away from straight down, in degrees. */
@@ -68,7 +73,7 @@ function slab(w: number, d: number, r: number, h: number): THREE.BufferGeometry 
 export class BoardView {
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
-  private camera = new THREE.PerspectiveCamera(CONFIG.camera.fov, 1, 0.1, 100);
+  private camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
   private boardGroup = new THREE.Group();
   private robots = new Map<number, RobotView>();
   private tweens: Tween[] = [];
@@ -313,56 +318,41 @@ export class BoardView {
     const h = this.canvas.clientHeight;
     if (w === 0 || h === 0) return;
     this.renderer.setSize(w, h, false);
-    this.camera.aspect = w / h;
-    this.camera.updateProjectionMatrix();
     this.fitCamera();
   }
 
+  /**
+   * Frame the board with a parallel camera: every cell is the same size on screen. The board is as
+   * wide as the canvas allows (less the side margin), or as tall, whichever limit is reached first.
+   */
   private fitCamera(): void {
     if (!this.level) return;
+    const w = this.canvas.clientWidth;
+    const h = this.canvas.clientHeight;
+    if (w === 0 || h === 0) return;
     const { width, height } = this.level.board;
     const tilt = (this.layout.tilt * Math.PI) / 180;
     const dir = new THREE.Vector3(0, Math.cos(tilt), Math.sin(tilt));
-    const hw = width / 2 + this.rim / 2 + 0.04;
-    const hd = height / 2 + this.rim / 2 + 0.04;
-    const corners: THREE.Vector3[] = [];
-    for (const x of [-hw, hw]) for (const z of [-hd, hd]) for (const y of [-0.34, 0.8]) corners.push(new THREE.Vector3(x, y, z));
-    const target = new THREE.Vector3(0, 0, 0);
-    let dist = 30;
-    const extent = (d: number): { x: number; top: number; bottom: number } => {
-      this.camera.position.copy(target).addScaledVector(dir, d);
-      this.camera.lookAt(target);
-      this.camera.updateMatrixWorld();
-      let x = 0;
-      let top = -Infinity;
-      let bottom = Infinity;
-      for (const corner of corners) {
-        const p = corner.clone().project(this.camera);
-        x = Math.max(x, Math.abs(p.x));
-        top = Math.max(top, p.y);
-        bottom = Math.min(bottom, p.y);
-      }
-      return { x, top, bottom };
-    };
-    for (let pass = 0; pass < 4; pass++) {
-      let lo = 2;
-      let hi = 80;
-      for (let i = 0; i < 28; i++) {
-        const mid = (lo + hi) / 2;
-        const e = extent(mid);
-        if (Math.max(e.x, (e.top - e.bottom) / 2) > CONFIG.camera.fill) lo = mid;
-        else hi = mid;
-      }
-      dist = hi;
-      // Re-centre vertically: slide the look-at point along z.
-      const e = extent(dist);
-      // Where the board's centre should sit, from how the spare height is shared out.
-      const wanted = (CONFIG.camera.fill - (e.top - e.bottom) / 2) * (1 - 2 * this.layout.spareAbove);
-      const offCentre = (e.top + e.bottom) / 2 - wanted;
-      const halfHeight = Math.tan((CONFIG.camera.fov * Math.PI) / 360) * dist;
-      target.z -= (offCentre * halfHeight) / Math.cos(tilt);
-    }
-    extent(dist);
+    const hw = width / 2 + this.rim / 2;
+    const hd = height / 2 + this.rim / 2;
+    // On screen the board is its depth seen at an angle, plus the visible part of its thickness.
+    const boxHeight = 2 * hd * Math.cos(tilt) + (BOX_TOP - BOX_BOTTOM) * Math.sin(tilt);
+    const headroom = (ROBOT_TOP - BOX_TOP) * Math.sin(tilt);
+    const scale = Math.min(
+      (w - 2 * CONFIG.camera.marginX) / (2 * hw),
+      (h - 2 * CONFIG.camera.marginY) / (boxHeight + headroom),
+    );
+    this.camera.left = -w / (2 * scale);
+    this.camera.right = w / (2 * scale);
+    this.camera.top = h / (2 * scale);
+    this.camera.bottom = -h / (2 * scale);
+    this.camera.updateProjectionMatrix();
+    const spare = h / scale - boxHeight;
+    const boxCentre = ((BOX_TOP + BOX_BOTTOM) / 2) * Math.sin(tilt);
+    const target = new THREE.Vector3(0, 0, ((0.5 - this.layout.spareAbove) * spare - boxCentre) / Math.cos(tilt));
+    this.camera.position.copy(target).addScaledVector(dir, 30);
+    this.camera.lookAt(target);
+    this.camera.updateMatrixWorld();
     this.sun.position.set(target.x - 4.5, 9, target.z - 3.5);
     this.sun.target.position.copy(target);
     const cam = this.sun.shadow.camera;

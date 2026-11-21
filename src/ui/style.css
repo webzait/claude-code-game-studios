@@ -49,7 +49,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
   display: grid; place-items: center; box-shadow: 0 2px 0 var(--shade);
 }
 .back .ico { width: 22px; height: 22px; }
-.level-no { font-weight: 800; font-size: 21px; letter-spacing: .03em; }
+.level-no { font-weight: 800; font-size: clamp(16px, 5.4vw, 21px); letter-spacing: .03em; white-space: nowrap; }
 .level-no.brand { font-size: 26px; font-weight: 900; letter-spacing: .06em; }
 .level-name { font-size: 14px; color: var(--muted); font-weight: 600; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .stats { display: flex; gap: 8px; align-items: stretch; }
@@ -119,7 +119,7 @@ img.coin { width: 24px; height: 24px; }
 .tool:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
 .commands { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 10px; }
 .cmd {
-  height: clamp(76px, 13vh, 104px); border: 0; border-radius: 24px; position: relative; padding: 0;
+  height: clamp(66px, 10dvh, 86px); border: 0; border-radius: 24px; position: relative; padding: 0;
   display: flex; align-items: center; justify-content: center; color: #fff;
   box-shadow: 0 6px 0 var(--edge), 0 12px 20px var(--shade);
   background-image: linear-gradient(180deg, rgba(255, 255, 255, .38) 0%, rgba(255, 255, 255, .08) 42%, rgba(255, 255, 255, 0) 60%);
