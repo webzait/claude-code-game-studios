@@ -8,3 +8,7 @@ Supplied by the project owner; the target for the standalone parts in `src/rende
 - `styled-reference.jpg` — the finished look to aim for: gloss, colour, shading. Same exclusions.
 
 Colour tokens live in `data/config.json` (`colors.kit`, `colors.robots`) and the button tones in `src/parts/parts.css`.
+
+## source/
+
+The owner's original, full-size images from the Asset Kit, kept as the starting point for the game's smaller copies in `assets/turnflock/`: `harbor-original.png` (harbour backdrop) and `bush-original.png` (transparent bush). Not loaded by the game.
