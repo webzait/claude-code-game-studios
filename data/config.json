@@ -33,22 +33,22 @@
     },
     "robots": {
       "red": {
-        "top": "#FF7B80",
-        "main": "#F14A4F",
-        "side": "#CC3039",
-        "deep": "#A8222D"
+        "top": "#FF7A76",
+        "main": "#F7323C",
+        "side": "#D81B2D",
+        "deep": "#A30F22"
       },
       "blue": {
-        "top": "#63A9FF",
-        "main": "#2E84F1",
-        "side": "#1E66C7",
-        "deep": "#164D9A"
+        "top": "#5EB0FF",
+        "main": "#1C7BFA",
+        "side": "#0F5BDB",
+        "deep": "#0B3F9E"
       },
       "yellow": {
-        "top": "#FFE98A",
-        "main": "#F4C62F",
-        "side": "#D39C0D",
-        "deep": "#B88406"
+        "top": "#FFEA7A",
+        "main": "#FFC917",
+        "side": "#F7AC00",
+        "deep": "#D98A00"
       },
       "eye": "#111826",
       "eyeWhite": "#FFFFFF"

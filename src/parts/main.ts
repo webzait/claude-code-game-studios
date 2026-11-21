@@ -98,8 +98,38 @@ function card(title: string, id: string, object: THREE.Object3D, note: string, v
 }
 
 const NAMES: Record<Color, string> = { red: 'Rode Flockbot', blue: 'Blauwe Flockbot', yellow: 'Gele Flockbot' };
+/** Small-size check for a Flockbot card: the bot as seen on the board (from above, tilted), at the widths it gets in the game, once per heading. */
+function smallPreviews(id: string, color: Color): void {
+  const row = document.createElement('div');
+  row.className = 'bot-small';
+  const boardView = VIEWS.main.dir.clone();
+  VIEWS.main.dir.set(0, 1, 0.5);
+  // One picture per heading, shown at both widths.
+  const shots = [0, 1, 2, 3].map((heading) => {
+    const bot = buildFlockbot(color);
+    bot.symbol.rotation.y = (-heading * Math.PI) / 2;
+    return snapshot(bot.root, 'main', 0.56, new THREE.Vector3(0, 0.5, 0), 0);
+  });
+  for (const width of [46, 42]) {
+    for (const shot of shots) {
+      // Scale down on a 2D canvas to three times the shown width, as a phone screen would show it.
+      const small = document.createElement('canvas');
+      small.width = small.height = width * 3;
+      const ctx = small.getContext('2d')!;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(shot, 0, 0, small.width, small.height);
+      small.style.width = small.style.height = `${width}px`;
+      row.appendChild(small);
+    }
+    row.insertAdjacentHTML('beforeend', `<span>${width} px</span><i></i>`);
+  }
+  VIEWS.main.dir.copy(boardView);
+  document.getElementById(id)!.querySelector('.views')!.insertAdjacentElement('afterend', row);
+}
+
 for (const color of ['red', 'blue', 'yellow'] as const) {
   card(NAMES[color], `bot-${color}`, buildFlockbot(color).root, 'Bovenschaal met symbool · gezichtsmodule · romp · 2 pootjes. Het symbool draait mee met de richting.');
+  smallPreviews(`bot-${color}`, color);
 }
 
 // Exploded Flockbot, as in the sheet's construction drawing.

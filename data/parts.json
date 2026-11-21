@@ -4,38 +4,60 @@
   "cornerRadius": 0.21,
   "flockbot": {
     "width": 1.0,
-    "depth": 0.94,
+    "depth": 0.95,
     "height": 1.0,
-    "seam": 0.5,
-    "footHeight": 0.09,
-    "footRadius": 0.1,
-    "footSpread": 0.21,
-    "footForward": 0.1,
-    "shellRound": 0.85,
-    "rompRound": 0.32,
+    "seam": 0.63,
+    "seamGap": 0.012,
+    "shellRound": 0.86,
+    "rompRound": 0.44,
     "squircle": 0.6,
-    "rompInset": 0.015,
+    "crownEase": 1.5,
+    "foot": {
+      "height": 0.09,
+      "radius": 0.1,
+      "spread": 0.23,
+      "forward": 0.1,
+      "sink": 0.1
+    },
     "face": {
       "width": 0.74,
-      "height": 0.37,
-      "radius": 0.17,
-      "centre": 0.37,
-      "rim": 0.045,
-      "depth": 0.05
+      "height": 0.35,
+      "radius": 0.16,
+      "centre": 0.44,
+      "rim": 0.028,
+      "depth": 0.014
     },
     "eye": {
-      "radius": 0.088,
-      "spread": 0.16,
-      "glint": 0.03
+      "radius": 0.105,
+      "spread": 0.175,
+      "bulge": 0.5,
+      "glint": 0.036,
+      "spark": 0.016
     },
     "ear": {
-      "radius": 0.09,
-      "depth": 0.05,
+      "radius": 0.085,
+      "protrude": 0.016,
       "centre": 0.42
     },
     "symbol": {
-      "size": 0.36,
-      "depth": 0.035
+      "size": 0.44,
+      "notch": 0.2,
+      "soften": 0.13,
+      "raise": 0.018,
+      "sink": 0.03
+    },
+    "material": {
+      "roughness": 0.26,
+      "clearcoat": 1.0,
+      "clearcoatRoughness": 0.07,
+      "reflect": 3.0,
+      "glow": 0.2,
+      "sideShade": 0.32
+    },
+    "colors": {
+      "symbolLight": "#FFFFFF",
+      "symbolDark": "#2B2F45",
+      "window": "#F6F9FF"
     }
   },
   "floorTile": {
