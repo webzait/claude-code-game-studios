@@ -14,6 +14,7 @@ import decorSprigTop from '../../assets/turnflock/decor/decor-sprig-top.webp';
 import { buildExit, buildFloorTile, buildObstacle, buildRim, buildRimCorner, buildRimEdge, buildUnderlay } from '../render/parts/board';
 import { buildFlockbot } from '../render/parts/flockbot';
 import { addCoinCards } from './coins';
+import { addSettingsCards } from './settings';
 import './parts.css';
 
 /**
@@ -971,5 +972,7 @@ addCoinCards(document.getElementById('sheet')!);
   }, { threshold: 0.6 }).observe(live);
   el.querySelector('.tf-end-again')!.addEventListener('click', play);
 }
+// The settings screen and its controls (src/parts/settings.ts).
+addSettingsCards(document.getElementById('sheet')!);
 
 document.body.dataset.ready = 'true';
