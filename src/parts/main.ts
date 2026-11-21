@@ -560,5 +560,127 @@ for (const [cols, rows] of [[5, 5], [6, 6], [8, 8], [4, 7]] as const) {
 }
 // Coin controls: counter, plus button, price tags, reward and the icon at small sizes.
 addCoinCards(document.getElementById('sheet')!);
+// Perks: a proposal (design/perks-proposal.md). Icons, buttons and placement only; none of this is in the game.
+{
+  type Size = { width: number; height: number; depth: number; radius: number };
+  type Tone = 'cyan' | 'purple' | 'green';
+  type PerkState = 'available' | 'poor' | 'idle' | 'used' | 'armed';
+  interface Perk { id: string; name: string; label: string; tone: Tone; price: number; glyph: string; promise: string }
+
+  /** A glyph drawn twice: a soft dark copy under the white one, so it stays readable at 24 px. */
+  const glyph = (d: string, width: number, extra = ''): string =>
+    `<path class="tf-perk-glyph-shadow" d="${d}" stroke-width="${width}" transform="translate(0 1)"/><path class="tf-perk-glyph" d="${d}" stroke-width="${width}"/>${extra}`;
+  /** One perk icon: a moulded tile in the family tone with a white glyph, on a 24 grid. */
+  const perkIcon = (tone: Tone, shape: string, size?: number): string =>
+    `<svg class="tf-perk-icon tf-perk-${tone}" viewBox="0 0 24 24"${size ? ` width="${size}" height="${size}"` : ''} aria-hidden="true"><rect class="tf-perk-base" x="1.5" y="3" width="21" height="20" rx="6.5"/><rect class="tf-perk-tile" x="1.5" y="1" width="21" height="20" rx="6.5"/><path class="tf-perk-shine" d="M4 7.5A4.5 4.5 0 0 1 8.5 3h7A4.500 4.500 0 0 1 20 7.500 12 12 0 0 0 4 7.500z"/>${shape}</svg>`;
+  const coin = (size: number): string =>
+    `<svg class="tf-perk-coin" viewBox="0 0 16 16" width="${size}" height="${size}" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="#f6c542" stroke="#c9961a" stroke-width="1.6"/><circle cx="8" cy="8" r="4" fill="none" stroke="#ffe48a" stroke-width="1.6"/></svg>`;
+  const tick = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.2 6.4 4.9 9l5-5.800" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  const PERKS: Perk[] = [
+    { id: 'waypoint', name: 'Wegwijzer', label: 'Waypoint', tone: 'cyan', price: 15, promise: 'Toont waar de kudde over 3 zetten moet staan', glyph: glyph('M9.6 5.5h4.800a3.100 3.100 0 0 1 3.100 3.100v4.800a3.100 3.100 0 0 1-3.100 3.100H9.600a3.100 3.100 0 0 1-3.100-3.100V8.600a3.100 3.100 0 0 1 3.100-3.100z', 1.9, '<circle class="tf-perk-dot" cx="10" cy="11.200" r="1.250"/><circle class="tf-perk-dot" cx="14" cy="11.200" r="1.250"/>').replaceAll('stroke-width="1.9"', 'stroke-width="1.9" stroke-dasharray="3.300 2.500"') },
+    { id: 'leftturn', name: 'Linksom', label: 'Left turn', tone: 'purple', price: 30, promise: 'Eén kleur draait één keer linksom', glyph: `<g transform="translate(12 11.300) scale(-.6 .6) translate(-12 -11.500)">${glyph('M17.1 16.9A7 7 0 1 1 15.5 8M18.4 3.2v6h-6', 3.6)}</g>` },
+    { id: 'moves', name: 'Zetten op maat', label: 'Moves', tone: 'green', price: 10, promise: 'Precies de zetten die je tekortkomt', glyph: glyph('M12 5.800v10.400M6.800 11h10.400', 3.300) },
+    { id: 'rewind', name: 'Terugspoelen', label: 'Rewind', tone: 'cyan', price: 0, promise: 'Terug naar de laatste stand die nog kan', glyph: glyph('M11.600 6.300 6.800 11l4.800 4.700M17.200 6.300 12.400 11l4.800 4.700', 2.600) },
+  ];
+  const perk = (id: string): Perk => PERKS.find((p) => p.id === id)!;
+
+  const chip = (p: Perk, state: PerkState, priceText?: string, compact = false): string => {
+    if (state === 'idle') return `<span class="tf-perk-chip tf-perk-idle">${compact ? '–' : 'niet nodig'}</span>`;
+    if (state === 'used') return `<span class="tf-perk-chip tf-perk-done">${tick}</span>`;
+    if (p.price === 0) return '<span class="tf-perk-chip tf-perk-free">gratis</span>';
+    return `<span class="tf-perk-chip">${coin(13)}${priceText ?? p.price}</span>`;
+  };
+  const STATE_TEXT: Record<PerkState, string> = { available: '', poor: ', te weinig munten', idle: ', nu niet nodig', used: ', gebruikt', armed: ', gekozen' };
+  /** A perk button in the existing family: .tf-btn carries shape and press, .tf-perk-btn the tone and the chip. */
+  const perkButton = (p: Perk, s: Size, state: PerkState, compact = false, priceText?: string): string => {
+    const off = state === 'idle' || state === 'used';
+    const classes = ['tf-btn', 'tf-perk-btn', `tf-perk-${p.tone}`, compact ? 'tf-perk-compact' : '', state === 'poor' ? 'tf-perk-poor' : '', state === 'armed' ? 'tf-perk-armed pressed' : ''].filter(Boolean).join(' ');
+    const price = p.price === 0 ? 'gratis' : `${priceText ?? p.price} munten`;
+    return `<button type="button" class="${classes}" style="--w:${s.width}px;--h:${s.height}px;--d:${s.depth}px;--r:${s.radius}px;--press-fraction:${parts.buttons.pressFraction}" aria-label="${p.label}, ${price}${STATE_TEXT[state]}"${off ? ' disabled' : ''}${state === 'poor' ? ' aria-disabled="true"' : ''}><span class="tf-clip"><span class="tf-face">${perkIcon(p.tone, p.glyph)}<span class="tf-label">${p.label}</span></span></span>${chip(p, state, priceText, compact)}</button>`;
+  };
+  const note = (html: string, title: string, text = ''): string => `<div class="tf-perk-cellnote">${html}<span>${title}${text ? `<small>${text}</small>` : ''}</span></div>`;
+
+  const SHEET: Size = { width: 136, height: 48, depth: 16, radius: 22 };
+  const COMPACT: Size = { width: 52, height: 40, depth: 8, radius: 15 };
+  const STATES: [PerkState, string, string][] = [
+    ['available', 'beschikbaar', 'de solver bewijst dat het helpt'],
+    ['poor', 'te weinig munten', 'helpt wel; tik toont je saldo, geen afschrijving'],
+    ['idle', 'nu niet nodig', 'geen prijs zichtbaar, geen betaling mogelijk'],
+    ['used', 'gebruikt', 'één keer per poging'],
+  ];
+
+  const iconCells = PERKS.map((p) =>
+    `<div class="tf-perk-icon-cell">${perkIcon(p.tone, p.glyph, 24)}${perkIcon(p.tone, p.glyph, 48)}<span>${p.name}<small>24 en 48 px</small></span></div>` +
+    `<div class="tf-perk-icon-cell tf-perk-on-blue">${perkIcon(p.tone, p.glyph, 24)}${perkIcon(p.tone, p.glyph, 48)}<span>${p.name}<small>op bordblauw</small></span></div>`).join('');
+
+  const stateRows = PERKS.filter((p) => p.price > 0).map((p) =>
+    STATES.map(([s, title, text]) => note(perkButton(p, SHEET, s, false, p.id === 'moves' ? '10' : undefined), `${p.name} · ${title}`, text)).join('')).join('') +
+    note(perkButton(perk('leftturn'), SHEET, 'armed'), 'Linksom · gekozen', 'wacht op de kleur; betaald wordt pas bij de zet') +
+    note(perkButton(perk('moves'), SHEET, 'available', false, '18'), 'Zetten op maat · +2', 'prijs volgt het aantal zetten') +
+    note(perkButton(perk('moves'), SHEET, 'available', false, '25'), 'Zetten op maat · +3', 'gelijk aan de huidige +3') +
+    note(perkButton(perk('rewind'), SHEET, 'available'), 'Terugspoelen', 'altijd gratis, alleen bij een doodlopende stand');
+  const compactRows = ['waypoint', 'leftturn'].map((id) => STATES.map(([s, title]) => note(perkButton(perk(id), COMPACT, s, true), title)).join('')).join('');
+
+  // Phone strips. The existing bulb stays the Hint; drawn here as in the buttons card.
+  const bulb = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.7 15.4a5.9 5.9 0 1 1 6.6 0v1.9H8.7z" fill="#f4c62f" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M9.9 20.6h4.2" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M12 .9v1.4M4.3 3.6l1 1M19.7 3.6l-1 1M1.4 10.400h1.500M22.600 10.400h-1.500" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>`;
+  const p = parts.buttons.phone;
+  const vars = (s: Size): string => `--w:${s.width}px;--h:${s.height}px;--d:${s.depth}px;--r:${s.radius}px;--press-fraction:${parts.buttons.pressFraction}`;
+  const plain = (kind: string, s: Size, inner: string, name: string, extra = ''): string => `<button type="button" class="tf-btn ${kind}" style="${vars(s)}" aria-label="${name}"><span class="tf-clip"><span class="tf-face">${inner}</span></span>${extra}</button>`;
+  const stroke = (d: string, width: number): string => `<path d="${d}" fill="none" stroke="currentColor" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const svg = (shape: string): string => `<svg viewBox="0 0 24 24" aria-hidden="true">${shape}</svg>`;
+  const turnShape = stroke('M17.1 16.9A7 7 0 1 1 15.5 8', 3.6) + stroke('M18.4 3.2v6h-6', 3.6);
+  const utilityRow = `<div class="tf-line">${[
+    ['Undo', `<path d="M9.4 4.2 3.6 9.3l5.8 5.1z" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>` + stroke('M9 9.3h5.4a5.3 5.3 0 0 1 0 10.6H9.6', 3.5)],
+    ['Restart', turnShape],
+    ['Replay', '<path d="M7.4 5v14l11.4-7z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>'],
+  ].map(([text, shape]) => plain('tf-utility', p.utility, svg(shape) + `<span class="tf-label">${text}</span>`, text)).join('')}</div>`;
+  const actionRow = `<div class="tf-line">${(['red', 'blue', 'yellow', 'forward'] as const).map((c) => plain(`tf-action ${c}`, p.action, svg(c === 'forward' ? stroke('M12 20.6V6M5.2 11.4 12 4.6l6.8 6.8', 4) : turnShape), c)).join('')}</div>`;
+  const controls = `<div class="tf-controls">${utilityRow}${actionRow}</div>`;
+  const wallet = (n: number): string => `<span class="tf-perk-wallet">${coin(18)}${n}</span>`;
+  const hintCompact = (price: boolean): string => plain('tf-hint compact', p.hintCompact, bulb + '<span class="tf-label">Hint</span>', 'Hint', price ? `<span class="tf-perk-chip">${coin(13)}10</span>` : '');
+  const helpButton = (open: boolean): string => `<button type="button" class="tf-btn tf-hint compact${open ? ' pressed' : ''}" style="${vars(p.hintCompact)}" aria-label="Hulp" aria-expanded="${open}"><span class="tf-clip"><span class="tf-face">${bulb}</span></span></button>`;
+  const bar = (right: string): string => `<div class="tf-bar"><span class="tf-pill grow">Level 5</span><span class="tf-pill">0 / 12</span><span class="tf-pill">12 zetten</span>${right}</div>`;
+  const item = (icon: string, name: string, text: string, chipHtml: string, off = false): string => `<button type="button" class="tf-perk-item"${off ? ' disabled' : ''}>${icon}<span><b>${name}</b><small>${text}</small></span>${chipHtml}</button>`;
+  const hintTile = perkIcon('cyan', '', 30).replace('</svg>', `<g transform="translate(5.400 4) scale(.55)" color="#24314f">${bulb.replace(/<\/?svg[^>]*>/g, '')}</g></svg>`);
+  const tray = `<div class="tf-perk-tray"><div class="tf-perk-trayhead">Hulp<span>${coin(14)}42</span></div>
+      ${item(hintTile, 'Hint', 'Volgende zet van een oplossing', chip(perk('waypoint'), 'available', '10'))}
+      ${item(perkIcon('cyan', perk('waypoint').glyph, 30), 'Waypoint', 'Waar de kudde over 3 zetten staat', chip(perk('waypoint'), 'available'))}
+      ${item(perkIcon('purple', perk('leftturn').glyph, 30), 'Left turn', 'Alleen als je vastzit: nu niet nodig', chip(perk('leftturn'), 'idle'), true)}
+    </div>`;
+
+  const stripA = `<div class="tf-perk-strip" id="perks-layout-a"><h4>Optie A · hulprij boven de knoppen</h4><div class="tf-phone">
+      ${bar(wallet(42))}
+      <div class="tf-perk-board tf-perk-short">speelbord</div>
+      <div class="tf-perk-row"><span class="tf-perk-rowlabel">Hulp</span>${hintCompact(true)}${perkButton(perk('waypoint'), COMPACT, 'available', true)}${perkButton(perk('leftturn'), COMPACT, 'idle', true)}</div>
+      ${controls}</div>
+    <p>Altijd zichtbaar: drie compacte knoppen met prijs. Kost het bord ongeveer 56 px hoogte; Hint verhuist uit de bovenbalk, daar komt het muntensaldo.</p></div>`;
+  const stripB = `<div class="tf-perk-strip" id="perks-layout-b"><h4>Optie B · één Hulp-knop, lade open (aanbevolen)</h4><div class="tf-phone">
+      ${bar(helpButton(true))}
+      <div class="tf-perk-board tf-perk-tall">speelbord${tray}</div>
+      ${controls}</div>
+    <p>Gesloten is het scherm gelijk aan vandaag: geen enkele knop erbij. De lade toont naam, belofte, prijs en saldo, en zegt waarom iets nu niet kan.</p></div>`;
+  const stripC = `<div class="tf-perk-strip" id="perks-moments"><h4>Zonder eigen knop · Terugspoelen en Zetten op maat</h4><div class="tf-phone">
+      ${bar(helpButton(false))}
+      <div class="tf-perk-note"><span>Doodlopend. De laatste stand die nog kan is 3 zetten terug.</span>${perkButton(perk('rewind'), { width: 112, height: 40, depth: 8, radius: 15 }, 'available')}</div>
+      <div class="tf-perk-card"><b>Geen zetten meer</b><small>Gecontroleerd: met 1 zet extra is deze stand op te lossen. Je hebt 42 munten.</small>
+        <div class="tf-perk-cardrow">${plain('tf-utility', p.utility, svg(turnShape) + '<span class="tf-label">Retry</span>', 'Retry')}${perkButton({ ...perk('moves'), label: '+1 move' }, { width: 128, height: 44, depth: 12, radius: 20 }, 'available', false, '10')}</div></div></div>
+    <p>Terugspoelen verschijnt in de hintregel, Zetten op maat op de kaart die er al is. Opnieuw proberen blijft de eerste, gratis keuze.</p></div>`;
+
+  const el = document.createElement('section');
+  el.className = 'card wide';
+  el.id = 'perks';
+  el.innerHTML = `<h2>Perks (voorstel)</h2><p class="dims">Aanbevolen set uit design/perks-proposal.md · knop ${SHEET.width}×${SHEET.height} px, compact ${COMPACT.width}×${COMPACT.height} px · prijzen zijn een voorstel</p>
+  <h3 class="btn-title">Iconen · 24 en 48 px</h3>
+  <div class="tf-perk-icons" id="perks-icons">${iconCells}</div>
+  <h3 class="btn-title">Perk-knop · toestanden</h3>
+  <div class="tf-perk-states" id="perks-states">${stateRows}</div>
+  <h3 class="btn-title">Compact (telefoon, alleen icoon en prijs)</h3>
+  <div class="tf-perk-states tf-perk-compact-states" id="perks-states-compact">${compactRows}</div>
+  <h3 class="btn-title">Plaats op het puzzelscherm · telefoon ${p.stripWidth} px</h3>
+  <div class="tf-perk-strips" id="perks-phone">${stripA}${stripB}${stripC}</div>
+  <p class="note">Alleen mock-ups: geen van deze perks zit in de game. Tonen: hint-cyaan voor informatie, booster-paars voor de regelbuiger, plus-groen voor zetten, munt-goud voor de prijs. Linksom verandert de kernregel (altijd rechtsom) voor één zet en wacht op een besluit van de eigenaar.</p>`;
+  document.getElementById('sheet')!.appendChild(el);
+}
 
 document.body.dataset.ready = 'true';

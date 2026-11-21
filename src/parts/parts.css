@@ -441,3 +441,97 @@ img.tf-coin-ico { filter: drop-shadow(0 1px 0 rgba(138, 94, 4, .6)); }
 @media (prefers-reduced-motion: reduce) {
   .tf-coin-counter, .tf-coin-counter.short, .tf-coin-counter.earn .tf-coin-ico, .tf-coin-gain { animation: none; transition: none; }
 }
+
+/* ---- Perks (proposal, design/perks-proposal.md): mock-ups only, nothing here is in the game ---- */
+/* The owner's helper tones: main, dark and light per family. */
+.tf-perk-cyan { --pk-main: #53d3e8; --pk-dark: #28a7bc; --pk-light: #9af3ff; }
+.tf-perk-purple { --pk-main: #7e6bff; --pk-dark: #5c48d9; --pk-light: #b2a8ff; }
+.tf-perk-green { --pk-main: #38d96a; --pk-dark: #25a84f; --pk-light: #7bff9e; }
+.tf-perk-gold { --pk-main: #f6c542; --pk-dark: #c9961a; --pk-light: #ffe48a; }
+
+/* Icon: a small moulded tile in the family tone with a white glyph. Drawn on a 24 grid. */
+.tf-perk-icon { display: block; flex: none; overflow: visible; }
+.tf-perk-icon .tf-perk-base { fill: var(--pk-dark); }
+.tf-perk-icon .tf-perk-tile { fill: var(--pk-main); }
+.tf-perk-icon .tf-perk-shine { fill: var(--pk-light); opacity: .7; }
+.tf-perk-icon .tf-perk-glyph { fill: none; stroke: #fff; stroke-linecap: round; stroke-linejoin: round; }
+.tf-perk-icon .tf-perk-glyph-shadow { fill: none; stroke: var(--pk-dark); stroke-linecap: round; stroke-linejoin: round; opacity: .55; }
+.tf-perk-icon .tf-perk-dot { fill: #fff; stroke: none; }
+.tf-perk-coin { display: block; flex: none; }
+
+/* Icon sizes side by side, on the card and on the board blue. */
+.tf-perk-icons { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.tf-perk-icon-cell { display: grid; grid-template-columns: auto auto 1fr; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: #fff; border: 1.5px solid #e6ebf5; font-size: 12px; font-weight: 700; color: var(--ink); }
+.tf-perk-icon-cell.tf-perk-on-blue { background: linear-gradient(180deg, #70c4fb, #5ab6f3); border-color: transparent; color: #12305c; }
+.tf-perk-icon-cell small { display: block; font-weight: 600; color: var(--muted); }
+.tf-perk-icon-cell.tf-perk-on-blue small { color: #12305c; }
+
+/* Perk button: the utility keycap with a wall tinted in the family tone and a price chip on its corner.
+   Used together with .tf-btn; the chip sits outside the clipped block so it never sinks or fades. */
+.tf-perk-btn {
+  --c-top: #ffffff; --c-main: #f1f4fd;
+  --c-side: color-mix(in srgb, var(--pk-main) 45%, #c3cce2); --c-deep: color-mix(in srgb, var(--pk-dark) 55%, #9eabc8);
+  --ink-c: #24314f; --ink-shadow: transparent; --gloss: .9; --icon: calc(var(--h) * .62);
+}
+.tf-perk-btn .tf-face { box-shadow: inset 0 0 0 1.5px rgba(36, 49, 79, .2), inset 0 -2.5px 1px rgba(255, 255, 255, .3); }
+.tf-perk-btn:disabled { --ink-c: #7c879f; }
+.tf-perk-btn.tf-perk-compact .tf-label { display: none; }
+.tf-perk-chip {
+  position: absolute; z-index: 2; top: -9px; right: -7px; height: 20px; padding: 0 7px 0 3px; border-radius: 10px;
+  display: inline-flex; align-items: center; gap: 3px; background: #fff; border: 1.5px solid #c9961a; color: #5b4206;
+  font-size: 12px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; box-shadow: 0 1.5px 0 rgba(36, 49, 79, .22); pointer-events: none;
+}
+.tf-perk-chip.tf-perk-free { padding: 0 7px; border-color: #25a84f; color: #14602c; }
+/* Cannot afford: the block stays as it is (the perk would help), only the price turns to a warning. */
+.tf-perk-btn.tf-perk-poor { cursor: not-allowed; }
+.tf-perk-btn.tf-perk-poor .tf-perk-chip { background: #ffe9e9; border-color: #d9484d; color: #a3191f; }
+.tf-perk-btn.tf-perk-poor .tf-perk-chip .tf-perk-coin { filter: grayscale(1); opacity: .7; }
+/* Not useful right now and used: the ordinary disabled block; the chip says why instead of naming a price. */
+.tf-perk-chip { white-space: nowrap; }
+.tf-perk-chip.tf-perk-idle { padding: 0 7px; background: #eef1f8; border-color: #aab4ca; color: #5d6a84; }
+.tf-perk-chip.tf-perk-done { padding: 0 6px; background: #e3f9ea; border-color: #25a84f; color: #14602c; }
+.tf-perk-chip svg { width: 12px; height: 12px; }
+/* Armed (a perk that waits for a choice): held down with a ring in its own tone. */
+.tf-perk-btn.tf-perk-armed::after { content: ""; position: absolute; inset: -4px; border-radius: calc(var(--r) + 4px); border: 3px solid var(--pk-main); pointer-events: none; }
+
+/* State table: one row per perk, one column per state. */
+.tf-perk-states { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px 10px; justify-items: center; align-items: start; padding: 22px 10px 14px; background: #f8faff; border: 1.5px solid #e6ebf5; border-radius: 12px; font-size: 11px; font-weight: 700; color: #12305c; text-align: center; }
+.tf-perk-states.tf-perk-compact-states { max-width: 390px; margin: 0 auto; }
+.tf-perk-states > span { align-self: center; }
+.tf-perk-cellnote { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+.tf-perk-cellnote small { display: block; margin-top: 2px; font-weight: 600; color: var(--muted); max-width: 150px; }
+@media (max-width: 640px) { .tf-perk-states:not(.tf-perk-compact-states) { grid-template-columns: repeat(2, minmax(0, 1fr)); } .tf-perk-states .tf-perk-colhead { display: none; } }
+
+/* Phone strips: 390 px wide, side by side when there is room. */
+.tf-perk-strips { display: flex; flex-wrap: wrap; gap: 18px 16px; justify-content: center; align-items: flex-start; }
+.tf-perk-strip { width: 390px; flex: none; }
+.tf-perk-strip h4 { margin: 0 0 6px; font-size: 12.5px; font-weight: 800; color: var(--ink); }
+.tf-perk-strip p { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
+.tf-perk-strip .tf-phone { margin: 0; }
+.tf-perk-strip .tf-bar { gap: 6px; }
+.tf-perk-strip .tf-bar .tf-pill { padding: 0 10px; font-size: 14px; }
+.tf-perk-board { position: relative; margin: 0 14px; height: 150px; border-radius: 14px; border: 2px dashed #aab6d3; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--muted); }
+.tf-perk-board.tf-perk-short { height: 96px; }
+.tf-perk-board.tf-perk-tall { height: 236px; align-items: flex-start; padding-top: 22px; }
+.tf-perk-wallet { height: 40px; padding: 0 12px 0 8px; border-radius: 14px; background: #fff7dc; border: 1.5px solid #ecd28a; box-shadow: 0 3px 0 #d9c078; display: inline-flex; align-items: center; gap: 5px; font-weight: 800; font-size: 15px; color: #5b4206; font-variant-numeric: tabular-nums; }
+/* Option A: a help row of compact perk buttons between the board and the controls. */
+.tf-perk-row { display: flex; align-items: flex-end; gap: 12px; padding: 16px 14px 0; }
+.tf-perk-row .tf-perk-rowlabel { margin-right: auto; align-self: center; font-size: 12px; font-weight: 800; color: var(--muted); }
+/* Option B: one Help button; the tray opens over the lower edge of the board. */
+.tf-perk-tray { position: absolute; left: -6px; right: -6px; bottom: -6px; padding: 8px 10px 10px; border-radius: 16px; background: #fff; border: 1.5px solid #cdd8ee; box-shadow: 0 8px 18px rgba(36, 49, 79, .22); display: grid; gap: 6px; text-align: left; }
+.tf-perk-trayhead { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 800; color: var(--muted); padding: 0 2px; }
+.tf-perk-trayhead span { display: inline-flex; align-items: center; gap: 4px; color: #5b4206; }
+.tf-perk-item { display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 9px; min-height: 44px; padding: 5px 8px; border-radius: 12px; background: #f4f7fd; border: 1.5px solid #e6ebf5; color: var(--ink); font: inherit; text-align: left; width: 100%; cursor: pointer; }
+.tf-perk-item b { display: block; font-size: 14px; font-weight: 800; line-height: 1.15; }
+.tf-perk-item small { display: block; font-size: 11.5px; font-weight: 600; color: var(--muted); line-height: 1.2; }
+.tf-perk-item .tf-perk-chip { position: static; box-shadow: none; }
+.tf-perk-item:disabled { cursor: not-allowed; background: #f7f8fb; }
+.tf-perk-item:disabled .tf-perk-icon, .tf-perk-item:disabled b { opacity: .45; }
+.tf-perk-item:focus-visible { outline: 3px solid #24314f; outline-offset: 2px; }
+/* Where the two perks without a button of their own show up: the hint line and the out-of-moves card. */
+.tf-perk-note { margin: 8px 14px 0; padding: 8px 10px; border-radius: 12px; background: #fff3d6; border: 1.5px solid #ecd28a; display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 700; color: #5b4206; }
+.tf-perk-note span { flex: 1; }
+.tf-perk-card { margin: 10px 14px 14px; padding: 14px; border-radius: 16px; background: #fff; border: 1.5px solid #cdd8ee; box-shadow: 0 6px 14px rgba(36, 49, 79, .16); display: grid; gap: 12px; justify-items: center; text-align: center; }
+.tf-perk-card b { font-size: 17px; }
+.tf-perk-card small { font-size: 12px; font-weight: 600; color: var(--muted); }
+.tf-perk-card .tf-perk-cardrow { display: flex; gap: 22px; align-items: flex-end; padding-top: 8px; }
