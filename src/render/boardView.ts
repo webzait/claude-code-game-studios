@@ -6,6 +6,7 @@ import { boardFootprint, buildExit, buildFloorTile, buildObstacle, buildRim, bui
 import { CONFIG } from '../config';
 import { DIR_DX, DIR_DY, type Color, type GameState, type RobotEvent } from '../engine/types';
 import type { Level } from '../levels/parse';
+import { headingAngle, nearestAngle, squashScale, turnAngle, type HeadingStyle } from './heading';
 import { fuse, type Kit } from './kit';
 import { buildPartsRobot, buildRobot, type RobotView } from './robot';
 
@@ -13,6 +14,8 @@ import { buildPartsRobot, buildRobot, type RobotView } from './robot';
 export interface BoardStyle {
   readonly kitRobots: boolean;
   readonly kitBoard: boolean;
+  /** How a robot shows its heading; the whole robot turns when left out. */
+  readonly heading?: HeadingStyle;
 }
 
 /** Height range of the board itself, and of a robot standing on it, in world units. */
@@ -189,7 +192,9 @@ export class BoardView {
     else this.buildPlainBoard(level);
 
     for (const r of level.start.robots) {
-      const view = this.style.kitRobots ? buildPartsRobot(r.id, r.color) : buildRobot(r.id, r.color);
+      const heading = this.style.heading ?? 'faceUp';
+      const viewTilt = (this.layout.tilt * Math.PI) / 180;
+      const view = this.style.kitRobots ? buildPartsRobot(r.id, r.color, heading, viewTilt) : buildRobot(r.id, r.color, heading);
       this.robots.set(r.id, view);
       this.boardGroup.add(view.root);
     }
@@ -375,9 +380,7 @@ export class BoardView {
       const tx = this.cellX(r.x);
       const tz = this.cellZ(r.y);
       // Nearest equivalent heading, so an undo turns back the short way.
-      const want = -r.dir * (Math.PI / 2);
-      const turns = Math.round((view.angle - want) / (Math.PI * 2));
-      const ta = want + turns * Math.PI * 2;
+      const ta = nearestAngle(view.angle, headingAngle(r.dir));
       const ts = r.collected ? 0 : 1;
       if (!animate) {
         this.pose(view, tx, tz, ta, ts);
@@ -439,7 +442,7 @@ export class BoardView {
           const view = this.robots.get(e.id)!;
           const from = view.angle;
           return this.addTween(a.turnTime / speed, (k) => {
-            view.angle = from - (Math.PI / 2) * easeOutBack(k);
+            view.angle = turnAngle(from, easeOutBack(k));
             view.aim(view.angle);
             view.body.position.y = Math.sin(Math.PI * k) * 0.07 * lively;
           });
@@ -486,11 +489,9 @@ export class BoardView {
           view.root.position.x = fx + dx * off;
           view.root.position.z = fz + dz * off;
           const squash = Math.max(0, Math.sin(Math.PI * Math.min(k / 0.6, 1))) * 0.14 * lively;
-          const along = 1 - squash;
-          const across = 1 + squash * 0.6;
-          // The body does not turn, so squash along the world axis it is travelling on.
-          if (dx !== 0) view.body.scale.set(along, 1 + squash * 0.3, across);
-          else view.body.scale.set(across, 1 + squash * 0.3, along);
+          // Squash along the way the robot itself travels: its heading, whichever way the body is turned.
+          const s = squashScale(headingAngle(e.dir), squash);
+          view.body.scale.set(s.x, s.y, s.z);
         });
       }),
     );

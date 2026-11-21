@@ -280,6 +280,11 @@ export function labContent(start: Partial<LabSettings>, hooks: LabHooks = {}): {
   ];
   look.body.append(
     choice('speed', 'Animation speed', 'How fast the robots move.', CONFIG.lab.speedOptions.map((n) => ({ label: `${n}×`, value: n }))),
+    choice('heading', 'Robot turns', 'Face up: the whole robot turns, eyes in view. To player: it turns but leans to you. Symbol: only the arrow turns.', [
+      { label: 'Face up', value: 'faceUp' },
+      { label: 'To player', value: 'towardPlayer' },
+      { label: 'Symbol', value: 'symbol' },
+    ]),
     choice('robots', 'Robots', 'Kit: supplied 3D model. Built-in: drawn in code.', kit),
     choice('boardPieces', 'Board pieces', 'Kit: supplied modules. Built-in: drawn in code.', kit),
     choice('board', 'Board framing', 'Roomy: larger, against the top. Classic: as before.', [
