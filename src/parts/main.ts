@@ -4,7 +4,7 @@ import { CONFIG } from '../config';
 import type { Color } from '../engine/types';
 import parts from '../../data/parts.json';
 import hintIcon from '../../assets/turnflock/ui/hint.webp';
-import { buildExit, buildFloorTile, buildObstacle, buildRim, buildRimCorner, buildRimEdge, buildUnderlay } from '../render/parts/board';
+import { boardPixels, buildExit, buildFloorTile, buildObstacle, buildRim, buildRimCorner, buildRimEdge, buildUnderlay, rimLayout } from '../render/parts/board';
 import { buildFlockbot } from '../render/parts/flockbot';
 import './parts.css';
 
@@ -45,6 +45,9 @@ const VIEWS = {
   front: { label: 'Voorkant', dir: new THREE.Vector3(0, 0.0001, 1) },
   side: { label: 'Zijaanzicht', dir: new THREE.Vector3(1, 0.0001, 0) },
   top: { label: 'Bovenaanzicht', dir: new THREE.Vector3(0, 1, 0.0001) },
+  quarter: { label: 'Driekwart', dir: new THREE.Vector3(-0.55, 0.62, 1) },
+  tilt: { label: `Bijna recht van boven (spelcamera, ${CONFIG.board.roomy.tilt}°)`, dir: new THREE.Vector3(0, 1, Math.tan((CONFIG.board.roomy.tilt * Math.PI) / 180)) },
+  drawing: { label: '', dir: new THREE.Vector3(0, 0.6, 1) },
 } as const;
 type ViewName = keyof typeof VIEWS;
 
@@ -118,10 +121,65 @@ for (const color of ['red', 'blue', 'yellow'] as const) {
 
 card('Obstakelblok', 'obstacle', buildObstacle(), 'Laag afgerond blok met vier ronde noppen.');
 card('Groene uitgang (doel)', 'exit', buildExit(), 'Tegelhoog groen vak met opstaande rand, verdiept vlak en vinkje in reliëf.');
-card('Vloertegel', 'floor', buildFloorTile(), 'Eén herhaalbare tegel met vier pennen aan de onderkant.');
-card('Randstuk (recht)', 'rim-edge', buildRimEdge(1), 'Eén stuk per vak langs elke zijde; 0°, 90°, 180° of 270° gedraaid.');
-card('Hoekstuk', 'rim-corner', buildRimCorner(), 'Kwartboog; dezelfde vorm op alle vier de hoeken.');
-card('Onderplaat', 'underlay', buildUnderlay(6, 6, CONFIG.board.grid.gap, true), 'Eén plaat onder het hele bord; breedte en diepte volgen het raster (hier 6×6).', ['main', 'top']);
+card('Vloertegel', 'floor', buildFloorTile(), 'Eén herhaalbare tegel: heldere bovenkant, zichtbare afgeronde rand, iets donkerdere zijkant, vier pennen aan de onderkant.');
+card('Vloertegel (tweede tint)', 'floor-alt', buildFloorTile(true), 'Dezelfde tegel in de tweede, subtiel afwijkende tint voor het dambordpatroon.', ['main', 'top']);
+card('Randstuk (recht)', 'rim-edge', buildRimEdge(1, true), 'Eén stuk per vak langs elke zijde; 0°, 90°, 180° of 270° gedraaid. Lichte binnenrand, dunne gloedlijn, donkere schuine buitenkant.');
+card('Hoekstuk', 'rim-corner', buildRimCorner(true), 'Kwartboog met dezelfde doorsnede als het rechte stuk; dezelfde vorm op alle vier de hoeken.');
+card('Onderplaat', 'underlay', buildUnderlay(6, 6, CONFIG.board.grid.gap, true), 'Eén bak onder het hele bord met een lage opstaande rand en één pen per tegel; breedte en diepte volgen het raster (hier 6×6).', ['main', 'top']);
+
+/** An empty board from the modules alone: underlay, rim and tiles. */
+function emptyBoard(cols: number, rows: number): THREE.Group {
+  const gap = CONFIG.board.grid.gap;
+  const pitch = parts.floorTile.size + gap;
+  const board = new THREE.Group();
+  board.add(buildUnderlay(cols, rows, gap), buildRim(cols, rows, gap));
+  for (let x = 0; x < cols; x++) for (let z = 0; z < rows; z++) {
+    const tile = buildFloorTile((x + z) % 2 === 1, false);
+    tile.position.set((x - (cols - 1) / 2) * pitch, 0, (z - (rows - 1) / 2) * pitch);
+    board.add(tile);
+  }
+  return board;
+}
+
+// Empty boards at several sizes: the same modules repeated, never stretched.
+const PHONE = 390;
+for (const [cols, rows] of [[5, 5], [6, 6], [8, 8], [4, 7]] as const) {
+  const px = boardPixels(cols, rows, CONFIG.board.grid.gap, PHONE - 2 * CONFIG.camera.marginX);
+  const one = (n: number): string => n.toFixed(1);
+  const count = `${cols * rows} tegels · ${2 * (cols + rows)} randstukken · 4 hoekstukken · 1 onderplaat`;
+  const phone = `Op een telefoon van ${PHONE} px breed: bord ${one(px.width)} × ${one(px.height)} px, tegel ${one(px.tile)} px, voeg ${one(px.gap)} px, rand ${one(px.frame)} px.`;
+  card(`Leeg bord ${cols}×${rows}`, `board-${cols}x${rows}`, emptyBoard(cols, rows), `${count}. ${phone}`, ['top', 'quarter', 'tilt'], true);
+}
+
+// Exploded board, laid out like the assembly drawing: rim pieces pulled outward, tiles lifted off the underlay.
+{
+  const gap = CONFIG.board.grid.gap;
+  const pitch = parts.floorTile.size + gap;
+  const exploded = new THREE.Group();
+  const lifted = new THREE.Group();
+  exploded.add(buildUnderlay(6, 6, gap, true), lifted);
+  lifted.position.y = 5;
+  for (let x = 0; x < 6; x++) for (let z = 0; z < 6; z++) {
+    const tile = buildFloorTile((x + z) % 2 === 1, true);
+    tile.position.set((x - 2.5) * pitch * 1.07, 0, (z - 2.5) * pitch * 1.07);
+    lifted.add(tile);
+  }
+  for (const place of rimLayout(6, 6, gap)) {
+    const piece = place.kind === 'edge' ? buildRimEdge(place.length, true) : buildRimCorner(true);
+    const corner = place.kind === 'corner';
+    // Straight pieces move straight out from their side, corners diagonally, and each keeps a little air to its neighbour.
+    const out = new THREE.Vector3(corner ? Math.sign(place.x) : Math.round(Math.sin(place.turn)), 0, corner ? Math.sign(place.z) : Math.round(Math.cos(place.turn)));
+    const along = corner ? new THREE.Vector3() : new THREE.Vector3(place.x * Math.abs(out.z), 0, place.z * Math.abs(out.x)).multiplyScalar(0.07);
+    piece.position.set(place.x, 0, place.z).addScaledVector(out, corner ? 0.75 : 0.9).add(along);
+    piece.rotation.y = place.turn;
+    lifted.add(piece);
+  }
+  // The lifted parts float: their shadows on the underlay would only confuse the picture.
+  lifted.traverse((n) => {
+    n.castShadow = false;
+  });
+  card('Bordopbouw uit elkaar (6×6)', 'board-exploded', exploded, 'Zoals de bouwtekening: hoekstukken en randstukken boven, tegels met pennen in het midden, onderplaat met opstaande rand onder.', ['drawing', 'quarter'], true);
+}
 
 // Everything together on a 6x6 board, only to check that the separate parts fit each other.
 {

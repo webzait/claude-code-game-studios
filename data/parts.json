@@ -42,9 +42,13 @@
     "size": 1.0,
     "height": 0.2,
     "radius": 0.15,
-    "bevel": 0.035,
+    "bevel": 0.055,
+    "bevelSteps": 3,
+    "bevelFade": 0.8,
+    "lift": 0.06,
     "peg": 0.12,
-    "pegHeight": 0.06
+    "pegHeight": 0.06,
+    "pegSpread": 0.28
   },
   "obstacle": {
     "size": 0.92,
@@ -69,14 +73,35 @@
   "rim": {
     "width": 0.267,
     "height": 0.4,
-    "round": 0.07,
-    "innerRadius": 0.3,
-    "margin": 0.055
+    "innerRound": 0.05,
+    "outerRound": 0.12,
+    "lean": 12,
+    "roundSteps": 4,
+    "cornerSteps": 12,
+    "glowAt": 0.5,
+    "glowWidth": 0.024,
+    "innerRadius": 0.225,
+    "margin": 0.075,
+    "peg": 0.1,
+    "pegHeight": 0.06,
+    "pegSpread": 0.3,
+    "gain": 0.96,
+    "shoulderSteps": 10,
+    "gloss": {
+      "at": 0.42,
+      "width": 0.14,
+      "strength": 0.85
+    },
+    "sideShade": 0.45
   },
   "underlay": {
-    "height": 0.14,
+    "height": 0.35,
     "lip": 0.05,
-    "lipHeight": 0.06
+    "lipHeight": 0.08,
+    "chamfer": 0.04,
+    "socket": 0.16,
+    "socketHeight": 0.04,
+    "gain": 1.15
   },
   "buttons": {
     "utility": {

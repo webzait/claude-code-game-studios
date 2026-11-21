@@ -34,20 +34,136 @@ function shadowed<T extends THREE.Object3D>(node: T): T {
   return node;
 }
 
-/** 1. Floor tile: one cell, rounded, with four pegs underneath that sit in the underlay. */
+/**
+ * Materials of the board modules. The tones are baked into each module's
+ * vertices (bright top, darker edge and side), so one material covers a whole
+ * module and the game can merge identical modules later.
+ */
+const kit = {
+  tile: new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.42, clearcoat: 0.25, clearcoatRoughness: 0.35, emissive: '#FFFFFF', emissiveIntensity: P.floorTile.lift }),
+  frame: new THREE.MeshPhysicalMaterial({ vertexColors: true, color: new THREE.Color().setScalar(P.rim.gain), roughness: 0.26, clearcoat: 0.85, clearcoatRoughness: 0.14 }),
+  tray: new THREE.MeshPhysicalMaterial({ vertexColors: true, color: new THREE.Color().setScalar(P.underlay.gain), roughness: 0.5, clearcoat: 0.15, clearcoatRoughness: 0.4 }),
+};
+
+const tone = (hex: string): THREE.Color => new THREE.Color(hex);
+
+/** One outline of a lofted shape: the base rounded rectangle moved `inset` inward, at height `y`. */
+interface Ring {
+  inset: number;
+  y: number;
+  /** Surface normal here: its part pointing away from the centre, and its part pointing up. */
+  out: number;
+  up: number;
+  color: THREE.Color;
+}
+
+/**
+ * A solid drawn as a stack of rounded-rectangle outlines, `w` by `d` with
+ * corner radius `r`, joined ring to ring. List the rings along the surface:
+ * up the outside, inward over the top. Repeat a ring with another normal for
+ * a hard edge. `cap` closes the last ring with a flat face.
+ */
+function loft(w: number, d: number, r: number, rings: readonly Ring[], cap: boolean, cornerSteps = 5): THREE.BufferGeometry {
+  const perRing = 4 * (cornerSteps + 1);
+  const position: number[] = [];
+  const normal: number[] = [];
+  const color: number[] = [];
+  const index: number[] = [];
+  const signs: readonly (readonly [number, number])[] = [[1, 1], [-1, 1], [-1, -1], [1, -1]];
+  const addRing = (ring: Ring): void => {
+    const length = Math.hypot(ring.out, ring.up) || 1;
+    signs.forEach(([sx, sz], k) => {
+      for (let j = 0; j <= cornerSteps; j++) {
+        const phi = (k + j / cornerSteps) * (Math.PI / 2);
+        const reach = Math.max(0, r - ring.inset);
+        position.push(sx * (w / 2 - r) + Math.cos(phi) * reach, ring.y, sz * (d / 2 - r) + Math.sin(phi) * reach);
+        normal.push((Math.cos(phi) * ring.out) / length, ring.up / length, (Math.sin(phi) * ring.out) / length);
+        color.push(ring.color.r, ring.color.g, ring.color.b);
+      }
+    });
+  };
+  rings.forEach(addRing);
+  for (let i = 0; i < rings.length - 1; i++) {
+    // A repeated ring only changes the normal: no faces between the two copies.
+    if (rings[i].inset === rings[i + 1].inset && rings[i].y === rings[i + 1].y) continue;
+    for (let j = 0; j < perRing; j++) {
+      const a = i * perRing + j;
+      const b = i * perRing + ((j + 1) % perRing);
+      index.push(a, a + perRing, b, b, a + perRing, b + perRing);
+    }
+  }
+  if (cap) {
+    const last = rings[rings.length - 1];
+    const first = position.length / 3;
+    addRing({ ...last, out: 0, up: 1 });
+    const centre = position.length / 3;
+    position.push(0, last.y, 0);
+    normal.push(0, 1, 0);
+    color.push(last.color.r, last.color.g, last.color.b);
+    for (let j = 0; j < perRing; j++) index.push(centre, first + ((j + 1) % perRing), first + j);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(position, 3));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(normal, 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(color, 3));
+  g.setIndex(index);
+  return g;
+}
+
+/** Geometry is built once per module and shared by every copy on the board. */
+const shared = new Map<string, THREE.BufferGeometry>();
+function once(key: string, build: () => THREE.BufferGeometry): THREE.BufferGeometry {
+  let g = shared.get(key);
+  if (!g) {
+    g = build();
+    shared.set(key, g);
+  }
+  return g;
+}
+
+/** The tile body: a darker side, a rounded bevel that brightens towards the top, and a bright flat top. */
+function tileGeometry(alt: boolean): THREE.BufferGeometry {
+  const t = P.floorTile;
+  const top = tone(alt ? K.tileMid : K.tileLight);
+  const edge = tone(K.tileEdge);
+  const rings: Ring[] = [
+    { inset: 0, y: 0, out: 1, up: 0, color: tone(K.tileShade) },
+    { inset: 0, y: t.height - t.bevel, out: 1, up: 0, color: edge },
+  ];
+  for (let k = 1; k <= t.bevelSteps; k++) {
+    const a = (k / t.bevelSteps) * (Math.PI / 2);
+    rings.push({ inset: t.bevel * (1 - Math.cos(a)), y: t.height - t.bevel + t.bevel * Math.sin(a), out: Math.cos(a), up: Math.sin(a), color: edge.clone().lerp(top, (k / t.bevelSteps) ** t.bevelFade) });
+  }
+  return loft(t.size, t.size, t.radius, rings, true);
+}
+
+/** 1. Floor tile: one cell, rounded and bevelled, with four pegs underneath that stand around the underlay's socket. */
 export function buildFloorTile(alt = false, pegs = true): THREE.Group {
   const t = P.floorTile;
   const tile = new THREE.Group();
-  tile.add(new THREE.Mesh(roundedBlock(t.size, t.size, t.height, t.radius, t.bevel), alt ? mats.tileAlt : mats.tileTop));
+  tile.add(new THREE.Mesh(once(alt ? 'tileAlt' : 'tile', () => tileGeometry(alt)), kit.tile));
   if (pegs) {
-    const peg = new THREE.BoxGeometry(t.peg, t.pegHeight, t.peg);
+    const peg = once('tilePeg', () => {
+      const g = new THREE.BoxGeometry(t.peg, t.pegHeight, t.peg);
+      paint(g, K.tileShade);
+      return g;
+    });
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
-      const mesh = new THREE.Mesh(peg, mats.tileEdge);
-      mesh.position.set(sx * t.size * 0.28, -t.pegHeight / 2, sz * t.size * 0.28);
+      const mesh = new THREE.Mesh(peg, kit.tile);
+      mesh.position.set(sx * t.pegSpread, -t.pegHeight / 2, sz * t.pegSpread);
       tile.add(mesh);
     }
   }
   return shadowed(tile);
+}
+
+/** Give every vertex of `g` the same colour, for a part drawn with a vertex-coloured material. */
+function paint(g: THREE.BufferGeometry, hex: string): void {
+  const c = tone(hex);
+  const count = g.getAttribute('position').count;
+  const colors = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) colors.set([c.r, c.g, c.b], i * 3);
+  g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 }
 
 /** 5. Obstacle block: a low rounded block with four round studs on top. Stands on the floor tile. */
@@ -99,42 +215,182 @@ export function buildExit(): THREE.Group {
   return shadowed(pad);
 }
 
-/** Cross-section of the rim: u runs outward from the inner face, v up from the floor; rounded on top. */
-function rimProfile(): THREE.Vector2[] {
-  const { width, height, round } = P.rim;
-  const points: THREE.Vector2[] = [new THREE.Vector2(0, 0)];
-  const arc = (cu: number, cv: number, from: number, to: number): void => {
-    for (let i = 0; i <= 6; i++) {
-      const a = from + ((to - from) * i) / 6;
-      points.push(new THREE.Vector2(cu + Math.cos(a) * round, cv + Math.sin(a) * round));
-    }
-  };
-  arc(round, height - round, Math.PI, Math.PI / 2);
-  arc(width - round, height - round, Math.PI / 2, 0);
-  points.push(new THREE.Vector2(width, 0));
-  return points;
-}
-
-/** 2. Straight rim piece: `length` long on x, its inner face on z = 0 and its body towards +z. */
-export function buildRimEdge(length = 1): THREE.Mesh {
-  const g = new THREE.ExtrudeGeometry(new THREE.Shape(rimProfile()), { depth: length, bevelEnabled: false });
-  g.translate(0, 0, -length / 2);
-  g.rotateY(-Math.PI / 2);
-  return shadowed(new THREE.Mesh(g, mats.rim));
+/** One point of the rim's cross-section: `u` outward from the inner face, `v` up from the floor. */
+interface ProfilePoint {
+  u: number;
+  v: number;
+  nu: number;
+  nv: number;
+  color: THREE.Color;
 }
 
 /**
- * 3. Corner piece: the rim's cross-section swept a quarter turn around the
- * corner's centre, for the +x/+z corner. Its inner face is `innerRadius` from that centre.
+ * Cross-section of the rim, as separate runs of points (a hard edge lies
+ * between two runs). From the floor: a straight inner wall, a small bright
+ * round, a flat top with the thin glow line, a large round shoulder and a
+ * leaning, darker outer side that ends in a notch over the underlay's lip.
  */
-export function buildRimCorner(): THREE.Mesh {
-  const profile = rimProfile()
-    .map((p) => new THREE.Vector2(p.x + P.rim.innerRadius, p.y))
-    .reverse();
-  return shadowed(new THREE.Mesh(new THREE.LatheGeometry(profile, 20, 0, Math.PI / 2), mats.rim));
+export function rimProfile(): ProfilePoint[][] {
+  const { width: W, height: H, innerRound: ri, outerRound: ro, lean, roundSteps } = P.rim;
+  const { lip, lipHeight } = P.underlay;
+  const main = tone(K.frame);
+  const mid = tone(K.frameMid);
+  const deep = tone(K.frameShadow);
+  const edge = tone(K.frameEdge);
+  const glow = tone(K.frameGlow);
+  const gloss = P.rim.gloss;
+  const shine = main.clone().lerp(edge, gloss.strength);
+  // The outer side darkens downward and the underlay's wall carries that on to the deep shadow.
+  const low = mid.clone().lerp(deep, P.rim.sideShade);
+  const beta = (lean * Math.PI) / 180;
+  // The shoulder's centre, placed so the leaning side runs from the shoulder to the outer foot.
+  const cv = H - ro;
+  const cu = W - ro * Math.cos(beta) - (cv + ro * Math.sin(beta) - lipHeight) * Math.tan(beta);
+  /** Colour along a run from its `stops` (place 0 to 1, colour), in order. */
+  const blend = (stops: readonly (readonly [number, THREE.Color])[], t: number): THREE.Color => {
+    let k = 0;
+    while (k < stops.length - 2 && t > stops[k + 1][0]) k++;
+    const [t0, c0] = stops[k];
+    const [t1, c1] = stops[k + 1];
+    return c0.clone().lerp(c1, Math.min(1, Math.max(0, (t - t0) / (t1 - t0))));
+  };
+  const arc = (centreU: number, centreV: number, radius: number, from: number, to: number, stops: readonly (readonly [number, THREE.Color])[], steps: number): ProfilePoint[] =>
+    Array.from({ length: steps + 1 }, (_, i) => {
+      const a = from + ((to - from) * i) / steps;
+      return { u: centreU + Math.cos(a) * radius, v: centreV + Math.sin(a) * radius, nu: Math.cos(a), nv: Math.sin(a), color: blend(stops, i / steps) };
+    });
+  const line = (u0: number, v0: number, u1: number, v1: number, c0: THREE.Color, c1: THREE.Color): ProfilePoint[] => {
+    const length = Math.hypot(u1 - u0, v1 - v0);
+    const nu = (v0 - v1) / length;
+    const nv = (u1 - u0) / length;
+    return [{ u: u0, v: v0, nu, nv, color: c0 }, { u: u1, v: v1, nu, nv, color: c1 }];
+  };
+  const g0 = ri + (cu - ri) * P.rim.glowAt - P.rim.glowWidth / 2;
+  const g1 = g0 + P.rim.glowWidth;
+  const sideU = cu + ro * Math.cos(beta);
+  const sideV = cv + ro * Math.sin(beta);
+  return [
+    line(0, 0, 0, H - ri, deep, mid),
+    arc(ri, H - ri, ri, Math.PI, Math.PI / 2, [[0, mid], [1, edge]], roundSteps),
+    line(ri, H, g0, H, edge, edge),
+    line(g0, H, g1, H, glow, glow),
+    line(g1, H, cu, H, main, main),
+    // The shoulder carries the gloss: a light streak part-way down, then the mid shadow.
+    arc(cu, cv, ro, Math.PI / 2, beta, [[0, main], [gloss.at - gloss.width, main], [gloss.at, shine], [gloss.at + gloss.width, main], [1, mid]], P.rim.shoulderSteps),
+    line(sideU, sideV, W, lipHeight, mid, low),
+    line(W, lipHeight, W - lip, lipHeight, low, low),
+    line(W - lip, lipHeight, W - lip, 0, low, low),
+  ];
 }
 
-/** Size of a whole board in cell units, for `cols` by `rows` cells with `gap` between tiles. */
+/**
+ * The rim's cross-section swept along a path. `place` turns a station `t`
+ * (0 to 1) and a cross-section point into a position and a normal; both ends
+ * are closed with a flat face so a loose piece is a solid.
+ */
+function sweepRim(stations: number, place: (t: number, u: number, v: number, nu: number, nv: number) => { p: THREE.Vector3; n: THREE.Vector3 }): THREE.BufferGeometry {
+  const runs = rimProfile();
+  const position: number[] = [];
+  const normal: number[] = [];
+  const color: number[] = [];
+  const index: number[] = [];
+  const push = (p: THREE.Vector3, n: THREE.Vector3, c: THREE.Color): number => {
+    position.push(p.x, p.y, p.z);
+    normal.push(n.x, n.y, n.z);
+    color.push(c.r, c.g, c.b);
+    return position.length / 3 - 1;
+  };
+  const corners = (a: number, b: number, c: number): THREE.Vector3 => {
+    const at = (i: number): THREE.Vector3 => new THREE.Vector3(position[i * 3], position[i * 3 + 1], position[i * 3 + 2]);
+    return at(b).sub(at(a)).cross(at(c).sub(at(a)));
+  };
+  /** Add a triangle, turned so that it faces along `facing`. */
+  const face = (a: number, b: number, c: number, facing: THREE.Vector3): void => {
+    if (corners(a, b, c).dot(facing) >= 0) index.push(a, b, c);
+    else index.push(a, c, b);
+  };
+  for (const run of runs) {
+    const rows: number[][] = [];
+    for (let s = 0; s <= stations; s++) {
+      rows.push(run.map((q) => {
+        const { p, n } = place(s / stations, q.u, q.v, q.nu, q.nv);
+        return push(p, n, q.color);
+      }));
+    }
+    for (let s = 0; s < stations; s++) for (let i = 0; i < run.length - 1; i++) {
+      const facing = place((s + 0.5) / stations, run[i].u, run[i].v, run[i].nu, run[i].nv).n;
+      face(rows[s][i], rows[s][i + 1], rows[s + 1][i], facing);
+      face(rows[s + 1][i], rows[s][i + 1], rows[s + 1][i + 1], facing);
+    }
+  }
+  // End faces: a fan from a point inside the cross-section, which sees every corner of it.
+  const outline = runs.flat();
+  const hub = { u: P.rim.width * 0.4, v: P.rim.height * 0.5 };
+  for (const t of [0, 1]) {
+    const here = place(t, hub.u, hub.v, 0, 0).p;
+    const facing = here.clone().sub(place(t === 0 ? 0.001 : 0.999, hub.u, hub.v, 0, 0).p).normalize();
+    const centre = push(here, facing, tone(K.frameMid));
+    const ring = outline.map((q) => push(place(t, q.u, q.v, 0, 0).p, facing, q.color));
+    for (let i = 0; i < ring.length; i++) face(centre, ring[i], ring[(i + 1) % ring.length], facing);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(position, 3));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(normal, 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(color, 3));
+  g.setIndex(index);
+  return g;
+}
+
+/** A peg under a rim piece, as in the drawing; only shown on loose pieces. */
+function rimPeg(u: number, x: number): THREE.Mesh {
+  const r = P.rim;
+  const g = once('rimPeg', () => {
+    const box = new THREE.BoxGeometry(r.peg, r.pegHeight, r.peg);
+    paint(box, K.frameShadow);
+    return box;
+  });
+  const mesh = new THREE.Mesh(g, kit.frame);
+  mesh.position.set(x, -r.pegHeight / 2, u);
+  return mesh;
+}
+
+/**
+ * 2. Straight rim piece: `length` long on x, its inner face on z = 0 and its
+ * body towards +z. Every piece is the same one-cell geometry; `length` only
+ * sets how long this copy is, so a side of any number of cells closes exactly.
+ */
+export function buildRimEdge(length = 1, pegs = false): THREE.Mesh {
+  const g = once('rimEdge', () => sweepRim(1, (t, u, v, nu, nv) => ({ p: new THREE.Vector3(t - 0.5, v, u), n: new THREE.Vector3(0, nv, nu) })));
+  const piece = new THREE.Mesh(g, kit.frame);
+  piece.scale.x = length;
+  if (pegs) for (const side of [-1, 1]) piece.add(rimPeg((P.rim.width - P.underlay.lip) / 2, side * P.rim.pegSpread));
+  return shadowed(piece);
+}
+
+/**
+ * 3. Corner piece: the same cross-section swept a quarter turn around the
+ * corner's centre, for the +x/+z corner. Its inner face is `innerRadius` from
+ * that centre, so its two ends match a straight piece exactly.
+ */
+export function buildRimCorner(pegs = false): THREE.Mesh {
+  const R = P.rim.innerRadius;
+  const g = once('rimCorner', () => sweepRim(P.rim.cornerSteps, (t, u, v, nu, nv) => {
+    const a = (t * Math.PI) / 2;
+    return { p: new THREE.Vector3(Math.cos(a) * (R + u), v, Math.sin(a) * (R + u)), n: new THREE.Vector3(Math.cos(a) * nu, nv, Math.sin(a) * nu) };
+  }));
+  const piece = new THREE.Mesh(g, kit.frame);
+  if (pegs) {
+    const reach = R + (P.rim.width - P.underlay.lip) / 2;
+    for (const a of [Math.PI / 8, (3 * Math.PI) / 8]) piece.add(rimPeg(Math.sin(a) * reach, Math.cos(a) * reach));
+  }
+  return shadowed(piece);
+}
+
+/**
+ * Size of a whole board in cell units, for `cols` by `rows` cells with `gap`
+ * between tiles: `inner` is the floor inside the rim, `outer` the rim's
+ * outside, which is also the underlay's.
+ */
 export function boardFootprint(cols: number, rows: number, gap: number): { innerW: number; innerD: number; outerW: number; outerD: number } {
   const side = (cells: number): number => cells * P.floorTile.size + (cells - 1) * gap + 2 * P.rim.margin;
   const innerW = side(cols);
@@ -142,63 +398,98 @@ export function boardFootprint(cols: number, rows: number, gap: number): { inner
   return { innerW, innerD, outerW: innerW + 2 * P.rim.width, outerD: innerD + 2 * P.rim.width };
 }
 
-/** 4. Underlay: one plate under the whole board with a low lip around it. Its top is y = 0. */
+/**
+ * What a board of `cols` by `rows` cells measures on a screen where its
+ * outside is `boardPx` wide: the pixels per cell unit and the sizes that follow.
+ */
+export function boardPixels(cols: number, rows: number, gap: number, boardPx: number): { unit: number; tile: number; gap: number; frame: number; width: number; height: number } {
+  const { outerW, outerD } = boardFootprint(cols, rows, gap);
+  const unit = boardPx / outerW;
+  return { unit, tile: P.floorTile.size * unit, gap: gap * unit, frame: P.rim.width * unit, width: boardPx, height: outerD * unit };
+}
+
+/**
+ * 4. Underlay: one tray under the whole board, sized by the grid, with a low
+ * lip that the rim's notch sits over. Its floor is y = 0. `pegs` adds the
+ * drawing's one socket per tile; they are hidden under the tiles, so the game leaves them out.
+ */
 export function buildUnderlay(cols: number, rows: number, gap: number, pegs = false): THREE.Group {
   const u = P.underlay;
   const { outerW, outerD } = boardFootprint(cols, rows, gap);
-  const radius = P.rim.innerRadius + P.rim.width + u.lip;
+  const deep = tone(K.frameShadow);
+  const low = tone(K.frameMid).lerp(deep, P.rim.sideShade);
+  const floor = tone(K.trayFloor);
+  const chamfer = u.chamfer;
+  const rings: Ring[] = [
+    { inset: chamfer, y: -u.height, out: 1, up: -1, color: deep },
+    { inset: 0, y: -u.height + chamfer, out: 1, up: -1, color: deep },
+    { inset: 0, y: -u.height + chamfer, out: 1, up: 0, color: deep },
+    { inset: 0, y: u.lipHeight, out: 1, up: 0, color: low },
+    { inset: 0, y: u.lipHeight, out: 0, up: 1, color: low },
+    { inset: u.lip, y: u.lipHeight, out: 0, up: 1, color: tone(K.frame) },
+    { inset: u.lip, y: u.lipHeight, out: -1, up: 0, color: low },
+    { inset: u.lip, y: 0, out: -1, up: 0, color: low },
+    { inset: u.lip, y: 0, out: 0, up: 1, color: floor },
+  ];
   const plate = new THREE.Group();
-  const base = new THREE.Mesh(slabOf(roundedRect(outerW + 2 * u.lip, outerD + 2 * u.lip, radius), u.height, 0.02), mats.underlay);
-  base.position.y = -u.height;
-  plate.add(base);
-  const ring = roundedRect(outerW + 2 * u.lip, outerD + 2 * u.lip, radius);
-  ring.holes.push(roundedRect(outerW, outerD, radius - u.lip));
-  plate.add(new THREE.Mesh(slabOf(ring, u.lipHeight, 0.012), mats.underlay));
+  const tray = new THREE.Mesh(loft(outerW, outerD, P.rim.innerRadius + P.rim.width, rings, true, P.rim.cornerSteps / 2), kit.tray);
+  plate.add(tray);
   if (pegs) {
-    const peg = new THREE.BoxGeometry(0.12, 0.05, 0.12);
+    const socket = once('socket', () => {
+      const g = new THREE.BoxGeometry(u.socket, u.socketHeight, u.socket);
+      paint(g, K.frameMid);
+      return g;
+    });
     const pitch = P.floorTile.size + gap;
     for (let x = 0; x < cols; x++) for (let z = 0; z < rows; z++) {
-      const mesh = new THREE.Mesh(peg, mats.rim);
-      mesh.position.set((x - (cols - 1) / 2) * pitch, 0.025, (z - (rows - 1) / 2) * pitch);
+      const mesh = new THREE.Mesh(socket, kit.tray);
+      mesh.position.set((x - (cols - 1) / 2) * pitch, u.socketHeight / 2, (z - (rows - 1) / 2) * pitch);
       plate.add(mesh);
     }
   }
-  return shadowed(plate);
+  shadowed(plate);
+  tray.receiveShadow = false;
+  return plate;
 }
 
-/** A whole board frame assembled from the modules: straight pieces per cell and four corners. */
-export function buildRim(cols: number, rows: number, gap: number): THREE.Group {
+/** Where one rim module goes on a board: its position, its turn around y and, for a straight piece, its length. */
+export interface RimPlace {
+  kind: 'edge' | 'corner';
+  x: number;
+  z: number;
+  turn: number;
+  length: number;
+}
+
+/** The rim of a `cols` by `rows` board as a list of modules: one straight piece per cell on each side, and four corners. */
+export function rimLayout(cols: number, rows: number, gap: number): RimPlace[] {
   const { innerW, innerD } = boardFootprint(cols, rows, gap);
   const r = P.rim.innerRadius;
-  const frame = new THREE.Group();
+  const places: RimPlace[] = [];
   const straightW = (innerW - 2 * r) / cols;
   const straightD = (innerD - 2 * r) / rows;
   for (let x = 0; x < cols; x++) {
     const cx = (x - (cols - 1) / 2) * straightW;
-    const front = buildRimEdge(straightW);
-    front.position.set(cx, 0, innerD / 2);
-    const back = buildRimEdge(straightW);
-    back.position.set(cx, 0, -innerD / 2);
-    back.rotation.y = Math.PI;
-    frame.add(front, back);
+    places.push({ kind: 'edge', x: cx, z: innerD / 2, turn: 0, length: straightW }, { kind: 'edge', x: cx, z: -innerD / 2, turn: Math.PI, length: straightW });
   }
   for (let z = 0; z < rows; z++) {
     const cz = (z - (rows - 1) / 2) * straightD;
-    const right = buildRimEdge(straightD);
-    right.position.set(innerW / 2, 0, cz);
-    right.rotation.y = Math.PI / 2;
-    const left = buildRimEdge(straightD);
-    left.position.set(-innerW / 2, 0, cz);
-    left.rotation.y = -Math.PI / 2;
-    frame.add(right, left);
+    places.push({ kind: 'edge', x: innerW / 2, z: cz, turn: Math.PI / 2, length: straightD }, { kind: 'edge', x: -innerW / 2, z: cz, turn: -Math.PI / 2, length: straightD });
   }
   const turns = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
   const signs: [number, number][] = [[1, 1], [1, -1], [-1, -1], [-1, 1]];
-  signs.forEach(([sx, sz], i) => {
-    const corner = buildRimCorner();
-    corner.position.set(sx * (innerW / 2 - r), 0, sz * (innerD / 2 - r));
-    corner.rotation.y = turns[i];
-    frame.add(corner);
-  });
+  signs.forEach(([sx, sz], i) => places.push({ kind: 'corner', x: sx * (innerW / 2 - r), z: sz * (innerD / 2 - r), turn: turns[i], length: 0 }));
+  return places;
+}
+
+/** A whole board frame assembled from the modules: straight pieces per cell and four corners. */
+export function buildRim(cols: number, rows: number, gap: number): THREE.Group {
+  const frame = new THREE.Group();
+  for (const place of rimLayout(cols, rows, gap)) {
+    const piece = place.kind === 'edge' ? buildRimEdge(place.length) : buildRimCorner();
+    piece.position.set(place.x, 0, place.z);
+    piece.rotation.y = place.turn;
+    frame.add(piece);
+  }
   return frame;
 }
