@@ -557,6 +557,13 @@ function callShip() {
   const s = state.s, lv = state.def;
   if (s.docked || s.ship >= lv.ships.length) return;
   if (!Logic.canDock(lv, s)) { state.shake = 1; world.padFlash = 1; sfx.bad(); say('Clear the berth before the ship comes in'); return; }
+  if (tune.dock_guard && !state.stuck) { // never let calling the ship in be the move that loses the level
+    const r = Logic.solve(lv, Logic.dock(lv, s), 120000);
+    if (r.solvable === false || (r.solvable === true && r.min > movesLeft())) {
+      state.shake = 1; sfx.bad(); events.push({ type: 'refused', why: 'dock-too-early' });
+      say(`Not yet: sort the quay first. The berth stores ${lv.berthCap}`); return;
+    }
+  }
   state.history.push(Logic.clone(s));
   state.s = Logic.dock(lv, s); state.sel = null; sfx.pick();
   events.push({ type: 'docked', ship: s.ship + 1 });
@@ -659,12 +666,18 @@ function drawHud(live) {
       const o = lv.ships[nxt], wd = o.length * 60 + 28;
       ctx.fillStyle = PAL.card; rrect(Math.min(W - wd - 12, Math.max(12, p.x - wd / 2)), p.y - 62, wd, 84, 18); ctx.fill();
       const cx = Math.min(W - wd / 2 - 12, Math.max(12 + wd / 2, p.x));
-      text(s.docked ? 'NEXT' : 'TAP TO CALL IN', cx, p.y - 44, 15 + 0, PAL.ink);
+      text(s.docked ? 'NEXT' : 'TAP WHEN READY', cx, p.y - 44, 15 + 0, PAL.ink);
       orderStrip(o, 0, cx, p.y - 8, 40, false);
     }
   }
+  // the empty berth says what it is: storage, and how full
+  if (!s.docked && lv.berthCap > 0 && !s.won && world.pontoon.position.y > -0.3) {
+    const p = project(world.bx + 0.9, 0.1, 1.9), label = `STORAGE ${s.berth.length}/${lv.berthCap}`;
+    ctx.font = `800 24px ${FONT}`; const tw = ctx.measureText(label).width + 28, x = Math.min(W - tw - 12, p.x - tw / 2 + 90);
+    ctx.fillStyle = PAL.ink; rrect(x, p.y - 4, tw, 44, 14); ctx.fill(); text(label, x + tw / 2, p.y + 19, 24, '#ffd76a', 'center', '800');
+  }
   // bottom: hint or warning, and the three buttons
-  let line = state.msgT > 0 ? state.msg : state.stuck ? 'Not enough moves left from here: undo' : lv.hint;
+  let line = state.msgT > 0 ? state.msg : state.stuck ? 'Not enough moves left from here: undo' : (!s.docked && lv.hintPad) || lv.hint;
   if (line && live) {
     const warn = state.stuck && state.msgT <= 0;
     let fs = 26; ctx.font = `700 ${fs}px ${FONT}`;

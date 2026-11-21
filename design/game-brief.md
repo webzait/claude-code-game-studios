@@ -233,6 +233,7 @@ Het einddoel is een internationaal schaalbare hybrid-casual mobiele puzzelgame m
 5. Omvang: Kies jij.
 6. Gevoel: Kies jij.
 7. Uitstraling: Kies jij. Kun je trouwens met hetzelfde effort ook artifact maken ipv browser of ben je dan beperkt
+After play: Ik heb het gespeeld. Level 5 is niet op te lossen
 
 **Pitch:** Verplaats containers tussen stapels op een piepkleine kade om elk schip in precies de juiste volgorde te beladen, voordat je zetten op zijn.
 
@@ -274,6 +275,7 @@ De eerste echte moeite komt in level 3–4 (ongeveer minuut 2–3): te weinig vr
 - [x] Lege ligplaats als tijdelijke opslag na vertrek
 - [x] 5 opbouwende levels, het laatste met twee schepen
 - [x] Solver die per level oplosbaarheid en het minimale aantal zetten bewijst
+- [x] Een schip kan niet worden binnengeroepen zolang dat het level onoplosbaar maakt; de lege ligplaats toont STORAGE en hoe vol hij is
 - [ ] Gamefeel: snelle kraanboog, klik bij laden, schudden bij een ongeldige zet, vertrek, level complete; een tik tijdens een animatie wordt onthouden
 - [x] Kleur plus symbool op elke container
 

@@ -27,6 +27,7 @@ window.CONFIG = {
   margin_scale: { value: 1, min: 0, max: 3, step: 0.25 },          // multiplies every level's margin; 0 = perfect play only
   star3_over: { value: 0, min: 0, max: 3, step: 1 },               // moves over the minimum that still earn three stars
   star2_over: { value: 1, min: 0, max: 5, step: 1 },               // moves over the minimum that still earn two stars
+  dock_guard: { value: 1, min: 0, max: 1, step: 1 },               // 1 = a ship cannot be called in while that would make the level unwinnable
   dead_end_warn: { value: 1, min: 0, max: 1, step: 1 },            // 1 = say so when the moves left can no longer finish the level
 
   // ---- View --------------------------------------------------------------------------------

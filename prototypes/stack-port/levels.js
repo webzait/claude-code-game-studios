@@ -22,7 +22,8 @@ window.LEVELS = [
   },
   { // 5: two ships, a full yard: it cannot be done without the empty berth
     stacks: [['R', 'B', 'B'], ['R', 'Y', 'G']], cap: 3, ships: [['G'], ['R', 'B', 'Y', 'R', 'B']],
-    berthCap: 2, margin: 2, hint: 'The empty berth is storage. Tap the next ship to call it in',
+    berthCap: 2, margin: 2, hint: 'Load green first. The empty berth then becomes storage',
+    hintPad: 'Tap the yellow berth to store containers. Call the ship in last',
   },
 ];
 if (typeof module !== 'undefined' && module.exports) module.exports = window.LEVELS;
