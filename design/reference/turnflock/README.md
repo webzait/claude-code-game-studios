@@ -13,3 +13,5 @@ Colour tokens live in `data/config.json` (`colors.kit`, `colors.robots`) and the
 ## source/
 
 The owner's original, full-size images from the Asset Kit, kept as the starting point for the game's smaller copies in `assets/turnflock/`: `harbor-original.png` (harbour backdrop) and `bush-original.png` (transparent bush). Not loaded by the game.
+
+`source/logo-original.png` is the owner's TURNFLOCK logo (2026-11-21), to be used in the game. It replaces the earlier note about ignoring the logo in the old reference pictures: the "Prismport / Beacon Bay" banner, the lighthouse and the level dots stay out.
