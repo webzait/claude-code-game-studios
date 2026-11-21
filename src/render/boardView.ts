@@ -141,17 +141,17 @@ export class BoardView {
     // Soft studio reflections give the glossy materials something to mirror.
     const pmrem = new THREE.PMREMGenerator(this.renderer);
     this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    this.scene.environmentIntensity = 0.22;
+    this.scene.environmentIntensity = CONFIG.light.reflections;
     pmrem.dispose();
     this.scene.add(this.boardGroup);
-    this.scene.add(new THREE.HemisphereLight('#FFFFFF', '#B9C8EE', 1.05));
-    this.sun = new THREE.DirectionalLight('#FFFFFF', 1.35);
+    this.scene.add(new THREE.HemisphereLight(CONFIG.light.sky, CONFIG.light.ground, CONFIG.light.ambient));
+    this.sun = new THREE.DirectionalLight('#FFFFFF', CONFIG.light.sun);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(2048, 2048);
     this.sun.shadow.radius = 5;
     this.sun.shadow.bias = -0.0004;
     this.scene.add(this.sun, this.sun.target);
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.ShadowMaterial({ color: '#3A4C86', opacity: 0.16 }));
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.ShadowMaterial({ color: '#1F3A7A', opacity: CONFIG.light.shadow }));
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = BOX_BOTTOM - 0.01;
     ground.receiveShadow = true;
@@ -236,7 +236,8 @@ export class BoardView {
   private buildKitBoard(level: Level, pieces: Kit['board']): void {
     const { width, height, walls, exitX, exitY } = level.board;
     const { w, d } = this.boardSize();
-    const frameMat = new THREE.MeshStandardMaterial({ color: CONFIG.colors.kit.frame, roughness: 0.4 });
+    const frameMat = new THREE.MeshPhysicalMaterial({ color: CONFIG.colors.kit.frame, roughness: 0.35, clearcoat: 0.35, clearcoatRoughness: 0.3 });
+    const gapMat = new THREE.MeshStandardMaterial({ color: CONFIG.colors.kit.gap, roughness: 0.5 });
     const underlayMat = new THREE.MeshStandardMaterial({ color: CONFIG.colors.kit.frameShadow, roughness: 0.45 });
     // Everything that never moves goes into one group and is fused into a few meshes.
     const fixed = new THREE.Group();
@@ -250,7 +251,7 @@ export class BoardView {
     // 4. Underlay: one plate under the whole grid; its top shows in the gaps between tiles.
     const underlay = new THREE.Mesh(slab(w, d, GRID.underlay, GRID.cornerRadius), underlayMat);
     fixed.add(underlay);
-    const gapFill = new THREE.Mesh(slab(w - 2 * GRID.rim, d - 2 * GRID.rim, 0.01, 0.02), frameMat);
+    const gapFill = new THREE.Mesh(slab(w - 2 * GRID.rim, d - 2 * GRID.rim, 0.01, 0.02), gapMat);
     gapFill.position.y = 0.012;
     fixed.add(gapFill);
     // 1, 5, 6. Floor tile per cell; wall or exit from the level data.

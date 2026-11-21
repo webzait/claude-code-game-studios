@@ -32,3 +32,5 @@
 - `board.grid` — the modular board in world units (blueprint v1): `tile` 1.0, `gap` between tiles 0.055, `rim` width 0.16, `rimHeight`, `underlay` thickness, `cornerRadius`; `wallFill` and `robotFill` are the share of a tile an obstacle (0.88–0.93) and a robot (0.82–0.88) fill; `wallHeight` scales the kit obstacle's height.
 - `colors.kit` — fixed board colours from the style tokens (tiles, frame, obstacle, exit).
 - `lab.previewMoves` — move budget on the board-size test boards (`data/test-boards.json`), which are not levels.
+- `light` — scene lighting: hemisphere `sky`/`ground` colours and `ambient` strength, `sun` strength, `reflections` (environment map strength) and ground `shadow` opacity. Tuned on screenshots so top faces show their colour token without blowing out.
+- `colors.robots` — per colour the top/main/side/deep tones the robot body is shaded with, plus eye colours. `robot` — lean towards the player (radians), eye size/spread/height, pupil size, gloss, how far the top lightens (`topLight`), arrow scale and offset.

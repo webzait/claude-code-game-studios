@@ -124,30 +124,77 @@ export function buildRobot(id: number, color: Color): RobotView {
   return { id, color, root, body, cap, lids, aim, angle: 0, blinkIn: 1 + ((id * 37) % 23) / 6, visibleScale: 1 };
 }
 
-/** Tuning of the asset-kit robot inside one cell. */
 /** The kit body is 0.89 wide; scaled so the robot fills the configured share of a tile. */
 const KIT_BODY_WIDTH = 0.89;
+const KIT_BODY_HEIGHT = 0.8;
+const KIT_BODY_DEPTH = 0.84;
 const KIT_SCALE = CONFIG.board.grid.robotFill / KIT_BODY_WIDTH;
-const KIT_TILT = -0.3;
-/** The kit's eyes are small; they are enlarged and raised to read as big eyes high on the front. */
-const KIT_EYE_SCALE = 1.55;
-const KIT_FACE_LIFT = 0.07;
+const BOT = CONFIG.robot;
 
-/** Scale a model part around its own middle rather than around the model's origin. */
-function growInPlace(node: THREE.Object3D, sx: number, sy: number, lift: number): void {
-  // The kit's parts carry no transform of their own, so the shape's own box is its place in the model.
-  const geometry = (node as THREE.Mesh).geometry as THREE.BufferGeometry;
-  geometry.computeBoundingBox();
-  const centre = geometry.boundingBox!.getCenter(new THREE.Vector3());
-  node.scale.set(sx, sy, 1);
-  node.position.set(centre.x * (1 - sx), centre.y * (1 - sy) + lift, 0);
+/**
+ * Rounded block for one colour, shaded from a deep underside through the side
+ * and main colour to a light top, so the toy has depth even in flat light.
+ */
+function makeKitBody(color: Color): THREE.BufferGeometry {
+  const g = new RoundedBoxGeometry(KIT_BODY_WIDTH, KIT_BODY_HEIGHT, KIT_BODY_DEPTH, 8, 0.26);
+  const tones = CONFIG.colors.robots[color];
+  const stops: [number, THREE.Color][] = [
+    [-0.5, new THREE.Color(tones.deep)],
+    [-0.28, new THREE.Color(tones.side)],
+    [0.12, new THREE.Color(tones.main)],
+    // The top face is what the camera mostly sees: keep it close to the main colour.
+    [0.5, new THREE.Color(tones.main).lerp(new THREE.Color(tones.top), BOT.topLight)],
+  ];
+  const position = g.getAttribute('position');
+  const colors = new Float32Array(position.count * 3);
+  const mixed = new THREE.Color();
+  for (let i = 0; i < position.count; i++) {
+    const t = position.getY(i) / KIT_BODY_HEIGHT;
+    let k = 0;
+    while (k < stops.length - 2 && t > stops[k + 1][0]) k++;
+    const [t0, c0] = stops[k];
+    const [t1, c1] = stops[k + 1];
+    mixed.copy(c0).lerp(c1, Math.min(1, Math.max(0, (t - t0) / (t1 - t0))));
+    colors.set([mixed.r, mixed.g, mixed.b], i * 3);
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  return g;
+}
+
+const kitShared = {
+  bodies: { red: makeKitBody('red'), blue: makeKitBody('blue'), yellow: makeKitBody('yellow') },
+  bodyMat: new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.34, clearcoat: BOT.gloss, clearcoatRoughness: 0.1, envMapIntensity: 0.6 }),
+  white: new THREE.MeshPhysicalMaterial({ color: CONFIG.colors.robots.eyeWhite, roughness: 0.25, clearcoat: 0.5 }),
+  black: new THREE.MeshPhysicalMaterial({ color: CONFIG.colors.robots.eye, roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.05 }),
+  glint: new THREE.MeshBasicMaterial({ color: CONFIG.colors.robots.eyeWhite }),
+  ball: new THREE.SphereGeometry(1, 28, 20),
+};
+
+/** Two large glossy eyes, high on the front face: white, a dark pupil and a bright glint each. */
+function makeKitEyes(): THREE.Group {
+  const eyes = new THREE.Group();
+  const front = KIT_BODY_DEPTH / 2;
+  for (const side of [-1, 1]) {
+    const white = new THREE.Mesh(kitShared.ball, kitShared.white);
+    white.scale.set(BOT.eyeSize, BOT.eyeSize * 1.08, BOT.eyeSize * 0.45);
+    white.position.set(side * BOT.eyeSpread, BOT.eyeHeight, front - 0.01);
+    const pupil = new THREE.Mesh(kitShared.ball, kitShared.black);
+    pupil.scale.set(BOT.pupilSize, BOT.pupilSize * 1.08, BOT.pupilSize * 0.5);
+    pupil.position.set(side * BOT.eyeSpread * 0.94, BOT.eyeHeight - 0.015, front + BOT.eyeSize * 0.3);
+    const glint = new THREE.Mesh(kitShared.ball, kitShared.glint);
+    glint.scale.setScalar(BOT.pupilSize * 0.32);
+    glint.position.set(pupil.position.x - 0.035, pupil.position.y + 0.04, pupil.position.z + BOT.pupilSize * 0.42);
+    eyes.add(white, pupil, glint);
+  }
+  return eyes;
 }
 
 /**
- * Build a robot from the asset kit's model. The model's face looks at the
- * player and its arrow points north, so the body stays put and only the arrow
- * turns with the heading. The model is leaned back a little so the eyes on its
- * front can be seen from the steep camera.
+ * Build a robot on the asset kit's model: its arrow and feet are kept, the
+ * body is replaced by a rounder shaded block and the small face by two large
+ * eyes high on the front. The face looks at the player and only the arrow
+ * turns with the heading. The camera looks almost straight down, so the robot
+ * is leaned back to show its face.
  */
 export function buildKitRobot(id: number, color: Color, template: THREE.Group): RobotView {
   const root = new THREE.Group();
@@ -155,30 +202,31 @@ export function buildKitRobot(id: number, color: Color, template: THREE.Group): 
   root.add(body);
   const model = template.clone(true);
   const lean = new THREE.Group();
-  lean.rotation.x = KIT_TILT;
+  lean.rotation.x = -BOT.lean;
   lean.scale.setScalar(KIT_SCALE);
-  // The model is centred on its middle; lift it so its feet stand on the tile.
-  lean.position.y = 0.45 * KIT_SCALE;
-  lean.add(model);
+  // Lift it so the leaned block still rests on the tile instead of sinking into it.
+  lean.position.y = ((KIT_BODY_HEIGHT / 2) * Math.cos(BOT.lean) + (KIT_BODY_DEPTH / 2) * Math.sin(BOT.lean)) * KIT_SCALE * 0.9;
   body.add(lean);
   const cap = new THREE.Group();
+  const arrowParts = new THREE.Group();
+  const still = new THREE.Group();
   const arrows: THREE.Object3D[] = [];
-  const face: THREE.Object3D[] = [];
+  const feet: THREE.Object3D[] = [];
   model.traverse((node) => {
     if (node.name.startsWith('direction_arrow')) arrows.push(node);
-    else if (node.name.startsWith('eye') || node.name === 'face_panel') face.push(node);
+    else if (node.name.startsWith('foot')) feet.push(node);
   });
-  for (const part of face) {
-    if (part.name === 'face_panel') growInPlace(part, 1, 1.35, KIT_FACE_LIFT);
-    else growInPlace(part, KIT_EYE_SCALE, KIT_EYE_SCALE, KIT_FACE_LIFT);
-  }
-  // The arrow turns on its own; everything else is fused into a few meshes.
-  const arrowParts = new THREE.Group();
   for (const arrow of arrows) arrowParts.add(arrow);
-  const still = fuse(model);
+  for (const foot of feet) still.add(foot);
+  still.add(new THREE.Mesh(kitShared.bodies[color], kitShared.bodyMat), makeKitEyes());
+  // The arrow lay on the kit body's top, which was a little higher than the new one.
+  arrowParts.position.y = KIT_BODY_HEIGHT / 2 - 0.415;
+  // Smaller and a little towards the player, so no tip runs over the rounded back edge.
+  cap.scale.set(BOT.arrowScale, 1, BOT.arrowScale);
+  cap.position.z = BOT.arrowForward;
+  // The arrow turns on its own; everything else is fused into a few meshes.
   cap.add(fuse(arrowParts));
-  lean.remove(model);
-  lean.add(still, cap);
+  lean.add(fuse(still), cap);
   const aim = (angle: number): void => {
     cap.rotation.y = angle;
   };

@@ -72,12 +72,14 @@ const PART_COLORS: Record<string, string> = {
   'exit_tile:green_face': K.exit,
   'exit_tile:glow_ring_front': K.exitGlow,
   'exit_tile:glow_ring_back': K.exitGlow,
+  'exit_tile:check_short': K.check,
+  'exit_tile:check_long': K.check,
   'wall_block:body': K.obstacle,
-  'wall_block:top_plate': K.obstacle,
-  'wall_block:bolt1': K.obstacleShadow,
-  'wall_block:bolt2': K.obstacleShadow,
-  'wall_block:bolt3': K.obstacleShadow,
-  'wall_block:bolt4': K.obstacleShadow,
+  'wall_block:top_plate': K.obstacleTop,
+  'wall_block:bolt1': K.obstacleBolt,
+  'wall_block:bolt2': K.obstacleBolt,
+  'wall_block:bolt3': K.obstacleBolt,
+  'wall_block:bolt4': K.obstacleBolt,
 };
 /** The loader drops the colon from part names, so parts are looked up without it. */
 const PART_BY_NODE = new Map(Object.entries(PART_COLORS).map(([name, color]) => [name.replace(/:/g, ''), color]));
@@ -98,7 +100,12 @@ function parse(loader: GLTFLoader, dataUri: string): Promise<THREE.Group> {
           const fixed = PART_BY_NODE.get(node.name.replace(/:/g, ''));
           if (fixed) material.color.set(fixed);
           else material.color.convertSRGBToLinear();
-          material.roughness = Math.max(material.roughness, 0.4);
+          material.roughness = 0.32;
+          // The exit lights up a little by itself so it reads as the goal.
+          if (node.name.startsWith('exit_tile') && /green|glow/.test(node.name)) {
+            material.emissive.copy(material.color);
+            material.emissiveIntensity = 0.35;
+          }
         }
       });
       resolve(gltf.scene);

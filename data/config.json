@@ -15,17 +15,43 @@
     "ink": "#22305C",
     "wallBolt": "#5F667E",
     "kit": {
-      "tileLight": "#F1F4FA",
-      "tileMid": "#E3E8F2",
-      "tileEdge": "#D4DBE7",
-      "frame": "#B9C9F2",
-      "frameShadow": "#95A8D8",
-      "obstacle": "#8C9AB3",
-      "obstacleShadow": "#6D7891",
-      "obstacleHighlight": "#B8C4DA",
-      "exit": "#42E86B",
-      "exitShadow": "#24B84A",
-      "exitGlow": "#8CFFAA"
+      "tileLight": "#F7FAFF",
+      "tileMid": "#EDF2FB",
+      "tileEdge": "#D7E1F0",
+      "gap": "#8FA7E6",
+      "frame": "#B7C8F7",
+      "frameShadow": "#718AD2",
+      "frameGlow": "#8CE8FF",
+      "obstacleTop": "#A9B8D5",
+      "obstacle": "#8FA0C3",
+      "obstacleBolt": "#455271",
+      "exitTop": "#6BFF76",
+      "exit": "#39E85C",
+      "exitShadow": "#1FB241",
+      "exitGlow": "#A8FFAE",
+      "check": "#F9FFFF"
+    },
+    "robots": {
+      "red": {
+        "top": "#FF7B80",
+        "main": "#F14A4F",
+        "side": "#CC3039",
+        "deep": "#A8222D"
+      },
+      "blue": {
+        "top": "#63A9FF",
+        "main": "#2E84F1",
+        "side": "#1E66C7",
+        "deep": "#164D9A"
+      },
+      "yellow": {
+        "top": "#FFE98A",
+        "main": "#F4C62F",
+        "side": "#D39C0D",
+        "deep": "#B88406"
+      },
+      "eye": "#111826",
+      "eyeWhite": "#FFFFFF"
     }
   },
   "anim": {
@@ -77,7 +103,7 @@
   },
   "board": {
     "roomy": {
-      "tilt": 20,
+      "tilt": 12,
       "frame": 0.36,
       "spareAbove": 0.5
     },
@@ -88,11 +114,11 @@
     },
     "grid": {
       "tile": 1.0,
-      "gap": 0.055,
-      "rim": 0.16,
-      "rimHeight": 0.27,
+      "gap": 0.06,
+      "rim": 0.2,
+      "rimHeight": 0.3,
       "underlay": 0.2,
-      "cornerRadius": 0.16,
+      "cornerRadius": 0.2,
       "wallFill": 0.9,
       "wallHeight": 0.72,
       "robotFill": 0.84
@@ -106,5 +132,24 @@
     "perfect": 10,
     "hintCost": 10,
     "extraMovesCost": 25
+  },
+  "light": {
+    "sky": "#FFFFFF",
+    "ground": "#7F95D8",
+    "ambient": 0.84,
+    "sun": 1.6,
+    "reflections": 0.14,
+    "shadow": 0.32
+  },
+  "robot": {
+    "lean": 0.55,
+    "eyeSize": 0.175,
+    "eyeSpread": 0.175,
+    "eyeHeight": 0.19,
+    "pupilSize": 0.115,
+    "gloss": 0.3,
+    "topLight": 0.2,
+    "arrowScale": 0.95,
+    "arrowForward": 0.05
   }
 }
