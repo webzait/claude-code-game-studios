@@ -1,4 +1,5 @@
 import './ui/style.css';
+import './ui/tf-buttons.css';
 import { Sfx } from './audio';
 import { CONFIG } from './config';
 import { step } from './engine/engine';
@@ -357,7 +358,7 @@ class Game {
       nudge: this.nudge ?? (this.levelIndex === 0 && !this.touched ? 'forward' : null),
       hint: this.hint,
       hintWarn: this.hintWarn,
-      hintLabel: this.scanResult?.kind === 'on-route' && this.nudge === null && hintPrice(this.save.lab.freeHelp) > 0 ? `Hint · ${hintPrice(this.save.lab.freeHelp)}` : 'Hint',
+      hintLabel: this.scanResult?.kind === 'on-route' && this.nudge === null && hintPrice(this.save.lab.freeHelp) > 0 ? String(hintPrice(this.save.lab.freeHelp)) : '',
     });
   }
 

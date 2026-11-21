@@ -1,0 +1,93 @@
+/* The Turnflock button family: real HTML buttons, each a moulded block (.tf-face) that sinks into the
+   surface. Shared by the game and the parts sheet. */
+/* The button. Sizes come from four custom properties: --w, --h (the top face), --d (depth of the
+   front wall) and --r (corner radius). The element is the full footprint, wall included, so its
+   layout and its touch target do not change when the block is pressed. */
+.tf-btn {
+  --press: calc(var(--d) * var(--press-fraction, .8));
+  --face-top: var(--c-top); --face: var(--c-main); --wall: var(--c-side); --wall-deep: var(--c-deep);
+  --ink-c: #fff; --ink-shadow: rgba(0, 0, 0, .24); --gloss: .22; --cast: rgba(36, 49, 79, .42);
+  position: relative; display: inline-block; flex: none; width: var(--w); height: calc(var(--h) + var(--d)); min-width: 44px; min-height: 44px;
+  border: 0; padding: 0; margin: 0; background: none; font: inherit; color: var(--ink-c); cursor: pointer;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation; user-select: none; -webkit-user-select: none;
+}
+/* The shadow the block casts; it stays put, sized to what is left standing when the block is down. */
+.tf-btn::before {
+  content: ""; position: absolute; left: 0; right: 0; top: var(--press); bottom: 0; border-radius: var(--r);
+  box-shadow: 0 calc(var(--d) * .3) calc(var(--d) * .45) var(--cast), 0 2px 2px rgba(36, 49, 79, .35);
+}
+/* The surface the block sinks into: whatever slides below the footprint is cut off. */
+.tf-clip { position: absolute; inset: 0; border-radius: var(--r); overflow: hidden; }
+/* The block itself, one moulded piece like a keycap: the body is the footprint in the wall colours,
+   and the top face is drawn on it, set in a little at the top and sides and by the depth at the
+   front. A bright rim and a soft blend round the edge between the face and the slopes. */
+.tf-face {
+  --side: calc(var(--h) * .028 + 1px); --lip: calc(var(--h) * .015 + 1px);
+  position: absolute; inset: 0; border-radius: var(--r); padding: var(--lip) var(--side) var(--d);
+  display: flex; align-items: center; justify-content: center; gap: calc(var(--h) * .13);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, .14), rgba(255, 255, 255, 0) 16%, rgba(0, 0, 0, 0) 84%, rgba(0, 0, 0, .14)),
+    linear-gradient(180deg, color-mix(in srgb, var(--face-top) 60%, #fff) 0, var(--wall) calc(var(--h) * .3), var(--wall) calc(var(--h) + var(--d) * .55), var(--wall-deep) 100%);
+  box-shadow: inset 0 -1.5px 1px rgba(255, 255, 255, .18), inset 0 0 0 1px rgba(0, 0, 0, .06);
+  transition: transform .07s cubic-bezier(.3, .7, .4, 1);
+}
+/* The top face. */
+.tf-face::before {
+  content: ""; position: absolute; left: var(--side); right: var(--side); top: var(--lip); bottom: var(--d); pointer-events: none;
+  border-radius: calc(var(--r) - var(--side) * .6);
+  background:
+    radial-gradient(90% 70% at 30% 8%, rgba(255, 255, 255, var(--gloss)), rgba(255, 255, 255, 0) 70%),
+    linear-gradient(180deg, var(--face-top) 0, var(--face) 55%, var(--face) 100%);
+  box-shadow:
+    0 0 0 calc(var(--h) * .008 + .6px) color-mix(in srgb, var(--face-top) 80%, var(--face)),
+    0 calc(var(--h) * .02 + 1px) calc(var(--h) * .03 + 1px) calc(var(--h) * .012 + 1px) color-mix(in srgb, var(--face) 70%, var(--wall)),
+    inset 0 calc(var(--h) * .02 + 1px) calc(var(--h) * .03) rgba(255, 255, 255, .35),
+    inset 0 calc(var(--h) * -.03 - 1px) calc(var(--h) * .05) color-mix(in srgb, var(--face) 80%, var(--wall));
+}
+.tf-face svg { position: relative; z-index: 1; flex: none; width: var(--icon); height: var(--icon); overflow: visible; }
+.tf-face .tf-ink-shadow { color: var(--ink-shadow); }
+.tf-face img { position: relative; z-index: 1; width: calc(var(--h) * .68); height: calc(var(--h) * .68); }
+.tf-label { position: relative; z-index: 1; font-weight: 800; font-size: var(--fs, calc(var(--h) * .34)); letter-spacing: .01em; line-height: 1; }
+
+/* Pressed: the whole block sinks by most of its depth and loses a little light. */
+.tf-btn:active:not(:disabled) .tf-face, .tf-btn.pressed .tf-face { transform: translateY(var(--press)); filter: brightness(.94); }
+.tf-btn:focus-visible { outline: 3px solid #24314f; outline-offset: 3px; border-radius: var(--r); }
+
+/* Disabled: washed out, half sunk, no gloss; still the same footprint. */
+.tf-btn:disabled {
+  --face-top: color-mix(in srgb, var(--c-top) 30%, #dfe4ee); --face: color-mix(in srgb, var(--c-main) 30%, #d3d9e6);
+  --wall: color-mix(in srgb, var(--c-side) 26%, #b9c2d4); --wall-deep: color-mix(in srgb, var(--c-deep) 26%, #a8b2c7);
+  --ink-shadow: transparent; --cast: rgba(36, 49, 79, .16); cursor: not-allowed;
+}
+.tf-btn:disabled .tf-face { transform: translateY(calc(var(--press) * .5)); }
+.tf-btn:disabled .tf-face > * { opacity: .6; }
+.tf-btn:disabled { --gloss: 0; }
+
+/* Utility and hint: near-white block with a dark outline and a clearly darker wall, so it never reads as a flat capsule. */
+.tf-utility, .tf-hint {
+  --c-top: #ffffff; --c-main: #f1f4fd; --c-side: #c3cce2; --c-deep: #9eabc8;
+  --ink-c: #24314f; --ink-shadow: transparent; --gloss: .9; --icon: calc(var(--h) * .52);
+}
+.tf-utility .tf-face, .tf-hint .tf-face { box-shadow: inset 0 0 0 1.5px rgba(36, 49, 79, .2), inset 0 -2.5px 1px rgba(255, 255, 255, .3); }
+.tf-utility:disabled, .tf-hint:disabled { --ink-c: #7c879f; }
+.tf-hint { --icon: calc(var(--h) * .66); }
+.tf-hint.compact .tf-label { display: none; }
+
+/* Action: the four owner tones. */
+.tf-action { --icon: calc(var(--h) * .54); }
+.tf-action.red { --c-top: #ff646b; --c-main: #f1454b; --c-side: #bd2732; --c-deep: #a21d28; --glow: #ff8a90; }
+.tf-action.blue { --c-top: #59a5ff; --c-main: #2e84f1; --c-side: #1a61be; --c-deep: #154c95; --glow: #7db9ff; }
+.tf-action.yellow { --c-top: #ffe473; --c-main: #f4c62f; --c-side: #d29a0d; --c-deep: #b37b04; --glow: #ffe98c; --ink-c: #33290f; --ink-shadow: rgba(255, 255, 255, .45); }
+.tf-action.forward { --c-top: #58638a; --c-main: #3d4769; --c-side: #29314a; --c-deep: #1e243a; --glow: #9aa8d8; --gloss: .14; }
+
+/* Nudge: the suggested next move. A bright ring that breathes; a still ring when motion is reduced. */
+.tf-btn.nudge::after {
+  content: ""; position: absolute; inset: -5px; border-radius: calc(var(--r) + 5px); pointer-events: none;
+  border: 3px solid #fff; box-shadow: 0 0 0 3px var(--glow, #fff), 0 0 14px 5px var(--glow, #fff);
+  animation: tf-nudge 1.1s ease-in-out infinite alternate;
+}
+@keyframes tf-nudge { from { opacity: .55; transform: scale(.985); } to { opacity: 1; transform: scale(1.03); } }
+@media (prefers-reduced-motion: reduce) {
+  .tf-face { transition: none; }
+  .tf-btn.nudge::after { animation: none; }
+}
