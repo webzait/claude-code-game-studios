@@ -2,6 +2,10 @@
 # origin: you = supplied by the project owner (TURNFLOCK Asset Kit and Modular Board zips, 2026-11-21).
 turnflock/bg/harbor.jpg: { origin: you, source: "Asset Kit bg/harbor.png", change: "resized to 810x1080, softly blurred so it stays behind the game, JPEG" }
 turnflock/decor/bush.webp: { origin: you, source: "Asset Kit decor/bush.png", change: "resized to 560 wide, WebP" }
+turnflock/decor/decor-bush-large.webp: { origin: you, source: "design/reference/turnflock/source/bush-original.png (Asset Kit decor/bush.png)", change: "the big right-hand cluster cut out, retoned to the bush palette, darker base and baked shadow, 520 wide, WebP; made by tools/asset-pipeline/turnflock-decor.py; parts page only, not in the game yet" }
+turnflock/decor/decor-bush-small.webp: { origin: you, source: "design/reference/turnflock/source/bush-original.png (Asset Kit decor/bush.png)", change: "the small left-hand cluster cut out, lighter tone, darker base and baked shadow, 400 wide, WebP; same script; parts page only" }
+turnflock/decor/decor-tuft-clover.webp: { origin: you, source: "design/reference/turnflock/source/bush-original.png (Asset Kit decor/bush.png)", change: "the three front balls of the big cluster cut out, lighter tone, soft shadow, slightly softened, 300 wide, WebP; same script; parts page only" }
+turnflock/decor/decor-sprig-top.webp: { origin: you, source: "design/reference/turnflock/source/bush-original.png (Asset Kit decor/bush.png)", change: "two grass blades cut out as leaves and fanned into a hanging sprig, darker tone, soft shadow, 280 wide, WebP; same script; parts page only" }
 turnflock/ui/coin.webp: { origin: you, source: "Asset Kit ui/coin.png", change: "trimmed, 144x144, WebP" }
 turnflock/ui/hint.webp: { origin: you, source: "Asset Kit ui/hint.png", change: "trimmed, 144x144, WebP" }
 turnflock/ui/extra-moves.webp: { origin: you, source: "Asset Kit ui/extra-3-moves.png", change: "trimmed, 144x144, WebP" }

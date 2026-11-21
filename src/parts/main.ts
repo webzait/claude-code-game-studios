@@ -5,6 +5,11 @@ import type { Color } from '../engine/types';
 import parts from '../../data/parts.json';
 import hintIcon from '../../assets/turnflock/ui/hint.webp';
 import { boardPixels, buildExit, buildFloorTile, buildObstacle, buildRim, buildRimCorner, buildRimEdge, buildUnderlay, rimLayout } from '../render/parts/board';
+import decorBushLarge from '../../assets/turnflock/decor/decor-bush-large.webp';
+import decorBushSmall from '../../assets/turnflock/decor/decor-bush-small.webp';
+import decorTuftClover from '../../assets/turnflock/decor/decor-tuft-clover.webp';
+import decorSprigTop from '../../assets/turnflock/decor/decor-sprig-top.webp';
+import { buildExit, buildFloorTile, buildObstacle, buildRim, buildRimCorner, buildRimEdge, buildUnderlay } from '../render/parts/board';
 import { buildFlockbot } from '../render/parts/flockbot';
 import './parts.css';
 
@@ -385,6 +390,171 @@ for (const [cols, rows] of [[5, 5], [6, 6], [8, 8], [4, 7]] as const) {
     'Alleen de glans op het water schuift en ademt heel langzaam (38 s en 9 s). Alleen CSS, geen extra afbeeldingen.');
   motion.querySelector<HTMLInputElement>('#bg-motion-toggle')!.addEventListener('change', (event) => {
     motion.querySelector('.tf-bg')!.classList.toggle('tf-bg-motion', (event.target as HTMLInputElement).checked);
+// Foreground decoration: bushes cut from the owner's one original, as their own layer.
+// Not in the playable game yet. Sizes and positions live in parts.css (.tf-decor-*).
+{
+  const ART = {
+    large: { src: decorBushLarge, name: 'Grote hoekstruik', role: 'dichtbij: scherp, stevige schaduw' },
+    small: { src: decorBushSmall, name: 'Kleine struik', role: 'dichtbij, lichtere tint' },
+    clover: { src: decorTuftClover, name: 'Klavertuf', role: 'verder weg: kleiner, zachter' },
+    sprig: { src: decorSprigTop, name: 'Bladtakje (bovenhoek)', role: 'hangt in de bovenhoek, zacht' },
+  } as const;
+  type Art = keyof typeof ART;
+  /** Where each piece goes; the class decides its place and size. Back pieces first. */
+  const PLACED: [string, Art][] = [['sprig-tl', 'sprig'], ['tuft-tr', 'clover'], ['back-l', 'large'], ['back-r', 'clover'], ['front-l', 'small'], ['front-r', 'large']];
+  const SCREENS: [number, number][] = [[320, 568], [353, 768], [390, 844], [430, 932], [768, 1024]];
+  /** A decoration pixel counts from this opacity up (5%). */
+  const SOLID = 13;
+  /** Bytes of an asset; the parts page inlines every asset as a data URL. */
+  const bytes = (url: string): number => (url.startsWith('data:') ? Math.floor(((url.length - url.indexOf(',') - 1) * 3) / 4) : 0);
+
+  /** One phone screen: the decoration layer with grey stand-ins for the game's controls on top. */
+  const screen = (w: number, h: number): HTMLElement => {
+    const el = document.createElement('div');
+    el.className = 'tf-decor-screen';
+    el.style.width = `${w}px`;
+    el.style.height = `${h}px`;
+    const pieces = PLACED.map(([place, art]) => `<img class="tf-decor-piece tf-decor-${place}" src="${ART[art].src}" alt="" />`).join('');
+    const utility = ['Undo', 'Restart', 'Replay'].map((t) => `<div data-kind="face"><span data-kind="label">${t}</span></div>`).join('');
+    el.innerHTML = `<div class="tf-decor-layer" aria-hidden="true">${pieces}</div>
+    <div class="tf-decor-ui">
+      <div class="tf-decor-ph-top"><div data-kind="panel"></div><div class="tf-decor-ph-title" data-kind="text">LEVEL 5<small>titel</small></div><div data-kind="panel"></div><div data-kind="panel"></div></div>
+      <div class="tf-decor-ph-board" data-kind="board">bord</div>
+      <div class="tf-decor-ph-hint" data-kind="text">hintregel</div>
+      <div class="tf-decor-ph-utility">${utility}</div>
+      <div class="tf-decor-ph-action">${'<div data-kind="face"></div>'.repeat(4)}</div>
+    </div>`;
+    return el;
+  };
+
+  /** The screen at its real size, shrunk as a whole only when the card is narrower than it. */
+  const fitted = (w: number, h: number, room: number): { holder: HTMLElement; el: HTMLElement } => {
+    const el = screen(w, h);
+    const scale = Math.min(1, room / w);
+    const holder = document.createElement('div');
+    holder.className = 'tf-decor-fit';
+    holder.style.width = `${w * scale}px`;
+    holder.style.height = `${h * scale}px`;
+    el.style.transform = `scale(${scale})`;
+    holder.appendChild(el);
+    return { holder, el };
+  };
+
+  /**
+   * Count decoration pixels against the controls of one screen. The pieces are
+   * redrawn on a canvas exactly where the stylesheet puts them (flip and turn
+   * included), then compared with the rectangle of every control.
+   */
+  const measure = async (el: HTMLElement): Promise<{ covered: Record<string, number>; behind: Record<string, number>; shown: number; taps: boolean }> => {
+    const w = el.offsetWidth;
+    const h = el.offsetHeight;
+    const layer = el.querySelector<HTMLElement>('.tf-decor-layer')!;
+    const ui = el.querySelector<HTMLElement>('.tf-decor-ui')!;
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+    let taps = getComputedStyle(layer).pointerEvents === 'none';
+    for (const img of layer.querySelectorAll('img')) {
+      await img.decode();
+      const style = getComputedStyle(img);
+      taps &&= style.pointerEvents === 'none';
+      const [ox, oy] = style.transformOrigin.split(' ').map(parseFloat);
+      const turn = new DOMMatrix(style.transform === 'none' ? undefined : style.transform);
+      const m = new DOMMatrix().translate(img.offsetLeft + ox, img.offsetTop + oy).multiply(turn).translate(-ox, -oy);
+      ctx.setTransform(m);
+      ctx.drawImage(img, 0, 0, img.offsetWidth, img.offsetHeight);
+    }
+    const alpha = ctx.getImageData(0, 0, w, h).data;
+    const hidden = new Uint8Array(w * h);
+    const behind: Record<string, number> = { board: 0, face: 0, text: 0, panel: 0, label: 0 };
+    const frame = el.getBoundingClientRect();
+    const scale = frame.width / w;
+    for (const node of ui.querySelectorAll<HTMLElement>('[data-kind]')) {
+      const r = node.getBoundingClientRect();
+      const x0 = Math.max(0, Math.floor((r.left - frame.left) / scale));
+      const x1 = Math.min(w, Math.ceil((r.right - frame.left) / scale));
+      const y0 = Math.max(0, Math.floor((r.top - frame.top) / scale));
+      const y1 = Math.min(h, Math.ceil((r.bottom - frame.top) / scale));
+      for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+        if (alpha[(y * w + x) * 4 + 3] < SOLID) continue;
+        behind[node.dataset.kind!]++;
+        hidden[y * w + x] = 1;
+      }
+    }
+    let total = 0;
+    let unseen = 0;
+    for (let i = 0; i < w * h; i++) if (alpha[i * 4 + 3] >= SOLID) {
+      total++;
+      unseen += hidden[i];
+    }
+    // The layer is drawn under the controls. Only if that order were ever broken would "behind" become "covered".
+    const under = Number(getComputedStyle(layer).zIndex) < Number(getComputedStyle(ui).zIndex);
+    const covered = Object.fromEntries(Object.entries(behind).map(([k, v]) => [k, under ? 0 : v]));
+    return { covered, behind, shown: total ? Math.round(((total - unseen) / total) * 100) : 0, taps };
+  };
+
+  const sheet = document.getElementById('sheet')!;
+  const room = Math.max(280, Math.min(1100, document.documentElement.clientWidth) - 58);
+
+  // Card 1: the separate pieces.
+  const total = Object.values(ART).reduce((sum, a) => sum + bytes(a.src), 0);
+  const piecesCard = document.createElement('section');
+  piecesCard.className = 'card wide';
+  piecesCard.id = 'decor-pieces';
+  piecesCard.innerHTML = `<h2>Decor: losse struikstukken</h2><p class="dims">4 stukken uit het ene origineel · samen <span id="decor-total">${(total / 1024).toFixed(1)}</span> kB (WebP met transparantie; doel onder 80 kB)</p>
+  <div class="tf-decor-pieces">${Object.values(ART).map((a) => `<figure><img src="${a.src}" alt="" /><figcaption><b>${a.name}</b><br />${a.role}<br /><span data-size></span> · ${(bytes(a.src) / 1024).toFixed(1)} kB</figcaption></figure>`).join('')}</div>
+  <p class="note">Alles is uit de eigen struikafbeelding gesneden (grote groep, kleine groep, de drie voorste bollen, twee grassprieten als blaadjes), bijgekleurd naar het struikenpalet (#92EA73 / #63C94D / #429B37 en de tweede reeks) en voorzien van een donkere voet en een ingebakken schaduw. Geen beelden van buiten.</p>`;
+  sheet.appendChild(piecesCard);
+  for (const img of piecesCard.querySelectorAll('img')) {
+    void img.decode().then(() => {
+      img.parentElement!.querySelector('[data-size]')!.textContent = `${img.naturalWidth}×${img.naturalHeight} px`;
+    });
+  }
+
+  // Card 2: the layer on five screens, with the safety check.
+  const safety = document.createElement('section');
+  safety.className = 'card wide';
+  safety.id = 'decor-safety';
+  safety.innerHTML = `<h2>Decor: laag op het scherm + veiligheidscontrole</h2><p class="dims">Grijze blokken = bovenbalk, bord, hintregel, 3 utility-knoppen, 4 actieknoppen. De struiken liggen als eigen laag onder de bediening en vangen geen tikken af.</p><div class="tf-decor-row"></div>
+  <p class="note"><b>Bedekt</b> = decorpixels die óver een bedieningselement getekend worden (moet 0 zijn). <b>Erachter</b> = decorpixels die onder een element schuilgaan; voor het bord en voor losse tekst (titel, hintregel) is ook dat 0, zodat er zelfs bij een fout in de laagvolgorde niets leesbaars geraakt wordt. Geteld vanaf 5% dekking, zonder wiegen. De hemel is een tijdelijke egale achtergrond; haven en lucht komen van een ander onderdeel.</p>`;
+  sheet.appendChild(safety);
+  const row = safety.querySelector('.tf-decor-row')!;
+  const checks: Promise<void>[] = [];
+  for (const [w, h] of SCREENS) {
+    const { holder, el } = fitted(w, h, room);
+    const cell = document.createElement('figure');
+    cell.className = 'tf-decor-cell';
+    cell.id = `decor-${w}x${h}`;
+    cell.appendChild(holder);
+    const caption = document.createElement('figcaption');
+    caption.textContent = `${w}×${h}: meten…`;
+    cell.appendChild(caption);
+    row.appendChild(cell);
+    checks.push(measure(el).then((m) => {
+      const c = m.covered;
+      const b = m.behind;
+      const ok = c.board + c.face + c.text + c.panel + c.label === 0 && b.board === 0 && b.text === 0 && m.taps;
+      cell.dataset.ok = String(ok);
+      cell.dataset.result = JSON.stringify(m);
+      caption.innerHTML = `<b>${w}×${h}</b> ${ok ? '✔ veilig' : '✘ NIET veilig'}<br />Bedekt: bord ${c.board} px · knopvlakken ${c.face} px · tekst ${c.text + c.label} px · bovenbalk ${c.panel} px<br />Erachter: bord ${b.board} px · losse tekst ${b.text} px · knoppen ${b.face} px · bovenbalk ${b.panel} px<br />Zichtbaar van het decor: ${m.shown}% · tikken ${m.taps ? 'gaan erdoorheen' : 'WORDEN GEBLOKKEERD'}`;
+    }));
+  }
+
+  // Card 3: the optional sway, off unless switched on here.
+  const swayCard = document.createElement('section');
+  swayCard.className = 'card';
+  swayCard.id = 'decor-sway';
+  swayCard.innerHTML = `<h2>Decor, optie: zacht wiegen</h2><p class="dims">Standaard uit · alleen CSS · uit bij "minder beweging"</p><label class="tf-decor-toggle"><input type="checkbox" id="decor-sway-toggle" /> Wiegen aan</label><div class="tf-decor-row"></div><p class="note">Elk stuk draait hooguit 1,2° om zijn voet, elk in een eigen tempo (6 tot 9 s). Staat het toestel op "minder beweging", dan blijft alles stil, ook met het vinkje aan.</p>`;
+  sheet.appendChild(swayCard);
+  const sway = fitted(390, 844, Math.min(room, 314));
+  swayCard.querySelector('.tf-decor-row')!.appendChild(sway.holder);
+  swayCard.querySelector<HTMLInputElement>('#decor-sway-toggle')!.addEventListener('change', (e) => {
+    sway.el.querySelector('.tf-decor-layer')!.classList.toggle('tf-decor-sway', (e.target as HTMLInputElement).checked);
+  });
+
+  void Promise.all(checks).then(() => {
+    document.body.dataset.decorReady = 'true';
   });
 }
 
