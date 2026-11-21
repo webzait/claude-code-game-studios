@@ -27,70 +27,107 @@ const HALF_W = F.width / 2 - F.ear.protrude;
 const HALF_D = F.depth / 2;
 const BODY_BOTTOM = F.foot.height;
 const SHELL_TOP = F.height - F.symbol.raise;
+/** Where the flat top of the box would be; the top bulges up from here to SHELL_TOP in the middle. */
+const BOX_TOP = SHELL_TOP - F.crown;
 const ROMP_H = F.seam - BODY_BOTTOM;
 const SHELL_H = SHELL_TOP - F.seam;
 
-/** How far the body reaches sideways at height `y`, as a fraction of its widest outline (1 at the seam). */
-function reachAt(y: number): number {
-  const [span, round] = y >= F.seam ? [SHELL_H, F.shellRound] : [ROMP_H, F.rompRound];
-  const t = Math.min(1, Math.abs(y - F.seam) / span);
-  return (1 - t ** (2 / round)) ** (round / 2);
+/** How far the body's outline is drawn in at height `y`: nothing along the flat sides, up to the edge radius where the top and bottom edges round over. */
+function insetAt(y: number): number {
+  const r = F.edgeRadius;
+  const over = Math.max(y - (BOX_TOP - r), BODY_BOTTOM + r - y, 0);
+  return r - Math.sqrt(Math.max(0, r * r - Math.min(over, r) ** 2));
 }
 
-/** Footprint roundness at height `y`: the squircle of the seam, easing to a circle at the crown so the dome has no creases. */
-function squircleAt(y: number): number {
-  if (y <= F.seam) return F.squircle;
-  const t = Math.min(1, (y - F.seam) / SHELL_H);
-  return F.squircle + (1 - F.squircle) * t ** F.crownEase;
+/** Distance from the centre to the outline of a rounded rectangle (half sizes `a` by `c`, corner radius `r`), measured along the second axis at offset `along` on the first. */
+function outlineAt(along: number, a: number, c: number, r: number): number {
+  const past = Math.abs(along) - (a - r);
+  if (past <= 0) return c;
+  return c - r + Math.sqrt(Math.max(0, r * r - Math.min(past, r) ** 2));
 }
 
 /** The front surface of the body: z at a point (x, y) on the face side. */
 function frontZ(x: number, y: number): number {
-  const reach = reachAt(y);
-  const e = squircleAt(y);
-  const across = Math.min(1, Math.abs(x) / (HALF_W * reach));
-  return HALF_D * reach * (1 - across ** (2 / e)) ** (e / 2);
+  const inset = insetAt(y);
+  return outlineAt(x, HALF_W - inset, HALF_D - inset, Math.max(0.001, F.cornerRadius - inset));
 }
 
 /** The side surface of the body: x at a point (y, z) on the +x side. */
 function sideX(y: number, z: number): number {
-  const reach = reachAt(y);
-  const e = squircleAt(y);
-  const across = Math.min(1, Math.abs(z) / (HALF_D * reach));
-  return HALF_W * reach * (1 - across ** (2 / e)) ** (e / 2);
+  const inset = insetAt(y);
+  return outlineAt(z, HALF_D - inset, HALF_W - inset, Math.max(0.001, F.cornerRadius - inset));
 }
 
-/** One half of the body, from the seam to the crown (`dome`) or down to the underside, as a closed skin. */
+/**
+ * One half of the body, a box with rounded edges: from the seam up to the top
+ * (`dome`) or down to the underside, closed with a flat cap.
+ */
 function bodyHalf(dome: boolean): THREE.BufferGeometry {
-  const around = 176;
-  const up = 56;
-  const [span, round] = dome ? [SHELL_H, F.shellRound] : [ROMP_H, F.rompRound];
+  const perCorner = 16;
+  const overEdge = 14;
+  const r = F.edgeRadius;
+  const end = dome ? BOX_TOP : BODY_BOTTOM;
+  const sign = dome ? 1 : -1;
+  // Heights: the seam, then the edge rounding over in steps.
+  const heights = [F.seam];
+  for (let k = 0; k <= overEdge; k++) heights.push(end - sign * r * (1 - Math.sin((k / overEdge) * (Math.PI / 2))));
+  const around = 4 * (perCorner + 1);
   const positions: number[] = [];
-  for (let v = 0; v <= up; v++) {
-    const theta = (v / up) * (Math.PI / 2);
-    const y = F.seam + span * Math.cos(theta) ** round * (dome ? 1 : -1);
-    const reach = Math.sin(theta) ** round;
-    const e = squircleAt(y);
+  for (const y of heights) {
+    const inset = insetAt(y);
+    const a = HALF_W - inset;
+    const c = HALF_D - inset;
+    const corner = Math.max(0.001, F.cornerRadius - inset);
+    for (let q = 0; q < 4; q++) {
+      const cx = (q === 0 || q === 3 ? 1 : -1) * (a - corner);
+      const cz = (q < 2 ? 1 : -1) * (c - corner);
+      for (let k = 0; k <= perCorner; k++) {
+        const angle = (q + k / perCorner) * (Math.PI / 2);
+        positions.push(cx + corner * Math.cos(angle), y, cz + corner * Math.sin(angle));
+      }
+    }
+  }
+  // The cap: the last outline drawn in towards the middle in rings. The top bulges a little, so it is not a flat mirror.
+  const capRings = 10;
+  const rim = positions.slice(-around * 3);
+  const bulge = dome ? F.crown : 0;
+  for (let k = 1; k <= capRings; k++) {
+    const f = 1 - k / capRings;
     for (let u = 0; u < around; u++) {
-      const phi = (u / around) * Math.PI * 2;
-      const cos = Math.cos(phi);
-      const sin = Math.sin(phi);
-      positions.push(HALF_W * reach * Math.sign(cos) * Math.abs(cos) ** e, y, HALF_D * reach * Math.sign(sin) * Math.abs(sin) ** e);
+      const x = rim[u * 3] * f;
+      const z = rim[u * 3 + 2] * f;
+      // Bulge by position, not by ring, so the top is one smooth swell without creases to the corners.
+      const swell = (1 - (x / (HALF_W - r)) ** 2) * (1 - (z / (HALF_D - r)) ** 2);
+      positions.push(x, end + bulge * Math.max(0, swell), z);
     }
   }
   const index: number[] = [];
-  for (let v = 0; v < up; v++) {
+  const rows = heights.length + capRings;
+  for (let v = 0; v < rows - 1; v++) {
     for (let u = 0; u < around; u++) {
       const p = v * around + u;
       const q = v * around + ((u + 1) % around);
-      if (dome) index.push(p, q + around, p + around, p, q, q + around);
-      else index.push(p, p + around, q + around, p, q + around, q);
+      if (dome) index.push(p, p + around, q + around, p, q + around, q);
+      else index.push(p, q + around, p + around, p, q, q + around);
     }
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
   g.setIndex(index);
   g.computeVertexNormals();
+  if (dome) {
+    // The swell is a known surface: give the cap its exact normals, so the skewed triangles towards the corners leave no streaks.
+    const normal = g.getAttribute('normal');
+    const sx = HALF_W - r;
+    const sz = HALF_D - r;
+    const n = new THREE.Vector3();
+    for (let i = heights.length * around; i < positions.length / 3; i++) {
+      const x = positions[i * 3];
+      const z = positions[i * 3 + 2];
+      n.set((2 * x * F.crown * (1 - (z / sz) ** 2)) / (sx * sx), 1, (2 * z * F.crown * (1 - (x / sx) ** 2)) / (sz * sz)).normalize();
+      normal.setXYZ(i, n.x, n.y, n.z);
+    }
+  }
   return g;
 }
 
@@ -199,16 +236,7 @@ function shadeBody(g: THREE.BufferGeometry, stops: readonly (readonly [number, s
 
 /** The body's outline at the seam, lying flat: closes a shell or romp that is seen apart. */
 function seamPlate(inset: number): THREE.Shape {
-  const s = new THREE.Shape();
-  const steps = 96;
-  for (let u = 0; u <= steps; u++) {
-    const phi = (u / steps) * Math.PI * 2;
-    const x = (HALF_W - inset) * Math.sign(Math.cos(phi)) * Math.abs(Math.cos(phi)) ** F.squircle;
-    const y = (HALF_D - inset) * Math.sign(Math.sin(phi)) * Math.abs(Math.sin(phi)) ** F.squircle;
-    if (u === 0) s.moveTo(x, y);
-    else s.lineTo(x, y);
-  }
-  return s;
+  return roundedRect(2 * (HALF_W - inset), 2 * (HALF_D - inset), F.cornerRadius - inset);
 }
 
 /** Arrowhead with softened corners and a notched tail, pointing to +y of the shape plane. */

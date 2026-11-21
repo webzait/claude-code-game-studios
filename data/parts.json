@@ -8,10 +8,6 @@
     "height": 1.0,
     "seam": 0.55,
     "seamGap": 0,
-    "shellRound": 0.25,
-    "rompRound": 0.24,
-    "squircle": 0.27,
-    "crownEase": 4,
     "foot": {
       "height": 0.07,
       "width": 0.2,
@@ -62,7 +58,10 @@
       "symbolLight": "#FFFFFF",
       "symbolDark": "#2B2F45",
       "window": "#F6F9FF"
-    }
+    },
+    "edgeRadius": 0.085,
+    "cornerRadius": 0.12,
+    "crown": 0.03
   },
   "floorTile": {
     "size": 1.0,
