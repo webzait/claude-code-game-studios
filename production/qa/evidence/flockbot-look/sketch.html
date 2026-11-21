@@ -12,10 +12,10 @@
   .cell { background: #f7f9ff; border-radius: 5px; display: flex; align-items: center; justify-content: center; }
   .now { border-radius: 10px; display: block; }
 </style>
-<h1>Flockbot: schets van het voorstel (nog niet gebouwd)</h1>
+<h1>Flockbot: schets 2 (nog niet gebouwd)</h1>
 <p>Platte schets, bedoeld om vorm, rand, glans en pijl te kiezen voordat het 3D-model wordt aangepast. Robots kijken naar de speler, zoals in het spel.</p>
 
-<h2>1–3. Glans, vorm en randen: nu, voorstel, en de knop als maatstaf</h2>
+<h2>1–3. Glans, vorm en randen: nu, schets 1, schets 2 (hoger, minder knop, subtiele rand)</h2>
 <div class="row" id="big"></div>
 
 <h2>4. De pijl: twee lezingen van "driehoek / inkeping"</h2>
@@ -32,11 +32,13 @@ const T = {
 };
 let uid = 0;
 /** One sketched robot. s = cell size in px, heading 0 north (away), 1 east, 2 south (to player), 3 west; variant 'A' raised, 'B' notch. */
-function bot(color, s, heading, variant) {
+function bot(color, s, heading, variant, v1 = false) {
   const c = T[color], id = 'g' + uid++;
-  const w = 0.84 * s, x0 = (s - w) / 2, faceH = 0.60 * s, wall = 0.27 * s, y0 = 0.05 * s, r = 0.2 * s;
-  const cx = s / 2, cy = y0 + faceH / 2 + 0.01 * s;
-  const tri = `M0,${-0.17 * s} L${0.19 * s},${0.14 * s} L${-0.19 * s},${0.14 * s} Z`;
+  // v1: the first sketch (low, button-like). v2: taller, one moulded body, subtle rim.
+  const w = (v1 ? 0.84 : 0.8) * s, x0 = (s - w) / 2, faceH = (v1 ? 0.60 : 0.5) * s, wall = (v1 ? 0.27 : 0.4) * s, y0 = (v1 ? 0.05 : 0.02) * s, r = (v1 ? 0.2 : 0.24) * s;
+  const cx = s / 2, cy = y0 + faceH / 2 + (v1 ? 0.01 : 0.035) * s;
+  const k = v1 ? 1 : 0.8;
+  const tri = `M0,${-0.17 * s * k} L${0.19 * s * k},${0.14 * s * k} L${-0.19 * s * k},${0.14 * s * k} Z`;
   const rot = heading * 90, j = 0.07 * s;
   let arrow;
   if (variant === 'A') {
@@ -48,28 +50,32 @@ function bot(color, s, heading, variant) {
       <g transform="translate(0,${0.03 * s}) rotate(${rot}) scale(.86)"><path d="${tri}" fill="${c.side}" stroke="${c.side}" stroke-width="${j * 0.6}" stroke-linejoin="round"/></g></g>`;
   }
   // What the front wall shows: face (to player), ear (sideways), nothing (away).
-  const wy = y0 + faceH + 0.015 * s;
+  const wy = y0 + faceH + (v1 ? 0.015 : 0.05) * s;
   let front = '';
   if (heading === 2) {
-    const ww = 0.6 * s, wh = 0.2 * s, wx = cx - ww / 2;
+    const ww = (v1 ? 0.6 : 0.58) * s, wh = (v1 ? 0.2 : 0.27) * s, wx = cx - ww / 2;
     front = `<rect x="${wx}" y="${wy}" width="${ww}" height="${wh}" rx="${wh * 0.45}" fill="#F6F9FF" stroke="${c.deep}" stroke-width="${0.012 * s}"/>` +
-      [-1, 1].map((k) => `<ellipse cx="${cx + k * 0.13 * s}" cy="${wy + wh / 2}" rx="${0.062 * s}" ry="${0.07 * s}" fill="#111826"/><circle cx="${cx + k * 0.13 * s + 0.02 * s}" cy="${wy + wh / 2 - 0.025 * s}" r="${0.018 * s}" fill="#fff"/>`).join('');
+      [-1, 1].map((k) => `<ellipse cx="${cx + k * 0.13 * s}" cy="${wy + wh / 2}" rx="${(v1 ? 0.062 : 0.075) * s}" ry="${(v1 ? 0.07 : 0.085) * s}" fill="#111826"/><circle cx="${cx + k * 0.13 * s + 0.02 * s}" cy="${wy + wh / 2 - 0.025 * s}" r="${0.018 * s}" fill="#fff"/>`).join('');
   } else if (heading % 2 === 1) {
-    front = `<ellipse cx="${cx}" cy="${wy + 0.1 * s}" rx="${0.1 * s}" ry="${0.075 * s}" fill="#F6F9FF" stroke="${c.deep}" stroke-width="${0.012 * s}"/>`;
+    front = `<ellipse cx="${cx}" cy="${wy + (v1 ? 0.1 : 0.13) * s}" rx="${0.1 * s}" ry="${(v1 ? 0.075 : 0.09) * s}" fill="#F6F9FF" stroke="${c.deep}" stroke-width="${0.012 * s}"/>`;
   }
   const feet = [-1, 1].map((k) => `<rect x="${cx + k * 0.27 * s - 0.09 * s}" y="${y0 + faceH + wall - 0.03 * s}" width="${0.18 * s}" height="${0.085 * s}" rx="${0.035 * s}" fill="${c.deep}"/>`).join('');
   return `<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}">
     <defs>
       <linearGradient id="${id}w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c.main}"/><stop offset=".55" stop-color="${c.side}"/><stop offset="1" stop-color="${c.deep}"/></linearGradient>
       <linearGradient id="${id}f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c.top}"/><stop offset=".6" stop-color="${c.main}"/><stop offset="1" stop-color="${c.main}"/></linearGradient>
+      <linearGradient id="${id}m" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c.top}"/><stop offset=".3" stop-color="${c.main}"/><stop offset=".56" stop-color="${c.main}"/><stop offset=".68" stop-color="${c.side}"/><stop offset="1" stop-color="${c.deep}"/></linearGradient>
       <radialGradient id="${id}s" cx=".32" cy=".1" r=".85"><stop offset="0" stop-color="#fff" stop-opacity=".3"/><stop offset=".7" stop-color="#fff" stop-opacity="0"/></radialGradient>
       <filter id="${id}b"><feGaussianBlur stdDeviation="${0.03 * s}"/></filter>
     </defs>
     <ellipse cx="${cx}" cy="${y0 + faceH + wall + 0.02 * s}" rx="${0.42 * s}" ry="${0.07 * s}" fill="#24314f" opacity=".3" filter="url(#${id}b)"/>
     ${feet}
-    <rect x="${x0}" y="${y0}" width="${w}" height="${faceH + wall}" rx="${r}" fill="url(#${id}w)"/>
+    ${v1 ? `    <rect x="${x0}" y="${y0}" width="${w}" height="${faceH + wall}" rx="${r}" fill="url(#${id}w)"/>
     <rect x="${x0 + 0.025 * s}" y="${y0 + 0.012 * s}" width="${w - 0.05 * s}" height="${faceH}" rx="${r * 0.9}" fill="url(#${id}f)" stroke="${c.top}" stroke-width="${Math.max(0.8, 0.016 * s)}"/>
-    <rect x="${x0 + 0.025 * s}" y="${y0 + 0.012 * s}" width="${w - 0.05 * s}" height="${faceH}" rx="${r * 0.9}" fill="url(#${id}s)"/>
+    <rect x="${x0 + 0.025 * s}" y="${y0 + 0.012 * s}" width="${w - 0.05 * s}" height="${faceH}" rx="${r * 0.9}" fill="url(#${id}s)"/>` : `
+    <rect x="${x0}" y="${y0}" width="${w}" height="${faceH + wall}" rx="${r}" fill="url(#${id}m)"/>
+    <rect x="${x0}" y="${y0}" width="${w}" height="${faceH + wall}" rx="${r}" fill="url(#${id}s)"/>
+    <rect x="${x0 + 0.02 * s}" y="${y0 + 0.012 * s}" width="${w - 0.04 * s}" height="${faceH + 0.03 * s}" rx="${r * 0.92}" fill="none" stroke="${c.top}" stroke-opacity=".45" stroke-width="${Math.max(0.6, 0.012 * s)}"/>`}
     ${front}${arrow}
   </svg>`;
 }
@@ -77,10 +83,10 @@ const fig = (html, cap) => `<figure>${html}<figcaption>${cap}</figcaption></figu
 const button = (color, px) => `<button class="tf-btn tf-action ${color}" style="--w:${px}px;--h:${px}px;--d:${Math.round(px * 0.2)}px;--r:${Math.round(px * 0.25)}px"><span class="tf-clip"><span class="tf-face"></span></span></button>`;
 
 document.getElementById('big').innerHTML =
-  fig('<img class="now" src="before-large.png" height="190">', 'Nu (uit het spel): bolle vorm, scherpe glansvlek, pijl met inkeping achter') +
-  fig(bot('red', 190, 2, 'A'), 'Voorstel: vlak bovenvlak, ronde rand, lichte randlijn, donkerdere wand, brede matte glans') +
-  fig(button('red', 150), 'Maatstaf: de rode knop') +
-  fig(bot('blue', 120, 2, 'A') + bot('yellow', 120, 2, 'A'), 'Blauw en geel in de eigenaarstinten');
+  fig('<img class="now" src="before-large.png" height="190">', 'Nu (uit het spel)') +
+  fig(bot('red', 190, 2, 'A', true), 'Schets 1: te laag, te veel knop, rand te nadrukkelijk') +
+  fig(bot('red', 190, 2, 'A'), '<b>Schets 2</b>: hoger lijf uit één stuk, groter gezicht, rand alleen als fijne lichte lijn') +
+  fig(bot('blue', 120, 2, 'A') + bot('yellow', 120, 2, 'A'), 'Blauw en geel');
 
 document.getElementById('arrows').innerHTML =
   fig(['red', 'blue', 'yellow'].map((c) => bot(c, 150, 0, 'A')).join(''), '<b>A — gewone driehoek, licht verhoogd</b> (wit; donker op geel), geen inkeping achter') +
