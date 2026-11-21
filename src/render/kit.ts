@@ -31,7 +31,9 @@ export function fuse(source: THREE.Object3D): THREE.Group {
   const byMaterial = new Map<THREE.Material, THREE.BufferGeometry[]>();
   source.traverse((node) => {
     if (!(node instanceof THREE.Mesh)) return;
-    const geometry = (node.geometry as THREE.BufferGeometry).clone();
+    const source = node.geometry as THREE.BufferGeometry;
+    // Merging needs like with like: every part is made non-indexed first.
+    const geometry = source.index ? source.toNonIndexed() : source.clone();
     geometry.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inverse, node.matrixWorld));
     const list = byMaterial.get(node.material as THREE.Material) ?? [];
     list.push(geometry);
@@ -39,6 +41,10 @@ export function fuse(source: THREE.Object3D): THREE.Group {
   });
   const fused = new THREE.Group();
   for (const [material, geometries] of byMaterial) {
+    // Parts drawn with one material may carry different extras (texture coordinates, vertex colours);
+    // only what all of them have can be merged.
+    const shared = Object.keys(geometries[0].attributes).filter((name) => geometries.every((g) => g.getAttribute(name) !== undefined));
+    for (const g of geometries) for (const name of Object.keys(g.attributes)) if (!shared.includes(name)) g.deleteAttribute(name);
     const merged = geometries.length === 1 ? geometries[0] : mergeGeometries(geometries, false);
     // Parts that cannot be merged (differing attributes) are kept as they were.
     const parts = merged ? [merged] : geometries;

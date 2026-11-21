@@ -3,6 +3,8 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import { CONFIG } from '../config';
 import type { Color } from '../engine/types';
 import { fuse } from './kit';
+import { buildFlockbot } from './parts/flockbot';
+import PARTS from '../../data/parts.json';
 
 /** A robot mesh plus the animated values the board view tweens. */
 export interface RobotView {
@@ -227,6 +229,36 @@ export function buildKitRobot(id: number, color: Color, template: THREE.Group): 
   // The arrow turns on its own; everything else is fused into a few meshes.
   cap.add(fuse(arrowParts));
   lean.add(fuse(still), cap);
+  const aim = (angle: number): void => {
+    cap.rotation.y = angle;
+  };
+  return { id, color, root, body, cap, lids: [], aim, angle: 0, blinkIn: 1e9, visibleScale: 1 };
+}
+
+/**
+ * Build a robot from the standalone Flockbot part. Its face looks at the
+ * player and only the symbol on top turns with the heading. The camera looks
+ * almost straight down, so the robot is leaned back to show its face.
+ */
+export function buildPartsRobot(id: number, color: Color): RobotView {
+  const bot = buildFlockbot(color);
+  const scale = CONFIG.board.grid.robotFill;
+  const tilt = CONFIG.robot.lean;
+  const root = new THREE.Group();
+  const body = new THREE.Group();
+  root.add(body);
+  const lean = new THREE.Group();
+  lean.rotation.x = -tilt;
+  // A little lower than the part's full height, so a leaned robot stays within its own cell on screen.
+  lean.scale.set(scale, scale * CONFIG.robot.squash, scale);
+  // Leaning back pushes the rear bottom edge down; lift the robot so it still rests on the tile.
+  lean.position.y = (PARTS.flockbot.depth / 2) * Math.sin(tilt) * scale;
+  body.add(lean);
+  // The symbol turns on its own; everything else is fused into a few meshes.
+  bot.root.remove(bot.symbol);
+  const cap = new THREE.Group();
+  cap.add(bot.symbol);
+  lean.add(fuse(bot.root), cap);
   const aim = (angle: number): void => {
     cap.rotation.y = angle;
   };

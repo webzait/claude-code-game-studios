@@ -148,7 +148,7 @@
     "shadow": 0.32
   },
   "robot": {
-    "lean": 0.55,
+    "lean": 0.68,
     "eyeSize": 0.175,
     "eyeSpread": 0.175,
     "eyeHeight": 0.19,
@@ -156,6 +156,7 @@
     "gloss": 0.3,
     "topLight": 0.2,
     "arrowScale": 0.95,
-    "arrowForward": 0.05
+    "arrowForward": 0.05,
+    "squash": 0.86
   }
 }
