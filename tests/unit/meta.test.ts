@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CONFIG } from '../../src/config';
 import { extraMovesPrice, hintPrice, payout, rewardFor } from '../../src/game/coins';
 import { applyLab, DEFAULT_LAB, rulesFor, usesCertifiedRules, type LabSettings } from '../../src/game/lab';
-import { isUnlocked, resumeIndex, solvedCount, starsFor } from '../../src/game/progress';
+import { isUnlocked, mainAction, resumeIndex, solvedCount, starsFor, starsOfBest } from '../../src/game/progress';
 import { defaultSave, LEGACY_KEY, loadSave, migrate, resetProgress, SAVE_KEY, SAVE_VERSION, writeSave, type KeyValueStore } from '../../src/game/save';
 import { Session } from '../../src/game/session';
 import { LEVELS } from '../../src/levels/index';
@@ -190,5 +190,36 @@ describe('test lab', () => {
       else expect(result.capped, level.id).toBe(true);
     }
     expect(proven).toBeGreaterThanOrEqual(8);
+  });
+});
+
+describe('level selection main action', () => {
+  const levels = [
+    { id: 'a', par: 5 },
+    { id: 'b', par: 6 },
+    { id: 'c', par: 7 },
+  ];
+
+  it('points_at_the_first_unsolved_level', () => {
+    expect(mainAction(levels, {})).toEqual({ index: 0, kind: 'play' });
+    expect(mainAction(levels, { a: 5 })).toEqual({ index: 1, kind: 'play' });
+    expect(mainAction(levels, { a: 5, c: 7 })).toEqual({ index: 1, kind: 'play' });
+  });
+
+  it('with_everything_solved_points_at_the_first_level_without_three_stars', () => {
+    const over = CONFIG.stars.three + 1;
+    expect(mainAction(levels, { a: 5, b: 6 + over, c: 7 + over })).toEqual({ index: 1, kind: 'improve' });
+  });
+
+  it('with_three_stars_everywhere_starts_again_at_level_one', () => {
+    expect(mainAction(levels, { a: 5, b: 6, c: 7 })).toEqual({ index: 0, kind: 'again' });
+  });
+
+  it('counts_stars_of_a_stored_best_and_one_star_for_a_prototype_win', () => {
+    expect(starsOfBest(undefined, 5)).toBe(0);
+    expect(starsOfBest(0, 5)).toBe(1);
+    expect(starsOfBest(5, 5)).toBe(3);
+    expect(starsOfBest(5 + CONFIG.stars.two, 5)).toBe(2);
+    expect(starsOfBest(5 + CONFIG.stars.two + 1, 5)).toBe(1);
   });
 });

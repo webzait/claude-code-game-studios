@@ -14,25 +14,22 @@
       <div class="tf-decor-layer"><img class="tf-decor-piece tf-decor-sprig-tl" data-art="decor-sprig" alt="" /><img class="tf-decor-piece tf-decor-tuft-tr" data-art="decor-clover" alt="" /><img class="tf-decor-piece tf-decor-back-l" data-art="decor-large" alt="" /><img class="tf-decor-piece tf-decor-back-r" data-art="decor-clover" alt="" /><img class="tf-decor-piece tf-decor-front-l" data-art="decor-small" alt="" /><img class="tf-decor-piece tf-decor-front-r" data-art="decor-large" alt="" /></div>
     </div>
     <div id="app">
-      <section class="screen" id="map">
-        <header class="top">
-          <div class="title">
-            <div class="level-no brand">TURNFLOCK</div>
-            <div class="level-name">Choose a level</div>
-          </div>
+      <section class="screen tf-levels-phone tf-levels-a" id="map">
+        <header class="tf-levels-head">
+          <h1 class="tf-levels-title" aria-label="Turnflock"><span>TURN</span><span>FLOCK</span></h1>
           <span id="mapCoins"></span>
-          <div class="pill" id="mapCount"></div>
-          <button class="back" id="toSettings" aria-label="Settings"><svg viewBox="0 0 24 24" class="ico"><path d="M4 7h10M18 7h2M4 17h2M10 17h10" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" /><circle cx="16" cy="7" r="2.4" fill="none" stroke="currentColor" stroke-width="2.4" /><circle cx="8" cy="17" r="2.4" fill="none" stroke="currentColor" stroke-width="2.4" /></svg></button>
+          <span class="tf-levels-pill tf-levels-progress" id="mapProgress"><span><span id="mapCount">0</span><small id="mapTotal"></small></span><span><i class="tf-levels-star"></i><span id="mapStars">0</span></span></span>
+          <button type="button" class="tf-btn tf-utility" id="toSettings" aria-label="Settings"><span class="tf-clip"><span class="tf-face"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"></path><circle cx="16" cy="7" r="2.4" fill="none" stroke="currentColor" stroke-width="2.6"></circle><circle cx="8" cy="17" r="2.4" fill="none" stroke="currentColor" stroke-width="2.6"></circle></svg></span></span></button>
         </header>
-        <button class="primary big" id="continue">Play</button>
-        <div class="scroll">
-          <div class="nodes" id="nodes"></div>
-        </div>
-        <div class="pager" id="pager" hidden>
-          <button class="back" id="pagePrev" aria-label="Previous levels"><svg viewBox="0 0 24 24" class="ico"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
-          <div class="pill" id="pageLabel"></div>
-          <button class="back" id="pageNext" aria-label="Next levels"><svg viewBox="0 0 24 24" class="ico"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
-        </div>
+        <div class="tf-levels-body"><div class="tf-levels-tray"><div class="tf-levels-grid" id="nodes"></div></div></div>
+        <footer class="tf-levels-dock">
+          <div class="tf-levels-pager" id="pager">
+            <button type="button" class="tf-btn tf-utility" id="pagePrev" aria-label="Previous levels"><span class="tf-clip"><span class="tf-face"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></span></button>
+            <div class="tf-levels-pageinfo" id="pageInfo"><span id="pageLabel"></span><span class="tf-levels-dots" id="pageDots"></span></div>
+            <button type="button" class="tf-btn tf-utility" id="pageNext" aria-label="Next levels"><span class="tf-clip"><span class="tf-face"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></span></button>
+          </div>
+          <button type="button" class="tf-btn tf-action tf-levels-play" id="continue" aria-label="Play"><span class="tf-clip"><span class="tf-face"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.4 5v14l11.4-7z" fill="currentColor" stroke="currentColor" stroke-width="3.4" stroke-linejoin="round"></path></svg><span class="tf-label" id="continueLabel">Play</span></span></span></button>
+        </footer>
       </section>
 
       <section class="screen" id="level" hidden>

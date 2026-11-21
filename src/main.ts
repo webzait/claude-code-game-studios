@@ -1,6 +1,7 @@
 import './ui/style.css';
 import './ui/tf-buttons.css';
 import './ui/tf-coins.css';
+import './ui/tf-levels.css';
 import './ui/tf-scene.css';
 import { Sfx } from './audio';
 import { CONFIG } from './config';
@@ -10,7 +11,7 @@ import { witnessNext, type RescueResult, type ScanResult } from './game/assist';
 import { extraMovesPrice, hintPrice, payout, rewardFor } from './game/coins';
 import { applyLab, rulesFor, usesCertifiedRules, type LabSettings } from './game/lab';
 import { MemorySink, type MetricsEvent } from './game/metrics';
-import { isUnlocked, resumeIndex, starsFor } from './game/progress';
+import { isUnlocked, mainAction, starsFor, starsOfBest } from './game/progress';
 import { loadSave, resetProgress, writeSave, type KeyValueStore, type SaveData } from './game/save';
 import { Session } from './game/session';
 import { LEVELS, TEST_BOARDS, type GameLevel } from './levels/index';
@@ -139,7 +140,6 @@ class Game {
       if (e.key === 'Escape') this.closeCoinInfo();
     });
     el('toSettings').addEventListener('click', () => this.tap(() => this.show('settings')));
-    el('continue').addEventListener('click', () => this.tap(() => this.startLevel(resumeIndex(LEVEL_IDS, this.save.best))));
     el('settingsBack').addEventListener('click', () => this.tap(() => this.show('map')));
     new ResizeObserver(() => this.view.resize()).observe(document.querySelector('.stage') as HTMLElement);
     // Kit artwork: images are bundled; the page sets them here so one build works from any folder.
@@ -226,27 +226,24 @@ class Game {
 
   private drawMap(): void {
     const best = this.save.best;
-    const resume = resumeIndex(LEVEL_IDS, best);
-    const nodes: MapNode[] = LEVELS.map((level, index) => {
-      const moves = best[level.id];
-      return {
-        number: index + 1,
-        name: level.name,
-        unlocked: isUnlocked(LEVEL_IDS, best, index, this.save.lab.unlockAll),
-        solved: moves !== undefined,
-        // A win carried over from the first prototype has no move count: show one star.
-        stars: moves === undefined ? 0 : moves === 0 ? 1 : starsFor(moves, level.par, false),
-        current: index === resume && moves === undefined,
-      };
-    });
+    const main = mainAction(LEVELS, best);
+    const nodes: MapNode[] = LEVELS.map((level, index) => ({
+      number: index + 1,
+      name: level.name,
+      unlocked: isUnlocked(LEVEL_IDS, best, index, this.save.lab.unlockAll),
+      solved: best[level.id] !== undefined,
+      stars: starsOfBest(best[level.id], level.par),
+      target: index === main.index,
+    }));
     const pageSize = CONFIG.levelsPerPage;
-    this.page ??= Math.floor(resume / pageSize);
-    const allDone = nodes.every((n) => n.solved);
+    // The screen opens on the page of the level the main button points at.
+    this.page ??= Math.floor(main.index / pageSize);
+    el('continue').onclick = () => this.tap(() => this.startLevel(main.index));
     renderLevels({
       nodes,
       page: this.page,
       pageSize,
-      continueLabel: allDone ? `Play again · Level ${resume + 1}` : best[LEVEL_IDS[0]] === undefined ? 'Play · Level 1' : `Continue · Level ${resume + 1}`,
+      playLabel: main.kind === 'play' ? `Play level ${main.index + 1}` : main.kind === 'improve' ? `Improve level ${main.index + 1}` : 'Play again',
       onPick: (index) => this.tap(() => this.startLevel(index)),
       onPage: (page) => {
         this.page = page;
