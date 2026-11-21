@@ -62,6 +62,18 @@
       "symbolLight": "#FFFFFF",
       "symbolDark": "#2B2F45",
       "window": "#F6F9FF"
+    },
+    "peek": {
+      "eyeRadius": 0.19,
+      "spread": 0.205,
+      "forward": 0.34,
+      "lift": -0.055,
+      "tilt": 30,
+      "pupil": 0.74,
+      "pupilOut": 0.38,
+      "glint": 0.032,
+      "symbolSize": 0.38,
+      "symbolBack": 0.17
     }
   },
   "floorTile": {
