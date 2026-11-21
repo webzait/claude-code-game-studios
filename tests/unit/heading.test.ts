@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
+import { CONFIG } from '../../src/config';
 import config from '../../data/config.json';
 import type { Dir } from '../../src/engine/types';
 import { DIR_DX, DIR_DY } from '../../src/engine/types';
@@ -99,8 +100,12 @@ describe('robots turn as a whole', () => {
     const south = sizes[2];
     for (const s of sizes) {
       const [along, across] = s.dir % 2 === 0 ? [s.h, s.w] : [s.w, s.h];
-      expect(along).toBeCloseTo(south.h, 2);
-      expect(across).toBeCloseTo(south.w, 2);
+      // Only a robot that turns around the line of sight (followCamera 1) is the same picture in every
+      // heading; turning around the board's upright, as under the 30 degree camera, it is not meant to be.
+      if (CONFIG.robot.faceUp.followCamera === 1) {
+        expect(along).toBeCloseTo(south.h, 2);
+        expect(across).toBeCloseTo(south.w, 2);
+      }
       // Inside its own cell on screen, and centred on it.
       expect(s.w).toBeLessThanOrEqual(1);
       expect(s.h).toBeLessThanOrEqual(1);

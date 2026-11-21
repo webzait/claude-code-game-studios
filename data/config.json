@@ -109,8 +109,16 @@
     "volume": 0.16
   },
   "haptics": {
-    "move": [12],
-    "win": [30, 60, 30, 60, 70]
+    "move": [
+      12
+    ],
+    "win": [
+      30,
+      60,
+      30,
+      60,
+      70
+    ]
   },
   "board": {
     "roomy": {
@@ -153,7 +161,7 @@
     "shadow": 0.32
   },
   "robot": {
-    "lean": 0.68,
+    "lean": 0.3,
     "eyeSize": 0.175,
     "eyeSpread": 0.175,
     "eyeHeight": 0.19,
@@ -164,8 +172,8 @@
     "arrowForward": 0.05,
     "squash": 0.86,
     "faceUp": {
-      "followCamera": 1,
-      "extraLean": -0.2,
+      "followCamera": 0,
+      "extraLean": 0,
       "forward": 0
     }
   }
