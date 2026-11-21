@@ -1,0 +1,17 @@
+L1	pass	evidence/play.png	glass case, copper conductors, glowing sources, chrome balls, steel platforms on a dark plinth; glow travels (diorama.ts play, case 'heat') and latch flashes before release (case 'tilt')
+L2	pass	evidence/play.png	no references named; none used
+L3	pass	evidence/play.png	3D, fixed camera slightly off-axis, whole case fits portrait (diorama.ts resize)
+F1	pass	src/engine/engine.ts	pure engine, 63 vitest tests pass (npm test)
+F2	pass	src/levels/levels.ts	five levels; tests/levels.test.ts proves each solvable; all five won in a real-time touch run (evidence/run-level1..5-won.png)
+F3	pass	evidence/play.png	heat blobs travel the copper and conductors glow; latch pips fill and the latch flashes right before its platform tilts
+F4	pass	evidence/run-results.png	reset button and loss card restart; fade between levels; ball counter and pulse pips in the HUD
+F5	pass	evidence/run-level5-won.png	whole game played with touchscreen taps at 390x844 portrait
+F6	pass	tests/engine.test.ts	energy transfer, changing connections, order of events, win and loss, plus tests/levels.test.ts for solvability
+M1	pass	evidence/run-title.png	level 1 has a single glowing source (levels.ts level1)
+M2	pass	evidence/run-level1-won.png	one tap: heat, latch, tilt, 4 balls in the bin
+M3	pass	evidence/run-level2-lost.png	source A strands the balls on the locked lower platform
+M4	pass	evidence/play.png	one tap tips three platforms in a chain
+C1	pass	evidence/run-level2-lost.png	level 2: one pulse, two sources, only B wins (levels.test.ts)
+C2	pass	evidence/run-level4-won.png	level 4: only A then B wins (levels.test.ts)
+C3	pass	evidence/level5-trap.png	heating the reservoir twice cuts conductor x and strands 10 balls; 3 of 27 orders win (levels.test.ts)
+C4	pass	evidence/run-level4-lost.png	loss card offers Opnieuw; progress in other levels is kept

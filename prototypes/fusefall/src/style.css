@@ -1,0 +1,106 @@
+/* PROTOTYPE - NOT FOR PRODUCTION */
+/* Question: Geeft het activeren van één warmtebron een verrassende maar begrijpelijke mechanische kettingreactie? */
+/* Date: 2026-11-21 */
+:root {
+  --copper: #d08a55;
+  --heat: #ff8a2a;
+  --ink: #eef1f5;
+  --dim: #a3abb8;
+  --panel: rgba(14, 16, 21, 0.9);
+  --line: rgba(255, 255, 255, 0.14);
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; background: #0b0d11; overflow: hidden; overscroll-behavior: none; }
+body {
+  font-family: 'Avenir Next', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', sans-serif;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  user-select: none; -webkit-user-select: none;
+  touch-action: none;
+}
+[hidden] { display: none !important; }
+canvas#game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+#hud { position: fixed; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; }
+#hud header { display: flex; justify-content: space-between; align-items: flex-start; padding: calc(16px + var(--safe-t)) 20px 0; }
+.brand { font-size: 15px; letter-spacing: 0.42em; font-weight: 600; color: var(--copper); }
+.level { margin-top: 6px; font-size: 16px; color: var(--ink); }
+#lvl-num { color: var(--dim); margin-right: 10px; letter-spacing: 0.06em; }
+.label { font-size: 14px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+.pulses { text-align: right; }
+#pips { display: flex; gap: 9px; justify-content: flex-end; margin-top: 9px; }
+#pips i {
+  width: 15px; height: 15px; transform: rotate(45deg); border-radius: 3px;
+  background: var(--heat); box-shadow: 0 0 12px rgba(255, 138, 42, 0.8);
+  transition: background 0.25s, box-shadow 0.25s, transform 0.25s;
+}
+#pips i.spent { background: transparent; box-shadow: inset 0 0 0 1.5px rgba(208, 138, 85, 0.55); transform: rotate(45deg) scale(0.82); }
+
+#hint {
+  position: absolute; left: 0; right: 0; bottom: calc(118px + var(--safe-b)); margin: 0; padding: 0 24px;
+  text-align: center; font-size: 16px; line-height: 1.35; color: var(--ink); opacity: 0.86;
+  text-shadow: 0 1px 8px #000, 0 0 2px #000; transition: opacity 0.4s;
+}
+#hud footer { display: flex; align-items: flex-end; justify-content: space-between; padding: 0 20px calc(18px + var(--safe-b)); }
+#reset, .spacer { width: 52px; height: 52px; flex: none; }
+#reset {
+  pointer-events: auto; border-radius: 50%; border: 1px solid var(--line); background: var(--panel);
+  color: var(--ink); display: grid; place-items: center; cursor: pointer; transition: transform 0.12s, border-color 0.2s;
+}
+#reset:active { transform: scale(0.92); }
+#reset.nudge { border-color: var(--heat); box-shadow: 0 0 16px rgba(255, 138, 42, 0.45); }
+.count { text-align: center; min-width: 170px; }
+.nums { font-size: 40px; font-weight: 300; line-height: 1; letter-spacing: 0.02em; }
+.nums .sep { color: var(--dim); margin: 0 6px; font-size: 28px; }
+#goal { color: var(--dim); }
+#bin.bump { animation: bump 0.22s ease-out; display: inline-block; }
+@keyframes bump { 0% { transform: translateY(0); color: var(--heat); } 40% { transform: translateY(-5px); } 100% { transform: translateY(0); } }
+.bar { height: 3px; margin: 10px auto 8px; width: 150px; background: rgba(255, 255, 255, 0.14); border-radius: 2px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--copper), var(--heat)); transition: width 0.25s ease-out; }
+
+#labels { position: fixed; inset: 0; pointer-events: none; }
+#labels span {
+  position: absolute; transform: translate(-50%, 0); font-size: 15px; color: var(--ink); white-space: nowrap;
+  background: var(--panel); border: 1px solid var(--line); padding: 3px 9px; border-radius: 12px;
+}
+
+#title, #card {
+  position: fixed; left: 50%; transform: translateX(-50%); width: min(86vw, 380px);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 22px; text-align: center;
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+#title { top: 50%; transform: translate(-50%, -50%); padding: 34px 26px 26px; }
+#title h1 { margin: 14px 0 0; font-size: 34px; font-weight: 300; letter-spacing: 0.34em; padding-left: 0.34em; color: var(--ink); }
+#title .how { margin: 18px 0 26px; font-size: 17px; line-height: 1.5; color: var(--ink); }
+#title .keys { margin: 18px 0 0; font-size: 14px; color: var(--dim); }
+#card { bottom: calc(14px + var(--safe-b)); padding: 18px 20px 16px; animation: rise 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.1); }
+@keyframes rise { from { transform: translate(-50%, 24px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+#card h2 { margin: 0; font-size: 24px; font-weight: 400; letter-spacing: 0.04em; }
+#card p { margin: 6px 0 0; font-size: 16px; line-height: 1.45; color: var(--ink); }
+#card ul { list-style: none; margin: 14px 0 0; padding: 0; text-align: left; font-size: 16px; }
+#card ul:empty { display: none; }
+#card li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 4px; border-top: 1px solid var(--line); }
+#card li span:last-child { color: var(--dim); }
+.buttons { display: flex; gap: 10px; margin-top: 14px; }
+button { font: inherit; }
+#start, .buttons button {
+  flex: 1; min-height: 52px; padding: 0 22px; border-radius: 26px; border: none; cursor: pointer;
+  font-size: 17px; font-weight: 600; letter-spacing: 0.06em; color: #1a0f06;
+  background: linear-gradient(180deg, #ffa552, #f07a1c); box-shadow: 0 6px 22px rgba(255, 138, 42, 0.35);
+  transition: transform 0.12s;
+}
+#start { width: 100%; }
+#start:active, .buttons button:active { transform: scale(0.97); }
+.buttons button.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); box-shadow: none; flex: 0 0 auto; }
+
+#fade { position: fixed; inset: 0; background: #0b0d11; opacity: 0; pointer-events: none; }
+
+@media (max-height: 620px) {
+  #hint { bottom: calc(96px + var(--safe-b)); font-size: 14px; }
+  .nums { font-size: 32px; }
+}
+
+#hud.carded footer, #hud.carded #hint { visibility: hidden; }

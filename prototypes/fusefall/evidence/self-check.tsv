@@ -1,0 +1,21 @@
+time	2026-11-21 08:21:46
+not_assessed	keep	no config.js
+briefword	3D	unlisted
+checklist	L1	unlisted	-	Look: premium minimalistisch 3D-diorama; transparante behuizing, koperen geleiders, lichtgevende warmtepunten, kleine glanzende bolletjes, geborsteld metalen platforms op een donkere sokkel. Signatuurdetail: de gloed reist zichtbaar door het koper en de sluiting gloeit op vlak voor ze loslaat *(inferred (strong))*. Alles in code getekend: geen emoji, geen kale cirkels, geen externe modellen.	
+checklist	L2	unlisted	-	References: geen genoemd.	
+checklist	L3	unlisted	-	View: 3D · Camera: vast, licht schuin van voren, de hele kast passend in portret *(guessed)*	
+checklist	F1	unlisted	-	Deterministische engine: energieoverdracht, drempels, veranderbare verbindingen, geordende gebeurtenissenlijst	
+checklist	F2	unlisted	-	Vijf levels: één puls · bronkeuze · kettingreactie · twee samenwerkende pulsen · volgorde rond een groot reservoir	
+checklist	F3	unlisted	-	3D-diorama met zichtbaar reizende warmte en een duidelijke oorzaak bij elke sluiting	
+checklist	F4	unlisted	-	Reset, levelovergangen, voortgangsteller (bolletjes / doel) en een pulsenlimiet	
+checklist	F5	unlisted	-	Touchscreen en mobiele portretweergave	
+checklist	F6	unlisted	-	Automatische tests: energieoverdracht, verbindingswijzigingen, gebeurtenisvolgorde, win/verlies, oplosbaarheid per level	
+checklist	M1	unlisted	-	Level 1 toont één gloeiende bron.	
+checklist	M2	unlisted	-	Je tikt, de gloed loopt door het koper, de sluiting laat los, het platform kantelt en de bolletjes rollen in de bak.	
+checklist	M3	unlisted	-	Level 2 geeft twee bronnen: de dichtstbijzijnde laat de bolletjes stranden op een platform dat nog op slot zit.	
+checklist	M4	unlisted	-	In level 3 zet één tik een ketting in gang van drie kantelende platforms: daar betaalt de hook uit.	
+checklist	C1	unlisted	-	De eerste echte denkstap komt in level 2, binnen een minuut: één puls, twee bronnen, één goede.	
+checklist	C2	unlisted	-	Level 4 vraagt twee pulsen die samen één sluiting opwarmen, in één volgorde.	
+checklist	C3	unlisted	-	Level 5 heeft een groot reservoir waarbij de voor de hand liggende volgorde de eigen geleider doorsnijdt: 3 van de 27 volgordes winnen.	
+checklist	C4	unlisted	-	Een verlies kost alleen een reset van het level.	
+not_assessed	scripted run	window.game.step is missing: the starter check hooks were removed

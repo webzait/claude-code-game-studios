@@ -1,0 +1,73 @@
+<!doctype html>
+<!-- PROTOTYPE - NOT FOR PRODUCTION -->
+<!-- Question: Geeft het activeren van één warmtebron een verrassende maar begrijpelijke mechanische kettingreactie? -->
+<!-- Date: 2026-11-21 -->
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0b0d11">
+<title>FUSEFALL</title>
+<link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="hud" hidden>
+  <header>
+    <div class="left">
+      <div class="brand">FUSEFALL</div>
+      <div class="level"><span id="lvl-num"></span><span id="lvl-name"></span></div>
+    </div>
+    <div class="pulses">
+      <div class="label">Pulsen</div>
+      <div id="pips"></div>
+    </div>
+  </header>
+  <p id="hint"></p>
+  <footer>
+    <button id="reset" type="button" aria-label="Level opnieuw">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <path d="M5 12a7 7 0 1 0 2.3-5.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M4.2 4.2v4.4h4.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <div class="count">
+      <div class="nums"><span id="bin">0</span><span class="sep">/</span><span id="goal">0</span></div>
+      <div class="bar"><i id="bar"></i></div>
+      <div class="label">bolletjes in de bak</div>
+    </div>
+    <div class="spacer"></div>
+  </footer>
+</div>
+
+<div id="labels"></div>
+
+<section id="title" hidden>
+  <div class="mark">
+    <svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true">
+      <circle cx="32" cy="32" r="22" fill="none" stroke="#c47a45" stroke-width="2.5"/>
+      <circle cx="32" cy="32" r="9" fill="#ff8a2a"/>
+      <path d="M32 2v10M32 52v10M2 32h10M52 32h10" stroke="#c47a45" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <h1>FUSEFALL</h1>
+  <p class="how">Tik op een warmtebron.<br>Warmte opent sluitingen,<br>platforms kantelen,<br>bolletjes vallen in de bak.</p>
+  <button id="start" type="button">Start</button>
+  <p class="keys">Tik of klik &middot; toetsen 1-3: bron &middot; R: opnieuw</p>
+</section>
+
+<section id="card" hidden>
+  <h2 id="card-title"></h2>
+  <p id="card-text"></p>
+  <ul id="card-list"></ul>
+  <div class="buttons">
+    <button id="card-second" type="button" class="ghost"></button>
+    <button id="card-main" type="button"></button>
+  </div>
+</section>
+
+<div id="fade"></div>
+<script type="module" src="./src/main.ts"></script>
+</body>
+</html>

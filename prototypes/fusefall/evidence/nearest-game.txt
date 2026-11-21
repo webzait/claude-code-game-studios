@@ -1,0 +1,1 @@
+Nearest game: Where's My Water?; this one differs in that the player never draws or digs a path: they tap fixed heat sources on a graph, heat opens threshold latches, and each tilt rewires the conductors, so the puzzle is the firing order, resolved deterministically with no fluid or collision physics.

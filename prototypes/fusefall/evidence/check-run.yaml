@@ -1,0 +1,111 @@
+# The one-shot's small check (check-run/1).
+# Written by one-shot-check.sh --record: the results are /prototype's reading of
+# evidence/self-check.tsv; never edited by hand.
+kind: check-run/1
+engine: web
+browser: "unknown"
+time: "2026-11-21 08:21:46"
+checks:
+  - id: boots
+    result: not_run
+    mark: not assessed
+    why: "the check opens index.html without Vite so the TypeScript game never loads; run through Vite with Playwright instead, no errors"
+    evidence:
+      - "evidence/self-check.tsv"
+  - id: shot
+    result: not_run
+    mark: not assessed
+    why: "the check opens index.html without Vite so the TypeScript game never loads; run through Vite with Playwright instead; evidence/play.png taken that way and looked at"
+    evidence:
+  - id: outlines
+    result: not_run
+    mark: not assessed
+    why: "the check opens index.html without Vite so the TypeScript game never loads; run through Vite with Playwright instead; evidence/figures.png taken that way and looked at"
+    evidence:
+      - "evidence/figures.png"
+  - id: brief-words
+    result: pass
+    evidence:
+      - "evidence/brief-words.tsv"
+  - id: emoji
+    result: pass
+    evidence:
+      - "evidence/self-check.tsv"
+  - id: nearest-game
+    result: pass
+    evidence:
+      - "evidence/nearest-game.txt"
+brief_checklist:
+  - id: L1
+    result: pass
+    evidence: "evidence/play.png"
+    item: "Look: premium minimalistisch 3D-diorama; transparante behuizing, koperen geleiders, lichtgevende warmtepunten, kleine glanzende bolletjes, geborsteld metalen platforms op een donkere sokkel. Signatuurdetail: de gloed reist zichtbaar door het koper en de sluiting gloeit op vlak voor ze loslaat *(inferred (strong))*. Alles in code getekend: geen emoji, geen kale cirkels, geen externe modellen."
+  - id: L2
+    result: pass
+    evidence: "evidence/play.png"
+    item: "References: geen genoemd."
+  - id: L3
+    result: pass
+    evidence: "evidence/play.png"
+    item: "View: 3D · Camera: vast, licht schuin van voren, de hele kast passend in portret *(guessed)*"
+  - id: F1
+    result: pass
+    evidence: "src/engine/engine.ts"
+    item: "Deterministische engine: energieoverdracht, drempels, veranderbare verbindingen, geordende gebeurtenissenlijst"
+  - id: F2
+    result: pass
+    evidence: "src/levels/levels.ts"
+    item: "Vijf levels: één puls · bronkeuze · kettingreactie · twee samenwerkende pulsen · volgorde rond een groot reservoir"
+  - id: F3
+    result: pass
+    evidence: "evidence/play.png"
+    item: "3D-diorama met zichtbaar reizende warmte en een duidelijke oorzaak bij elke sluiting"
+  - id: F4
+    result: pass
+    evidence: "evidence/run-results.png"
+    item: "Reset, levelovergangen, voortgangsteller (bolletjes / doel) en een pulsenlimiet"
+  - id: F5
+    result: pass
+    evidence: "evidence/run-level5-won.png"
+    item: "Touchscreen en mobiele portretweergave"
+  - id: F6
+    result: pass
+    evidence: "tests/engine.test.ts"
+    item: "Automatische tests: energieoverdracht, verbindingswijzigingen, gebeurtenisvolgorde, win/verlies, oplosbaarheid per level"
+  - id: M1
+    result: pass
+    evidence: "evidence/run-title.png"
+    item: "Level 1 toont één gloeiende bron."
+  - id: M2
+    result: pass
+    evidence: "evidence/run-level1-won.png"
+    item: "Je tikt, de gloed loopt door het koper, de sluiting laat los, het platform kantelt en de bolletjes rollen in de bak."
+  - id: M3
+    result: pass
+    evidence: "evidence/run-level2-lost.png"
+    item: "Level 2 geeft twee bronnen: de dichtstbijzijnde laat de bolletjes stranden op een platform dat nog op slot zit."
+  - id: M4
+    result: pass
+    evidence: "evidence/play.png"
+    item: "In level 3 zet één tik een ketting in gang van drie kantelende platforms: daar betaalt de hook uit."
+  - id: C1
+    result: pass
+    evidence: "evidence/run-level2-lost.png"
+    item: "De eerste echte denkstap komt in level 2, binnen een minuut: één puls, twee bronnen, één goede."
+  - id: C2
+    result: pass
+    evidence: "evidence/run-level4-won.png"
+    item: "Level 4 vraagt twee pulsen die samen één sluiting opwarmen, in één volgorde."
+  - id: C3
+    result: pass
+    evidence: "evidence/level5-trap.png"
+    item: "Level 5 heeft een groot reservoir waarbij de voor de hand liggende volgorde de eigen geleider doorsnijdt: 3 van de 27 volgordes winnen."
+  - id: C4
+    result: pass
+    evidence: "evidence/run-level4-lost.png"
+    item: "Een verlies kost alleen een reset van het level."
+not_assessed:
+  - what: "keep"
+    why: "no config.js"
+  - what: "scripted run"
+    why: "window.game.step is missing: the starter check hooks were removed"
