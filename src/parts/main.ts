@@ -5,7 +5,7 @@ import type { Color } from '../engine/types';
 import parts from '../../data/parts.json';
 import hintIcon from '../../assets/turnflock/ui/hint.webp';
 import { buildExit, buildFloorTile, buildObstacle, buildRim, buildRimCorner, buildRimEdge, buildUnderlay } from '../render/parts/board';
-import { buildFlockbot, type FlockbotVariant } from '../render/parts/flockbot';
+import { buildFlockbot } from '../render/parts/flockbot';
 import './parts.css';
 
 /**
@@ -45,8 +45,6 @@ const VIEWS = {
   front: { label: 'Voorkant', dir: new THREE.Vector3(0, 0.0001, 1) },
   side: { label: 'Zijaanzicht', dir: new THREE.Vector3(1, 0.0001, 0) },
   top: { label: 'Bovenaanzicht', dir: new THREE.Vector3(0, 1, 0.0001) },
-  back: { label: 'Achterkant', dir: new THREE.Vector3(0, 0.0001, -1) },
-  rear: { label: 'Schuin van achteren', dir: new THREE.Vector3(0.55, 0.62, -1) },
 } as const;
 type ViewName = keyof typeof VIEWS;
 
@@ -101,18 +99,16 @@ function card(title: string, id: string, object: THREE.Object3D, note: string, v
 
 const NAMES: Record<Color, string> = { red: 'Rode Flockbot', blue: 'Blauwe Flockbot', yellow: 'Gele Flockbot' };
 /** Small-size check for a Flockbot card: the bot as seen on the board (from above, tilted), at the widths it gets in the game, once per heading. */
-function smallPreviews(id: string, color: Color, variant: FlockbotVariant = 'window'): void {
+function smallPreviews(id: string, color: Color): void {
   const row = document.createElement('div');
   row.className = 'bot-small';
   const boardView = VIEWS.main.dir.clone();
   VIEWS.main.dir.set(0, 1, 0.5);
   // One picture per heading, shown at both widths.
   const shots = [0, 1, 2, 3].map((heading) => {
-    const bot = buildFlockbot(color, variant);
-    // The window bot turns its symbol; the peek bot turns as a whole, eyes and all.
-    if (variant === 'peek') bot.root.rotation.y = (-heading * Math.PI) / 2;
-    else bot.symbol.rotation.y = (-heading * Math.PI) / 2;
-    return snapshot(bot.root, 'main', 0.62, new THREE.Vector3(0, 0.56, 0), 0);
+    const bot = buildFlockbot(color);
+    bot.symbol.rotation.y = (-heading * Math.PI) / 2;
+    return snapshot(bot.root, 'main', 0.56, new THREE.Vector3(0, 0.5, 0), 0);
   });
   for (const width of [46, 42]) {
     for (const shot of shots) {
@@ -134,12 +130,6 @@ function smallPreviews(id: string, color: Color, variant: FlockbotVariant = 'win
 for (const color of ['red', 'blue', 'yellow'] as const) {
   card(NAMES[color], `bot-${color}`, buildFlockbot(color).root, 'Bovenschaal met symbool · gezichtsmodule · romp · 4 pootjes. Het symbool draait mee met de richting.');
   smallPreviews(`bot-${color}`, color);
-}
-
-// Variant with the eyes on top: they stay in sight when the whole bot turns.
-for (const color of ['red', 'blue', 'yellow'] as const) {
-  card(`${NAMES[color]} · ogen bovenop`, `bot-peek-${color}`, buildFlockbot(color, 'peek').root, 'Variant: twee grote ogen op de voorrand van de bovenkant. De hele bot draait mee met de richting; de ogen blijven van opzij, van achteren en van boven zichtbaar.', ['main', 'front', 'side', 'back', 'top', 'rear']);
-  smallPreviews(`bot-peek-${color}`, color, 'peek');
 }
 
 // Exploded Flockbot, as in the sheet's construction drawing.

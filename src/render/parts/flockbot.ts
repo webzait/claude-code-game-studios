@@ -6,13 +6,6 @@ import { roundedBlock, roundedRect } from './shapes';
 
 const F = parts.flockbot;
 
-/**
- * Which face a Flockbot has. `window`: the eyes sit in a framed window on the
- * front. `peek`: two big eyeballs stand on the front edge of the top, so they
- * stay in sight from the sides, from behind and from above when the whole bot turns.
- */
-export type FlockbotVariant = 'window' | 'peek';
-
 /** A Flockbot as separate modules, in cell units: it stands on y = 0, faces +z and is one cell wide. */
 export interface FlockbotParts {
   /** Everything, ready to place on a tile. */
@@ -256,7 +249,7 @@ const windowMat = new THREE.MeshPhysicalMaterial({ color: F.colors.window, rough
  * lower body, a framed face window with two large eyes, an ear disc on each
  * side and four small feet underneath.
  */
-export function buildFlockbot(color: Color, variant: FlockbotVariant = 'window'): FlockbotParts {
+export function buildFlockbot(color: Color): FlockbotParts {
   const tones = CONFIG.colors.robots[color];
   const M = F.material;
   const bodyMat = new THREE.MeshPhysicalMaterial({
@@ -316,64 +309,42 @@ export function buildFlockbot(color: Color, variant: FlockbotVariant = 'window')
   lidGeo.translate(0, F.seam + half, 0);
   shell.add(new THREE.Mesh(lidGeo, seamMat));
 
+  // Face module: a soft raised frame in the body colour, the light window sunk inside it, two big eyes.
   const face = new THREE.Group();
-  if (variant === 'peek') {
-    // Face module: two eyeballs on the front edge of the top, looking forward and up.
-    const K = F.peek;
-    const tilt = (K.tilt * Math.PI) / 180;
-    const look = new THREE.Vector3(0, Math.sin(tilt), Math.cos(tilt));
-    const whiteMat = new THREE.MeshPhysicalMaterial({ color: F.colors.window, roughness: 0.25, clearcoat: 0.8, emissive: F.colors.window, emissiveIntensity: 0.4 });
-    for (const side of [-1, 1]) {
-      const eye = new THREE.Group();
-      eye.position.set(side * K.spread, SHELL_TOP + K.lift, K.forward);
-      const white = new THREE.Mesh(eyeBall, whiteMat);
-      white.scale.setScalar(K.eyeRadius);
-      // The pupil is a second ball pushed out along the line of sight, so only its cap shows on the white.
-      const pupil = new THREE.Mesh(eyeBall, eyeBlack);
-      pupil.scale.setScalar(K.eyeRadius * K.pupil);
-      pupil.position.copy(look).multiplyScalar(K.eyeRadius * K.pupilOut);
-      const glint = new THREE.Mesh(eyeBall, eyeGlint);
-      glint.scale.setScalar(K.glint);
-      glint.position.copy(look).multiplyScalar(K.eyeRadius * (K.pupilOut + K.pupil) - K.glint * 0.5).add(new THREE.Vector3(K.eyeRadius * 0.22, K.eyeRadius * 0.2, 0));
-      eye.add(white, pupil, glint);
-      face.add(eye);
-    }
-  } else {
-    const W = F.face;
-    const onFront = (lift: number) => (x: number, y: number): number => frontZ(x, y + W.centre) + lift;
-    const frameMat = new THREE.MeshPhysicalMaterial({
-      color: tones.main,
-      roughness: M.roughness,
-      clearcoat: M.clearcoat,
-      clearcoatRoughness: M.clearcoatRoughness,
-      envMapIntensity: M.reflect,
-      emissive: tones.main,
-      emissiveIntensity: M.glow,
-    });
-    const frame = new THREE.Mesh(wrappedFrame(W.width, W.height, W.radius, W.bezel, W.bezelHeight, onFront(0)), frameMat);
-    // The window reaches a little under the frame, so no body colour shows between them.
-    const inner = W.bezel * 0.8;
-    const pane = new THREE.Mesh(wrapped(roundedRect(W.width - 2 * inner, W.height - 2 * inner, W.radius - inner), onFront(W.depth)), windowMat);
-    face.add(frame, pane);
-    const E = F.eye;
-    for (const side of [-1, 1]) {
-      const x = side * E.spread;
-      const z = frontZ(x, W.centre) + W.depth;
-      // Turn each eye with the curve of the front, so it sits flat on the window.
-      const turn = Math.atan2(frontZ(x - 0.02, W.centre) - frontZ(x + 0.02, W.centre), 0.04);
-      const eye = new THREE.Group();
-      eye.position.set(x, 0, z);
-      eye.rotation.y = turn;
-      const ball = new THREE.Mesh(eyeBall, eyeBlack);
-      ball.scale.set(E.radius, E.radius * 1.06, E.radius * E.bulge);
-      const glint = new THREE.Mesh(eyeBall, eyeGlint);
-      glint.scale.set(E.glint, E.glint, E.glint * 0.5);
-      glint.position.set(E.radius * 0.32, E.radius * 0.42, E.radius * E.bulge * 0.8);
-      eye.add(ball, glint);
-      face.add(eye);
-    }
-    face.position.y = W.centre;
+  const W = F.face;
+  const onFront = (lift: number) => (x: number, y: number): number => frontZ(x, y + W.centre) + lift;
+  const frameMat = new THREE.MeshPhysicalMaterial({
+    color: tones.main,
+    roughness: M.roughness,
+    clearcoat: M.clearcoat,
+    clearcoatRoughness: M.clearcoatRoughness,
+    envMapIntensity: M.reflect,
+    emissive: tones.main,
+    emissiveIntensity: M.glow,
+  });
+  const frame = new THREE.Mesh(wrappedFrame(W.width, W.height, W.radius, W.bezel, W.bezelHeight, onFront(0)), frameMat);
+  // The window reaches a little under the frame, so no body colour shows between them.
+  const inner = W.bezel * 0.8;
+  const pane = new THREE.Mesh(wrapped(roundedRect(W.width - 2 * inner, W.height - 2 * inner, W.radius - inner), onFront(W.depth)), windowMat);
+  face.add(frame, pane);
+  const E = F.eye;
+  for (const side of [-1, 1]) {
+    const x = side * E.spread;
+    const z = frontZ(x, W.centre) + W.depth;
+    // Turn each eye with the curve of the front, so it sits flat on the window.
+    const turn = Math.atan2(frontZ(x - 0.02, W.centre) - frontZ(x + 0.02, W.centre), 0.04);
+    const eye = new THREE.Group();
+    eye.position.set(x, 0, z);
+    eye.rotation.y = turn;
+    const ball = new THREE.Mesh(eyeBall, eyeBlack);
+    ball.scale.set(E.radius, E.radius * 1.06, E.radius * E.bulge);
+    const glint = new THREE.Mesh(eyeBall, eyeGlint);
+    glint.scale.set(E.glint, E.glint, E.glint * 0.5);
+    glint.position.set(E.radius * 0.32, E.radius * 0.42, E.radius * E.bulge * 0.8);
+    eye.add(ball, glint);
+    face.add(eye);
   }
+  face.position.y = W.centre;
 
   // Ears: a flat light disc on each side.
   const ears = new THREE.Group();
@@ -404,9 +375,7 @@ export function buildFlockbot(color: Color, variant: FlockbotVariant = 'window')
   const symbol = new THREE.Group();
   const S = F.symbol;
   const bevel = S.raise * 0.4;
-  // With the eyes on top the arrow is a little smaller and sits behind them.
-  const symbolSize = variant === 'peek' ? F.peek.symbolSize : S.size;
-  const arrowGeo = new THREE.ExtrudeGeometry(arrowShape(symbolSize - 2 * bevel), {
+  const arrowGeo = new THREE.ExtrudeGeometry(arrowShape(S.size - 2 * bevel), {
     depth: S.raise + S.sink - 2 * bevel,
     bevelEnabled: true,
     bevelThickness: bevel,
@@ -425,7 +394,7 @@ export function buildFlockbot(color: Color, variant: FlockbotVariant = 'window')
       : new THREE.MeshPhysicalMaterial({ color: F.colors.symbolLight, roughness: 0.3, clearcoat: 0.7, emissive: F.colors.symbolLight, emissiveIntensity: 0.25 }),
   );
   symbol.add(arrow);
-  symbol.position.set(0, SHELL_TOP + half, variant === 'peek' ? -F.peek.symbolBack : 0);
+  symbol.position.y = SHELL_TOP + half;
 
   const root = new THREE.Group();
   root.add(feet, romp, shell, face, ears, symbol);
