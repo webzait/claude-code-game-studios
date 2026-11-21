@@ -38,7 +38,7 @@ const coinPhoto = (size: number): string => `<img class="tf-coin-ico" src="${coi
 const coinDrawn = (size: number): string =>
   `<svg class="tf-coin-ico drawn" viewBox="0 0 24 24" aria-hidden="true" style="--s:${size}px"><defs><radialGradient id="tf-coin-face" cx="35%" cy="25%" r="85%"><stop offset="0" stop-color="#ffe48a"/><stop offset=".55" stop-color="#f6c542"/><stop offset="1" stop-color="#eab52c"/></radialGradient></defs><circle cx="12" cy="12.7" r="11" fill="#9a6c08"/><circle cx="12" cy="11.3" r="10.7" fill="#c9961a"/><circle cx="12" cy="11.3" r="8.9" fill="url(#tf-coin-face)"/><path d="M4.9 9a7.4 7.4 0 0 1 8.6-5" fill="none" stroke="#fff6cf" stroke-width="1.5" stroke-linecap="round"/><path d="${starPath(12, 12.5, 5.5, 2.6)}" fill="#b98408" stroke="#b98408" stroke-width="2" stroke-linejoin="round"/><path d="${starPath(12, 11.4, 5.5, 2.6)}" fill="#fff1b0" stroke="#fff1b0" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
 
-/** The coin used inside the controls: the drawn one at small sizes, the owner's picture from `drawnIconBelow` up. */
+/** The coin used inside the controls: the owner's picture at every size (`drawnIconBelow` is 0); the drawn one stays as a fallback. */
 const coin = (size: number): string => (size < C.drawnIconBelow ? coinDrawn(size) : coinPhoto(size));
 
 type CounterSize = 'compact' | 'wide';
@@ -76,7 +76,7 @@ function price(cost: number, state: PriceState): string {
   return `<span class="tf-coin-price${state === 'short' ? ' short' : ''}" ${style}>${coin(C.price.icon)}<span>${formatCoins(cost)}</span></span>`;
 }
 
-const bulb = `<svg class="tf-coin-bulb" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.7 15.4a5.9 5.9 0 1 1 6.6 0v1.9H8.7z" fill="#ffe48a" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M9.9 20.6h4.2" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M12 .9v1.4M4.3 3.6l1 1M19.7 3.6l-1 1M1.4 10.4h1.5M22.6 10.4h-1.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 9.6a2.6 2.6 0 0 1 2-2" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+const bulb = `<svg class="tf-coin-bulb" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.7 15.4a5.9 5.9 0 1 1 6.6 0v1.9H8.7z" fill="#f4c62f" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M9.9 20.6h4.2" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M12 .9v1.4M4.3 3.6l1 1M19.7 3.6l-1 1M1.4 10.4h1.5M22.6 10.4h-1.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 9.6a2.6 2.6 0 0 1 2-2" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>`;
 
 /** What a screen reader says for a priced button. */
 function spoken(name: string, cost: number, state: PriceState): string {
@@ -124,7 +124,7 @@ const info = (): string => `<div class="tf-coin-info" role="dialog" aria-label="
       <div class="tf-coin-line spend"><dt>Hint: de volgende zet</dt><dd>${COINS.hintCost}${coin(C.reward.lineIcon)}</dd></div>
       <div class="tf-coin-line spend"><dt>${offerName}</dt><dd>${COINS.extraMovesCost}${coin(C.reward.lineIcon)}</dd></div>
     </dl>
-    <p>Undo en Restart zijn altijd gratis. Munten zijn niet te koop.</p>
+    <p>Undo en Restart zijn altijd gratis. Munten verdien je met spelen.</p>
   </div>`;
 
 const cell = (html: string, text: string): string => `<div class="btn-cell">${html}<span>${text}</span></div>`;
@@ -233,20 +233,20 @@ export function addCoinCards(sheet: HTMLElement): void {
     'coins-plus',
     `<h2>Plusknop bij de teller</h2><p class="dims">${C.plus.width}×${C.plus.height} px, ${C.plus.depth} px diep · raakvlak ${C.plus.width}×${C.plus.height + C.plus.depth} px</p>
     <div class="btn-row" id="coins-plus-row">
-      ${cell(counter(30), 'zonder plus (voorstel)')}
-      ${cell(counterWithPlus(30), 'met plus')}
+      ${cell(counterWithPlus(30), 'met plus (gekozen)')}
+      ${cell(counter(30), 'zonder plus')}
       ${cell(`<span class="tf-coin-group">${counter(30)}${plus('pressed')}</span>`, 'ingedrukt')}
       ${cell(counterWithPlus(99999, 'wide'), 'breed · met plus')}
       ${cell(`<button type="button" class="tf-btn tf-coin-plus" style="${sizeVars(C.plus)}" aria-label="Meer munten"><span class="tf-clip"><span class="tf-face"><img src="${plusImage}" alt="" /></span></span></button>`, 'alternatief met plus.webp')}
     </div>
     <div class="btn-row panel">
-      ${cell(counter(30), 'zonder plus (voorstel)')}
-      ${cell(counterWithPlus(30), 'met plus')}
+      ${cell(counterWithPlus(30), 'met plus (gekozen)')}
+      ${cell(counter(30), 'zonder plus')}
       ${cell(counterWithPlus(1250, 'wide'), 'breed · met plus')}
     </div>
-    <h3 class="btn-title">Wat de plus opent zolang er geen winkel is</h3>
+    <h3 class="btn-title">Wat de plus opent tot de winkel er is</h3>
     <div class="btn-row panel" id="coins-info">${info()}</div>
-    <p class="note">Voorstel: laat de plus weg tot er een winkel bestaat. Een groene plus belooft "meer munten halen" en dat kan nu niet. Komt hij er toch, dan opent hij alleen dit uitlegpaneel: hoe je munten verdient en wat ze kosten, zonder iets te verkopen.</p>`,
+    <p class="note">Gekozen: de plus staat bij de teller, want de winkel komt er. Tot die er is opent hij alleen dit uitlegpaneel: hoe je munten verdient en wat ze kosten, zonder iets te verkopen.</p>`,
   );
 
   // 3. Price tags.
@@ -259,7 +259,7 @@ export function addCoinCards(sheet: HTMLElement): void {
     <div class="btn-row panel" id="coins-price-compact">${PRICE_STATES.map((s) => cell(hintCompact(s), PRICE_LABEL[s])).join('')}</div>
     <h3 class="btn-title">${offerName} · ${COINS.extraMovesCost} munten</h3>
     <div class="btn-row panel tf-coin-offers" id="coins-price-offer">${PRICE_STATES.map((s) => cell(offer(s, '290px'), PRICE_LABEL[s])).join('')}</div>
-    <p class="note">De prijs staat altijd op de knop zelf, vóór het tikken: munt en getal in een verzonken kaartje. Te weinig munten: het kaartje wordt rood en de knop dof, maar hij blijft tikbaar en de teller antwoordt met zijn schudje. Gratis (testlab): het woord "Gratis" in groen, zonder munt. Al gebruikt: de knop is echt uit, met een vinkje; in de compacte knop alleen het vinkje.</p>`,
+    <p class="note">De prijs staat altijd op de knop zelf, vóór het tikken: munt en getal in een verzonken kaartje. De Hint-knop is dezelfde witte knop als op de knoppenkaart, met het prijskaartje erbij. Te weinig munten: het kaartje wordt rood en de knop dof, maar hij blijft tikbaar en de teller antwoordt met zijn schudje. Gratis (testlab): het woord "Gratis" in groen, zonder munt. Al gebruikt: de knop is echt uit, met een vinkje; in de compacte knop alleen het vinkje.</p>`,
   );
 
   // 4. The reward.
@@ -288,14 +288,14 @@ export function addCoinCards(sheet: HTMLElement): void {
     <div class="btn-row panel tf-coin-icons">${iconRow(coinDrawn)}</div>
     <h3 class="btn-title">Vier keer vergroot, zoals het scherm ze tekent</h3>
     <div class="btn-row panel tf-coin-icons zoom" id="coins-icon-zoom">${C.iconSizes.map((s) => cell(`<span class="tf-coin-zoom" style="--s:${s}px">${coinPhoto(s)}</span>`, `afbeelding ${s}`)).join('')}${C.iconSizes.map((s) => cell(`<span class="tf-coin-zoom" style="--s:${s}px">${coinDrawn(s)}</span>`, `getekend ${s}`)).join('')}</div>
-    <p class="note">In de onderdelen hierboven: onder ${C.drawnIconBelow} px de getekende munt, vanaf ${C.drawnIconBelow} px de afbeelding.</p>`,
+    <p class="note">Gekozen: overal de afbeelding van de eigenaar, ook op 16 px. De getekende versie blijft hier alleen ter vergelijking staan.</p>`,
   );
 
   // Everything together on a phone, at both widths.
   add(
     'coins-phone',
     `<h2>Munten op de telefoon</h2><p class="dims">${C.phone.widths.join(' px en ')} px breed</p>
-    ${C.phone.widths.map((w, i) => `<h3 class="btn-title">${w} px · ${i === 0 ? 'genoeg munten, zonder plus' : 'te weinig munten, met plus'}</h3>${phone(w, i === 0 ? 30 : 7, i === 1)}`).join('')}
+    ${C.phone.widths.map((w, i) => `<h3 class="btn-title">${w} px · ${i === 0 ? 'genoeg munten' : 'te weinig munten'}</h3>${phone(w, i === 0 ? 30 : 7, true)}`).join('')}
     <h3 class="btn-title">320 px · krapste geval: hoogste bedrag met plus</h3>
     <div class="tf-coin-phone bar-only" id="coins-phone-tight" style="--pw:320px;--pp:${C.phone.padding}px;--pg:${C.phone.gap}px"><div class="tf-coin-top"><div class="tf-coin-bar"><span class="tf-coin-pill grow">Level 48</span>${counterWithPlus(99999)}</div><div class="tf-coin-bar"><span class="tf-coin-pill">0 / 12</span><span class="tf-coin-pill grow">12 zetten</span>${hintCompact('ok')}</div></div></div>
     <p class="note">De teller staat rechts in een eigen bovenregel naast het level; doel, zetten en Hint staan eronder. Zo past ook 99 999 op 320 px. Het bord is weggelaten.</p>`,

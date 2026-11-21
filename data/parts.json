@@ -125,7 +125,7 @@
   "coins": {
     "countUpMs": 700,
     "shortMs": 900,
-    "drawnIconBelow": 22,
+    "drawnIconBelow": 0,
     "iconSizes": [
       16,
       20,

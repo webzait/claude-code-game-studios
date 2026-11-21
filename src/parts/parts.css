@@ -177,10 +177,13 @@ img.tf-coin-ico { filter: drop-shadow(0 1px 0 rgba(138, 94, 4, .6)); }
 .tf-coin-group .tf-coin-plus { margin-left: -12px; margin-top: calc((var(--gh, 43px) - var(--h) - var(--d)) / 2); z-index: 1; }
 .tf-coin-group:has(.wide) { --gh: 48px; }
 
-/* A button that costs coins: the shared block in hint cyan or booster purple, with the price set into its face. */
+/* A button that costs coins, with the price set into its face: Hint is the white utility block of the buttons card, the +3 moves offer is booster purple. */
 .tf-coin-buy { --icon: calc(var(--h) * .62); --fs: calc(var(--h) * .36); }
 .tf-coin-buy .tf-face { gap: calc(var(--h) * .13); }
-.tf-coin-buy.hint { --c-top: #9af3ff; --c-main: #53d3e8; --c-side: #28a7bc; --c-deep: #1c8596; --ink-c: #173146; --ink-shadow: transparent; --gloss: .55; }
+.tf-coin-buy.hint { --c-top: #ffffff; --c-main: #f1f4fd; --c-side: #c3cce2; --c-deep: #9eabc8; --ink-c: #24314f; --ink-shadow: transparent; --gloss: .9; }
+.tf-coin-buy.hint .tf-face { box-shadow: inset 0 0 0 1.5px rgba(36, 49, 79, .2), inset 0 -2.5px 1px rgba(255, 255, 255, .3); }
+.tf-coin-buy.hint:disabled { --ink-c: #7c879f; }
+.tf-coin-buy.hint .tf-coin-price:not(.short):not(.free) { background: #e6ebf7; }
 .tf-coin-buy.boost { --c-top: #a093ff; --c-main: #7e6bff; --c-side: #5c48d9; --c-deep: #4735b4; --gloss: .3; }
 .tf-coin-buy.offer .tf-face { justify-content: flex-start; padding-left: calc(var(--side) + 12px); padding-right: calc(var(--side) + 12px); }
 .tf-coin-buy.offer .tf-label { flex: 1; text-align: left; text-shadow: 0 1.5px 0 rgba(40, 24, 140, .55); }
