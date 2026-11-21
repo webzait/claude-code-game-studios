@@ -20,30 +20,126 @@ body { margin: 0; background: #eef3fb; color: var(--ink); font-family: ui-rounde
 @media (max-width: 700px) { .card.wide .views { grid-template-columns: 1fr; } }
 .note { margin: 8px 0 0; font-size: 12.5px; color: var(--muted); }
 
-/* ---- Buttons, each on its own, at the sheet's size in CSS pixels ---- */
-.btn-row { display: flex; flex-wrap: wrap; gap: 22px 18px; align-items: flex-start; padding: 14px 8px 22px; background: linear-gradient(180deg, #70c4fb, #5ab6f3); border-radius: 12px; }
-.btn-cell { display: flex; flex-direction: column; align-items: center; gap: 22px; font-size: 11px; color: #12305c; font-weight: 700; }
-.tf-btn { border: 0; padding: 0; font: inherit; cursor: pointer; position: relative; display: inline-flex; align-items: center; justify-content: center; transition: transform .06s, box-shadow .06s; -webkit-tap-highlight-color: transparent; }
-.tf-btn svg { position: relative; }
-/* Utility and hint: 120 x 48 face, 16 deep. */
-.tf-utility {
-  width: 120px; height: 48px; border-radius: 17px; gap: 7px; color: var(--ink); font-weight: 800; font-size: 16px;
-  background: linear-gradient(180deg, #ffffff 0%, #eef3ff 100%);
-  box-shadow: 0 6px 0 #c3cfea, 0 12px 0 #a9b8dc, 0 16px 0 #8fa0c8, 0 22px 14px rgba(18, 36, 92, .3), inset 0 2px 0 #fff;
+/* ---- Buttons: real HTML buttons, each a pillow cap (.tf-face) that sinks into a fixed side wall ---- */
+/* Card layout for the buttons. */
+.btn-title { margin: 14px 0 6px; font-size: 13px; font-weight: 800; color: var(--ink); }
+.btn-row { display: flex; flex-wrap: wrap; gap: 16px 14px; align-items: flex-end; justify-content: center; padding: 16px 8px 12px; background: linear-gradient(180deg, #70c4fb, #5ab6f3); border-radius: 12px; }
+.btn-row.panel { background: #f8faff; border: 1.5px solid #e6ebf5; }
+.btn-cell { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 11px; color: #12305c; font-weight: 700; }
+.tf-phone { width: 390px; margin: 0 calc(50% - 195px); background: linear-gradient(180deg, #dfe7f7, #cfd9ee); border-radius: 12px; overflow: hidden; }
+.tf-states { width: 390px; margin: 0 calc(50% - 195px); padding: 10px 7px 16px; display: grid; gap: 14px 8px; justify-items: center; align-items: center; background: #f8faff; border: 1.5px solid #e6ebf5; border-radius: 12px; font-size: 11px; font-weight: 700; color: #12305c; }
+.tf-states.three { grid-template-columns: repeat(3, 1fr); }
+.tf-states.four { grid-template-columns: repeat(4, 1fr); gap: 16px 8px; }
+.tf-states .wide { grid-column: span 2; justify-self: start; }
+.tf-phone .tf-bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; }
+.tf-phone .tf-pill { height: 40px; padding: 0 12px; border-radius: 14px; background: #f8faff; border: 1.5px solid #e6ebf5; box-shadow: 0 3px 0 #c9d2e3; display: inline-flex; align-items: center; font-weight: 800; font-size: 15px; color: var(--ink); }
+.tf-phone .tf-pill.grow { flex: 1; }
+.tf-phone .tf-board { margin: 0 14px; height: 54px; border-radius: 14px; border: 2px dashed #aab6d3; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--muted); }
+.tf-phone .tf-controls { margin-top: 10px; padding: 12px 14px 14px; background: #f8faff; border-top: 1.5px solid #e6ebf5; display: grid; gap: 10px; }
+.tf-phone .tf-line { display: flex; justify-content: space-between; }
+
+/* The button. Sizes come from four custom properties: --w, --h (the top face), --d (depth of the
+   side wall) and --r (corner radius). The element is the full footprint, wall included, so its
+   layout and its touch target do not change when the cap is pressed. */
+.tf-btn {
+  --press: calc(var(--d) * var(--press-fraction, .8));
+  --face-top: var(--c-top); --face: var(--c-main); --wall: var(--c-side); --wall-deep: var(--c-deep);
+  --ink-c: #fff; --ink-shadow: rgba(0, 0, 0, .24); --gloss: .34; --cast: rgba(36, 49, 79, .42);
+  position: relative; display: inline-block; flex: none; width: var(--w); height: calc(var(--h) + var(--d)); min-width: 44px; min-height: 44px;
+  border: 0; padding: 0; margin: 0; background: none; font: inherit; color: var(--ink-c); cursor: pointer;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation; user-select: none; -webkit-user-select: none;
 }
-.tf-utility svg { width: 22px; height: 22px; }
-.tf-utility:active { transform: translateY(12px); box-shadow: 0 2px 0 #c3cfea, 0 4px 0 #8fa0c8, 0 6px 8px rgba(18, 36, 92, .3), inset 0 2px 0 #fff; }
-.tf-hint img { width: 30px; height: 30px; }
-/* Action: 96 x 96 face, 20 deep. */
-.tf-action {
-  width: 96px; height: 96px; border-radius: 20px; color: #fff;
-  background: linear-gradient(180deg, var(--top) 0%, var(--main) 60%);
-  box-shadow: 0 10px 0 var(--side), 0 20px 0 var(--deep), 0 28px 16px rgba(18, 36, 92, .38), inset 0 2px 0 rgba(255, 255, 255, .5), inset 0 -4px 6px rgba(0, 0, 0, .1);
+/* Side wall: stays where it is; the cap slides down over it. */
+.tf-btn::before {
+  content: ""; position: absolute; left: 0; right: 0; top: var(--press); bottom: 0; border-radius: var(--r);
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, .2), rgba(0, 0, 0, 0) 14%, rgba(0, 0, 0, 0) 86%, rgba(0, 0, 0, .2)),
+    linear-gradient(180deg, var(--wall) calc(100% - var(--d) * 1.1), var(--wall-deep) calc(100% - var(--d) * .25));
+  box-shadow: 0 calc(var(--d) * .3) calc(var(--d) * .45) var(--cast), 0 2px 2px rgba(36, 49, 79, .35), inset 0 -1.5px 0 rgba(255, 255, 255, .22);
 }
-.tf-action::before { content: ""; position: absolute; left: 7%; right: 7%; top: 5%; height: 40%; border-radius: 15px 15px 40% 40%; background: linear-gradient(180deg, rgba(255, 255, 255, .42), rgba(255, 255, 255, 0)); pointer-events: none; }
-.tf-action svg { width: 54px; height: 54px; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, .18)); }
-.tf-action:active { transform: translateY(16px); box-shadow: 0 2px 0 var(--side), 0 4px 0 var(--deep), 0 8px 8px rgba(18, 36, 92, .3), inset 0 2px 0 rgba(255, 255, 255, .4); }
-.tf-action.red { --top: #ff646b; --main: #f1454b; --side: #bd2732; --deep: #a21d28; }
-.tf-action.blue { --top: #59a5ff; --main: #2e84f1; --side: #1a61be; --deep: #154c95; }
-.tf-action.yellow { --top: #ffe473; --main: #f4c62f; --side: #d29a0d; --deep: #b37b04; color: #3a3118; }
-.tf-action.forward { --top: #58638a; --main: #3d4769; --side: #29314a; --deep: #1e243a; }
+/* Top face: lit rim on top, roll-off into the wall at the bottom, a soft dome of light in between. */
+.tf-face {
+  position: absolute; left: 0; right: 0; top: 0; height: var(--h); border-radius: var(--r);
+  display: flex; align-items: center; justify-content: center; gap: calc(var(--h) * .13);
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, .28), rgba(255, 255, 255, 0) 62%),
+    linear-gradient(180deg, var(--face-top) 0%, var(--face) 52%, var(--face) 78%, color-mix(in srgb, var(--face) 62%, var(--wall)) 100%);
+  box-shadow:
+    inset 0 calc(var(--h) * .035 + 1px) calc(var(--h) * .02) rgba(255, 255, 255, .75),
+    inset 0 calc(var(--h) * -.09 - 2px) calc(var(--h) * .08 + 2px) calc(var(--h) * -.03) var(--wall),
+    inset calc(var(--h) * .04) 0 calc(var(--h) * .05) calc(var(--h) * -.03) rgba(255, 255, 255, .5),
+    inset calc(var(--h) * -.04) 0 calc(var(--h) * .05) calc(var(--h) * -.03) rgba(0, 0, 0, .22),
+    0 1.5px 1px rgba(0, 0, 0, .28);
+  transition: transform .07s cubic-bezier(.3, .7, .4, 1);
+}
+/* Gloss: a wide soft band over the upper half and a small bright glint top left. */
+.tf-face::before {
+  content: ""; position: absolute; left: 7%; right: 7%; top: calc(var(--h) * .06); height: 36%; pointer-events: none;
+  border-radius: calc(var(--r) * .72) calc(var(--r) * .72) 50% 50% / calc(var(--r) * .72) calc(var(--r) * .72) 70% 70%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, var(--gloss)), rgba(255, 255, 255, .03));
+}
+.tf-face::after {
+  content: ""; position: absolute; left: calc(var(--r) * .42); top: calc(var(--r) * .3); width: calc(var(--r) * .7); height: calc(var(--r) * .32); pointer-events: none;
+  border-radius: 50%; transform: rotate(-24deg); background: radial-gradient(closest-side, rgba(255, 255, 255, .9), rgba(255, 255, 255, 0));
+}
+.tf-face svg { position: relative; z-index: 1; flex: none; width: var(--icon); height: var(--icon); overflow: visible; }
+.tf-face .tf-ink-shadow { color: var(--ink-shadow); }
+.tf-face img { position: relative; z-index: 1; width: calc(var(--h) * .68); height: calc(var(--h) * .68); }
+.tf-label { position: relative; z-index: 1; font-weight: 800; font-size: var(--fs, calc(var(--h) * .34)); letter-spacing: .01em; line-height: 1; }
+
+/* Pressed: the cap sinks by most of the depth and loses a little light. */
+.tf-btn:active:not(:disabled) .tf-face, .tf-btn.pressed .tf-face {
+  transform: translateY(var(--press));
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, .07), rgba(0, 0, 0, .07)),
+    linear-gradient(180deg, var(--face-top) 0%, var(--face) 52%, var(--face) 78%, color-mix(in srgb, var(--face) 62%, var(--wall)) 100%);
+}
+.tf-btn:active:not(:disabled) .tf-face::before, .tf-btn.pressed .tf-face::before { opacity: .55; }
+.tf-btn:focus-visible { outline: 3px solid #24314f; outline-offset: 3px; border-radius: var(--r); }
+
+/* Disabled: washed out, half sunk, no gloss; still the same footprint. */
+.tf-btn:disabled {
+  --face-top: color-mix(in srgb, var(--c-top) 30%, #dfe4ee); --face: color-mix(in srgb, var(--c-main) 30%, #d3d9e6);
+  --wall: color-mix(in srgb, var(--c-side) 26%, #b9c2d4); --wall-deep: color-mix(in srgb, var(--c-deep) 26%, #a8b2c7);
+  --ink-shadow: transparent; --cast: rgba(36, 49, 79, .16); cursor: not-allowed;
+}
+.tf-btn:disabled .tf-face { transform: translateY(calc(var(--press) * .5)); }
+.tf-btn:disabled .tf-face::before, .tf-btn:disabled .tf-face::after { display: none; }
+.tf-btn:disabled .tf-face > * { opacity: .6; }
+
+/* Utility and hint: near-white cap with a dark outline and a clearly darker wall, so it never reads as a flat capsule. */
+.tf-utility, .tf-hint {
+  --c-top: #ffffff; --c-main: #f1f5fe; --c-side: #b3bfd9; --c-deep: #95a3c2;
+  --ink-c: #24314f; --ink-shadow: transparent; --gloss: .9; --icon: calc(var(--h) * .52);
+}
+.tf-utility .tf-face, .tf-hint .tf-face {
+  box-shadow:
+    inset 0 0 0 1.5px rgba(36, 49, 79, .2),
+    inset 0 calc(var(--h) * .05 + 1px) 1px #fff,
+    inset 0 calc(var(--h) * -.14 - 2px) calc(var(--h) * .12 + 2px) calc(var(--h) * -.04) #b9c5de,
+    0 1.5px 1px rgba(36, 49, 79, .4);
+}
+.tf-utility:disabled, .tf-hint:disabled { --ink-c: #7c879f; }
+.tf-hint { --icon: calc(var(--h) * .66); }
+.tf-hint.compact .tf-label { display: none; }
+
+/* Action: the four owner tones. */
+.tf-action { --icon: calc(var(--h) * .62); }
+.tf-action.red { --c-top: #ff646b; --c-main: #f1454b; --c-side: #bd2732; --c-deep: #a21d28; --glow: #ff8a90; }
+.tf-action.blue { --c-top: #59a5ff; --c-main: #2e84f1; --c-side: #1a61be; --c-deep: #154c95; --glow: #7db9ff; }
+.tf-action.yellow { --c-top: #ffe473; --c-main: #f4c62f; --c-side: #d29a0d; --c-deep: #b37b04; --glow: #ffe98c; --ink-c: #33290f; --ink-shadow: rgba(255, 255, 255, .45); }
+.tf-action.forward { --c-top: #58638a; --c-main: #3d4769; --c-side: #29314a; --c-deep: #1e243a; --glow: #9aa8d8; --gloss: .26; }
+
+/* Nudge: the suggested next move. A bright ring that breathes; a still ring when motion is reduced. */
+.tf-btn.nudge::after {
+  content: ""; position: absolute; inset: -5px; border-radius: calc(var(--r) + 5px); pointer-events: none;
+  border: 3px solid #fff; box-shadow: 0 0 0 3px var(--glow, #fff), 0 0 14px 5px var(--glow, #fff);
+  animation: tf-nudge 1.1s ease-in-out infinite alternate;
+}
+.tf-btn.nudge:not(.pressed):not(:active) .tf-face { animation: tf-bob 1.1s ease-in-out infinite alternate; }
+@keyframes tf-nudge { from { opacity: .55; transform: scale(.985); } to { opacity: 1; transform: scale(1.03); } }
+@keyframes tf-bob { from { transform: translateY(0); } to { transform: translateY(calc(var(--d) * -.12)); } }
+@media (prefers-reduced-motion: reduce) {
+  .tf-face { transition: none; }
+  .tf-btn.nudge::after, .tf-btn.nudge .tf-face { animation: none; }
+}
