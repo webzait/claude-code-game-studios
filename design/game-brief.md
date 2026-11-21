@@ -1,0 +1,61 @@
+# Game Brief: Turnflock
+
+## In your words
+TURNFLOCK, an original, colourful hybrid-casual puzzle game for iOS and Android. Small robots in three colours (red, blue, yellow) stand on a compact grid, each with its own facing shown by a clear arrow. The player gives global colour commands: RED/BLUE/YELLOW turns all robots of that colour 90° clockwise, then all robots try to step forward; FORWARD moves all robots without turning. Every action costs one move. Goal: get all robots to the green exit within a limited number of moves. High-quality minimalist 2.5D/3D diorama, calm light grey or off-white background, board large on screen, compact friendly robots with rounded shapes, small expressive eyes and clear direction arrows. Vite + TypeScript + Three.js, separate deterministic grid engine, BFS solver using the same rules, five hand-designed levels, automated tests, mobile portrait, one finger. Do not change the core mechanic without consulting; stop after the first playable prototype.
+
+**Pitch:** One colour command turns one colour, but the whole flock steps — steer every robot home before the moves run out.
+
+**Genre:** hybrid-casual grid puzzle
+
+**Controls:** four big buttons (Red, Blue, Yellow, Forward); Undo, Restart, Replay. Keyboard on desktop: 1 2 3, Space, Z, R.
+
+**Question:** is one global colour command satisfying and strategic enough that players immediately want the next level?
+
+**Hooks:** you never move one robot; every command moves everyone, and turns are clockwise only.
+
+## Look and references
+- Look: minimalist diorama; off-white background, light grey rounded board, slate walls, green exit pad with a tick; compact rounded robots with eyes and a head arrow in #F04446 / #2675E8 / #FFD12F, exit #2FC56C. Every figure drawn, no emoji.
+- References: the concept sketch "ONE COLOR COMMAND · ALL ROBOTS MOVE" (7×7 board, top-right exit).
+- View: 2.5D/3D · Camera: fixed, tilted about 30° from straight down, board fills the screen width.
+
+## First minute
+Level 1 shows three red robots and only two buttons; Forward pulses softly. The robots walk up and wait at the wall; Red turns them all toward the exit and they file in. Level 2 adds blue, and the first press shows that everyone moves when one colour turns.
+
+## Challenge
+Each level has a move budget of the shortest solution plus two. Running out ends the attempt; Undo and Try again are free. Level 4 needs the right order of three colours; level 5 has 12 robots and one shortest solution.
+
+## Core loop
+- Read the board: who is waiting at a wall, who is drifting away.
+- Press one command; the whole flock turns and steps.
+- Robots that reach the exit are collected; solve at par for three stars; next level.
+
+## Goal & fail state
+- All robots collected within the move budget. Out of moves with robots left = retry.
+
+## Features
+- [x] Deterministic grid engine (turn, simultaneous move, walls, conflicts, queues, no swaps or cycles, exit)
+- [x] BFS solver on the same rules
+- [x] Five levels with verified par and budget
+- [x] Undo, Restart, Replay
+- [x] 3D diorama with turn, step, bump and exit animations
+- [x] Mobile portrait HUD: level, collected, moves left, four command buttons, Next level
+
+## Keep
+-
+
+## Avoid
+- Visual chaos, busy menus, generic stock graphics.
+- Changing the core mechanic without consulting.
+
+## Out of scope
+- Hints, extra moves, rewarded ads, robot skins, daily challenges, metagame: later, after the core is judged.
+- Sound.
+- Orange and purple robots.
+
+## Build order
+1. Engine, solver, five levels, playable in the browser. (built)
+
+---
+**Kill condition:** if the colour command still feels like trial and error after level tuning.
+
+**Who it's for / what they feel:** casual puzzle players on a phone; "one tap, and the whole flock did what I planned".
