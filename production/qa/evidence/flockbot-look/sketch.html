@@ -12,10 +12,10 @@
   .cell { background: #f7f9ff; border-radius: 5px; display: flex; align-items: center; justify-content: center; }
   .now { border-radius: 10px; display: block; }
 </style>
-<h1>Flockbot: schets 3 (nog niet gebouwd)</h1>
+<h1>Flockbot: schets 4 (nog niet gebouwd)</h1>
 <p>Platte schets, bedoeld om vorm, rand, glans en pijl te kiezen voordat het 3D-model wordt aangepast. Robots kijken naar de speler, zoals in het spel.</p>
 
-<h2>1–3. Glans, vorm en randen: nu, schets 2, schets 3 (ronder en schattiger), jouw voorbeeld</h2>
+<h2>1–3. Glans, vorm en randen: nu, schets 3 (met randlijn), schets 4 (geen lijn, één doorlopende ronding), jouw voorbeeld</h2>
 <div class="row" id="big"></div>
 
 <h2>4. De pijl: twee lezingen van "driehoek / inkeping"</h2>
@@ -72,7 +72,7 @@ function bot(color, s, heading, variant, mode = 'v3') {
     <defs>
       <linearGradient id="${id}w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c.main}"/><stop offset=".55" stop-color="${c.side}"/><stop offset="1" stop-color="${c.deep}"/></linearGradient>
       <linearGradient id="${id}f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c.top}"/><stop offset=".6" stop-color="${c.main}"/><stop offset="1" stop-color="${c.main}"/></linearGradient>
-      <linearGradient id="${id}m" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c.top}"/><stop offset=".3" stop-color="${c.main}"/><stop offset="${v3 ? 0.5 : 0.56}" stop-color="${c.main}"/><stop offset="${v3 ? 0.82 : 0.68}" stop-color="${c.side}"/><stop offset="1" stop-color="${c.deep}"/></linearGradient>
+      <linearGradient id="${id}m" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c.top}"/><stop offset="${v3 ? 0.22 : 0.3}" stop-color="${c.main}"/><stop offset="${v3 ? 0.42 : 0.56}" stop-color="${c.main}"/><stop offset="${v3 ? 0.9 : 0.68}" stop-color="${c.side}"/><stop offset="1" stop-color="${c.deep}"/></linearGradient>
       <radialGradient id="${id}s" cx=".32" cy=".1" r=".85"><stop offset="0" stop-color="#fff" stop-opacity=".3"/><stop offset=".7" stop-color="#fff" stop-opacity="0"/></radialGradient>
       <filter id="${id}b"><feGaussianBlur stdDeviation="${0.03 * s}"/></filter>
     </defs>
@@ -83,7 +83,7 @@ function bot(color, s, heading, variant, mode = 'v3') {
     <rect x="${x0 + 0.025 * s}" y="${y0 + 0.012 * s}" width="${w - 0.05 * s}" height="${faceH}" rx="${r * 0.9}" fill="url(#${id}s)"/>` : `
     <rect x="${x0}" y="${y0}" width="${w}" height="${faceH + wall}" rx="${r}" fill="url(#${id}m)"/>
     <rect x="${x0}" y="${y0}" width="${w}" height="${faceH + wall}" rx="${r}" fill="url(#${id}s)"/>
-    <rect x="${x0 + 0.02 * s}" y="${y0 + 0.012 * s}" width="${w - 0.04 * s}" height="${faceH + 0.03 * s}" rx="${r * 0.92}" fill="none" stroke="${c.top}" stroke-opacity="${v3 ? 0.28 : 0.45}" stroke-width="${Math.max(0.6, 0.012 * s)}"/>`}
+${v3 ? "" : `<rect x="${x0 + 0.02 * s}" y="${y0 + 0.012 * s}" width="${w - 0.04 * s}" height="${faceH + 0.03 * s}" rx="${r * 0.92}" fill="none" stroke="${c.top}" stroke-opacity="${v3 ? 0.28 : 0.45}" stroke-width="${Math.max(0.6, 0.012 * s)}"/>`}`}
     ${front}${arrow}
   </svg>`;
 }
@@ -92,8 +92,8 @@ const button = (color, px) => `<button class="tf-btn tf-action ${color}" style="
 
 document.getElementById('big').innerHTML =
   fig('<img class="now" src="before-large.png" height="170">', 'Nu (uit het spel)') +
-  fig(bot('red', 170, 2, 'A', 'v2'), 'Schets 2') +
-  fig(bot('red', 190, 2, 'A'), '<b>Schets 3</b>: veel rondere randen en hoeken, verzonken vizier, grote ogen, kleine donkere pootjes') +
+  fig('<img class="now" src="v3-crop.png" height="170">', 'Schets 3: nog een lijn bovenop') +
+  fig(bot('red', 190, 2, 'A'), '<b>Schets 4</b>: geen rand of lijn bovenop; bovenkant loopt in één ronding over in de zijkant') +
   fig(bot('blue', 150, 2, 'A') + bot('yellow', 150, 2, 'A'), 'Blauw en geel') +
   fig('<img class="now" src="owner-reference.jpg" width="620">', 'Jouw voorbeeld');
 
