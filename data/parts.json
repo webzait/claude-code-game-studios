@@ -3,9 +3,9 @@
   "standardHeight": 0.43,
   "cornerRadius": 0.21,
   "flockbot": {
-    "width": 1.0,
+    "width": 1,
     "depth": 0.94,
-    "height": 1.0,
+    "height": 1,
     "seam": 0.5,
     "footHeight": 0.09,
     "footRadius": 0.1,
@@ -39,7 +39,7 @@
     }
   },
   "floorTile": {
-    "size": 1.0,
+    "size": 1,
     "height": 0.2,
     "radius": 0.15,
     "bevel": 0.035,
@@ -56,7 +56,7 @@
     "studSpread": 0.27
   },
   "exit": {
-    "size": 1.0,
+    "size": 1,
     "height": 0.2,
     "radius": 0.15,
     "bevel": 0.035,
@@ -120,6 +120,75 @@
         "depth": 8,
         "radius": 15
       }
+    }
+  },
+  "coins": {
+    "countUpMs": 700,
+    "shortMs": 900,
+    "drawnIconBelow": 22,
+    "iconSizes": [
+      16,
+      20,
+      24,
+      32
+    ],
+    "counter": {
+      "compact": {
+        "height": 40,
+        "depth": 3,
+        "radius": 14,
+        "icon": 26,
+        "font": 16
+      },
+      "wide": {
+        "height": 44,
+        "depth": 4,
+        "radius": 16,
+        "icon": 32,
+        "font": 19,
+        "minWidth": 128
+      }
+    },
+    "plus": {
+      "width": 44,
+      "height": 36,
+      "depth": 8,
+      "radius": 14
+    },
+    "price": {
+      "height": 26,
+      "icon": 20,
+      "font": 15
+    },
+    "hint": {
+      "width": 156,
+      "height": 48,
+      "depth": 16,
+      "radius": 22
+    },
+    "hintCompact": {
+      "width": 96,
+      "height": 40,
+      "depth": 8,
+      "radius": 15
+    },
+    "offer": {
+      "height": 52,
+      "depth": 14,
+      "radius": 22
+    },
+    "reward": {
+      "icon": 40,
+      "font": 34,
+      "lineIcon": 16
+    },
+    "phone": {
+      "widths": [
+        390,
+        320
+      ],
+      "padding": 14,
+      "gap": 8
     }
   }
 }

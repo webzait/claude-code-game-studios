@@ -5,7 +5,7 @@ turnflock/decor/bush.webp: { origin: you, source: "Asset Kit decor/bush.png", ch
 turnflock/ui/coin.webp: { origin: you, source: "Asset Kit ui/coin.png", change: "trimmed, 144x144, WebP" }
 turnflock/ui/hint.webp: { origin: you, source: "Asset Kit ui/hint.png", change: "trimmed, 144x144, WebP" }
 turnflock/ui/extra-moves.webp: { origin: you, source: "Asset Kit ui/extra-3-moves.png", change: "trimmed, 144x144, WebP" }
-turnflock/ui/plus.webp: { origin: you, source: "Asset Kit ui/plus.png", change: "trimmed, 144x144, WebP; not used yet (no way to buy coins)" }
+turnflock/ui/plus.webp: { origin: you, source: "Asset Kit ui/plus.png", change: "trimmed, 144x144, WebP; only shown as an alternative plus button on the parts sheet (src/parts/coins.ts); not in the game (no way to buy coins)" }
 turnflock/3d/flockbot_red.glb: { origin: you, source: "Asset Kit", change: none }
 turnflock/3d/flockbot_blue.glb: { origin: you, source: "Asset Kit", change: none }
 turnflock/3d/flockbot_yellow.glb: { origin: you, source: "Asset Kit", change: none }

@@ -129,3 +129,135 @@ body { margin: 0; background: #eef3fb; color: var(--ink); font-family: ui-rounde
   .tf-face { transition: none; }
   .tf-btn.nudge::after { animation: none; }
 }
+
+/* ---- Coins: counter, plus button, price tags, reward. Same family as the buttons above; class prefix tf-coin-. ---- */
+/* Owner tones: gold #f6c542 / #c9961a / #ffe48a, plus green #38d96a / #25a84f / #7bff9e, hint cyan #53d3e8 / #28a7bc / #9af3ff, booster purple #7e6bff / #5c48d9 / #b2a8ff. */
+.tf-coin-card { --gold: #f6c542; --gold-deep: #c9961a; --gold-light: #ffe48a; --no: #d5333b; --no-soft: #ffe4e5; --yes: #17793a; --yes-soft: #dcf9e5; }
+.tf-coin-ico { display: inline-block; flex: none; width: var(--s, 24px); height: var(--s, 24px); }
+/* A thin dark-gold edge under the owner's picture, so it keeps its outline on a white panel. */
+img.tf-coin-ico { filter: drop-shadow(0 1px 0 rgba(138, 94, 4, .6)); }
+
+/* The counter: a raised white plate like the bar pills, with the coin standing a little proud of it. Not a button. */
+.tf-coin-counter {
+  position: relative; display: inline-flex; flex: none; align-items: center; justify-content: space-between; gap: 6px;
+  height: calc(var(--ch) + var(--cd)); min-width: var(--cw, 0); padding: 0 12px var(--cd) 7px; border-radius: var(--cr);
+  background: linear-gradient(180deg, #fff 0, #f8faff 45%, #eef2fb calc(100% - var(--cd) - 1px), #c9d2e3 calc(100% - var(--cd)), #b9c4da 100%);
+  box-shadow: inset 0 0 0 1.5px rgba(36, 49, 79, .16), inset 0 2.5px 0 #fff, 0 2px 2px rgba(36, 49, 79, .3), 0 5px 8px rgba(36, 49, 79, .22);
+  color: #24314f; font-weight: 800; font-size: var(--cf); line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap;
+  transition: background-color .2s, box-shadow .2s;
+}
+.tf-coin-counter .tf-coin-ico { margin: -4px 0; }
+.tf-coin-amount { display: inline-block; min-width: 1ch; text-align: right; }
+/* Earned: a gold rim, the coin hops, and the amount that came in drifts up out of the counter. */
+.tf-coin-counter.earn { box-shadow: inset 0 0 0 2px var(--gold-deep), inset 0 2.5px 0 #fff, 0 0 0 3px var(--gold), 0 0 12px 4px rgba(255, 228, 138, .9), 0 5px 8px rgba(36, 49, 79, .22); }
+.tf-coin-counter.earn .tf-coin-ico { animation: tf-coin-hop .5s cubic-bezier(.3, 1.6, .5, 1) 2; }
+.tf-coin-gain {
+  position: absolute; right: 6px; top: calc(100% + 4px); padding: 3px 8px; border-radius: 10px; pointer-events: none;
+  background: linear-gradient(180deg, var(--gold-light), var(--gold)); box-shadow: 0 2px 0 var(--gold-deep), 0 4px 6px rgba(36, 49, 79, .25); color: #4a3200; font-size: 13px; font-weight: 800;
+  animation: tf-coin-rise 1.2s ease-out both;
+}
+/* Cannot afford: a short shake and a red tint. The red stays as long as the class does. */
+.tf-coin-counter.short {
+  background: linear-gradient(180deg, #fff5f5 0, var(--no-soft) calc(100% - var(--cd) - 1px), #e3a4a8 calc(100% - var(--cd)), #d58a90 100%);
+  box-shadow: inset 0 0 0 2px var(--no), inset 0 3.5px 0 rgba(255, 255, 255, .7), 0 2px 2px rgba(36, 49, 79, .3), 0 5px 8px rgba(36, 49, 79, .22);
+  color: #b3202a; animation: tf-coin-shake .38s ease-in-out;
+}
+@keyframes tf-coin-hop { 0%, 100% { transform: none; } 45% { transform: translateY(-5px) scale(1.14); } }
+@keyframes tf-coin-rise { 0% { opacity: 0; transform: translateY(6px); } 20%, 70% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-8px); } }
+@keyframes tf-coin-shake { 0%, 100% { transform: none; } 18% { transform: translateX(-5px); } 36% { transform: translateX(5px); } 54% { transform: translateX(-4px); } 72% { transform: translateX(3px); } 88% { transform: translateX(-1px); } }
+/* On the sheet the frozen states keep their floating amount visible. */
+.btn-cell .tf-coin-gain { animation: none; }
+.btn-cell:has(.tf-coin-gain) { gap: 32px; }
+
+/* Plus button: the shared block in the owner's green, docked onto the counter's right end. */
+.tf-coin-plus { --c-top: #6ff094; --c-main: #38d96a; --c-side: #25a84f; --c-deep: #1b8a3f; --icon: calc(var(--h) * .6); --gloss: .4; --ink-shadow: rgba(13, 92, 40, .5); }
+.tf-coin-plus .tf-face img { width: calc(var(--h) * .9); height: calc(var(--h) * .9); }
+.tf-coin-group { display: inline-flex; flex: none; align-items: flex-start; }
+.tf-coin-group .tf-coin-counter { padding-right: 20px; }
+.tf-coin-group .tf-coin-plus { margin-left: -12px; margin-top: calc((var(--gh, 43px) - var(--h) - var(--d)) / 2); z-index: 1; }
+.tf-coin-group:has(.wide) { --gh: 48px; }
+
+/* A button that costs coins: the shared block in hint cyan or booster purple, with the price set into its face. */
+.tf-coin-buy { --icon: calc(var(--h) * .62); --fs: calc(var(--h) * .36); }
+.tf-coin-buy .tf-face { gap: calc(var(--h) * .13); }
+.tf-coin-buy.hint { --c-top: #9af3ff; --c-main: #53d3e8; --c-side: #28a7bc; --c-deep: #1c8596; --ink-c: #173146; --ink-shadow: transparent; --gloss: .55; }
+.tf-coin-buy.boost { --c-top: #a093ff; --c-main: #7e6bff; --c-side: #5c48d9; --c-deep: #4735b4; --gloss: .3; }
+.tf-coin-buy.offer .tf-face { justify-content: flex-start; padding-left: calc(var(--side) + 12px); padding-right: calc(var(--side) + 12px); }
+.tf-coin-buy.offer .tf-label { flex: 1; text-align: left; text-shadow: 0 1.5px 0 rgba(40, 24, 140, .55); }
+.tf-coin-buy .tf-face .tf-coin-art { width: calc(var(--h) * .74); height: calc(var(--h) * .74); filter: drop-shadow(0 1.5px 1px rgba(30, 20, 110, .45)); }
+/* Cannot afford: the block goes dull but stays up and tappable; the price turns red. */
+.tf-coin-buy.short {
+  --face-top: color-mix(in srgb, var(--c-top) 45%, #dfe4ee); --face: color-mix(in srgb, var(--c-main) 45%, #cfd6e4);
+  --wall: color-mix(in srgb, var(--c-side) 45%, #b3bcd0); --wall-deep: color-mix(in srgb, var(--c-deep) 45%, #a3adc4); --gloss: .1;
+}
+.tf-coin-buy.short .tf-coin-art { filter: saturate(.45); }
+
+/* The price tag: a little well sunk into the button face, coin first, then the number. */
+.tf-coin-price {
+  position: relative; z-index: 1; display: inline-flex; flex: none; align-items: center; gap: 4px; height: var(--ph, 26px); padding: 0 9px 0 3px; border-radius: 999px;
+  background: #f8faff; box-shadow: inset 0 2px 2px rgba(36, 49, 79, .3), inset 0 0 0 1px rgba(36, 49, 79, .12), 0 1.5px 0 rgba(255, 255, 255, .5);
+  color: #24314f; font-weight: 800; font-size: var(--pf, 15px); line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; text-shadow: none;
+}
+.tf-coin-price.short { background: var(--no-soft); color: #b3202a; box-shadow: inset 0 0 0 2px var(--no), 0 1.5px 0 rgba(255, 255, 255, .5); }
+.tf-coin-price.free { padding: 0 10px; background: var(--yes-soft); color: var(--yes); }
+.tf-coin-price.used { padding: 0 10px 0 7px; background: rgba(255, 255, 255, .7); color: #5d6a84; }
+/* Used: the word takes the label's place, so the button keeps its size. */
+.tf-coin-buy.hint:disabled .tf-label { display: none; }
+.tf-coin-check { flex: none; width: 1em; height: 1em; }
+.tf-coin-buy.compact .tf-face { gap: 5px; }
+.tf-coin-buy.compact .tf-coin-price { --ph: 24px; --pf: 14px; padding-right: 7px; }
+.tf-coin-buy.compact .tf-coin-price.free, .tf-coin-buy.compact .tf-coin-price.used { --pf: 12px; padding: 0 6px; }
+.tf-coin-buy.compact:has(.free) .tf-coin-bulb { --icon: calc(var(--h) * .5); }
+.tf-coin-buy.compact .tf-coin-price.used { --pf: 16px; padding: 0 12px; }
+.tf-coin-buy.compact .tf-coin-price.used .tf-coin-word { display: none; }
+
+/* Reward after a win: the total on a gold plate, the sum under it, then the new balance. */
+.tf-coin-reward { width: 100%; min-width: 220px; display: grid; justify-items: center; gap: 10px; color: #24314f; }
+.tf-coin-total {
+  margin: 0; display: inline-flex; align-items: center; gap: 8px; padding: 6px 20px 11px 10px; border-radius: 20px;
+  background: radial-gradient(90% 80% at 30% 0, rgba(255, 255, 255, .55), rgba(255, 255, 255, 0) 60%), linear-gradient(180deg, var(--gold-light) 0, var(--gold) 60%, var(--gold) calc(100% - 6px), var(--gold-deep) calc(100% - 5px));
+  box-shadow: inset 0 0 0 1.5px rgba(138, 94, 4, .45), inset 0 3px 0 rgba(255, 255, 255, .6), 0 2px 2px rgba(36, 49, 79, .3), 0 6px 10px rgba(138, 94, 4, .3);
+  color: #4a3200; font-weight: 900; font-size: var(--rf, 34px); line-height: 1; font-variant-numeric: tabular-nums; text-shadow: 0 1.5px 0 rgba(255, 255, 255, .55);
+}
+.tf-coin-lines { margin: 0; width: 100%; display: grid; }
+.tf-coin-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 2px; border-top: 1.5px solid #e6ebf5; font-size: 14px; font-weight: 700; }
+.tf-coin-line:first-child { border-top: 0; }
+.tf-coin-line dt { color: #5d6a84; text-align: left; }
+.tf-coin-line dd { margin: 0; display: inline-flex; align-items: center; gap: 4px; color: #24314f; font-weight: 800; font-variant-numeric: tabular-nums; }
+.tf-coin-line.none dt, .tf-coin-line.none dd { color: #9aa5bc; }
+.tf-coin-line.none dd { padding-right: 20px; }
+.tf-coin-balance, .tf-coin-paid { margin: 0; display: inline-flex; align-items: center; gap: 5px; font-size: 14px; font-weight: 700; color: #5d6a84; }
+.tf-coin-balance b { color: #24314f; font-weight: 800; font-variant-numeric: tabular-nums; }
+.tf-coin-paid { color: #24314f; font-weight: 800; }
+.tf-coin-paid .tf-coin-check { color: #25a84f; }
+
+/* The explainer the plus opens while there is no shop. */
+.tf-coin-info { width: 300px; max-width: 100%; padding: 14px 16px 12px; border-radius: 20px; background: #fff; border: 1.5px solid #e6ebf5; box-shadow: 0 4px 0 #c9d2e3, 0 10px 18px rgba(36, 49, 79, .18); color: #24314f; }
+.tf-coin-info h4 { margin: 0 0 6px; display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 800; }
+.tf-coin-info p { margin: 8px 0 0; font-size: 12.5px; font-weight: 600; color: #5d6a84; }
+.tf-coin-line.spend dd { color: #5d6a84; }
+
+/* Sheet layout for the coin cards. */
+.tf-coin-card .btn-row { gap: 18px 16px; align-items: center; }
+.tf-coin-card .btn-row + .btn-row { margin-top: 8px; }
+.tf-coin-offers, .tf-coin-rewards { align-items: flex-start !important; }
+.tf-coin-rewards .btn-cell { width: 240px; gap: 12px; }
+.tf-coin-icons { align-items: flex-end !important; gap: 22px !important; }
+.tf-coin-zoom { display: inline-flex; width: calc(var(--s) * 4); height: calc(var(--s) * 4); }
+.tf-coin-zoom .tf-coin-ico { transform: scale(4); transform-origin: 0 0; }
+
+/* Phone strips: top bar, out-of-moves offer and win card, without the board. */
+.tf-coin-phone { width: var(--pw); margin: 0 calc(50% - var(--pw) / 2) 6px; border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, #70c4fb, #5ab6f3); display: grid; gap: 12px; padding-bottom: 12px; }
+.tf-coin-top { display: grid; gap: var(--pg); padding: 10px var(--pp) 4px; }
+.tf-coin-bar { display: flex; align-items: flex-start; gap: var(--pg); }
+.tf-coin-pill { height: 43px; padding: 0 12px 3px; border-radius: 14px; background: linear-gradient(180deg, #f8faff calc(100% - 3px), #c9d2e3 calc(100% - 3px)); box-shadow: inset 0 0 0 1.5px rgba(36, 49, 79, .1); display: inline-flex; align-items: center; font-weight: 800; font-size: 15px; color: #24314f; white-space: nowrap; }
+.tf-coin-pill.grow, .tf-coin-stub { flex: 1; }
+.tf-coin-sheet { margin: 0 var(--pp); padding: 14px 14px 16px; border-radius: 22px; background: #f8faff; border: 1.5px solid #e6ebf5; box-shadow: 0 4px 0 #c9d2e3; display: grid; gap: 10px; justify-items: center; }
+.tf-coin-sheet h4 { margin: 0; font-size: 20px; font-weight: 800; color: #24314f; }
+.tf-coin-sheet .tf-coin-bar { width: 100%; }
+.tf-coin-stub { height: 44px; border-radius: 18px; border: 2px dashed #aab6d3; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #5d6a84; }
+.tf-coin-sub { margin: 0; font-size: 12.5px; font-weight: 600; color: #5d6a84; text-align: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tf-coin-counter, .tf-coin-counter.short, .tf-coin-counter.earn .tf-coin-ico, .tf-coin-gain { animation: none; transition: none; }
+}
