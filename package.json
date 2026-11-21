@@ -1,0 +1,33 @@
+{
+  "name": "turnflock",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": "^22.12 || ^24 || >=26"
+  },
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc --noEmit && vite build",
+    "build:single": "tsc --noEmit && vite build --mode single",
+    "preview": "vite preview --host",
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "vitest run",
+    "test:e2e": "npm run build:single && playwright test",
+    "smoke": "npm run build:single && playwright test --grep @boot",
+    "solve": "tsx tools/level-design/solve.ts"
+  },
+  "dependencies": {
+    "three": "0.170.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1",
+    "@types/node": "26.6.6",
+    "@types/three": "0.170.0",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vite": "8.3.8",
+    "vite-plugin-singlefile": "2.3.4",
+    "vitest": "5.1.1"
+  }
+}

@@ -173,3 +173,8 @@ $RECYCLE.BIN/
 # the project root. Anchored so a reports/ folder elsewhere stays tracked.
 /reports/
 /test-results/
+
+# === Web game (Turnflock) ===
+dist-single/
+/playwright-report/
+.vitest/

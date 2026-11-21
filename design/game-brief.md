@@ -43,6 +43,8 @@ Each level has a move budget of the shortest solution plus two. Running out ends
 ## Keep
 -
 
+After play: Doorgaan (proceed). Next step chosen: make it a real project at the repo root.
+
 ## Avoid
 - Visual chaos, busy menus, generic stock graphics.
 - Changing the core mechanic without consulting.
@@ -54,6 +56,7 @@ Each level has a move budget of the shortest solution plus two. Running out ends
 
 ## Build order
 1. Engine, solver, five levels, playable in the browser. (built)
+2. Grown into the project root as a Web project: `src/`, `data/`, `tests/`. (built)
 
 ---
 **Kill condition:** if the colour command still feels like trial and error after level tuning.

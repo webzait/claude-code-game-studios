@@ -1,0 +1,40 @@
+{
+  "colors": {
+    "red": "#F04446",
+    "blue": "#2675E8",
+    "yellow": "#FFD12F",
+    "green": "#2FC56C",
+    "orange": "#FF9736",
+    "purple": "#9856E8",
+    "background": "#F3F1EC",
+    "boardFrame": "#C6CDD7",
+    "boardGrout": "#D9DEE6",
+    "tileA": "#F6F7F9",
+    "tileB": "#EEF0F4",
+    "wall": "#7C8AA0",
+    "ink": "#2B3140"
+  },
+  "anim": {
+    "turnTime": 0.17,
+    "moveTime": 0.24,
+    "exitTime": 0.34,
+    "undoTime": 0.16,
+    "bumpDistance": 0.2,
+    "hopHeight": 0.1,
+    "queueSpeedup": 1.2,
+    "replayGap": 0.12
+  },
+  "camera": {
+    "fov": 28,
+    "tilt": 30,
+    "fill": 0.985
+  },
+  "stars": {
+    "three": 0,
+    "two": 2
+  },
+  "lowMoves": 2,
+  "rules": {
+    "exitAcceptsMany": true
+  }
+}
