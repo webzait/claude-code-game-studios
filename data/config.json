@@ -72,7 +72,8 @@
   },
   "camera": {
     "marginX": 12,
-    "marginY": 18
+    "marginY": 18,
+    "fov": 30
   },
   "stars": {
     "three": 0,
@@ -113,7 +114,7 @@
   },
   "board": {
     "roomy": {
-      "tilt": 12,
+      "tilt": 30,
       "frame": 0.36,
       "spareAbove": 0.5
     },

@@ -80,7 +80,7 @@ function slab(w: number, d: number, r: number, h: number): THREE.BufferGeometry 
 export class BoardView {
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
-  private camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
+  private camera = new THREE.PerspectiveCamera(CONFIG.camera.fov, 1, 0.5, 400);
   private boardGroup = new THREE.Group();
   private robots = new Map<number, RobotView>();
   private tweens: Tween[] = [];
@@ -326,7 +326,8 @@ export class BoardView {
   }
 
   /**
-   * Frame the board with a parallel camera: every cell is the same size on screen. The board is as
+   * Frame the board with a perspective camera, tilted from straight down, so the board has depth:
+   * its near edge is drawn larger than its far edge. The board is as
    * wide as the canvas allows (less the side margin), or as tall, whichever limit is reached first.
    */
   private fitCamera(): void {
@@ -340,24 +341,47 @@ export class BoardView {
     const size = this.boardSize();
     const hw = size.w / 2;
     const hd = size.d / 2;
-    // On screen the board is its depth seen at an angle, plus the visible part of its thickness.
-    const boxHeight = 2 * hd * Math.cos(tilt) + (BOX_TOP - BOX_BOTTOM) * Math.sin(tilt);
-    const headroom = (ROBOT_TOP - BOX_TOP) * Math.sin(tilt);
-    const scale = Math.min(
-      (w - 2 * CONFIG.camera.marginX) / (2 * hw),
-      (h - 2 * CONFIG.camera.marginY) / (boxHeight + headroom),
-    );
-    this.camera.left = -w / (2 * scale);
-    this.camera.right = w / (2 * scale);
-    this.camera.top = h / (2 * scale);
-    this.camera.bottom = -h / (2 * scale);
+    const target = new THREE.Vector3(0, 0, 0);
+    this.camera.aspect = w / h;
+    this.camera.clearViewOffset();
     this.camera.updateProjectionMatrix();
-    const spare = h / scale - boxHeight;
-    const boxCentre = ((BOX_TOP + BOX_BOTTOM) / 2) * Math.sin(tilt);
-    const target = new THREE.Vector3(0, 0, ((0.5 - this.layout.spareAbove) * spare - boxCentre) / Math.cos(tilt));
-    this.camera.position.copy(target).addScaledVector(dir, 30);
-    this.camera.lookAt(target);
-    this.camera.updateMatrixWorld();
+    // The board as a box, measured on screen from a given camera distance, in CSS pixels.
+    const corners: THREE.Vector3[] = [];
+    for (const x of [-hw, hw]) for (const y of [BOX_BOTTOM, BOX_TOP]) for (const z of [-hd, hd]) corners.push(new THREE.Vector3(x, y, z));
+    const point = new THREE.Vector3();
+    const toScreen = (p: THREE.Vector3): { x: number; y: number } => {
+      point.copy(p).project(this.camera);
+      return { x: ((point.x + 1) / 2) * w, y: ((1 - point.y) / 2) * h };
+    };
+    const measure = (distance: number): { width: number; top: number; bottom: number; headroom: number } => {
+      this.camera.position.copy(target).addScaledVector(dir, distance);
+      this.camera.lookAt(target);
+      this.camera.updateMatrixWorld();
+      const on = corners.map(toScreen);
+      const xs = on.map((p) => p.x);
+      const ys = on.map((p) => p.y);
+      const backTop = toScreen(new THREE.Vector3(0, BOX_TOP, -hd)).y;
+      const robotTop = toScreen(new THREE.Vector3(0, ROBOT_TOP, -hd)).y;
+      return { width: Math.max(...xs) - Math.min(...xs), top: Math.min(...ys), bottom: Math.max(...ys), headroom: Math.max(0, backTop - robotTop) };
+    };
+    const fits = (distance: number): boolean => {
+      const m = measure(distance);
+      return m.width <= w - 2 * CONFIG.camera.marginX && m.bottom - m.top + m.headroom <= h - 2 * CONFIG.camera.marginY;
+    };
+    // The nearest distance at which the board still fits: as wide as the margins allow, or as tall.
+    let near = 1;
+    let far = 300;
+    for (let i = 0; i < 40; i++) {
+      const mid = (near + far) / 2;
+      if (fits(mid)) far = mid;
+      else near = mid;
+    }
+    const m = measure(far);
+    // Place the board in the spare height without changing the perspective: slide the picture, not the camera.
+    const spare = h - (m.bottom - m.top);
+    const wanted = h / 2 - (0.5 - this.layout.spareAbove) * spare;
+    this.camera.setViewOffset(w, h, 0, (m.top + m.bottom) / 2 - wanted, w, h);
+    this.camera.updateProjectionMatrix();
     this.sun.position.set(target.x - 4.5, 9, target.z - 3.5);
     this.sun.target.position.copy(target);
     const cam = this.sun.shadow.camera;

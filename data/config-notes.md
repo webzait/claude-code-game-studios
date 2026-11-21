@@ -9,6 +9,7 @@
 | `anim.queueSpeedup` | Extra playback speed per queued command, so fast tapping never waits |
 | `anim.replayGap` | Pause in seconds between commands during a replay |
 | `camera.marginX`, `marginY` | Space kept free left/right and above/below the board inside the play zone, in CSS pixels (blueprint: 12 and 18) |
+| `camera.fov` | Vertical opening angle of the game camera in degrees. Larger = stronger depth effect (near edge of the board larger than the far edge); small values approach a flat, parallel view |
 | `board.roomy`, `board.classic` | The two board framings of the test lab: camera tilt from straight down (degrees), frame width in cells, and whether the board sits against the top |
 | `coins.start` | Coins a new player begins with |
 | `coins.win`, `perSpareMove`, `perfect` | Reward for a win: base, per unused move, and bonus for the shortest solution |
