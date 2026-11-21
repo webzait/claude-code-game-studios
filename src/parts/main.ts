@@ -117,7 +117,50 @@ for (const color of ['red', 'blue', 'yellow'] as const) {
 }
 
 card('Obstakelblok', 'obstacle', buildObstacle(), 'Laag afgerond blok met vier ronde noppen.');
-card('Groene uitgang (doel)', 'exit', buildExit(), 'Tegelhoog groen vak met opstaande rand, verdiept vlak en vinkje in reliëf.');
+card('Groene uitgang (doel)', 'exit', buildExit(), 'Tegelhoog groen vak (robots rijden erop) met afgeronde opstaande rand, helder verdiept vlak, dik rond vinkje in reliëf en een zachte gloed eromheen.');
+// The exit among its neighbours, seen as the game camera sees it: almost straight
+// from above, with a robot on the next cell, large and at the smallest cell size.
+{
+  const view = parts.exit.fieldView;
+  const pitch = parts.floorTile.size + CONFIG.board.grid.gap;
+  const field = new THREE.Group();
+  for (let x = -1; x <= 1; x++) for (let z = -1; z <= 1; z++) {
+    const tile = x === 0 && z === 0 ? buildExit() : buildFloorTile((x + z) % 2 !== 0, false);
+    tile.position.set(x * pitch, 0, z * pitch);
+    field.add(tile);
+  }
+  const neighbours: [number, number, Color][] = [[-1, 0, 'blue'], [0, 1, 'yellow']];
+  for (const [x, z, color] of neighbours) {
+    const bot = buildFlockbot(color);
+    bot.root.scale.setScalar(CONFIG.board.grid.robotFill);
+    bot.root.position.set(x * pitch, parts.floorTile.height, z * pitch);
+    field.add(bot.root);
+  }
+  field.rotation.x = THREE.MathUtils.degToRad(view.tilt);
+  const reach = 1.5 * pitch;
+  const holder = document.querySelector('#exit .views')!;
+  const shot = snapshot(field, 'top', reach, new THREE.Vector3(0, parts.floorTile.height, 0), -1);
+  const large = document.createElement('figure');
+  large.className = 'main';
+  large.id = 'exit-field';
+  large.appendChild(shot);
+  large.insertAdjacentHTML('beforeend', '<figcaption>In het veld, bijna recht van boven (spelcamera), met robots op de buurvakken</figcaption>');
+  const small = document.createElement('figure');
+  small.className = 'main';
+  small.id = 'exit-field-small';
+  const tiny = document.createElement('canvas');
+  // The picture spans 2 × reach × 1.12 cells; scale it so one cell is `cellPx` CSS pixels (drawn at 3× for sharp phones).
+  const cssSize = Math.round(2 * reach * 1.12 * view.cellPx);
+  tiny.width = tiny.height = cssSize * 3;
+  tiny.style.width = tiny.style.height = `${cssSize}px`;
+  tiny.style.margin = '0 auto';
+  const pen = tiny.getContext('2d')!;
+  pen.imageSmoothingQuality = 'high';
+  pen.drawImage(shot, 0, 0, tiny.width, tiny.height);
+  small.appendChild(tiny);
+  small.insertAdjacentHTML('beforeend', `<figcaption>Hetzelfde op ware grootte bij een vak van ${view.cellPx} px</figcaption>`);
+  holder.append(large, small);
+}
 card('Vloertegel', 'floor', buildFloorTile(), 'Eén herhaalbare tegel met vier pennen aan de onderkant.');
 card('Randstuk (recht)', 'rim-edge', buildRimEdge(1), 'Eén stuk per vak langs elke zijde; 0°, 90°, 180° of 270° gedraaid.');
 card('Hoekstuk', 'rim-corner', buildRimCorner(), 'Kwartboog; dezelfde vorm op alle vier de hoeken.');

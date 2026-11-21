@@ -113,3 +113,43 @@ export function shadeByHeight(g: THREE.BufferGeometry, stops: readonly (readonly
   }
   g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 }
+
+/**
+ * A frame around a rounded square: the closed cross-section `profile` swept
+ * along the outline of a square `size` wide with corner radius `r`. Each
+ * profile point is (inset from the outer edge, height). Vertices are laid out
+ * station by station, `profile.length` per station, so a caller can colour
+ * them by profile point.
+ */
+export function roundedFrame(size: number, r: number, profile: readonly THREE.Vector2[], cornerSteps = 12): THREE.BufferGeometry {
+  const half = size / 2;
+  // Stations around the outline: corner centre sign and the angle of the outward direction.
+  const stations: [number, number, number][] = [];
+  const corners: [number, number][] = [[1, 1], [-1, 1], [-1, -1], [1, -1]];
+  corners.forEach(([sx, sz], c) => {
+    for (let k = 0; k <= cornerSteps; k++) stations.push([sx, sz, (c + k / cornerSteps) * (Math.PI / 2)]);
+  });
+  const positions: number[] = [];
+  for (const [sx, sz, angle] of stations) {
+    for (const p of profile) {
+      const radius = Math.max(0, r - p.x);
+      const centre = half - p.x - radius;
+      positions.push(sx * centre + Math.cos(angle) * radius, p.y, -(sz * centre + Math.sin(angle) * radius));
+    }
+  }
+  const index: number[] = [];
+  const n = profile.length;
+  for (let i = 0; i < stations.length; i++) {
+    const next = (i + 1) % stations.length;
+    for (let j = 0; j < n - 1; j++) {
+      const a = i * n + j;
+      const b = next * n + j;
+      index.push(a, b, a + 1, b, b + 1, a + 1);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  g.setIndex(index);
+  g.computeVertexNormals();
+  return g;
+}
