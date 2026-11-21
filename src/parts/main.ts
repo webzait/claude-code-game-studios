@@ -9,6 +9,7 @@ import { buildFlockbot } from '../render/parts/flockbot';
 import '../ui/tf-buttons.css';
 import '../ui/tf-coins.css';
 import '../ui/tf-levels.css';
+import '../ui/tf-end.css';
 import '../ui/tf-scene.css';
 import './parts.css';
 import decorBushLarge from '../../assets/turnflock/decor/decor-bush-large.webp';

@@ -1,10 +1,7 @@
 import { CONFIG } from '../config';
 import { COMMANDS, type Color, type Command } from '../engine/types';
 import { mountHintButton, setHintPrice, type PriceState } from './coins';
-
-/** Five-point star used on the result card and the map. */
-export const STAR =
-  '<svg viewBox="0 0 24 24"><path d="M12 2.6l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17l-5.7 3.1 1.2-6.4L2.8 9.3l6.4-.8z" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+import { END_DEFS, renderEndCard, type EndCard } from './endCard';
 
 /** What the level HUD needs to draw one frame of status. */
 export interface HudModel {
@@ -40,12 +37,6 @@ export interface HudHandlers {
   back(): void;
 }
 
-/** One button on the result card. */
-export interface CardButton {
-  label: string;
-  action: () => void;
-}
-
 /** Look up an element that the page is known to contain. */
 export const el = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 
@@ -56,6 +47,7 @@ export class Hud {
 
   constructor(handlers: HudHandlers, isLevelOpen: () => boolean) {
     mountHintButton(el<HTMLButtonElement>('scan'));
+    el('card').insertAdjacentHTML('afterbegin', END_DEFS);
     for (const button of Array.from(document.querySelectorAll<HTMLButtonElement>('.cmd'))) {
       const command = button.dataset.cmd as Command;
       // pointerdown, not click: the game answers on touch, not on release.
@@ -126,50 +118,21 @@ export class Hud {
     window.setTimeout(() => button.classList.remove('pressed'), 140);
   }
 
-  /** Show the result card. `stars` 0 hides the star row. */
-  showCard(opts: {
-    title: string;
-    text: string;
-    stars: number;
-    primary: CardButton;
-    secondary: CardButton;
-    extra?: CardButton;
-    note?: string;
-    /** Markup of the reward display (see `rewardBlock`). */
-    reward?: string;
-    /** The paid offer: its button markup (element id `cardOfferButton`) and what a tap does. */
-    offer?: { html: string; action: () => void };
-  }): void {
-    el('cardTitle').textContent = opts.title;
-    el('cardText').textContent = opts.text;
-    el('stars').innerHTML = opts.stars > 0 ? [1, 2, 3].map((i) => STAR.replace('<svg', `<svg class="${i <= opts.stars ? 'on' : ''}"`)).join('') : '';
-    const bind = (id: string, button: CardButton | undefined): void => {
-      const node = el<HTMLButtonElement>(id);
-      node.hidden = !button;
-      node.textContent = button?.label ?? '';
-      node.onclick = button?.action ?? null;
-    };
-    bind('cardPrimary', opts.primary);
-    bind('cardSecondary', opts.secondary);
-    const extra = el<HTMLButtonElement>('cardExtra');
-    extra.hidden = !opts.extra;
-    extra.onclick = opts.extra?.action ?? null;
-    extra.textContent = opts.extra?.label ?? '';
-    const reward = el('cardReward');
-    reward.hidden = !opts.reward;
-    reward.innerHTML = opts.reward ?? '';
-    const offer = el('cardOffer');
-    offer.hidden = !opts.offer;
-    offer.innerHTML = opts.offer?.html ?? '';
-    if (opts.offer) el('cardOfferButton').onclick = opts.offer.action;
-    const note = el('cardNote');
-    note.hidden = !opts.note;
-    note.textContent = opts.note ?? '';
-    el('card').hidden = false;
+  /** Show the end-of-round pop-up. `animate` false shows its end state at once (reduced motion). */
+  showCard(card: EndCard, animate: boolean): void {
+    const host = el('card');
+    renderEndCard(el('cardBody'), card, animate);
+    host.hidden = false;
+    host.classList.remove('tf-end-play');
+    if (animate) {
+      void host.offsetWidth;
+      host.classList.add('tf-end-play');
+    }
   }
 
   /** Hide the result card. */
   hideCard(): void {
     el('card').hidden = true;
+    el('cardBody').innerHTML = '';
   }
 }

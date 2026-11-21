@@ -2,6 +2,7 @@ import './ui/style.css';
 import './ui/tf-buttons.css';
 import './ui/tf-coins.css';
 import './ui/tf-levels.css';
+import './ui/tf-end.css';
 import './ui/tf-scene.css';
 import { Sfx } from './audio';
 import { CONFIG } from './config';
@@ -23,7 +24,7 @@ import decorClover from '../assets/turnflock/decor/decor-tuft-clover.webp';
 import decorSprig from '../assets/turnflock/decor/decor-sprig-top.webp';
 import { SolverClient } from './solver/client';
 import type { CertifyResult } from './solver/requests';
-import { CoinCounters, coinInfo, offerButton, rewardBlock, type RewardView } from './ui/coins';
+import { CoinCounters, coinInfo, type RewardView } from './ui/coins';
 import { el, Hud } from './ui/hud';
 import { renderLevels, renderSettings, type MapNode } from './ui/screens';
 
@@ -308,19 +309,22 @@ class Game {
           return;
         }
         this.busy = false;
-        this.hud.showCard({
-          title: 'Not proven solvable',
-          text: result.kind === 'unsolvable' ? 'With the single-file exit rule this level has no solution in a fair number of moves.' : 'The check for the single-file exit rule could not finish for this level.',
-          stars: 0,
-          primary: { label: 'Levels', action: () => this.show('map') },
-          secondary: {
-            label: 'Play anyway',
-            action: () => {
-              this.hud.hideCard();
-              this.setHint('Test rule: this level is not proven solvable', true);
+        this.hud.showCard(
+          {
+            kind: 'info',
+            title: 'Not proven solvable',
+            text: result.kind === 'unsolvable' ? 'With the single-file exit rule this level has no solution in a fair number of moves.' : 'The check for the single-file exit rule could not finish for this level.',
+            levels: () => this.tap(() => this.show('map')),
+            second: {
+              label: 'Play anyway',
+              action: () => {
+                this.hud.hideCard();
+                this.setHint('Test rule: this level is not proven solvable', true);
+              },
             },
           },
-        });
+          !this.reduced,
+        );
       });
   }
 
@@ -429,7 +433,16 @@ class Game {
   private onWin(): void {
     if (this.preview) {
       this.view.celebrate();
-      this.hud.showCard({ title: 'Test board cleared', text: 'This board only shows how the board scales. Nothing was saved.', stars: 0, primary: { label: 'Levels', action: () => this.tap(() => this.show('map')) }, secondary: { label: 'Again', action: () => this.tap(() => this.startPreview(this.previewIndex)) } });
+      this.hud.showCard(
+        {
+          kind: 'info',
+          title: 'Test board cleared',
+          text: 'This board only shows how the board scales. Nothing was saved.',
+          levels: () => this.tap(() => this.show('map')),
+          second: { label: 'Again', action: () => this.tap(() => this.startPreview(this.previewIndex)) },
+        },
+        !this.reduced,
+      );
       return;
     }
     const id = this.level.id;
@@ -454,16 +467,24 @@ class Game {
     });
   }
 
-  private showWin(moves: number, stars: number): void {
-    const last = this.levelIndex === LEVELS.length - 1;
-    this.hud.showCard({
-      title: 'All home',
-      text: `${moves} moves${stars === 3 ? ' · perfect' : ''}${this.usedBackup ? ' · with extra moves' : ''}`,
-      stars,
-      reward: this.lastReward ? rewardBlock({ ...this.lastReward, balance: this.save.coins }) : undefined,
-      primary: last ? { label: 'Levels', action: () => this.tap(() => this.show('map')) } : { label: 'Next', action: () => this.tap(() => this.startLevel(this.levelIndex + 1)) },
-      secondary: { label: 'Replay', action: () => void this.replay() },
-    });
+  private showWin(moves: number, stars: 1 | 2 | 3): void {
+    if (!this.lastReward) return;
+    this.hud.showCard(
+      {
+        kind: 'win',
+        level: `Level ${this.levelIndex + 1} · ${this.level.name}`,
+        stars,
+        moves,
+        par: this.par,
+        backup: this.usedBackup,
+        last: this.levelIndex === LEVELS.length - 1,
+        reward: this.lastReward,
+        next: () => this.tap(() => this.startLevel(this.levelIndex + 1)),
+        replay: () => void this.replay(),
+        levels: () => this.tap(() => this.show('map')),
+      },
+      !this.reduced,
+    );
   }
 
   /**
@@ -486,30 +507,27 @@ class Game {
     const offer = rescue.kind === 'rescuable';
     const price = extraMovesPrice(this.save.lab.freeHelp);
     const afford = this.save.coins >= price;
-    this.hud.showCard({
-      title: 'Out of moves',
-      text: `${this.session.total - this.session.collected} still on the board`,
-      stars: 0,
-      primary: { label: 'Retry', action: () => this.restart() },
-      secondary: { label: 'Undo', action: () => this.undo() },
-      offer: offer ? { html: offerButton('cardOfferButton', price, price === 0 ? 'free' : afford ? 'ok' : 'short'), action: () => this.useBackup() } : undefined,
-      extra: offer
-        ? undefined
-        : {
-            label: 'Hint',
-            action: () => {
-              this.hud.hideCard();
-              void this.scan();
-            },
-          },
-      note: offer
-        ? afford
-          ? 'Checked: this position can be solved with them.'
-          : `You have ${this.save.coins} coins: ${price - this.save.coins} short. Retry is free.`
-        : rescue.kind === 'hopeless'
-          ? 'Extra moves would not solve this position, so they are not offered.'
-          : 'Could not check whether extra moves would help, so they are not offered.',
-    });
+    const left = this.session.state.robots.filter((r) => !r.collected).map((r) => r.color);
+    const hint = (): void => {
+      this.hud.hideCard();
+      void this.scan();
+    };
+    this.hud.showCard(
+      {
+        kind: 'lost',
+        left,
+        offer: offer ? { price, state: price === 0 ? 'free' : afford ? 'ok' : 'short', coins: this.save.coins, take: () => this.useBackup() } : undefined,
+        note: offer
+          ? undefined
+          : rescue.kind === 'hopeless'
+            ? 'Extra moves would not solve it from here, so there is no offer. Undo a step or start again: both are free.'
+            : 'We could not check in time whether extra moves would help, so there is no offer. Undo and Retry are free.',
+        undo: () => this.undo(),
+        retry: () => this.restart(),
+        hint: offer ? undefined : hint,
+      },
+      !this.reduced,
+    );
   }
 
   private useBackup(): void {
