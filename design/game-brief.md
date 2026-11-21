@@ -45,6 +45,8 @@ Each level has a move budget of the shortest solution plus two. Running out ends
 - [x] Test lab: exit rule, yellow early, spare moves, speed, board framing, unlock all
 - [x] Level selection with a Continue button and pages of 20
 - [x] Robots always face the player with large eyes; the head arrow and pupils show the heading
+- [x] Forty levels on two pages of 20, each page an arc; the first five teach the rules one at a time (`design/level-structure.md`)
+- [x] Level design tools: measure every level, generate candidates per idea, report (`tools/level-design/`, `design/level-report.md`)
 - [x] Coins: earned per win (base, spare moves, perfect bonus), spent on the next-move hint and on extra moves; no shop, no ads
 
 ## Keep
@@ -66,6 +68,7 @@ After play: Doorgaan (proceed). Next step chosen: make it a real project at the 
 2. Grown into the project root as a Web project: `src/`, `data/`, `tests/`. (built)
 3. Ten levels, fair assistance, test lab. (built)
 4. Story layer (home hub, lighthouse, districts) built, then removed on request. (done)
+5. Level structure, difficulty measure, generator, 40 levels. New level elements proposed, not built: the owner decides. (built)
 
 ---
 **Kill condition:** if the colour command still feels like trial and error after level tuning.
