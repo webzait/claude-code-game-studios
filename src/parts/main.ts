@@ -46,7 +46,7 @@ const VIEWS = {
   side: { label: 'Zijaanzicht', dir: new THREE.Vector3(1, 0.0001, 0) },
   top: { label: 'Bovenaanzicht', dir: new THREE.Vector3(0, 1, 0.0001) },
   quarter: { label: 'Driekwart', dir: new THREE.Vector3(-0.55, 0.62, 1) },
-  tilt: { label: `Bijna recht van boven (spelcamera, ${CONFIG.board.roomy.tilt}°)`, dir: new THREE.Vector3(0, 1, Math.tan((CONFIG.board.roomy.tilt * Math.PI) / 180)) },
+  tilt: { label: `Spelcamera (${CONFIG.board.roomy.tilt}° uit het lood)`, dir: new THREE.Vector3(0, 1, Math.tan((CONFIG.board.roomy.tilt * Math.PI) / 180)) },
   drawing: { label: '', dir: new THREE.Vector3(0, 0.6, 1) },
 } as const;
 type ViewName = keyof typeof VIEWS;
