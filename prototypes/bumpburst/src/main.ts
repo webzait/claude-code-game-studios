@@ -15,7 +15,36 @@ const progress = loadProgress();
 const sfx = new Sfx();
 sfx.muted = progress.muted;
 const hud = new Hud();
-const view = new View(document.getElementById('view') as HTMLCanvasElement);
+
+/** Shows a problem on screen instead of leaving dead buttons, so it can be reported from a phone. */
+function report(what: string, err: unknown): void {
+  const el = document.getElementById('fps')!;
+  el.hidden = false;
+  el.style.pointerEvents = 'auto';
+  el.style.whiteSpace = 'pre-wrap';
+  el.style.right = '8px';
+  el.textContent = `${what}: ${err instanceof Error ? err.message : String(err)}`;
+}
+window.addEventListener('error', (e) => report('Error', e.error ?? e.message));
+window.addEventListener('unhandledrejection', (e) => report('Error', e.reason));
+
+function makeView(): View {
+  const canvas = document.getElementById('view') as HTMLCanvasElement;
+  try {
+    return new View(canvas);
+  } catch (first) {
+    // Second try without antialiasing, shadows or reflections, for a weak or restricted GPU.
+    try {
+      const fresh = canvas.cloneNode() as HTMLCanvasElement;
+      canvas.replaceWith(fresh);
+      return new View(fresh, true);
+    } catch (second) {
+      report('This browser could not start 3D graphics (WebGL)', second ?? first);
+      throw second;
+    }
+  }
+}
+const view = makeView();
 hud.setMuted(sfx.muted);
 
 let levelIdx = 0;
@@ -124,7 +153,7 @@ window.addEventListener('orientationchange', refit);
 new ResizeObserver(refit).observe(document.getElementById('stage')!);
 
 const fpsEl = document.getElementById('fps')!;
-fpsEl.hidden = !params.has('fps');
+const showFps = params.has('fps');
 let last = performance.now();
 let fpsT = 0;
 
@@ -170,10 +199,11 @@ function frame(now: number): void {
     }
   }
 
-  if (!fpsEl.hidden && now - fpsT > 500 && perf.frames > 0) {
+  if (showFps && now - fpsT > 500 && perf.frames > 0) {
     fpsT = now;
     perf.fps = 1000 / (perf.frameMs / perf.frames);
     const s = view.stats();
+    fpsEl.hidden = false;
     fpsEl.textContent = `${perf.fps.toFixed(0)} fps  worst ${perf.worstMs.toFixed(0)} ms\nsim ${(perf.simMs / perf.frames).toFixed(2)} ms/frame\n${s.calls} calls  ${s.triangles} tris`;
   }
 }

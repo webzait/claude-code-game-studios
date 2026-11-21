@@ -18,12 +18,19 @@ export interface InputHandlers {
  * the game decides whether an intent is allowed.
  */
 export function bindInput(buttons: HTMLElement, h: InputHandlers): void {
-  buttons.addEventListener('pointerdown', (e) => {
+  // Fire on the first contact for a snappy feel; `click` is the fallback where pointer events are missing
+  // or swallowed (some embedded mobile browsers). The stamp keeps one tap from counting twice.
+  let lastDown = 0;
+  const press = (e: Event) => {
     const b = (e.target as HTMLElement).closest<HTMLElement>('[data-color]');
     if (!b) return;
-    e.preventDefault();
+    if (e.type === 'click' && performance.now() - lastDown < 700) return;
+    if (e.type !== 'click') lastDown = performance.now();
     h.pulse(b.dataset.color as ColorId);
-  });
+  };
+  buttons.addEventListener('pointerdown', press);
+  buttons.addEventListener('touchstart', press, { passive: true });
+  buttons.addEventListener('click', press);
   document.getElementById('btn-reset')!.addEventListener('click', () => h.reset());
   document.getElementById('btn-mute')!.addEventListener('click', () => h.mute());
 
@@ -41,9 +48,8 @@ export function bindInput(buttons: HTMLElement, h: InputHandlers): void {
     }
   });
 
-  // Mobile Safari: no pinch or double-tap zoom, no rubber-band scroll.
+  // Mobile Safari: no pinch or double-tap zoom (scrolling is already off through CSS).
   document.addEventListener('gesturestart', (e) => e.preventDefault());
-  document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
   document.addEventListener('dblclick', (e) => e.preventDefault());
   document.addEventListener('contextmenu', (e) => e.preventDefault());
 }

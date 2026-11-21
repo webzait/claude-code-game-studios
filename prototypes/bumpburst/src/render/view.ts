@@ -77,8 +77,8 @@ export class View {
   private bounce = 0;
   private bounceV = 0;
 
-  constructor(private canvas: HTMLCanvasElement) {
-    const cheap = new URLSearchParams(location.search).has('cheap');
+  constructor(private canvas: HTMLCanvasElement, forceCheap = false) {
+    const cheap = forceCheap || new URLSearchParams(location.search).has('cheap');
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !cheap, alpha: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(cheap ? 1 : Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -87,10 +87,12 @@ export class View {
     this.renderer.shadowMap.enabled = !cheap;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-    const pmrem = new THREE.PMREMGenerator(this.renderer);
-    this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    this.scene.environmentIntensity = 0.3;
-    pmrem.dispose();
+    if (!cheap) {
+      const pmrem = new THREE.PMREMGenerator(this.renderer);
+      this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+      this.scene.environmentIntensity = 0.3;
+      pmrem.dispose();
+    }
 
     this.scene.add(new THREE.HemisphereLight(0xffffff, 0xcfc6b8, 0.95));
     const sun = new THREE.DirectionalLight(0xfff6ea, 2.0);

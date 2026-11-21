@@ -12,17 +12,30 @@ export class Sfx {
 
   /** Call from a user gesture (required by mobile Safari). */
   unlock(): void {
-    if (!this.ctx) {
-      const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (!AC) return;
-      this.ctx = new AC();
+    // Sound is a bonus: an embedded or locked-down browser may refuse audio, and that must never block a tap.
+    try {
+      if (!this.ctx) {
+        const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        if (!AC) return;
+        this.ctx = new AC();
+      }
+      if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => undefined);
+    } catch {
+      this.ctx = null;
     }
-    if (this.ctx.state === 'suspended') void this.ctx.resume();
   }
 
   private tone(freq: number, dur: number, gain: number, type: OscillatorType = 'sine', slideTo?: number, delay = 0): void {
     const ctx = this.ctx;
     if (!ctx || this.muted || ctx.state !== 'running') return;
+    try {
+      this.play(ctx, freq, dur, gain, type, slideTo, delay);
+    } catch {
+      /* no sound, the game goes on */
+    }
+  }
+
+  private play(ctx: AudioContext, freq: number, dur: number, gain: number, type: OscillatorType, slideTo: number | undefined, delay: number): void {
     const t = ctx.currentTime + delay;
     const o = ctx.createOscillator();
     const g = ctx.createGain();
