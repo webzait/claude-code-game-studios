@@ -47,3 +47,8 @@ body { margin: 0; background: #eef3fb; color: var(--ink); font-family: ui-rounde
 .tf-action.blue { --top: #59a5ff; --main: #2e84f1; --side: #1a61be; --deep: #154c95; }
 .tf-action.yellow { --top: #ffe473; --main: #f4c62f; --side: #d29a0d; --deep: #b37b04; color: #3a3118; }
 .tf-action.forward { --top: #58638a; --main: #3d4769; --side: #29314a; --deep: #1e243a; }
+/* Flockbot cards: the bot at the size it has on the board. */
+.bot-small { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 8px; padding: 6px; border-radius: 12px; background: #eef2fb; }
+.bot-small canvas { display: block; }
+.bot-small i { flex-basis: 100%; height: 0; }
+.bot-small span { font-size: 11px; color: var(--muted); margin-right: 8px; }
