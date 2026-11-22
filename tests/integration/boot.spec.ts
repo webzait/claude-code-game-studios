@@ -142,13 +142,15 @@ test('Levels, Level, Win, Next: no dead ends, and progress survives a reload', a
 });
 
 test('every level can be played to a win in order, ending back at the level selection', async ({ page }) => {
-  test.setTimeout(levels.length * 30_000); // every level with its real animation
+  test.setTimeout(levels.length * 45_000); // every level with its real animation
   const errors = await open(page);
   await page.click('#node-1');
   for (let index = 0; index < levels.length; index++) {
     await playWitness(page, index);
     expect((await snap(page)).status).toBe('won');
-    await expect(page.locator('#card .tf-end-card')).toBeVisible({ timeout: 30000 });
+    // The level is already won in the logic; what is waited for is its queued animation. A crowded board
+    // with turn tiles took more than 30 seconds in software rendering on a busy machine, so the wait is generous.
+    await expect(page.locator('#card .tf-end-card')).toBeVisible({ timeout: 120_000 });
     // The last level has no Next: Levels is its main action.
     await page.click(index === levels.length - 1 ? '#end-levels' : '#end-next');
   }
