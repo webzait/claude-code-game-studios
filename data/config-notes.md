@@ -14,12 +14,15 @@
 | `coins.start` | Coins a new player begins with |
 | `coins.win`, `perSpareMove`, `perfect` | Reward for a win: base, per unused move, and bonus for the shortest solution |
 | `coins.hintCost`, `extraMovesCost` | Price of revealing the next move, and of the extra moves when out of moves |
+| `coins.undoCost` | Price of one Undo: taking back one command. Paid per step undone, on the Undo button and on the Undo of the out-of-moves pop-up alike. 0 makes Undo free again (the rule before finding B4) |
+| `coins.freeUndosPerLevel` | Undos that cost nothing in each attempt at a level; the count starts again at a Restart or when the level is opened. 0 = every Undo is paid. Restart is always free, whatever these two say |
 | `levelsPerPage` | Level tiles per page of the level selection |
 | `stars.three`, `stars.two` | Moves over par that still earn 3 and 2 stars |
 | `lowMoves` | Moves left at which the counter turns into a warning |
 | `rules.exitAcceptsMany` | `true`: several robots may enter the exit in one turn |
 
 | `moveSlack` | Moves allowed over the shortest solution (the move budget is par + this) |
+| `hintPicture` | The hint drawn on the board (finding B1), in cells: `arrow` is the ghost arrow from a robot to the cell it will step to (`from`, `neck`, `tip` along the way, `shaft` and `head` half-widths); `bump` the mark at the edge where a robot will be blocked; `turn` the quarter arc round a robot the command turns, from its old heading to its new one (`startGap`, `endGap`, `head` in degrees). `opacity`, the white `outline` width, the `lift` above the tiles, and `pulse` (length in seconds, how far the marks slide, how much they fade; off with reduced motion) |
 | `extraMoves` | Extra moves offered when out of moves, if proven to be enough |
 | `scan.maxVisited` | Positions a hint or rescue check may examine before it reports "could not finish" |
 | `lab.yellowEarlyLevels` | Levels recoloured blue to yellow by the "Yellow early" test switch |

@@ -51,13 +51,16 @@ img.tf-coin-ico { filter: drop-shadow(0 1px 0 rgba(138, 94, 4, .6)); }
 .tf-coin-buy.hint { --c-top: #ffffff; --c-main: #f1f4fd; --c-side: #c3cce2; --c-deep: #9eabc8; --ink-c: #24314f; --ink-shadow: transparent; --gloss: .9; }
 .tf-coin-buy.hint .tf-face { box-shadow: inset 0 0 0 1.5px rgba(36, 49, 79, .2), inset 0 -2.5px 1px rgba(255, 255, 255, .3); }
 .tf-coin-buy.hint:disabled { --ink-c: #7c879f; }
-.tf-coin-buy.hint .tf-coin-price:not(.short):not(.free) { background: #e6ebf7; }
+.tf-coin-buy.hint .tf-coin-price:not(.short):not(.free), .tf-coin-buy.undo .tf-coin-price:not(.short):not(.free), .tf-paid .tf-coin-price:not(.short):not(.free) { background: #e6ebf7; }
+/* Undo in the tools row: its arrow, then the price. */
+.tf-coin-buy.undo { --icon: clamp(16px, 5vw, 20px); }
+.tf-paid .tf-coin-price .tf-coin-ico { width: var(--s); height: var(--s); }
 .tf-coin-buy.boost { --c-top: #a093ff; --c-main: #7e6bff; --c-side: #5c48d9; --c-deep: #4735b4; --gloss: .3; }
 .tf-coin-buy.offer .tf-face { justify-content: flex-start; padding-left: calc(var(--side) + 12px); padding-right: calc(var(--side) + 12px); }
 .tf-coin-buy.offer .tf-label { flex: 1; text-align: left; text-shadow: 0 1.5px 0 rgba(40, 24, 140, .55); }
 .tf-coin-buy .tf-face .tf-coin-art { width: calc(var(--h) * .74); height: calc(var(--h) * .74); filter: drop-shadow(0 1.5px 1px rgba(30, 20, 110, .45)); }
 /* Cannot afford: the block goes dull but stays up and tappable; the price turns red. */
-.tf-coin-buy.short {
+.tf-coin-buy.short, .tf-paid.short {
   --face-top: color-mix(in srgb, var(--c-top) 45%, #dfe4ee); --face: color-mix(in srgb, var(--c-main) 45%, #cfd6e4);
   --wall: color-mix(in srgb, var(--c-side) 45%, #b3bcd0); --wall-deep: color-mix(in srgb, var(--c-deep) 45%, #a3adc4); --gloss: .1;
 }

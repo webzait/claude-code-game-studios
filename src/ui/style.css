@@ -40,32 +40,11 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 
 /* Shared header */
 .top { display: flex; align-items: center; gap: 10px; }
-.top .title { flex: 1; min-width: 0; }
 .back {
   width: 44px; height: 44px; flex: none; border: 0; border-radius: 14px; background: var(--panel);
   display: grid; place-items: center; background: var(--panel-grad); box-shadow: var(--panel-edge);
 }
 .back .ico { width: 22px; height: 22px; }
-.level-no { font-weight: 800; font-size: clamp(16px, 5.4vw, 21px); letter-spacing: .03em; white-space: nowrap; }
-.level-no.brand { font-size: 26px; font-weight: 900; letter-spacing: .06em; }
-.level-name { font-size: 14px; color: var(--muted); font-weight: 600; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.stats { display: flex; gap: 6px; align-items: center; }
-#level .pill { padding: 6px 9px; font-size: 16px; }
-#level .pill.moves { padding: 4px 9px; min-width: 52px; }
-#level .title { overflow: hidden; }
-#level .level-no { font-size: clamp(14px, 4.4vw, 18px); letter-spacing: 0; }
-#level .level-name { font-size: 12px; }
-.pill {
-  background: var(--panel); border-radius: 16px; padding: 8px 12px; display: flex; align-items: center; gap: 6px;
-  font-weight: 800; font-size: 18px; background: var(--panel-grad); box-shadow: var(--panel-edge); font-variant-numeric: tabular-nums;
-}
-.pill .ico { width: 22px; height: 22px; color: var(--green); }
-.level-no.brand { font-size: 22px; }
-.pill.moves { flex-direction: column; gap: 0; padding: 5px 12px; min-width: 62px; }
-.moves-num { font-size: 24px; line-height: 1; transition: color .2s; }
-.moves-label { font-size: 10px; letter-spacing: .12em; color: var(--muted); }
-.pill.moves.low .moves-num { color: var(--red); }
-.pill.bump { animation: bump .28s ease-out; }
 @keyframes bump { 40% { transform: scale(1.16); } }
 
 
@@ -80,22 +59,49 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 #map .tf-levels-pager[hidden] { display: none; }
 /* Level */
 /* The hint line lies over the bottom edge of the play zone, so it takes no height from the controls. */
-.hint-line { height: 22px; margin-top: -26px; margin-bottom: 4px; position: relative; z-index: 1; pointer-events: none; text-align: center; font-weight: 700; font-size: 14px; color: var(--ink); }
-/* Two rows: back, level and the coin counter; under them goal, moves and Hint. */
-#level .top { display: grid; gap: clamp(4px, 1dvh, 8px); }
-.top-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.top-row .title { flex: 1; min-width: 0; }
-.top-row.stats { align-items: flex-start; }
-.top-row.stats .pill { height: 43px; }
-.top-row.stats .pill.moves { flex: 1; flex-direction: row; align-items: baseline; justify-content: flex-start; gap: 6px; align-items: center; }
-#scan { align-self: flex-start; }
+.hint-line { height: 22px; margin-top: -26px; margin-bottom: 4px; position: relative; z-index: 1; pointer-events: none; text-align: center; font-weight: 700; font-size: clamp(12.5px, 3.9vw, 14px); white-space: nowrap; color: var(--ink); text-shadow: 0 0 4px #fff, 0 0 8px rgba(255, 255, 255, .9); }
+/* One row: back, then level and moves left as one plate, then the coin counter. */
+#level .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
+#level .back { width: 42px; height: 43px; }
+.tf-status { position: relative; flex: none; display: grid; justify-items: center; }
+.tf-status-plate {
+  position: relative; z-index: 1; display: flex; align-items: stretch; height: 43px; border-radius: 16px;
+  background: var(--panel-grad); box-shadow: var(--panel-edge); font-variant-numeric: tabular-nums;
+}
+.tf-status-cell { display: grid; align-content: center; justify-items: center; gap: 1px; min-width: clamp(54px, 17vw, 72px); padding: 3px 10px 2px; }
+.tf-status-cell + .tf-status-cell { border-left: 2px solid var(--line); }
+.tf-status-label { font-size: 10px; font-weight: 800; letter-spacing: .12em; line-height: 1; color: var(--muted); }
+.tf-status-num { font-size: 23px; font-weight: 900; line-height: 1; transition: color .2s; }
+.tf-status-cell.moves.low .tf-status-num { color: var(--red); }
+/* Robots home: a small tab hanging under the plate, over the top edge of the play zone. */
+.tf-status-tab {
+  position: absolute; top: calc(100% - 1px); display: flex; align-items: center; gap: 4px; height: 22px; padding: 2px 9px 0; border-radius: 0 0 11px 11px;
+  background: #e9eefb; box-shadow: 0 3px 0 #b9c6e4, 0 6px 9px rgba(24, 46, 110, .24); font-size: 13px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.tf-status-tab .ico { width: 15px; height: 15px; color: var(--green); }
+.tf-status-tab.bump { animation: bump .28s ease-out; }
+/* A 320 px phone with a four-digit wallet: the plate and the gaps give way so the plus button stays whole. */
+@media (max-width: 359px) {
+  #level .top { gap: 5px; }
+  #level .back { width: 38px; }
+  .tf-status-cell { min-width: 0; padding: 3px 6px 2px; }
+  .tf-status-label { letter-spacing: .07em; }
+  .tools .tf-coin-bulb { --icon: 20px; }
+  .tools .tf-coin-buy.compact .tf-face { gap: 3px; }
+}
+.tf-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .hint-line.warn { color: #b3541e; }
 .stage { flex: 1; min-height: 0; position: relative; margin: 8px -14px 0; }
 #board { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .controls { display: flex; flex-direction: column; gap: 10px; padding-bottom: 2px; }
-.tools { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+/* Undo, Restart, Replay (its picture only) and Hint. */
+.tools { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) 46px minmax(0, 1fr); gap: clamp(6px, 2vw, 10px); }
 .tools .tf-btn { --w: 100%; --h: clamp(38px, 5.2dvh, 44px); --d: 12px; --r: 20px; --press-fraction: .8; }
 .tools .tf-label { --fs: clamp(13px, 4vw, 16px); }
+.tools .tf-utility .tf-face { gap: clamp(3px, 1.2vw, 6px); }
+.tools .tf-utility svg { --icon: clamp(16px, 5vw, 20px); }
+/* The coin on a price tag keeps the tag's own size here; the row is too narrow for it to stand proud. */
+.tools .tf-coin-price .tf-coin-ico { width: var(--s); height: var(--s); }
 /* Four action buttons share the width; each stays square until the screen gets too short for that. */
 .commands .tf-btn { --w: 100%; --h: clamp(52px, min((min(100vw, 560px) - 58px) / 4, 10.4dvh), 96px); --d: calc(var(--h) * .2); --r: calc(var(--h) * .25); --press-fraction: .8; }
 .commands { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 10px; justify-items: center; }
@@ -119,6 +125,6 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 .coin-info .tf-coin-info { display: grid; gap: 12px; }
 #coinInfoClose { --w: 100%; --h: 44px; --d: 8px; --r: 18px; --fs: 16px; --press-fraction: .8; }
 @media (prefers-reduced-motion: reduce) {
-  .pill.bump { animation: none; }
+  .tf-status-tab.bump { animation: none; }
 }
-.reduce-motion .pill.bump { animation: none; }
+.reduce-motion .tf-status-tab.bump { animation: none; }

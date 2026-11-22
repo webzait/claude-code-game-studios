@@ -22,7 +22,7 @@ TURNFLOCK, an original, colourful hybrid-casual puzzle game for iOS and Android.
 Level 1 shows three red robots and only two buttons; Forward pulses softly. The robots walk up and wait at the wall; Red turns them all toward the exit and they file in. Level 2 adds blue, and the first press shows that everyone moves when one colour turns.
 
 ## Challenge
-Each level has a move budget of the shortest solution plus two. Running out ends the attempt; Undo and Try again are free. Level 4 needs the right order of three colours; level 5 has 12 robots and one shortest solution.
+Each level has a move budget of the shortest solution plus two. Running out ends the attempt; Try again (Restart) is always free. Undo costs coins: 5 per step taken back (`coins.undoCost`), with the price on the button, also on the Undo of the out-of-moves pop-up; `coins.freeUndosPerLevel` (0) can give free ones per attempt. A player who cannot pay is told so and pointed at Restart. Changed on 2026-11-22 on the owner's instruction (finding B4); before that Undo was always free. Coins are only earned by playing: there is no shop, no advertising and nothing to buy. Level 4 needs the right order of three colours; level 5 has 12 robots and one shortest solution.
 
 ## Core loop
 - Read the board: who is waiting at a wall, who is drifting away.
@@ -36,7 +36,7 @@ Each level has a move budget of the shortest solution plus two. Running out ends
 - [x] Deterministic grid engine (turn, simultaneous move, walls, conflicts, queues, no swaps or cycles, exit)
 - [x] BFS solver on the same rules
 - [x] Five levels with verified par and budget
-- [x] Undo, Restart, Replay
+- [x] Undo (costs coins since finding B4), Restart (free), Replay
 - [x] 3D diorama with turn, step, bump and exit animations
 - [x] Mobile portrait HUD: level, collected, moves left, four command buttons, Next level
 - [x] Ten levels, each with a stored witness solution

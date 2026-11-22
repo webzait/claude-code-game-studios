@@ -136,29 +136,81 @@ test('every level can be played to a win in order, ending back at the level sele
   expect(errors).toEqual([]);
 });
 
-test('undo and restart take moves back', async ({ page }) => {
+const undoCost: number = config.coins.undoCost;
+/** Start a fresh player with a given wallet. */
+async function withCoins(page: Page, coins: number): Promise<void> {
+  await page.addInitScript(
+    ([save]) => {
+      if (!localStorage.getItem('turnflock.save')) localStorage.setItem('turnflock.save', save);
+    },
+    [JSON.stringify({ version: 4, best: {}, coins, paid: {}, settings: {}, lab: {} })],
+  );
+}
+
+test('undo and restart take moves back; Undo costs coins per step and Restart is free', async ({ page }) => {
   await open(page);
   await page.click('#node-1');
   await press(page, 'forward');
   await press(page, 'red');
+  // The price is on the Undo button before it is tapped.
+  await expect(page.locator('#undo')).toHaveAttribute('aria-label', `Undo, ${undoCost} coins`);
+  await expect(page.locator('#undo .tf-coin-price')).toHaveText(String(undoCost));
   await page.click('#undo');
-  expect((await snap(page)).commands).toEqual(['forward']);
+  expect(await snap(page)).toMatchObject({ commands: ['forward'], coins: config.coins.start - undoCost });
+  await page.click('#undo');
+  expect(await snap(page)).toMatchObject({ commands: [], coins: config.coins.start - 2 * undoCost });
+  await expect(page.locator('#levelCoins .tf-coin-amount')).toHaveText(String(config.coins.start - 2 * undoCost));
+  const spent = (await snap(page)).events.filter((e) => e.type === 'coins_spent');
+  expect(spent).toHaveLength(2);
+  expect(spent[0]).toMatchObject({ on: 'undo', amount: undoCost });
+  await press(page, 'forward');
   await page.click('#restart');
-  expect((await snap(page)).movesLeft).toBe(budget(0));
+  expect(await snap(page)).toMatchObject({ movesLeft: budget(0), coins: config.coins.start - 2 * undoCost });
 });
 
-test('out of moves in a hopeless position: free Retry, and no extra moves offered', async ({ page }) => {
+test('Undo without enough coins is refused in a few words that point at Restart, which still works', async ({ page }) => {
+  await withCoins(page, undoCost - 1);
+  await open(page);
+  await page.click('#node-1');
+  await press(page, 'forward');
+  await expect(page.locator('#undo')).toHaveAttribute('aria-label', `Undo, ${undoCost} coins, you do not have enough coins`);
+  await expect(page.locator('#undo')).toBeEnabled();
+  await page.click('#undo');
+  expect(await snap(page)).toMatchObject({ commands: ['forward'], coins: undoCost - 1 });
+  await expect(page.locator('#hint')).toContainText('Restart is free');
+  await expect(page.locator('#restart')).toHaveClass(/nudge/);
+  await page.click('#restart');
+  expect(await snap(page)).toMatchObject({ commands: [], movesLeft: budget(0), coins: undoCost - 1 });
+});
+
+test('with free help switched on in the test lab, Undo is free', async ({ page }) => {
+  await withCoins(page, 0);
+  await open(page);
+  await openLab(page);
+  await page.click('[data-key=freeHelp] [role=switch]');
+  await closeLab(page);
+  await page.click('#node-1');
+  await press(page, 'forward');
+  await expect(page.locator('#undo')).toHaveAttribute('aria-label', 'Undo, free');
+  await page.click('#undo');
+  expect(await snap(page)).toMatchObject({ commands: [], coins: 0 });
+});
+
+test('out of moves in a hopeless position: free Retry, a priced Undo, and no extra moves offered', async ({ page }) => {
   await open(page);
   await page.click('#node-1');
   for (let i = 0; i < budget(0); i++) await press(page, 'red');
   expect((await snap(page)).status).toBe('lost');
   await expect(page.locator('#end-title')).toHaveText('Out of moves', { timeout: 15000 });
   await expect(page.locator('#end-retry')).toHaveText('Retry');
-  await expect(page.locator('#end-undo')).toHaveText('Undo');
+  // The pop-up's Undo costs what the Undo button costs, and says so before the tap.
+  await expect(page.locator('#end-undo')).toHaveAttribute('aria-label', `Undo, ${undoCost} coins`);
+  await expect(page.locator('#end-undo')).toContainText('Undo');
+  await expect(page.locator('.tf-end-note')).toContainText('Retry is free');
   await expect(page.locator('#end-offer')).toHaveCount(0);
   await expect(page.locator('.tf-end-note')).toContainText('no offer');
   await page.click('#end-hint');
-  await expect(page.locator('#hint')).toContainText('Undo', { timeout: 15000 });
+  await expect(page.locator('#hint')).toContainText('No win from here', { timeout: 15000 });
   await page.click('#restart');
   expect((await snap(page)).movesLeft).toBe(budget(0));
 });
@@ -188,36 +240,44 @@ test('out of moves two steps from home: extra moves are offered and really win',
   expect((await snap(page)).coins).toBe(config.coins.start - config.coins.extraMovesCost + config.coins.win);
 });
 
-test('Hint: the status is free, the next move costs coins, and without coins it is refused', async ({ page }) => {
+test('Hint: the status is free, the next move costs coins and is drawn on the board, and without coins it is refused', async ({ page }) => {
   await solvedUpTo(page, ARROW);
   await open(page);
   await page.click(`#node-${ARROW + 1}`);
   await press(page, 'red'); // leave the witness so the solver has to search
   await page.click('#undo');
+  const wallet = config.coins.start - undoCost; // that Undo was paid for
   await press(page, 'forward');
   // The price is on the Hint button before it is tapped.
   await expect(page.locator('#scan')).toHaveAttribute('aria-label', `Hint, ${config.coins.hintCost} coins`);
   await page.click('#scan');
-  await expect(page.locator('#hint')).toContainText('Solvable from here', { timeout: 30000 });
-  expect((await snap(page)).coins).toBe(config.coins.start);
+  await expect(page.locator('#hint')).toContainText('You can still win', { timeout: 30000 });
+  // The Hint button is ringed for the second tap; nothing is drawn or paid yet.
+  await expect(page.locator('#scan')).toHaveClass(/nudge/);
+  expect(await snap(page)).toMatchObject({ coins: wallet, hintPicture: [] });
   await page.click('#scan');
-  await expect(page.locator('#hint')).toContainText('Next:');
   await expect(page.locator('.cmd.nudge')).toHaveCount(1);
-  expect((await snap(page)).coins).toBe(config.coins.start - config.coins.hintCost);
+  // The hint is a picture on the board: one mark per robot still on it, and only a few words under it.
+  const shown = await snap(page);
+  expect(shown.coins).toBe(wallet - config.coins.hintCost);
+  expect(shown.hintPicture).toHaveLength(shown.total - shown.collected);
+  expect(shown.hint.length).toBeLessThan(30);
+  // Following the hint clears the picture.
+  await page.dispatchEvent('.cmd.nudge', 'pointerdown');
+  expect((await snap(page)).hintPicture).toEqual([]);
   // Spend the rest, one revealed move at a time, until the wallet cannot pay.
-  const affordable = Math.floor(config.coins.start / config.coins.hintCost);
+  const affordable = Math.floor(wallet / config.coins.hintCost);
   for (let i = 1; i < affordable; i++) {
-    await page.dispatchEvent('.cmd.nudge', 'pointerdown');
     await page.click('#scan');
     await page.click('#scan');
     await expect(page.locator('.cmd.nudge')).toHaveCount(1);
+    await page.dispatchEvent('.cmd.nudge', 'pointerdown');
   }
-  await page.dispatchEvent('.cmd.nudge', 'pointerdown');
   await page.click('#scan');
   await page.click('#scan');
-  await expect(page.locator('#hint')).toContainText('costs');
+  await expect(page.locator('#hint')).toContainText('Not enough coins');
   await expect(page.locator('.cmd.nudge')).toHaveCount(0);
-  expect((await snap(page)).coins).toBe(config.coins.start - affordable * config.coins.hintCost);
+  expect(await snap(page)).toMatchObject({ coins: wallet - affordable * config.coins.hintCost, hintPicture: [] });
 });
 
 test('with free help switched on in the test lab, following the hint wins the level', async ({ page }) => {
@@ -280,7 +340,7 @@ test('the plus button explains coins and sells nothing', async ({ page }) => {
   await open(page);
   await page.click('#mapCoins button');
   await expect(page.locator('#coinInfo')).toBeVisible();
-  await expect(page.locator('#coinInfo')).toContainText('Undo and Restart are always free');
+  await expect(page.locator('#coinInfo')).toContainText('Restart is always free');
   await page.click('#coinInfoClose');
   await expect(page.locator('#coinInfo')).toBeHidden();
 });

@@ -35,6 +35,31 @@ export function hintPrice(freeHelp: boolean): number {
   return freeHelp ? 0 : CONFIG.coins.hintCost;
 }
 
+/** What the next Undo costs, and whether the wallet can pay it. */
+export interface UndoQuote {
+  /** Coins the Undo takes; zero when it is free. */
+  readonly cost: number;
+  /** `free`: costs nothing. `ok`: affordable. `short`: the wallet cannot pay, so the Undo is refused. */
+  readonly state: 'free' | 'ok' | 'short';
+}
+
+/**
+ * Price of taking back one command. Each step undone is paid for on its own.
+ * Free when the test lab makes help free, and for the first
+ * `coins.freeUndosPerLevel` Undos of an attempt.
+ * @param undosTaken Undos already taken in this attempt (since the level was opened or restarted).
+ */
+export function undoPrice(freeHelp: boolean, undosTaken: number): number {
+  if (freeHelp || undosTaken < CONFIG.coins.freeUndosPerLevel) return 0;
+  return CONFIG.coins.undoCost;
+}
+
+/** The next Undo for a wallet of `coins`: its price and whether it can be paid. */
+export function undoQuote(coins: number, freeHelp: boolean, undosTaken: number): UndoQuote {
+  const cost = undoPrice(freeHelp, undosTaken);
+  return { cost, state: cost === 0 ? 'free' : coins < cost ? 'short' : 'ok' };
+}
+
 /** Price of the extra moves offered when out of moves. Zero when the test lab makes help free. */
 export function extraMovesPrice(freeHelp: boolean): number {
   return freeHelp ? 0 : CONFIG.coins.extraMovesCost;

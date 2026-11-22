@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CONFIG } from '../../src/config';
 import { deviceVibrate, Haptics } from '../../src/haptics';
-import { extraMovesPrice, hintPrice, payout, rewardFor } from '../../src/game/coins';
+import { extraMovesPrice, hintPrice, payout, rewardFor, undoPrice, undoQuote } from '../../src/game/coins';
 import { applyLab, DEFAULT_LAB, rulesFor, usesCertifiedRules, type LabSettings } from '../../src/game/lab';
 import { isUnlocked, mainAction, resumeIndex, solvedCount, starsFor, starsOfBest } from '../../src/game/progress';
 import { defaultSave, LEGACY_KEY, loadSave, migrate, resetProgress, SAVE_KEY, SAVE_VERSION, writeSave, type KeyValueStore } from '../../src/game/save';
@@ -259,5 +259,30 @@ describe('haptics', () => {
     const none = new Haptics(() => true, deviceVibrate({}));
     expect(none.supported).toBe(false);
     expect(none.play('win')).toBe(false);
+  });
+});
+
+describe('the price of Undo (finding B4)', () => {
+  const c = CONFIG.coins;
+  const paid = c.freeUndosPerLevel;
+  it('an Undo costs coins.undoCost, and every further step costs it again', () => {
+    expect(undoPrice(false, paid)).toBe(c.undoCost);
+    expect(undoPrice(false, paid + 1)).toBe(c.undoCost);
+    expect(undoQuote(c.undoCost, false, paid)).toEqual({ cost: c.undoCost, state: 'ok' });
+  });
+  it('the first coins.freeUndosPerLevel Undos of an attempt are free, the next one is not', () => {
+    for (let taken = 0; taken < c.freeUndosPerLevel; taken++) expect(undoQuote(0, false, taken)).toEqual({ cost: 0, state: 'free' });
+    expect(undoPrice(false, c.freeUndosPerLevel)).toBe(c.undoCost);
+  });
+  it('a wallet one coin short cannot afford it, and is told the price', () => {
+    expect(undoQuote(c.undoCost - 1, false, paid)).toEqual({ cost: c.undoCost, state: 'short' });
+    expect(undoQuote(0, false, paid)).toEqual({ cost: c.undoCost, state: 'short' });
+  });
+  it('the test lab switch "free help" makes Undo free, even with an empty wallet', () => {
+    expect(undoPrice(true, paid)).toBe(0);
+    expect(undoQuote(0, true, paid + 3)).toEqual({ cost: 0, state: 'free' });
+  });
+  it('the default price is real: Undo is not free out of the box', () => {
+    expect(c.undoCost).toBeGreaterThan(0);
   });
 });

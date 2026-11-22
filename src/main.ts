@@ -9,9 +9,9 @@ import { Sfx } from './audio';
 import { deviceVibrate, Haptics } from './haptics';
 import { CONFIG } from './config';
 import { step } from './engine/engine';
-import type { Color, Command } from './engine/types';
-import { witnessNext, type RescueResult, type ScanResult } from './game/assist';
-import { extraMovesPrice, hintPrice, payout, rewardFor } from './game/coins';
+import type { Color, Command, RobotEvent } from './engine/types';
+import { previewStep, witnessNext, type RescueResult, type ScanResult } from './game/assist';
+import { extraMovesPrice, hintPrice, payout, rewardFor, undoQuote, type UndoQuote } from './game/coins';
 import { applyLab, rulesFor, usesCertifiedRules, type LabSettings } from './game/lab';
 import { MemorySink, type MetricsEvent } from './game/metrics';
 import { isUnlocked, mainAction, starsFor, starsOfBest } from './game/progress';
@@ -46,6 +46,8 @@ export interface Snapshot {
   commands: Command[];
   replaying: boolean;
   hint: string;
+  /** The hint picture on the board: what the hinted command will do to each robot. Empty when no hint is shown. */
+  hintPicture: Pick<RobotEvent, 'id' | 'turned' | 'outcome' | 'toX' | 'toY'>[];
   certified: boolean;
   best: Record<string, number>;
   coins: number;
@@ -62,7 +64,8 @@ declare global {
 }
 
 const wait = (seconds: number): Promise<void> => new Promise((r) => window.setTimeout(r, seconds * 1000));
-const COMMAND_LABEL: Record<Command, string> = { red: 'Red turn', blue: 'Blue turn', yellow: 'Yellow turn', forward: 'Forward' };
+/** The few words under a hint picture; the picture itself says who turns and who steps where. */
+const COMMAND_LABEL: Record<Command, string> = { red: 'Red turns, then all step', blue: 'Blue turns, then all step', yellow: 'Yellow turns, then all step', forward: 'All step forward' };
 const LEVEL_IDS = LEVELS.map((l) => l.id);
 
 /** `localStorage`, or a throwaway store when the browser blocks it. */
@@ -108,6 +111,10 @@ class Game {
   private usedBackup = false;
   /** A paid hint revealed a move during this attempt. */
   private usedHint = false;
+  /** Undos taken in this attempt; the first `coins.freeUndosPerLevel` of them are free. */
+  private undosTaken = 0;
+  /** A tools button the hint line points at, ringed like a nudged command. */
+  private point: 'undo' | 'restart' | 'scan' | null = null;
   /** Animations still queued; more than one speeds playback up. */
   private pending = 0;
   private chain: Promise<void> = Promise.resolve();
@@ -119,6 +126,8 @@ class Game {
   private hint = '';
   private hintWarn = false;
   private nudge: Command | null = null;
+  /** What the hinted command will do, as drawn on the board. */
+  private hintPicture: readonly RobotEvent[] = [];
   private scanKey = '';
   private scanResult: ScanResult | null = null;
   /** The button that opened the coin explainer; focus returns to it. */
@@ -376,6 +385,7 @@ class Game {
     this.preview = false;
     this.usedBackup = false;
     this.usedHint = false;
+    this.undosTaken = 0;
     this.touched = false;
     this.session = new Session(level, { budget: par + this.save.lab.moveSlack, rules: rulesFor(this.save.lab) });
     this.hud.resetCounter();
@@ -396,6 +406,9 @@ class Game {
     this.hint = '';
     this.hintWarn = false;
     this.nudge = null;
+    this.point = null;
+    this.hintPicture = [];
+    this.view.showHint(null);
     this.scanKey = '';
     this.scanResult = null;
   }
@@ -404,6 +417,7 @@ class Game {
     const colors = new Set<Color>(this.level.start.robots.map((r) => r.color));
     const status = this.session.status;
     const price = hintPrice(this.save.lab.freeHelp);
+    const undo = this.undoOffer();
     const revealed = this.scanResult?.kind === 'on-route' && this.nudge !== null;
     this.counters.set(this.save.coins);
     this.hud.update({
@@ -423,6 +437,9 @@ class Game {
       hintWarn: this.hintWarn,
       hintCost: price,
       hintState: revealed ? 'used' : price === 0 ? 'free' : this.save.coins < price ? 'short' : 'ok',
+      undoCost: undo.cost,
+      undoState: undo.state,
+      point: this.point,
     });
   }
 
@@ -552,9 +569,10 @@ class Game {
         note: offer
           ? undefined
           : rescue.kind === 'hopeless'
-            ? 'Extra moves would not solve it from here, so there is no offer. Undo a step or start again: both are free.'
-            : 'We could not check in time whether extra moves would help, so there is no offer. Undo and Retry are free.',
+            ? 'Extra moves would not solve it from here, so there is no offer. Retry is free.'
+            : 'We could not check in time whether extra moves would help, so there is no offer. Retry is free.',
         undo: () => this.undo(),
+        undoPrice: this.undoOffer(),
         retry: () => this.restart(),
         hint: offer ? undefined : hint,
       },
@@ -582,8 +600,36 @@ class Game {
     this.refresh();
   }
 
+  /** What the next Undo costs now. A board-size test board is never paid for. */
+  private undoOffer(): UndoQuote {
+    return undoQuote(this.save.coins, this.save.lab.freeHelp || this.preview, this.undosTaken);
+  }
+
+  /**
+   * Take back one command. It costs `coins.undoCost` per step (finding B4);
+   * Restart stays free, so a player without coins is never stuck.
+   */
   private undo(): void {
-    if (this.replaying || this.busy || !this.session.undo()) return;
+    if (this.replaying || this.busy || this.session.commands.length === 0) return;
+    const offer = this.undoOffer();
+    if (offer.state === 'short') {
+      // Refused: the counter shakes, a few words say why, and the free way out is ringed.
+      this.counters.short();
+      this.sfx.play('bump');
+      this.track({ type: 'undo', level: this.level.id, price: offer.cost, refused: true });
+      this.clearScan();
+      this.point = 'restart';
+      this.setHint(`Undo costs ${offer.cost} coins. Restart is free.`, true);
+      return;
+    }
+    this.session.undo();
+    this.undosTaken++;
+    if (offer.cost > 0) {
+      this.save.coins -= offer.cost;
+      this.persist();
+      this.track({ type: 'coins_spent', level: this.level.id, amount: offer.cost, on: 'undo', balance: this.save.coins });
+    }
+    this.track({ type: 'undo', level: this.level.id, price: offer.cost, refused: false });
     this.generation++;
     this.pending = 0;
     this.hud.hideCard();
@@ -599,6 +645,7 @@ class Game {
     this.pending = 0;
     this.session.restart();
     this.usedBackup = false;
+    this.undosTaken = 0;
     // usedHint stays: a move that was paid for is still known after a restart.
     this.hud.hideCard();
     this.clearScan();
@@ -625,7 +672,7 @@ class Game {
         const price = hintPrice(this.save.lab.freeHelp);
         if (this.save.coins < price) {
           this.counters.short();
-          this.setHint(`That costs ${price} coins. You have ${this.save.coins}.`, true);
+          this.setHint('Not enough coins for the next move.', true);
           return;
         }
         this.save.coins -= price;
@@ -635,9 +682,13 @@ class Game {
           this.track({ type: 'coins_spent', level: this.level.id, amount: price, on: 'hint', balance: this.save.coins });
         }
         this.nudge = this.scanResult.next;
+        this.point = null;
+        // The picture comes from the engine's own step on the current state, so it shows exactly what the move will do.
+        this.hintPicture = previewStep(this.level.board, this.session.state, this.nudge, this.session.rules);
+        this.view.showHint(this.hintPicture);
         this.track({ type: 'hint', level: this.level.id, result: 'on-route', rung: 2 });
         this.sfx.play('scan');
-        this.setHint(`Next: ${COMMAND_LABEL[this.scanResult.next]}`, false);
+        this.setHint(COMMAND_LABEL[this.scanResult.next], false);
       }
       return;
     }
@@ -647,7 +698,7 @@ class Game {
     else {
       const generation = this.generation;
       this.busy = true;
-      this.setHint('Thinking…', false);
+      this.setHint('Checking…', false);
       result = await this.solver.ask<ScanResult>({
         kind: 'scan',
         board: this.level.board,
@@ -663,9 +714,16 @@ class Game {
     this.scanResult = result;
     this.track({ type: 'hint', level: this.level.id, result: result.kind, rung: 1 });
     this.sfx.play('scan');
-    if (result.kind === 'on-route') this.setHint(`Solvable from here · ${result.movesNeeded} to go. Tap Hint again for the next move${hintPrice(this.save.lab.freeHelp) > 0 ? ` (${hintPrice(this.save.lab.freeHelp)} coins)` : ''}.`, false);
-    else if (result.kind === 'dead-end') this.setHint(`Dead end. Undo ${result.undo} move${result.undo === 1 ? '' : 's'} to make it solvable again.`, true);
-    else this.setHint('The hint could not be worked out for this position.', true);
+    if (result.kind === 'on-route') {
+      // The Hint button is ringed with its price on it: the second tap shows the move.
+      this.point = 'scan';
+      this.setHint(`You can still win: ${result.movesNeeded} to go`, false);
+    } else if (result.kind === 'dead-end') {
+      // When only the start is still winnable, Restart gets there for free.
+      const toStart = result.undo >= this.session.commands.length;
+      this.point = toStart ? 'restart' : 'undo';
+      this.setHint(toStart ? 'No win from here. Restart to try again.' : `No win from here. Undo ${result.undo} or Restart.`, true);
+    } else this.setHint('Could not check this one in time.', true);
   }
 
   /** Play the commands so far again from the start; the session is untouched. */
@@ -710,6 +768,7 @@ class Game {
       commands: [...this.session.commands],
       replaying: this.replaying,
       hint: this.hint,
+      hintPicture: this.hintPicture.map(({ id, turned, outcome, toX, toY }) => ({ id, turned, outcome, toX, toY })),
       certified: this.certified,
       best: { ...this.save.best },
       coins: this.save.coins,

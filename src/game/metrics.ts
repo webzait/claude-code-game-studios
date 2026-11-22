@@ -7,8 +7,10 @@ export type MetricsEvent =
   | { type: 'level_fail'; level: string; rescuable: 'yes' | 'no' | 'not-assessed' }
   | { type: 'hint'; level: string; result: 'on-route' | 'dead-end' | 'not-assessed'; rung: number }
   | { type: 'extra_moves'; level: string; price: number }
+  /** One command taken back; `price` is what it cost, zero when free. `refused` when the wallet could not pay. */
+  | { type: 'undo'; level: string; price: number; refused: boolean }
   | { type: 'coins_earned'; level: string; amount: number; balance: number }
-  | { type: 'coins_spent'; level: string; amount: number; on: 'hint' | 'extra_moves'; balance: number }
+  | { type: 'coins_spent'; level: string; amount: number; on: 'hint' | 'extra_moves' | 'undo'; balance: number }
   | { type: 'command'; level: string; command: Command };
 
 /** Where events go. A real analytics service would implement this later. */

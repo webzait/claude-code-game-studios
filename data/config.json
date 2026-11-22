@@ -105,6 +105,15 @@
     "previewMoves": 99,
     "certifyMaxVisited": 400000
   },
+  "hintPicture": {
+    "opacity": 0.92,
+    "outline": 0.035,
+    "lift": 0.03,
+    "arrow": { "from": 0.5, "neck": 0.84, "tip": 1.1, "shaft": 0.085, "head": 0.22 },
+    "bump": { "from": 0.34, "bar": 0.47, "thick": 0.1, "shaft": 0.07, "half": 0.26 },
+    "turn": { "radius": 0.54, "width": 0.1, "startGap": 6, "endGap": 30, "head": 18, "headWidth": 0.26 },
+    "pulse": { "seconds": 1.1, "slide": 0.07, "fade": 0.25 }
+  },
   "audio": {
     "volume": 0.16
   },
@@ -165,7 +174,9 @@
     "perSpareMove": 3,
     "perfect": 10,
     "hintCost": 10,
-    "extraMovesCost": 25
+    "extraMovesCost": 25,
+    "undoCost": 5,
+    "freeUndosPerLevel": 0
   },
   "light": {
     "sky": "#FFFFFF",
