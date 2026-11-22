@@ -205,6 +205,23 @@ test('the win coins: Next on the first frame ends the count at once, and a repla
   expect(errors).toEqual([]);
 });
 
+test('a save from the first economy keeps its coins: a level paid 26 for three stars pays no leftover when won again', async ({ page }) => {
+  const errors = await open(page);
+  // Put in place once and loaded with a reload (see the colour shapes check for why not an init script).
+  await page.evaluate(
+    ([id, par]) => localStorage.setItem('turnflock.save', JSON.stringify({ version: 5, best: { [id]: par }, coins: 73, paid: { [id]: 26 }, settings: {}, lab: { unlockAll: true } })),
+    [levels[0].id, levels[0].par] as const,
+  );
+  await page.reload();
+  await expect.poll(() => page.evaluate(() => typeof window.turnflock?.snapshot)).toBe('function');
+  expect((await snap(page)).coins).toBe(73);
+  await page.locator('.tf-levels-tile').first().click();
+  await playWitness(page, 0);
+  await expect(page.locator('#end-result')).toHaveText('Best reward already paid', { timeout: 15000 });
+  expect((await snap(page)).coins).toBe(73);
+  expect(errors).toEqual([]);
+});
+
 test('undo and restart take moves back; Undo costs coins per step and Restart is free', async ({ page }) => {
   await open(page);
   await page.click('#node-1');
@@ -296,7 +313,7 @@ test('out of moves two steps from home: extra moves are offered and really win',
   await expect(page.locator('#end-title')).toContainText('extra moves', { timeout: 15000 });
   await expect(page.locator('#card .tf-coin-sum')).toHaveText(`+${config.coins.win}`);
   await expect(page.locator('.tf-end-stars')).toHaveAttribute('aria-label', '1 of 3 stars');
-  // A helped win pays the base amount only.
+  // A win with extra moves is a one-star win: it pays the base amount only.
   expect((await snap(page)).coins).toBe(config.coins.start - config.coins.extraMovesCost + config.coins.win);
 });
 
