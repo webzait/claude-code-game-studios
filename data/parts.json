@@ -258,6 +258,11 @@
       "icon": 20,
       "font": 15
     },
+    "priceSmall": {
+      "height": 22,
+      "icon": 17,
+      "font": 13
+    },
     "hint": {
       "width": 156,
       "height": 48,

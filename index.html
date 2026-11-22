@@ -38,25 +38,16 @@
 
       <section class="screen" id="level" hidden>
         <header class="top">
-          <div class="top-row">
-            <button class="back" id="levelBack" aria-label="Back to levels"><svg viewBox="0 0 24 24" class="ico"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
-            <div class="title">
-              <div class="level-no" id="levelNo">LEVEL 1</div>
-              <div class="level-name" id="levelName"></div>
+          <button class="back" id="levelBack" aria-label="Back to levels"><svg viewBox="0 0 24 24" class="ico"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
+          <div class="tf-status" role="group" aria-label="Level, moves left and robots home">
+            <div class="tf-status-plate">
+              <div class="tf-status-cell"><span class="tf-status-label" id="levelWord">LEVEL</span><span class="tf-status-num" id="levelNo">1</span></div>
+              <div class="tf-status-cell moves" id="movesPill"><span class="tf-status-label">MOVES</span><span class="tf-status-num" id="moves">0</span></div>
             </div>
-            <span id="levelCoins"></span>
+            <div class="tf-status-tab" id="collectedPill" aria-label="Robots home"><svg viewBox="0 0 24 24" class="ico"><rect x="4" y="7" width="16" height="13" rx="4.5" fill="currentColor" /><circle cx="9.3" cy="13" r="1.9" fill="#fff" /><circle cx="14.7" cy="13" r="1.9" fill="#fff" /><rect x="11.2" y="2.5" width="1.6" height="5" rx=".8" fill="currentColor" /><circle cx="12" cy="2.8" r="1.7" fill="currentColor" /></svg><span id="collected">0/0</span></div>
+            <span class="tf-sr" id="levelName"></span>
           </div>
-          <div class="top-row stats">
-            <div class="pill" id="collectedPill" aria-label="Robots collected">
-              <svg viewBox="0 0 24 24" class="ico"><rect x="4" y="7" width="16" height="13" rx="4.5" fill="currentColor" /><circle cx="9.3" cy="13" r="1.9" fill="#fff" /><circle cx="14.7" cy="13" r="1.9" fill="#fff" /><rect x="11.2" y="2.5" width="1.6" height="5" rx=".8" fill="currentColor" /><circle cx="12" cy="2.8" r="1.7" fill="currentColor" /></svg>
-              <span id="collected">0/0</span>
-            </div>
-            <div class="pill moves" id="movesPill" aria-label="Moves left">
-              <span class="moves-num" id="moves">0</span>
-              <span class="moves-label">MOVES</span>
-            </div>
-            <button type="button" id="scan" aria-label="Hint"></button>
-          </div>
+          <span id="levelCoins"></span>
         </header>
         <main class="stage"><canvas id="board"></canvas></main>
         <div class="hint-line" id="hint" role="status" aria-live="polite"></div>
@@ -64,7 +55,8 @@
           <div class="tools">
             <button type="button" class="tf-btn tf-utility" id="undo"><span class="tf-clip"><span class="tf-face"><svg viewBox="0 0 24 24" aria-hidden="true"><g class="tf-ink-shadow" transform="translate(0 1.3)"><path d="M9.4 4.2 3.6 9.3l5.8 5.1z" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"></path><path d="M9 9.3h5.4a5.3 5.3 0 0 1 0 10.6H9.6" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path></g><g><path d="M9.4 4.2 3.6 9.3l5.8 5.1z" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"></path><path d="M9 9.3h5.4a5.3 5.3 0 0 1 0 10.6H9.6" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path></g></svg><span class="tf-label">Undo</span></span></span></button>
             <button type="button" class="tf-btn tf-utility" id="restart"><span class="tf-clip"><span class="tf-face"><svg viewBox="0 0 24 24" aria-hidden="true"><g class="tf-ink-shadow" transform="translate(0 1.3)"><path d="M17.1 16.9A7 7 0 1 1 15.5 8" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path><path d="M18.4 3.2v6h-6" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path></g><g><path d="M17.1 16.9A7 7 0 1 1 15.5 8" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path><path d="M18.4 3.2v6h-6" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path></g></svg><span class="tf-label">Restart</span></span></span></button>
-            <button type="button" class="tf-btn tf-utility" id="replay"><span class="tf-clip"><span class="tf-face"><svg viewBox="0 0 24 24" aria-hidden="true"><g class="tf-ink-shadow" transform="translate(0 1.3)"><path d="M7.4 5v14l11.4-7z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"></path></g><g><path d="M7.4 5v14l11.4-7z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"></path></g></svg><span class="tf-label">Replay</span></span></span></button>
+            <button type="button" class="tf-btn tf-utility" id="replay"><span class="tf-clip"><span class="tf-face"><svg viewBox="0 0 24 24" aria-hidden="true"><g class="tf-ink-shadow" transform="translate(0 1.3)"><path d="M7.4 5v14l11.4-7z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"></path></g><g><path d="M7.4 5v14l11.4-7z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"></path></g></svg><span class="tf-label tf-sr">Replay</span></span></span></button>
+            <button type="button" id="scan" aria-label="Hint"></button>
           </div>
           <div class="commands" id="commands">
             <button type="button" class="tf-btn tf-action red cmd" data-cmd="red" aria-label="Turn red, then all move"><span class="tf-clip"><span class="tf-face"><svg viewBox="0 0 24 24" aria-hidden="true"><g class="tf-ink-shadow" transform="translate(0 1.3)"><path d="M17.1 16.9A7 7 0 1 1 15.5 8" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"></path><path d="M18.4 3.2v6h-6" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"></path></g><g><path d="M17.1 16.9A7 7 0 1 1 15.5 8" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"></path><path d="M18.4 3.2v6h-6" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"></path></g></svg></span></span></button>

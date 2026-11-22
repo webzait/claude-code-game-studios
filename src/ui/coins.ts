@@ -33,11 +33,11 @@ const sizeVars = (s: { width?: number; height: number; depth: number; radius: nu
 export type PriceState = 'ok' | 'short' | 'free' | 'used';
 
 /** The price tag that sits on a button: coin and number, or the word that replaces them. */
-export function priceTag(cost: number, state: PriceState): string {
-  const style = `style="--ph:${C.price.height}px;--pf:${C.price.font}px"`;
+export function priceTag(cost: number, state: PriceState, size: { height: number; icon: number; font: number } = C.price): string {
+  const style = `style="--ph:${size.height}px;--pf:${size.font}px"`;
   if (state === 'free') return `<span class="tf-coin-price free" ${style}>Free</span>`;
   if (state === 'used') return `<span class="tf-coin-price used" ${style}>${CHECK}<span class="tf-coin-word">Used</span></span>`;
-  return `<span class="tf-coin-price${state === 'short' ? ' short' : ''}" ${style}>${coinIcon(C.price.icon)}<span>${formatCoins(cost)}</span></span>`;
+  return `<span class="tf-coin-price${state === 'short' ? ' short' : ''}" ${style}>${coinIcon(size.icon)}<span>${formatCoins(cost)}</span></span>`;
 }
 
 /** What a screen reader says for a priced button. */
@@ -47,10 +47,9 @@ export function spokenPrice(name: string, cost: number, state: PriceState): stri
   return `${name}, ${cost} coins${state === 'short' ? ', you do not have enough coins' : ''}`;
 }
 
-/** Turn the Hint button of the top bar into the compact priced button; `setHintPrice` fills in the tag. */
+/** Turn the Hint button of the tools row into the compact priced button, sized by that row; `setHintPrice` fills in the tag. */
 export function mountHintButton(button: HTMLButtonElement): void {
   button.className = 'tf-btn tf-coin-buy hint compact';
-  button.style.cssText = sizeVars(C.hintCompact);
   button.innerHTML = `<span class="tf-clip"><span class="tf-face">${BULB}<span class="tf-coin-slot"></span></span></span>`;
 }
 
@@ -62,7 +61,7 @@ export function setHintPrice(button: HTMLButtonElement, cost: number, state: Pri
   const key = `${cost}|${state}`;
   if (button.dataset.price === key) return;
   button.dataset.price = key;
-  button.querySelector('.tf-coin-slot')!.innerHTML = priceTag(cost, state);
+  button.querySelector('.tf-coin-slot')!.innerHTML = priceTag(cost, state, C.priceSmall);
   button.classList.toggle('short', state === 'short');
   button.setAttribute('aria-label', spokenPrice('Hint', cost, state));
 }

@@ -76,7 +76,8 @@ export class Hud {
 
   /** Redraw status and button states. */
   update(m: HudModel): void {
-    el('levelNo').textContent = m.levelLabel ?? `LEVEL ${m.levelNumber}`;
+    el('levelWord').textContent = m.levelLabel ?? 'LEVEL';
+    el('levelNo').textContent = m.levelLabel ? '–' : String(m.levelNumber);
     el('levelName').textContent = m.levelName;
     el('collected').textContent = `${m.collected}/${m.total}`;
     el('moves').textContent = String(Math.max(m.movesLeft, 0));
