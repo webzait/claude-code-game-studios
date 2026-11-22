@@ -388,6 +388,18 @@ vaste gemiddelden per moeilijkheidsklasse, onder de oude bedragen. Waar de twee 
 - De regel in de winkel dat tekortkomen een woordregel en een link geeft en nooit een pop-up, is een
   voorwaarde waaronder B eerlijk blijft.
 
+### Naast andere bekende puzzelspellen
+
+Kort nagezocht op 22 november 2026; alleen het cijfer van Royal Match per level komt uit een analyse, de
+rest uit spelersreviews en verkoperssites, niet van de makers. Royal Match betaalt 10, 20 of 30 munten
+per level naar moeilijkheid en vraagt 900 munten voor vijf extra zetten. Magic Sort vraagt volgens
+reviews ook 900 om door te spelen of een fles toe te voegen en verkoopt 1000 munten voor ongeveer 2
+dollar. Van Color Block Jam zijn geen bedragen gepubliceerd. Het patroon: kleine ronde beloningen, bijna
+niets extra voor efficiënt spelen, en één dure knop die levels nooit terugverdienen; de munten daarvoor
+komen uit events, dagelijkse beloningen en de winkel. TURNFLOCK heeft die tweede bronnen bewust niet,
+dus een verhouding als 900 tegen 30 zou hier betekenen dat hulp alleen nog te koop is. De tegenhanger
+van die knop is bij ons "+3 moves" (40).
+
 ## 9. Wat alleen echt spelen kan uitwijzen
 
 Het model weet niet hoe mensen spelen. Deze metingen uit het kasboek van de testwinkel (Settings →
