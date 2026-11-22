@@ -1,7 +1,12 @@
 # TURNFLOCK — background music
 
 Status: 2026-11-22. Three variants are built and can be compared; **the owner has not chosen yet**.
-Until then the game plays `meadow` (`music.variant` in `data/config.json`).
+Until then the game plays `meadow` (`music.variant` in `data/config.json`), the maker's recommendation:
+it is the middle road between the other two. Its steady marimba pattern gives the cheerfulness the
+brief asks for without a drum or shaker to tire of, its tune stays out of the first third of the
+loop, and it has the most even loudness of the three. Drift risks being too sleepy to feel
+cheerful, Stroll too busy on a hard level. This is reasoning from the scores and the numbers, not
+from listening; the other two stay in the test lab.
 
 > **Nobody has listened to this yet.** The music was written and checked by an agent that cannot
 > hear. Everything below that says "measured" is a number; whether a piece sounds pleasant, calm and
