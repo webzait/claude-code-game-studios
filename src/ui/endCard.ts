@@ -1,6 +1,6 @@
 import { CONFIG } from '../config';
 import PARTS from '../../data/parts.json';
-import { formatCoins, offerButton, priceTag, rewardPlate, spokenPrice, type PriceState, type RewardView } from './coins';
+import { coinIcon, formatCoins, offerButton, priceTag, rewardPlate, spokenPrice, type PriceState, type RewardView } from './coins';
 
 /**
  * The end-of-round pop-up: a sheet resting near the bottom edge, as designed
@@ -88,6 +88,8 @@ export interface LostCard {
   readonly retry: () => void;
   /** Ask for a hint from here; offered when there is no paid offer. */
   readonly hint?: () => void;
+  /** Open the test shop; offered as a quiet link when the wallet is short, next to the free Retry and never instead of it. */
+  readonly getCoins?: () => void;
 }
 
 /** A plain card of the test lab. */
@@ -140,7 +142,7 @@ function lostBody(l: LostCard): string {
     <p class="tf-end-note" id="end-result">${why}</p>
     ${offer}
     <div class="tf-end-actions lead">${undo}${button('retry', 'tf-end-main tf-end-mid', 'Retry', 'retry')}</div>
-    ${l.hint ? `<div class="tf-end-more">${link('hint', 'Hint', 'hint')}</div>` : ''}`;
+    ${l.hint || l.getCoins ? `<div class="tf-end-more">${l.hint ? link('hint', 'Hint', 'hint') : ''}${l.getCoins ? `<button type="button" id="end-getcoins" class="tf-end-link">${coinIcon(18)}<span>Get coins</span></button>` : ''}</div>` : ''}`;
 }
 
 function infoBody(c: InfoCard): string {
@@ -168,6 +170,7 @@ export function renderEndCard(host: HTMLElement, card: EndCard, animate: boolean
     on('undo', card.undo);
     on('retry', card.retry);
     on('hint', card.hint);
+    on('getcoins', card.getCoins);
   } else {
     on('second', card.second.action);
     on('levels', card.levels);
