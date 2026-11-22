@@ -295,7 +295,7 @@ export function labContent(start: Partial<LabSettings>, hooks: LabHooks = {}): {
   );
 
   const shortcuts = panel('Shortcuts');
-  shortcuts.body.append(flag('freeHelp', 'Free help', 'Hints and extra moves cost no coins.'), flag('unlockAll', 'Unlock all levels', 'Open every level, solved or not.'));
+  shortcuts.body.append(flag('freeHelp', 'Free help', 'Hints, extra moves and Undo cost no coins.'), flag('unlockAll', 'Unlock all levels', 'Open every level, solved or not.'));
 
   const sizes = panel('Board size test');
   const sizeRow = row('Open a test board', 'Not a level; nothing is saved.', { stack: true });

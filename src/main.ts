@@ -11,7 +11,7 @@ import { CONFIG } from './config';
 import { step } from './engine/engine';
 import type { Color, Command } from './engine/types';
 import { witnessNext, type RescueResult, type ScanResult } from './game/assist';
-import { extraMovesPrice, hintPrice, payout, rewardFor } from './game/coins';
+import { extraMovesPrice, hintPrice, payout, rewardFor, undoQuote, type UndoQuote } from './game/coins';
 import { applyLab, rulesFor, usesCertifiedRules, type LabSettings } from './game/lab';
 import { MemorySink, type MetricsEvent } from './game/metrics';
 import { isUnlocked, mainAction, starsFor, starsOfBest } from './game/progress';
@@ -108,6 +108,10 @@ class Game {
   private usedBackup = false;
   /** A paid hint revealed a move during this attempt. */
   private usedHint = false;
+  /** Undos taken in this attempt; the first `coins.freeUndosPerLevel` of them are free. */
+  private undosTaken = 0;
+  /** A tools button the hint line points at, ringed like a nudged command. */
+  private point: 'undo' | 'restart' | 'scan' | null = null;
   /** Animations still queued; more than one speeds playback up. */
   private pending = 0;
   private chain: Promise<void> = Promise.resolve();
@@ -376,6 +380,7 @@ class Game {
     this.preview = false;
     this.usedBackup = false;
     this.usedHint = false;
+    this.undosTaken = 0;
     this.touched = false;
     this.session = new Session(level, { budget: par + this.save.lab.moveSlack, rules: rulesFor(this.save.lab) });
     this.hud.resetCounter();
@@ -396,6 +401,7 @@ class Game {
     this.hint = '';
     this.hintWarn = false;
     this.nudge = null;
+    this.point = null;
     this.scanKey = '';
     this.scanResult = null;
   }
@@ -404,6 +410,7 @@ class Game {
     const colors = new Set<Color>(this.level.start.robots.map((r) => r.color));
     const status = this.session.status;
     const price = hintPrice(this.save.lab.freeHelp);
+    const undo = this.undoOffer();
     const revealed = this.scanResult?.kind === 'on-route' && this.nudge !== null;
     this.counters.set(this.save.coins);
     this.hud.update({
@@ -423,6 +430,9 @@ class Game {
       hintWarn: this.hintWarn,
       hintCost: price,
       hintState: revealed ? 'used' : price === 0 ? 'free' : this.save.coins < price ? 'short' : 'ok',
+      undoCost: undo.cost,
+      undoState: undo.state,
+      point: this.point,
     });
   }
 
@@ -552,9 +562,10 @@ class Game {
         note: offer
           ? undefined
           : rescue.kind === 'hopeless'
-            ? 'Extra moves would not solve it from here, so there is no offer. Undo a step or start again: both are free.'
-            : 'We could not check in time whether extra moves would help, so there is no offer. Undo and Retry are free.',
+            ? 'Extra moves would not solve it from here, so there is no offer. Retry is free.'
+            : 'We could not check in time whether extra moves would help, so there is no offer. Retry is free.',
         undo: () => this.undo(),
+        undoPrice: this.undoOffer(),
         retry: () => this.restart(),
         hint: offer ? undefined : hint,
       },
@@ -582,8 +593,36 @@ class Game {
     this.refresh();
   }
 
+  /** What the next Undo costs now. A board-size test board is never paid for. */
+  private undoOffer(): UndoQuote {
+    return undoQuote(this.save.coins, this.save.lab.freeHelp || this.preview, this.undosTaken);
+  }
+
+  /**
+   * Take back one command. It costs `coins.undoCost` per step (finding B4);
+   * Restart stays free, so a player without coins is never stuck.
+   */
   private undo(): void {
-    if (this.replaying || this.busy || !this.session.undo()) return;
+    if (this.replaying || this.busy || this.session.commands.length === 0) return;
+    const offer = this.undoOffer();
+    if (offer.state === 'short') {
+      // Refused: the counter shakes, a few words say why, and the free way out is ringed.
+      this.counters.short();
+      this.sfx.play('bump');
+      this.track({ type: 'undo', level: this.level.id, price: offer.cost, refused: true });
+      this.clearScan();
+      this.point = 'restart';
+      this.setHint(`Undo costs ${offer.cost} coins. Restart is free.`, true);
+      return;
+    }
+    this.session.undo();
+    this.undosTaken++;
+    if (offer.cost > 0) {
+      this.save.coins -= offer.cost;
+      this.persist();
+      this.track({ type: 'coins_spent', level: this.level.id, amount: offer.cost, on: 'undo', balance: this.save.coins });
+    }
+    this.track({ type: 'undo', level: this.level.id, price: offer.cost, refused: false });
     this.generation++;
     this.pending = 0;
     this.hud.hideCard();
@@ -599,6 +638,7 @@ class Game {
     this.pending = 0;
     this.session.restart();
     this.usedBackup = false;
+    this.undosTaken = 0;
     // usedHint stays: a move that was paid for is still known after a restart.
     this.hud.hideCard();
     this.clearScan();

@@ -165,7 +165,9 @@
     "perSpareMove": 3,
     "perfect": 10,
     "hintCost": 10,
-    "extraMovesCost": 25
+    "extraMovesCost": 25,
+    "undoCost": 5,
+    "freeUndosPerLevel": 0
   },
   "light": {
     "sky": "#FFFFFF",

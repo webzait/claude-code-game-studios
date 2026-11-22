@@ -47,23 +47,31 @@ export function spokenPrice(name: string, cost: number, state: PriceState): stri
   return `${name}, ${cost} coins${state === 'short' ? ', you do not have enough coins' : ''}`;
 }
 
-/** Turn the Hint button of the tools row into the compact priced button, sized by that row; `setHintPrice` fills in the tag. */
+/** Turn the Undo button of the tools row into a priced button: its arrow, then the price tag `setPrice` fills in. */
+export function mountUndoButton(button: HTMLButtonElement): void {
+  button.classList.add('tf-coin-buy', 'undo', 'compact');
+  button.querySelector('.tf-label')?.remove();
+  button.querySelector('.tf-face')!.insertAdjacentHTML('beforeend', '<span class="tf-coin-slot"></span>');
+}
+
+/** Turn the Hint button of the tools row into the compact priced button, sized by that row; `setPrice` fills in the tag. */
 export function mountHintButton(button: HTMLButtonElement): void {
   button.className = 'tf-btn tf-coin-buy hint compact';
   button.innerHTML = `<span class="tf-clip"><span class="tf-face">${BULB}<span class="tf-coin-slot"></span></span></span>`;
 }
 
 /**
- * Show the price on the Hint button. A button that is too expensive stays a working button (its first tap, the status, is
- * free, and the counter answers a price it cannot pay); a used one is switched off by the caller.
+ * Show the price on a priced button of the tools row (Hint, Undo). A button that is too expensive stays a working button
+ * (the game answers the tap in words and the counter shakes); a used one is switched off by the caller.
+ * @param name What the button is called aloud, for example "Hint".
  */
-export function setHintPrice(button: HTMLButtonElement, cost: number, state: PriceState): void {
+export function setPrice(button: HTMLButtonElement, name: string, cost: number, state: PriceState): void {
   const key = `${cost}|${state}`;
   if (button.dataset.price === key) return;
   button.dataset.price = key;
   button.querySelector('.tf-coin-slot')!.innerHTML = priceTag(cost, state, C.priceSmall);
   button.classList.toggle('short', state === 'short');
-  button.setAttribute('aria-label', spokenPrice('Hint', cost, state));
+  button.setAttribute('aria-label', spokenPrice(name, cost, state));
 }
 
 /** The "+N moves" offer: one wide button with its price on it. Too expensive stays tappable, so the counter can answer. */
@@ -115,8 +123,9 @@ export function coinInfo(titleId: string): string {
       ${line('Shortest solution', `+${COINS.perfect}`)}
       ${line('Hint: the next move', String(COINS.hintCost), true)}
       ${line(`+${CONFIG.extraMoves} moves`, String(COINS.extraMovesCost), true)}
+      ${COINS.undoCost > 0 ? line('Undo: one step back', String(COINS.undoCost), true) : ''}
     </dl>
-    <p>Undo and Restart are always free. You earn coins by playing; there is nothing to buy.</p>`;
+    <p>${COINS.undoCost > 0 ? 'Restart is always free' : 'Undo and Restart are always free'}. You earn coins by playing; there is nothing to buy.</p>`;
 }
 
 /** Count the text of `el` from `from` to `to`, written through `format`. */

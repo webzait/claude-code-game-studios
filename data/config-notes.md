@@ -14,6 +14,8 @@
 | `coins.start` | Coins a new player begins with |
 | `coins.win`, `perSpareMove`, `perfect` | Reward for a win: base, per unused move, and bonus for the shortest solution |
 | `coins.hintCost`, `extraMovesCost` | Price of revealing the next move, and of the extra moves when out of moves |
+| `coins.undoCost` | Price of one Undo: taking back one command. Paid per step undone, on the Undo button and on the Undo of the out-of-moves pop-up alike. 0 makes Undo free again (the rule before finding B4) |
+| `coins.freeUndosPerLevel` | Undos that cost nothing in each attempt at a level; the count starts again at a Restart or when the level is opened. 0 = every Undo is paid. Restart is always free, whatever these two say |
 | `levelsPerPage` | Level tiles per page of the level selection |
 | `stars.three`, `stars.two` | Moves over par that still earn 3 and 2 stars |
 | `lowMoves` | Moves left at which the counter turns into a warning |
