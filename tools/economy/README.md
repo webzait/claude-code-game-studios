@@ -21,7 +21,7 @@ would have to add. The reasoning and the conclusions are in `design/economy.md`;
 - `run.ts` — runs it and writes the tables.
 
 Difficulty per level is the score in `design/level-report.md` (`npm run measure`); a level that is not in the
-report stops the run. Levels come from `data/levels.json` (and from `data/levels-upcoming.json` when that file exists; it holds levels that are certified but not in the game yet).
+report stops the run. Levels come from `data/levels.json` (and from `data/levels-upcoming.json` when that file exists; it holds levels that are certified but not in the game yet). The tables cover two ranges: the first two pages, and every level.
 
 ## What the model assumes
 
