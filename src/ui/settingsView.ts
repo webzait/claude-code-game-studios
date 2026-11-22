@@ -199,6 +199,8 @@ export interface LabHooks {
   boards?: readonly string[];
   /** Open one of the test boards. */
   openBoard?: (index: number) => void;
+  /** More panels for the end of the list (the game adds the coin ledger). */
+  panels?: readonly HTMLElement[];
 }
 
 /** The test lab's rows, grouped, with change markers, the solver note and "Back to defaults". */
@@ -253,7 +255,7 @@ export function labContent(start: Partial<LabSettings>, hooks: LabHooks = {}): {
   }
 
   /** A switch row bound to one lab key. */
-  function flag(key: 'yellowEarly' | 'decor' | 'freeHelp' | 'unlockAll', title: string, hint: string): HTMLElement {
+  function flag(key: 'yellowEarly' | 'decor' | 'freeHelp' | 'unlockAll' | 'shop', title: string, hint: string): HTMLElement {
     const r = row(title, hint);
     r.row.dataset.key = key;
     const sw = toggle(r.titleId, lab[key], (on) => {
@@ -313,6 +315,16 @@ export function labContent(start: Partial<LabSettings>, hooks: LabHooks = {}): {
   const shortcuts = panel('Shortcuts');
   shortcuts.body.append(flag('freeHelp', 'Free help', 'Hints, extra moves and Undo cost no coins.'), flag('unlockAll', 'Unlock all levels', 'Open every level, solved or not. Shows the grid of all levels.'));
 
+  const shop = panel('Coin shop', '', 'A pretend shop for testing. No purchase here is real and nothing is ever charged.');
+  shop.body.append(
+    flag('shop', 'Test shop', 'The plus button opens the test shop. Off: it explains coins and says there is nothing to buy.'),
+    choice('purchaseOutcome', 'Purchase outcome', (v) => (v === 'success' ? 'A test purchase goes through and adds the coins.' : v === 'cancelled' ? 'A test purchase ends as cancelled. The coins do not change.' : 'A test purchase fails. The coins do not change.'), [
+      { label: 'Succeeds', value: 'success' },
+      { label: 'Cancelled', value: 'cancelled' },
+      { label: 'Fails', value: 'failed' },
+    ]),
+  );
+
   const sizes = panel('Board size test');
   const sizeRow = row('Open a test board', 'Not a level; nothing is saved.', { stack: true });
   const sizeButtons = h(`<div class="tf-set-quad" role="group" aria-labelledby="${sizeRow.titleId}"></div>`);
@@ -332,7 +344,7 @@ export function labContent(start: Partial<LabSettings>, hooks: LabHooks = {}): {
     status.focus();
   });
   refresh();
-  return { groups: [rules.panel, look.panel, shortcuts.panel, sizes.panel], bar, count, onCount: (fn) => listeners.push(fn) };
+  return { groups: [rules.panel, look.panel, shortcuts.panel, shop.panel, ...(hooks.panels ?? []), sizes.panel], bar, count, onCount: (fn) => listeners.push(fn) };
 }
 
 /** One screen: a fixed top bar with a back button and a title, and a list that scrolls under it. */

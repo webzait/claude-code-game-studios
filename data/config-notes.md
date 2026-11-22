@@ -16,6 +16,9 @@
 | `coins.hintCost`, `extraMovesCost` | Price of revealing the next move, and of the extra moves when out of moves |
 | `coins.undoCost` | Price of one Undo: taking back one command. Paid per step undone, on the Undo button and on the Undo of the out-of-moves pop-up alike. 0 makes Undo free again (the rule before finding B4) |
 | `coins.freeUndosPerLevel` | Undos that cost nothing in each attempt at a level; the count starts again at a Restart or when the level is opened. 0 = every Undo is paid. Restart is always free, whatever these two say |
+| `shop.packs` | The coin packs of the **test shop** (`design/shop.md`): `id`, plain `name`, `coins` and `examplePriceCents` (an example price in euro cents; nothing is ever charged in this build). Three or four, listed cheapest first; a bigger pack must hold more coins and never be worse value per coin (unit-tested). Sizes follow the economy note in `design/shop.md` |
+| `shop.processingMs` | Length of the "Processing the test purchase…" moment in milliseconds (halved under reduced motion) |
+| `shop.ledgerMax`, `shop.ledgerShown` | Lines of the test ledger kept in the save (the totals keep counting beyond it), and lines shown in the test lab |
 | `levelsPerPage` | Level tiles per page of the grid view of the level selection (test view only: test lab "Level screen: Grid" or "Unlock all levels") |
 | `levelsAhead` | Locked levels shown after the current one on the level selection (the path). Completed levels are not shown (finding B2) |
 | `levelPath.layout` | Shape of the path: `winding` (the steps sway left and right) or `straight` (one column) |

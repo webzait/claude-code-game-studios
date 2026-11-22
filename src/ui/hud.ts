@@ -31,6 +31,8 @@ export interface HudModel {
   undoState: Exclude<PriceState, 'used'>;
   /** A tools button to point the player at (the ring the command buttons use), or null. */
   point: 'undo' | 'restart' | 'scan' | null;
+  /** Show the quiet "Get coins" link after the hint text: the wallet just fell short and the test shop is on. */
+  getCoins: boolean;
 }
 
 /** Callbacks from the level HUD to the game. */
@@ -41,6 +43,8 @@ export interface HudHandlers {
   replay(): void;
   scan(): void;
   back(): void;
+  /** The "Get coins" link was tapped; `opener` gets the focus back afterwards. */
+  getCoins(opener: HTMLElement): void;
 }
 
 /** Look up an element that the page is known to contain. */
@@ -52,8 +56,15 @@ export class Hud {
   private lastCollected = -1;
   /** Called whenever the pop-up is put away, so whatever it was animating can finish at once. */
   onCardHidden: (() => void) | null = null;
+  private getCoins: HTMLButtonElement;
 
   constructor(handlers: HudHandlers, isLevelOpen: () => boolean) {
+    this.getCoins = document.createElement('button');
+    this.getCoins.type = 'button';
+    this.getCoins.id = 'getCoins';
+    this.getCoins.className = 'tf-get-coins';
+    this.getCoins.textContent = 'Get coins';
+    this.getCoins.addEventListener('click', () => handlers.getCoins(this.getCoins));
     mountHintButton(el<HTMLButtonElement>('scan'));
     mountUndoButton(el<HTMLButtonElement>('undo'));
     el('card').insertAdjacentHTML('afterbegin', END_DEFS);
@@ -114,7 +125,12 @@ export class Hud {
     scan.disabled = !m.canScan || m.hintState === 'used';
     for (const id of ['undo', 'restart', 'scan'] as const) el(id).classList.toggle('nudge', m.point === id && !el<HTMLButtonElement>(id).disabled);
     const hint = el('hint');
+    const hadFocus = document.activeElement === this.getCoins;
     hint.textContent = m.hint;
+    if (m.getCoins) {
+      hint.append(this.getCoins);
+      if (hadFocus) this.getCoins.focus();
+    }
     hint.classList.toggle('warn', m.hintWarn);
   }
 

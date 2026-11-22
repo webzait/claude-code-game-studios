@@ -155,9 +155,10 @@ export class CoinCounters {
   private held: number | null = null;
   private flightTimers: number[] = [];
   private layer: HTMLElement | null = null;
+  private plusButtons: HTMLButtonElement[] = [];
 
   /**
-   * @param hosts Elements that each get a counter and a plus button.
+   * @param hosts Elements that each get a counter and a plus button; a host marked `data-no-plus` gets the counter only.
    * @param reduced True when motion is reduced: amounts jump instead of counting.
    * @param onPlus The plus button was tapped.
    */
@@ -165,11 +166,18 @@ export class CoinCounters {
     const s = C.counter.compact;
     for (const host of hosts) {
       host.classList.add('tf-coin-group');
-      host.innerHTML = `<span class="tf-coin-counter compact" role="status" style="--ch:${s.height}px;--cd:${s.depth}px;--cr:${s.radius}px;--cf:${s.font}px">${coinIcon(s.icon)}<span class="tf-coin-amount">0</span></span><button type="button" class="tf-btn tf-coin-plus" style="${sizeVars(C.plus)}" aria-label="About coins" aria-haspopup="dialog"><span class="tf-clip"><span class="tf-face">${PLUS}</span></span></button>`;
-      const button = host.querySelector<HTMLButtonElement>('button')!;
-      button.addEventListener('click', () => onPlus(button));
+      const plus = host.dataset.noPlus === undefined;
+      host.innerHTML = `<span class="tf-coin-counter compact" role="status" style="--ch:${s.height}px;--cd:${s.depth}px;--cr:${s.radius}px;--cf:${s.font}px">${coinIcon(s.icon)}<span class="tf-coin-amount">0</span></span>${plus ? `<button type="button" class="tf-btn tf-coin-plus" style="${sizeVars(C.plus)}" aria-label="About coins" aria-haspopup="dialog"><span class="tf-clip"><span class="tf-face">${PLUS}</span></span></button>` : ''}`;
+      const button = host.querySelector<HTMLButtonElement>('button');
+      button?.addEventListener('click', () => onPlus(button));
+      if (button) this.plusButtons.push(button);
       this.counters.push(host.querySelector<HTMLElement>('.tf-coin-counter')!);
     }
+  }
+
+  /** Say aloud what the plus buttons open, for example "Get coins, test shop". */
+  setPlusLabel(label: string): void {
+    for (const button of this.plusButtons) button.setAttribute('aria-label', label);
   }
 
   /** Show the wallet. A higher amount than the one on show is celebrated on the counters that are visible. */

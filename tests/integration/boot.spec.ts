@@ -446,7 +446,8 @@ test('settings: colour shapes is off at first, shows each colour\'s shape on its
   expect(errors).toEqual([]);
 });
 
-test('the plus button explains coins and sells nothing', async ({ page }) => {
+test('with the test shop switched off, the plus button explains coins and sells nothing', async ({ page }) => {
+  await solvedUpTo(page, 0, { shop: false });
   await open(page);
   await page.click('#mapCoins button');
   await expect(page.locator('#coinInfo')).toBeVisible();

@@ -1,0 +1,66 @@
+/* The test shop sheet (src/ui/shopView.ts), the "Get coins" links and the test ledger of the lab. */
+.tf-shop { z-index: 8; display: flex; flex-direction: column; justify-content: flex-end; padding: 8px 8px calc(12px + env(safe-area-inset-bottom, 0px)); background: rgba(22, 32, 62, .56); }
+.tf-shop[hidden] { display: none; }
+.tf-shop-sheet { width: 100%; max-width: 420px; max-height: 100%; margin: 0 auto; overflow-y: auto; display: grid; gap: 10px; padding: 14px 14px 12px; border-radius: 24px; background: #fff; border: 1.5px solid #e6ebf5; box-shadow: 0 5px 0 #c9d2e3, 0 12px 22px rgba(36, 49, 79, .22); color: #24314f; }
+.tf-shop-sheet > * { margin: 0; }
+.tf-shop-head { display: flex; align-items: center; gap: 8px; min-height: 43px; }
+.tf-shop-head h2 { margin: 0; font-size: 19px; font-weight: 800; white-space: nowrap; }
+.tf-shop-head h2:focus, .tf-shop-confirm h3:focus { outline: none; }
+.tf-shop-head .tf-coin-group { margin-left: auto; }
+.tf-shop-head .tf-coin-group .tf-coin-counter { padding-right: 12px; }
+.tf-shop-test { flex: none; display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 11px; background: #24314f; color: #fff; font-size: 11.5px; font-weight: 800; letter-spacing: .03em; white-space: nowrap; }
+.tf-shop-note { font-size: 13px; line-height: 1.35; font-weight: 600; color: #5d6a84; }
+.tf-shop-packs { display: grid; gap: 8px; }
+.tf-shop-pack { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 58px; padding: 8px 12px 10px; border: 1.5px solid #d5ddec; border-radius: 16px; background: #f8faff; box-shadow: 0 3px 0 #c9d2e3; color: #24314f; font: inherit; text-align: left; }
+.tf-shop-pack:active { transform: translateY(2px); box-shadow: 0 1px 0 #c9d2e3; }
+.tf-shop-what, .tf-shop-price { display: grid; gap: 2px; min-width: 0; }
+.tf-shop-what { flex: 1; }
+.tf-shop-what b { font-size: 15px; font-weight: 800; }
+.tf-shop-what span { font-size: 13.5px; font-weight: 700; color: #5d6a84; font-variant-numeric: tabular-nums; }
+.tf-shop-price { flex: none; justify-items: end; }
+.tf-shop-price b { font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.tf-shop-price span { font-size: 11px; font-weight: 700; color: #5d6a84; }
+.tf-shop-confirm { display: grid; gap: 10px; }
+.tf-shop-confirm h3 { margin: 0; font-size: 17px; font-weight: 800; }
+.tf-shop-lines { margin: 0; display: grid; }
+.tf-shop-lines div { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 2px; border-top: 1.5px solid #e6ebf5; font-size: 14.5px; font-weight: 700; }
+.tf-shop-lines div:first-child { border-top: 0; }
+.tf-shop-lines dt { color: #5d6a84; }
+.tf-shop-lines dd { margin: 0; display: inline-flex; align-items: center; gap: 4px; font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; }
+.tf-shop-free { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 12px; background: #eef2fa; font-size: 13.5px; font-weight: 700; }
+.tf-shop-actions { display: grid; gap: 10px; }
+.tf-shop .tf-btn { --w: 100%; --h: 44px; --d: 9px; --r: 17px; --fs: 16px; }
+.tf-shop .tf-btn[hidden] { display: none; }
+.tf-shop .tf-end-main .tf-label { text-shadow: 0 1.5px 0 rgba(0, 0, 0, .22); }
+.tf-shop-wait { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 120px; font-size: 15px; font-weight: 700; color: #5d6a84; }
+.tf-shop-wait i { width: 22px; height: 22px; border-radius: 50%; border: 3.5px solid #d5ddec; border-top-color: #2e84f1; animation: tf-shop-spin .8s linear infinite; }
+@keyframes tf-shop-spin { to { transform: rotate(360deg); } }
+.tf-shop-receipt { padding: 9px 11px; border-radius: 12px; background: #eef2fa; font-size: 13.5px; line-height: 1.35; font-weight: 700; color: #24314f; }
+.tf-shop-receipt[hidden] { display: none; }
+.tf-shop-receipt.success { background: #dff6e4; color: #0f4a20; }
+.tf-shop-receipt.failed { background: #fde6e2; color: #7a1c12; }
+@media (prefers-reduced-motion: reduce) { .tf-shop-wait i { animation: none; border-top-color: #d5ddec; } }
+.reduce-motion .tf-shop-wait i { animation: none; border-top-color: #d5ddec; }
+
+/* "Get coins": a quiet link beside the free way out, never a pop-up. */
+.tf-get-coins { pointer-events: auto; position: relative; margin-left: 8px; padding: 0; border: 0; background: none; font: inherit; font-weight: 800; color: #1a61be; text-decoration: underline; text-underline-offset: 2px; text-shadow: inherit; }
+.tf-get-coins::after { content: ""; position: absolute; inset: -12px -8px; }
+.tf-end-link .tf-coin-ico { --s: 18px; }
+
+/* The test ledger in the test lab. */
+.tf-led-totals { margin: 0; display: grid; }
+.tf-led-totals div { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; border-top: 1.5px solid #e6ebf5; font-size: 14px; font-weight: 700; color: #5d6a84; }
+.tf-led-totals div:first-child { border-top: 0; }
+.tf-led-totals dd { margin: 0; color: #24314f; font-weight: 800; font-variant-numeric: tabular-nums; }
+.tf-led-totals .sum dt { color: #24314f; }
+.tf-led-set { display: flex; align-items: center; gap: 8px; }
+.tf-led-set input { flex: 1; min-width: 0; height: 40px; padding: 0 10px; border: 1.5px solid #c9d2e3; border-radius: 12px; background: #fff; font: inherit; font-size: 16px; font-weight: 700; color: #24314f; }
+.tf-led-list { margin: 0; padding: 0; list-style: none; max-height: 260px; overflow-y: auto; border: 1.5px solid #e6ebf5; border-radius: 12px; background: #fff; }
+.tf-led-list li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 8px; align-items: baseline; padding: 6px 9px; border-top: 1px solid #eef2fa; font-size: 12.5px; font-weight: 700; color: #5d6a84; font-variant-numeric: tabular-nums; }
+.tf-led-list li:first-child { border-top: 0; }
+.tf-led-list .what { color: #24314f; overflow-wrap: anywhere; }
+.tf-led-list .in { color: #17913a; }
+.tf-led-list .out { color: #b3541e; }
+.tf-led-list .bal { min-width: 4ch; text-align: right; color: #24314f; }
+.tf-led-empty { margin: 0; font-size: 13.5px; font-weight: 600; color: #5d6a84; }
+.tf-led-body { display: grid; gap: 10px; padding: 4px 0 2px; }
