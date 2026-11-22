@@ -2,7 +2,7 @@ import type { Board, Color, Dir, GameState, Robot } from '../engine/types';
 
 /**
  * A level as authored. `grid` is one string per row, cells separated by spaces:
- *   `..` floor   `##` wall   `EX` exit
+ *   `..` floor   `##` wall   `EX` exit   `@@` turn tile (floor that turns whoever steps onto it)
  *   `r^ r> rv r<` red robot facing up/right/down/left (also `b`, `y`).
  */
 export interface LevelDef {
@@ -28,6 +28,7 @@ export function parseLevel(def: LevelDef): Level {
   const height = rows.length;
   const width = rows[0].length;
   const walls: boolean[] = new Array(width * height).fill(false);
+  const turnTiles: boolean[] = new Array(width * height).fill(false);
   const robots: Robot[] = [];
   let exitX = -1;
   let exitY = -1;
@@ -36,6 +37,7 @@ export function parseLevel(def: LevelDef): Level {
     row.forEach((cell, x) => {
       if (cell === '..') return;
       if (cell === '##') walls[y * width + x] = true;
+      else if (cell === '@@') turnTiles[y * width + x] = true;
       else if (cell === 'EX') {
         if (exitX >= 0) throw new Error(`${def.id}: more than one exit`);
         exitX = x;
@@ -47,5 +49,5 @@ export function parseLevel(def: LevelDef): Level {
   });
   if (exitX < 0) throw new Error(`${def.id}: no exit`);
   if (robots.length === 0) throw new Error(`${def.id}: no robots`);
-  return { id: def.id, name: def.name, board: { width, height, walls, exitX, exitY }, start: { robots, movesUsed: 0 } };
+  return { id: def.id, name: def.name, board: turnTiles.some(Boolean) ? { width, height, walls, exitX, exitY, turnTiles } : { width, height, walls, exitX, exitY }, start: { robots, movesUsed: 0 } };
 }

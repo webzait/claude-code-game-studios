@@ -47,6 +47,8 @@ Each level has a move budget of the shortest solution plus two. Running out ends
 - [x] Robots always face the player with large eyes; the head arrow and pupils show the heading
 - [x] Forty levels on two pages of 20, each page an arc; the first five teach the rules one at a time (`design/level-structure.md`)
 - [x] Level design tools: measure every level, generate candidates per idea, report (`tools/level-design/`, `design/level-report.md`)
+- [x] Turn tile in the engine (a tile that turns whoever steps onto it), agreed 2026-11-22; not drawn yet
+- [ ] Page 3: twenty turn-tile levels, certified in `data/levels-upcoming.json`, waiting for the tile to be drawn
 - [x] Coins: earned per win (base, spare moves, perfect bonus), spent on the next-move hint and on extra moves; no shop, no ads
 
 ## Keep

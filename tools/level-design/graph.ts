@@ -7,11 +7,7 @@
 import { DEFAULT_RULES, isWon, step } from '../../src/engine/engine';
 import { COMMANDS, type Board, type Command, type GameState, type Rules } from '../../src/engine/types';
 
-/**
- * Key of a state. Not the engine's `stateKey`: that one writes a collected robot as "~" (code 126),
- * which is also the code of a robot on cell 19 facing south (48 + 19 * 4 + 2), so two different
- * states can share a key. Here a collected robot is code 0 and a robot on the board is 1 + cell * 4 + dir.
- */
+/** Key of a state: a collected robot is code 0, a robot on the board is 1 + cell * 4 + dir. Independent of the engine's `stateKey` on purpose. */
 function keyOf(state: GameState, width: number): string {
   let key = '';
   for (const r of state.robots) key += r.collected ? '\0' : String.fromCharCode(1 + (r.y * width + r.x) * 4 + r.dir);

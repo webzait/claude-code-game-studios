@@ -148,11 +148,11 @@ describe('generator', () => {
 });
 
 describe('sieve (fast.ts) against the real engine', () => {
-  it('moves every robot exactly as the engine does, under both exit rules', () => {
+  it('moves every robot exactly as the engine does, under both exit rules, with and without turn tiles', () => {
     const rnd = seeded(5);
     let compared = 0;
     for (let i = 0; i < 120; i++) {
-      const grid = randomGrid({ teaches: '', size: i % 2 ? '4x4' : '6x5', red: '2..4', blue: '1..3', yellow: '0..3', walls: '0..4', exit: 'any', par: '1..' }, rnd);
+      const grid = randomGrid({ teaches: '', size: i % 2 ? '4x4' : '6x5', red: '2..4', blue: '1..3', yellow: '0..3', walls: '0..4', tiles: i % 3 === 0 ? 0 : '1..3', exit: 'any', par: '1..' }, rnd);
       if (!grid) continue;
       const level = board(grid);
       for (const many of [true, false]) {
@@ -188,13 +188,13 @@ describe('sieve (fast.ts) against the real engine', () => {
 });
 
 /**
- * Regression tests for a defect found while measuring levels: `stateKey` wrote a collected robot as
- * "~" (character 126), which is also the code of a robot on cell 19 facing south (48 + 19 * 4 + 2).
- * The solver then took two different positions for the same one and could drop the route to the win.
- * Both tests were seen failing against that code before the key was changed.
+ * Regression: `stateKey` once wrote a collected robot as "~" (character 126), which is also the
+ * character of a robot standing on cell 19 and facing south (48 + 19 * 4 + 2). The solver then took
+ * two different positions for the same one and could drop the route to the win. Both tests were
+ * seen failing against that code before the key was changed.
  */
-describe('state keys never collide between a collected robot and a robot on the board', () => {
-  it('gives different positions different keys', () => {
+describe('stateKey gives every position its own key', () => {
+  it('tells a collected robot from one on cell 19 facing south', () => {
     const level = board(['r> .. .. .. ..', '.. .. .. .. ..', '.. .. .. .. ..', '.. .. .. .. rv', '.. .. .. .. EX']);
     const [a, b] = level.start.robots;
     const gone: GameState = { movesUsed: 0, robots: [a, { ...b, collected: true }] };
@@ -202,12 +202,12 @@ describe('state keys never collide between a collected robot and a robot on the 
     expect(stateKey(level.start, level.board.width)).not.toBe(stateKey(gone, level.board.width));
   });
 
-  it('the solver finds a nine-move win that exists', () => {
+  it('lets the solver find a nine-move win it used to miss', () => {
     const level = board(['EX .. .. .. ..', '.. .. .. r^ ..', '.. .. .. .. ..', '## b< .. .. ..']);
     const win: Command[] = ['blue', 'red', 'red', 'red', 'blue', 'blue', 'blue', 'red', 'blue'];
     // The nine moves really win, on the real engine...
     expect(isWon(run(level, win))).toBe(true);
-    // ...and the solver, given ten moves, finds it.
+    // ...and the solver, given ten moves, finds it (it used to report no solution at all).
     expect(solve(level.board, level.start, 10).solution?.length).toBe(9);
   });
 });

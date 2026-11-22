@@ -31,6 +31,8 @@ export interface Recipe {
   readonly yellow?: number | string;
   /** Walls: a number or a range. */
   readonly walls?: number | string;
+  /** Turn tiles: a number or a range. */
+  readonly tiles?: number | string;
   /** Where the exit goes: corner, edge, inside or any. */
   readonly exit?: 'corner' | 'edge' | 'inside' | 'any';
   /** Headings: `any`, or `same` (every robot of a colour starts with the same heading). */
@@ -140,6 +142,15 @@ export function randomGrid(recipe: Recipe, rnd: () => number): string[] | null {
     }
   }
 
+  let tiles = between(range(recipe.tiles, [0, 0]));
+  for (let guard = 0; tiles > 0 && guard < 200; guard++) {
+    const x = pick(width);
+    const y = pick(height);
+    if (!free(x, y)) continue;
+    cells[y][x] = '@@';
+    tiles--;
+  }
+
   for (const colour of ['red', 'blue', 'yellow'] as const) {
     let count = between(range(recipe[colour], [0, 0]));
     const shared = HEADINGS[pick(4)];
@@ -231,7 +242,7 @@ export interface Candidate {
   readonly metrics: Metrics;
 }
 
-/** Remove every wall the puzzle does not need: without it the shortest solutions are exactly the same. */
+/** Remove every wall and turn tile the puzzle does not need: without it the shortest solutions are exactly the same. */
 export function dropIdleWalls(grid: string[], maxStates?: number): Candidate {
   const toLevel = (g: string[]): Level => parseLevel({ id: 'candidate', name: 'candidate', grid: g });
   const quick = (g: string[]): string => {
@@ -243,7 +254,7 @@ export function dropIdleWalls(grid: string[], maxStates?: number): Candidate {
   const wanted = quick(grid);
   for (let y = 0; y < rows.length; y++) {
     for (let x = 0; x < rows[y].length; x++) {
-      if (rows[y][x] !== '##') continue;
+      if (rows[y][x] !== '##' && rows[y][x] !== '@@') continue;
       const trial = rows.map((r) => r.slice());
       trial[y][x] = '..';
       if (quick(trial.map((r) => r.join(' '))) === wanted) rows = trial;
@@ -322,7 +333,7 @@ export function generate(recipe: Recipe, seed: number, tries: number, keep: numb
       continue;
     }
     // Walls that change nothing go; a board that then no longer shows its idea goes too.
-    const tidy = first.walls > 0 ? dropIdleWalls(grid, cap * 20) : { grid, metrics: first };
+    const tidy = first.walls > 0 || grid.some((row) => row.includes('@@')) ? dropIdleWalls(grid, cap * 20) : { grid, metrics: first };
     const after = rejectReason(tidy.metrics, recipe);
     if (after) {
       no(after);
