@@ -11,6 +11,8 @@
     "build": "tsc --noEmit && vite build",
     "build:single": "tsc --noEmit && vite build --mode single",
     "build:parts": "tsc --noEmit && vite build --mode parts",
+    "build:sounds": "tsc --noEmit && vite build --mode sounds",
+    "sounds": "tsx tools/audio/measure.ts",
     "preview": "vite preview --host",
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "vitest run",

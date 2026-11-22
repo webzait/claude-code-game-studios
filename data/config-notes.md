@@ -38,7 +38,11 @@
 | `lab.yellowEarlyLevels` | Levels recoloured blue to yellow by the "Yellow early" test switch |
 | `lab.slackOptions`, `lab.speedOptions` | Choices offered in the test lab |
 | `lab.certifyMaxVisited` | Positions examined when re-checking a level under a test rule |
-| `audio.volume` | Loudness of the sound effects |
+| `audio.volume` | Loudness of the sound effects (all sets, and the shared sounds) |
+| `audio.set` | The sound set every player gets and the test lab starts on: an id from `data/sound-sets.json` (`design/button-sounds.md`). `classic` until the owner has chosen |
+| `audio.sets.<id>.gain`, `.pitch` | Per set: loudness against the other sets (1 = as written in the recipes) and a pitch shift in semitones (0 = as written; 12 is an octave up). They apply to the set's own sounds, not to the shared ones (exit, win, fail, hint, coin) |
+| `audio.rapid` | Fast tapping: the same sound is not started again within `minGap` seconds, plays at `softGain` (0–1) within `softWindow` seconds, and a new button or robot sound fades the previous one of its kind out in `fadeOut` seconds |
+| `audio.limits` | What the unit tests hold every button sound to, measured at the game's volume: longest button sound (`pressSeconds`), robot sound (`motionSeconds`) and refusal (`denySeconds`); `onsetMs`, the time within which a sound must reach half its peak; `peak`, the loudest a single sound may be (1 = full scale); `busyPeak`, the loudest a busy moment may be |
 | `colourShapes.red`, `.blue`, `.yellow` | The shape that goes with each robot colour when the player's "Colour shapes" setting is on: `circle`, `square` or `diamond` (outlines in `src/ui/colourShapes.ts`). Shown on the robots, on the matching command buttons and in the settings preview; each colour needs a shape of its own |
 
 `data/levels.json`: `par` is the solver's shortest solution and `witness` is one command list that wins; both are checked by the tests. Cell codes: `..` floor, `##` wall, `EX` exit, `@@` turn tile, `r^ b> yv r<` robots.

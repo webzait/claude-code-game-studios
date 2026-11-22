@@ -3,6 +3,7 @@ import { HEADING_STYLES, type HeadingStyle } from '../render/heading';
 import { DEFAULT_LAB, type LabSettings } from './lab';
 import { emptyLedger, readLedger, type Ledger } from './ledger';
 import { PURCHASE_OUTCOMES, type PurchaseOutcome } from './shop';
+import { isSoundSet } from '../sound/sets';
 
 /** Current save format. Raise it and extend `migrate` when the shape changes. */
 export const SAVE_VERSION = 6;
@@ -114,6 +115,8 @@ export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
     if (lab.levelScreen === 'path' || lab.levelScreen === 'grid') save.lab.levelScreen = lab.levelScreen;
     if (typeof lab.shop === 'boolean') save.lab.shop = lab.shop;
     if (PURCHASE_OUTCOMES.includes(lab.purchaseOutcome as PurchaseOutcome)) save.lab.purchaseOutcome = lab.purchaseOutcome as PurchaseOutcome;
+    // A stored set that no longer exists (removed after the owner's choice) falls back to the default set.
+    if (isSoundSet(lab.soundSet)) save.lab.soundSet = lab.soundSet;
   }
   if (withCoins) save.ledger = readLedger(raw.ledger, CONFIG.shop.ledgerMax);
   return save;

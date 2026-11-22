@@ -14,15 +14,17 @@ export default defineConfig(({ mode }) => ({
   publicDir: false,
   // The asset kit's 3D models are imported from code like the images are.
   assetsInclude: ['**/*.glb'],
-  plugins: mode === 'single' || mode === 'parts' ? [viteSingleFile()] : [],
+  plugins: mode === 'single' || mode === 'parts' || mode === 'sounds' ? [viteSingleFile()] : [],
   // The game's page only: other pages in the project (one-shots in prototypes/)
   // are not scanned for packages.
   optimizeDeps: { entries: ['index.html'] },
   build: {
-    outDir: mode === 'single' ? 'dist-single' : mode === 'parts' ? 'dist-parts' : 'dist',
+    outDir: mode === 'single' ? 'dist-single' : mode === 'parts' ? 'dist-parts' : mode === 'sounds' ? 'dist-sounds' : 'dist',
     emptyOutDir: true,
     // npm run build:parts -> dist-parts/parts.html: every game element on its own, for review.
     ...(mode === 'parts' ? { rollupOptions: { input: 'parts.html' } } : {}),
+    // npm run build:sounds -> dist-sounds/sounds.html: every button sound of every set, to listen to.
+    ...(mode === 'sounds' ? { rollupOptions: { input: 'sounds.html' } } : {}),
   },
   test: {
     include: ['tests/unit/**/*.test.ts'],

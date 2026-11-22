@@ -180,3 +180,4 @@ dist-single/
 .vitest/
 dist-parts/
 tools/level-design/.cache/
+dist-sounds/
