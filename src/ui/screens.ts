@@ -53,6 +53,9 @@ export function renderLevels(model: LevelsModel): void {
   el('doneView').hidden = !done;
   el('pager').hidden = view !== 'grid';
   el('pathProgress').hidden = view !== 'path' || done;
+  // Only the view on show keeps its content: both name their levels `node-N`, and a hidden copy would double them.
+  if (view !== 'grid') el('nodes').replaceChildren();
+  if (view !== 'path' || done) el('steps').replaceChildren();
   el('mapCount').textContent = String(solved);
   el('mapTotal').textContent = `/ ${nodes.length}`;
   el('mapStars').textContent = String(stars);
