@@ -124,11 +124,11 @@ function lostBody(l: LostCard): string {
     const why = o.state === 'short' ? `You have ${formatCoins(o.coins)} coins: ${formatCoins(o.price - o.coins)} short. Retry is free.` : `Checked: ${CONFIG.extraMoves} more moves are enough from here.`;
     offer = `${offerButton('end-offer', o.price, o.state)}<p class="tf-end-note">${why}</p>`;
   }
-  // Undo carries its price like every paid button; the tag joins the button the layout already has.
+  // Undo keeps its look; its price is the small coin badge on its bottom edge, as on the Undo button of the puzzle screen.
   const u = l.undoPrice;
   const undo = utility('undo', 'Undo', 'undo', `tf-end-mid tf-paid${u.state === 'short' ? ' short' : ''}`)
     .replace('<button ', `<button aria-label="${spokenPrice('Undo', u.cost, u.state)}" `)
-    .replace('</span></span></button>', `${priceTag(u.cost, u.state, PARTS.coins.priceSmall)}</span></span></button>`);
+    .replace('</span></span></button>', `</span></span><span class="tf-coin-badge">${priceTag(u.cost, u.state, PARTS.coins.priceSmall)}</span></button>`);
   return `<div class="tf-end-head"><h2 class="tf-end-title" id="end-title">Out of moves</h2></div>
     <p class="tf-end-result" id="end-result"><span class="tf-end-left" aria-hidden="true">${chips}</span>${l.left.length} still on the board</p>
     ${offer}${l.note ? `<p class="tf-end-note">${l.note}</p>` : ''}
