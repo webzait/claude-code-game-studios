@@ -43,6 +43,10 @@ and the tidy step removes tiles, like walls, that change nothing.
 Exits per colour: `colourExits=true` gives every colour in play its own exit (`ER`, `EB`, `EY`) in place of the one exit for everyone;
 `require.wrongDoor=1..` asks that a robot steps onto an exit that is not its own.
 
+Plates and gates: `plates` and `gates` place them, `barrier=true` builds a wall right across the board with the gates as its
+openings (its walls are kept when tidying), and a board whose gate changes nothing is rejected. `npm run certify -- … --keep-walls`
+checks such boards without proposing to remove the barrier.
+
 A generated board is a proposal. The generator rejects what is unsolvable, trivial (one repeated command, or winnable
 in almost any order), too loose (too many shortest solutions), beyond its search limit, or missing the idea's own
 mark (for example no robot ever waiting behind another in a queue level). Whether a board is *good* is for a person to say.

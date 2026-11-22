@@ -21,6 +21,11 @@ export interface FastLevel {
   readonly exitAcceptsMany: boolean;
   /** `next[cell * 4 + dir]`: the cell in front, or -1 for a wall or the edge. */
   readonly next: Int16Array;
+  /** 1 on a pressure plate; 1 on a gate. `forceOpen` treats every gate as open (used while composing a board). */
+  readonly plate: Uint8Array;
+  readonly gate: Uint8Array;
+  readonly hasGates: boolean;
+  readonly forceOpen: boolean;
   /** 1 on a turn tile. */
   readonly turn: Uint8Array;
   /** Colour of each robot as an index into COMMANDS (0 red, 1 blue, 2 yellow). */
@@ -30,7 +35,7 @@ export interface FastLevel {
   readonly n: number;
 }
 
-export function prepare(board: Board, start: GameState, exitAcceptsMany = true): FastLevel {
+export function prepare(board: Board, start: GameState, exitAcceptsMany = true, forceOpen = false): FastLevel {
   const cells = board.width * board.height;
   const next = new Int16Array(cells * 4).fill(-1);
   for (let cell = 0; cell < cells; cell++) {
@@ -45,6 +50,12 @@ export function prepare(board: Board, start: GameState, exitAcceptsMany = true):
   }
   const turn = new Uint8Array(cells);
   if (board.turnTiles) for (let cell = 0; cell < cells; cell++) turn[cell] = board.turnTiles[cell] ? 1 : 0;
+  const plate = new Uint8Array(cells);
+  const gate = new Uint8Array(cells);
+  for (let cell = 0; cell < cells; cell++) {
+    plate[cell] = board.plates?.[cell] ? 1 : 0;
+    gate[cell] = board.gates?.[cell] ? 1 : 0;
+  }
   const exitMask = new Uint8Array(cells);
   for (const e of exitsOf(board)) exitMask[e.y * board.width + e.x] |= e.color === null ? 7 : 1 << COMMANDS.indexOf(e.color);
   const n = start.robots.length;
@@ -55,7 +66,7 @@ export function prepare(board: Board, start: GameState, exitAcceptsMany = true):
     state[n + i] = r.dir;
     colour[i] = COMMANDS.indexOf(r.color);
   });
-  return { width: board.width, cells, exitMask, exitAcceptsMany, next, turn, colour, start: state, n };
+  return { width: board.width, cells, exitMask, exitAcceptsMany, next, turn, plate, gate, hasGates: gate.some((g) => g === 1), forceOpen, colour, start: state, n };
 }
 
 /** Scratch arrays shared by every step on one level. */
@@ -70,6 +81,9 @@ function scratch(level: FastLevel): { occupant: Int16Array; claims: Uint8Array; 
 export function fastStep(level: FastLevel, from: Uint8Array, to: Uint8Array, command: number, s = scratch(level)): void {
   const { n, next, colour, exitMask } = level;
   const { occupant, claims, target, blocked } = s;
+  // Gates follow the position before the step: open while a robot stands on a plate.
+  let shut = level.hasGates && !level.forceOpen;
+  if (shut) for (let i = 0; i < n; i++) if (from[i] !== GONE && level.plate[from[i]]) shut = false;
   for (let i = 0; i < n; i++) {
     const cell = from[i];
     let dir = from[n + i];
@@ -80,7 +94,7 @@ export function fastStep(level: FastLevel, from: Uint8Array, to: Uint8Array, com
     if (cell === GONE) continue;
     occupant[cell] = i;
     const t = next[cell * 4 + dir];
-    if (t < 0) blocked[i] = 1;
+    if (t < 0 || (shut && level.gate[t])) blocked[i] = 1;
     else {
       target[i] = t;
       claims[t]++;
