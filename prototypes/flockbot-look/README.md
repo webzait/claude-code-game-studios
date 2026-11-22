@@ -2,8 +2,8 @@
 
 The Flockbot redesigned after the owner's reference pictures of 2026-11-21: a rounded cube whose top
 runs into the sides in one rounding, a visor sunk into the front with a soft lip, large eyes, white
-ear discs, four small feet and a plain triangle on top. **Not wired into the game**: the game still
-builds its robot from `src/render/parts/flockbot.ts` and `data/parts.json`.
+ear discs, four small feet and a plain triangle on top. **Now the game's robot** (2026-11-22): its model and dimensions were copied into
+`src/render/parts/flockbot.ts` and `data/parts.json` (with a coarser mesh); this folder stays as the study.
 
 - `flockbot.ts` — the model (a copy of the game's part, changed).
 - `flockbot.json` — its dimensions, gloss and colours. `flockbot.symbol.style`: `"raised"` (plain
