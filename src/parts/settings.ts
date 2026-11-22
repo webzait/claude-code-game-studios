@@ -29,15 +29,16 @@ export interface SettingsFrame {
 
 interface PlayerSettings {
   sound: boolean;
+  music: boolean;
   reduceMotion: boolean | null;
   shapes: boolean;
 }
 
 /** The player's own settings. */
 function playerPanels(frame: SettingsFrame): HTMLElement[] {
-  const player: PlayerSettings = { sound: true, reduceMotion: null, shapes: false };
+  const player: PlayerSettings = { sound: true, music: true, reduceMotion: null, shapes: false };
   const game = panel('Game');
-  const flag = (key: 'sound', title: string, hint: string): HTMLElement => {
+  const flag = (key: 'sound' | 'music', title: string, hint: string): HTMLElement => {
     const r = row(title, hint);
     r.row.appendChild(toggle(r.titleId, player[key], (on) => (player[key] = on), r.hintId));
     return r.row;
@@ -46,7 +47,7 @@ function playerPanels(frame: SettingsFrame): HTMLElement[] {
   motion.row.appendChild(
     segmented<boolean | null>(motion.titleId, [{ label: 'Auto', value: null }, { label: 'On', value: true }, { label: 'Off', value: false }], player.reduceMotion, (v) => (player.reduceMotion = v), motion.hintId),
   );
-  game.body.append(flag('sound', 'Sound', 'Game sounds.'), shapesRow(player.shapes, (on) => (player.shapes = on)), motion.row);
+  game.body.append(flag('sound', 'Sound', 'Game sounds.'), flag('music', 'Music', 'Background music.'), shapesRow(player.shapes, (on) => (player.shapes = on)), motion.row);
 
   const out = [game.panel];
   const progress = panel('Progress');

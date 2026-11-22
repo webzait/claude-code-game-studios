@@ -19,7 +19,9 @@
     "solve": "tsx tools/level-design/solve.ts",
     "measure": "tsx tools/level-design/report.ts",
     "generate": "tsx tools/level-design/generate.ts",
-    "economy": "tsx tools/economy/run.ts"
+    "economy": "tsx tools/economy/run.ts",
+    "music:measure": "tsx tools/music/measure.ts",
+    "music:listen": "tsx tools/music/listen/build.ts"
   },
   "dependencies": {
     "three": "0.170.0"

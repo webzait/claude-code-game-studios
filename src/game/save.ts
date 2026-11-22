@@ -1,11 +1,12 @@
 import { CONFIG } from '../config';
 import { HEADING_STYLES, type HeadingStyle } from '../render/heading';
 import { DEFAULT_LAB, type LabSettings } from './lab';
+import { isMusicVariant } from '../music/tracks';
 import { emptyLedger, readLedger, type Ledger } from './ledger';
 import { PURCHASE_OUTCOMES, type PurchaseOutcome } from './shop';
 
 /** Current save format. Raise it and extend `migrate` when the shape changes. */
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 /**
  * Which amounts the `paid` map is in. 1: base, spare moves and perfect bonus (until 2026-11-22). 2: the reward
  * follows the stars (design/economy.md). Kept apart from `SAVE_VERSION` because the save's shape does not change.
@@ -28,7 +29,10 @@ export interface SaveData {
   /** The amounts `paid` is in (`ECONOMY_VERSION`); an older number is settled once when the game starts. */
   economy: number;
   settings: {
+    /** Sound effects off. */
     mute: boolean;
+    /** Background music on. Its own switch: it does not follow `mute`. */
+    music: boolean;
     /** null follows the device's reduced-motion preference. */
     reduceMotion: boolean | null;
     /** A shape on each robot colour and its button, for players who cannot tell the colours apart. */
@@ -48,7 +52,7 @@ export interface KeyValueStore {
 
 /** A fresh save. */
 export function defaultSave(): SaveData {
-  return { version: SAVE_VERSION, best: {}, coins: CONFIG.coins.start, paid: {}, economy: ECONOMY_VERSION, settings: { mute: false, reduceMotion: null, colourShapes: false }, lab: { ...DEFAULT_LAB }, ledger: emptyLedger() };
+  return { version: SAVE_VERSION, best: {}, coins: CONFIG.coins.start, paid: {}, economy: ECONOMY_VERSION, settings: { mute: false, music: true, reduceMotion: null, colourShapes: false }, lab: { ...DEFAULT_LAB }, ledger: emptyLedger() };
 }
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -74,7 +78,8 @@ export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
   // Versions 3 and 4 differ only in a vibration setting that the game no longer has: a stored one is ignored.
   // Version 4 had no colour shapes: everything is kept and the shapes start switched off.
   // Version 5 had no test shop and no ledger: everything is kept, the ledger starts empty and the shop switches take their defaults.
-  const withCoins = raw.version === SAVE_VERSION || raw.version === 5 || raw.version === 4 || raw.version === 3;
+  // Version 6 had no music: everything is kept and the music starts switched on, like for a new player.
+  const withCoins = raw.version === SAVE_VERSION || raw.version === 6 || raw.version === 5 || raw.version === 4 || raw.version === 3;
   if (!withCoins && raw.version !== 2) return save;
   if (isRecord(raw.best)) {
     for (const [id, moves] of Object.entries(raw.best)) {
@@ -93,6 +98,7 @@ export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
   }
   if (isRecord(raw.settings)) {
     save.settings.mute = raw.settings.mute === true;
+    save.settings.music = raw.settings.music !== false;
     save.settings.reduceMotion = typeof raw.settings.reduceMotion === 'boolean' ? raw.settings.reduceMotion : null;
     save.settings.colourShapes = raw.settings.colourShapes === true;
   }
@@ -113,6 +119,8 @@ export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
     // Saves from before the path existed have no level screen choice: they get the default, the path.
     if (lab.levelScreen === 'path' || lab.levelScreen === 'grid') save.lab.levelScreen = lab.levelScreen;
     if (typeof lab.shop === 'boolean') save.lab.shop = lab.shop;
+    // An unknown variant (one that was since removed) falls back to the configured one.
+    if (isMusicVariant(lab.music)) save.lab.music = lab.music;
     if (PURCHASE_OUTCOMES.includes(lab.purchaseOutcome as PurchaseOutcome)) save.lab.purchaseOutcome = lab.purchaseOutcome as PurchaseOutcome;
   }
   if (withCoins) save.ledger = readLedger(raw.ledger, CONFIG.shop.ledgerMax);

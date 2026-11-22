@@ -2,6 +2,7 @@ import { CONFIG } from '../config';
 import type { Color, Command, Rules } from '../engine/types';
 import type { GameLevel } from '../levels/index';
 import type { HeadingStyle } from '../render/heading';
+import { DEFAULT_VARIANT, type MusicVariant } from '../music/tracks';
 import type { PurchaseOutcome } from './shop';
 
 /**
@@ -40,6 +41,8 @@ export interface LabSettings {
   shop: boolean;
   /** How a pretend purchase ends: it succeeds, the buyer cancels, or it fails. */
   purchaseOutcome: PurchaseOutcome;
+  /** Which background music plays, to compare the variants in the game itself. The default is `music.variant` in the config. */
+  music: MusicVariant;
 }
 
 /**
@@ -62,6 +65,7 @@ export const DEFAULT_LAB: LabSettings = {
   levelScreen: 'path',
   shop: true,
   purchaseOutcome: 'success',
+  music: DEFAULT_VARIANT,
 };
 
 /**
