@@ -6,16 +6,15 @@ import './ui/tf-end.css';
 import './ui/tf-settings.css';
 import './ui/tf-scene.css';
 import { Sfx } from './audio';
-import { deviceVibrate, Haptics } from './haptics';
 import { CONFIG } from './config';
 import { step } from './engine/engine';
-import type { Color, Command } from './engine/types';
-import { witnessNext, type RescueResult, type ScanResult } from './game/assist';
-import { extraMovesPrice, hintPrice, payout, rewardFor } from './game/coins';
-import { applyLab, rulesFor, usesCertifiedRules, type LabSettings } from './game/lab';
+import type { Color, Command, RobotEvent } from './engine/types';
+import { previewStep, witnessNext, type RescueResult, type ScanResult } from './game/assist';
+import { extraMovesPrice, hintPrice, payout, rewardFor, settlePaid, undoQuote, type UndoQuote } from './game/coins';
+import { applyLab, levelScreenView, rulesFor, usesCertifiedRules, type LabSettings } from './game/lab';
 import { MemorySink, type MetricsEvent } from './game/metrics';
 import { isUnlocked, mainAction, starsFor, starsOfBest } from './game/progress';
-import { loadSave, resetProgress, writeSave, type KeyValueStore, type SaveData } from './game/save';
+import { ECONOMY_VERSION, loadSave, resetProgress, writeSave, type KeyValueStore, type SaveData } from './game/save';
 import { Session } from './game/session';
 import { LEVELS, TEST_BOARDS, type GameLevel } from './levels/index';
 import { BoardView } from './render/boardView';
@@ -28,7 +27,9 @@ import { SolverClient } from './solver/client';
 import type { CertifyResult } from './solver/requests';
 import { CoinCounters, coinInfo, type RewardView } from './ui/coins';
 import { el, Hud } from './ui/hud';
+import { setupLogo } from './ui/logo';
 import { renderLevels, type MapNode } from './ui/screens';
+import { applyColourShapes } from './ui/colourShapes';
 import { labChangedCount, labScreen, playerScreen } from './ui/settingsView';
 
 type ScreenName = 'map' | 'level' | 'settings' | 'lab';
@@ -45,6 +46,8 @@ export interface Snapshot {
   commands: Command[];
   replaying: boolean;
   hint: string;
+  /** The hint picture on the board: what the hinted command will do to each robot. Empty when no hint is shown. */
+  hintPicture: Pick<RobotEvent, 'id' | 'turned' | 'outcome' | 'toX' | 'toY'>[];
   certified: boolean;
   best: Record<string, number>;
   coins: number;
@@ -61,8 +64,15 @@ declare global {
 }
 
 const wait = (seconds: number): Promise<void> => new Promise((r) => window.setTimeout(r, seconds * 1000));
-const COMMAND_LABEL: Record<Command, string> = { red: 'Red turn', blue: 'Blue turn', yellow: 'Yellow turn', forward: 'Forward' };
+/** The few words under a hint picture; the picture itself says who turns and who steps where. */
+const COMMAND_LABEL: Record<Command, string> = { red: 'Red turns, then all step', blue: 'Blue turns, then all step', yellow: 'Yellow turns, then all step', forward: 'All step forward' };
 const LEVEL_IDS = LEVELS.map((l) => l.id);
+
+/** A save whose levels were paid under earlier amounts, brought to today's once (`settlePaid`). Coins are untouched. */
+function settled(save: SaveData): SaveData {
+  if (save.economy === ECONOMY_VERSION) return save;
+  return { ...save, paid: settlePaid(save.paid, save.best, LEVELS), economy: ECONOMY_VERSION };
+}
 
 /** `localStorage`, or a throwaway store when the browser blocks it. */
 function storage(): KeyValueStore {
@@ -77,10 +87,9 @@ function storage(): KeyValueStore {
 /** Glue between screens, session (logic), board view (3D), solver and save. */
 class Game {
   private store = storage();
-  private save: SaveData = loadSave(this.store, LEVEL_IDS);
+  private save: SaveData = settled(loadSave(this.store, LEVEL_IDS));
   private metrics = new MemorySink();
   private sfx = new Sfx(() => this.save.settings.mute);
-  private haptics = new Haptics(() => this.save.settings.vibration, deviceVibrate(window.navigator));
   private solver = new SolverClient();
   private view = new BoardView(el<HTMLCanvasElement>('board'));
   private hud: Hud;
@@ -107,6 +116,10 @@ class Game {
   private usedBackup = false;
   /** A paid hint revealed a move during this attempt. */
   private usedHint = false;
+  /** Undos taken in this attempt; the first `coins.freeUndosPerLevel` of them are free. */
+  private undosTaken = 0;
+  /** A tools button the hint line points at, ringed like a nudged command. */
+  private point: 'undo' | 'restart' | 'scan' | null = null;
   /** Animations still queued; more than one speeds playback up. */
   private pending = 0;
   private chain: Promise<void> = Promise.resolve();
@@ -118,6 +131,8 @@ class Game {
   private hint = '';
   private hintWarn = false;
   private nudge: Command | null = null;
+  /** What the hinted command will do, as drawn on the board. */
+  private hintPicture: readonly RobotEvent[] = [];
   private scanKey = '';
   private scanResult: ScanResult | null = null;
   /** The button that opened the coin explainer; focus returns to it. */
@@ -138,6 +153,7 @@ class Game {
       () => this.screen === 'level',
     );
     this.counters = new CoinCounters([el('mapCoins'), el('levelCoins')], () => this.reduced, (button) => this.tap(() => this.openCoinInfo(button)));
+    this.hud.onCardHidden = () => this.counters.settle();
     el('coinInfoBody').innerHTML = coinInfo('coinInfoTitle');
     el('coinInfoClose').addEventListener('click', () => this.tap(() => this.closeCoinInfo()));
     el('coinInfo').addEventListener('click', (e) => {
@@ -154,6 +170,7 @@ class Game {
       img.src = art[img.dataset.art ?? ''] ?? '';
     }
     this.applySettings();
+    setupLogo(el('map'), CONFIG.logo, { reducedMotion: this.reduced });
     this.show('map');
     // The 3D kit loads in the background; a level already on show is redrawn with it.
     loadKit()
@@ -208,6 +225,8 @@ class Game {
     this.view.setLayout(CONFIG.board[this.save.lab.board]);
     this.view.setStyle({ kitRobots: this.save.lab.robots === 'kit', kitBoard: this.save.lab.boardPieces === 'kit', heading: this.save.lab.heading });
     document.documentElement.classList.toggle('no-decor', !this.save.lab.decor);
+    applyColourShapes(this.save.settings.colourShapes);
+    this.view.setColourShapes(this.save.settings.colourShapes);
   }
 
   // ---------------------------------------------------------------- screens
@@ -245,12 +264,23 @@ class Game {
     const pageSize = CONFIG.levelsPerPage;
     // The screen opens on the page of the level the main button points at.
     this.page ??= Math.floor(main.index / pageSize);
-    el('continue').onclick = () => this.tap(() => this.startLevel(main.index));
+    const view = levelScreenView(this.save.lab);
+    // The path only knows "the level to play now". With everything completed it shows that state, and offers a way on only when the config asks for it.
+    const complete = main.kind !== 'play';
+    const again = view === 'path' && complete;
+    const target = again ? 0 : main.index;
+    const playLabel = again ? (CONFIG.levelPath.playAgainWhenComplete ? 'Play again from level 1' : null) : main.kind === 'play' ? `Play level ${main.index + 1}` : main.kind === 'improve' ? `Improve level ${main.index + 1}` : 'Play again';
+    el('continue').onclick = () => this.tap(() => this.startLevel(target));
     renderLevels({
+      view,
       nodes,
+      current: complete ? null : main.index,
+      ahead: CONFIG.levelsAhead,
+      layout: CONFIG.levelPath.layout,
       page: this.page,
       pageSize,
-      playLabel: main.kind === 'play' ? `Play level ${main.index + 1}` : main.kind === 'improve' ? `Improve level ${main.index + 1}` : 'Play again',
+      playLabel,
+      gridNote: this.save.lab.unlockAll ? 'Test view · all levels unlocked' : 'Test view · grid',
       onPick: (index) => this.tap(() => this.startLevel(index)),
       onPage: (page) => {
         this.page = page;
@@ -270,16 +300,11 @@ class Game {
     const screen = playerScreen({
       mute: this.save.settings.mute,
       reduceMotion: this.save.settings.reduceMotion,
-      vibration: this.save.settings.vibration,
-      canVibrate: this.haptics.supported,
       labChanged: labChangedCount(this.save.lab),
       setMute: (mute) => change(() => (this.save.settings.mute = mute)),
       setReduceMotion: (value) => change(() => (this.save.settings.reduceMotion = value)),
-      setVibration: (on) =>
-        change(() => {
-          this.save.settings.vibration = on;
-          this.haptics.play('move');
-        }),
+      colourShapes: this.save.settings.colourShapes,
+      setColourShapes: (on) => change(() => (this.save.settings.colourShapes = on)),
       resetProgress: () => change(() => (this.save = resetProgress(this.save))),
       back: () => this.tap(() => this.show('map')),
       openLab: () => this.tap(() => this.show('lab')),
@@ -374,6 +399,7 @@ class Game {
     this.preview = false;
     this.usedBackup = false;
     this.usedHint = false;
+    this.undosTaken = 0;
     this.touched = false;
     this.session = new Session(level, { budget: par + this.save.lab.moveSlack, rules: rulesFor(this.save.lab) });
     this.hud.resetCounter();
@@ -394,6 +420,9 @@ class Game {
     this.hint = '';
     this.hintWarn = false;
     this.nudge = null;
+    this.point = null;
+    this.hintPicture = [];
+    this.view.showHint(null);
     this.scanKey = '';
     this.scanResult = null;
   }
@@ -402,6 +431,7 @@ class Game {
     const colors = new Set<Color>(this.level.start.robots.map((r) => r.color));
     const status = this.session.status;
     const price = hintPrice(this.save.lab.freeHelp);
+    const undo = this.undoOffer();
     const revealed = this.scanResult?.kind === 'on-route' && this.nudge !== null;
     this.counters.set(this.save.coins);
     this.hud.update({
@@ -421,6 +451,9 @@ class Game {
       hintWarn: this.hintWarn,
       hintCost: price,
       hintState: revealed ? 'used' : price === 0 ? 'free' : this.save.coins < price ? 'short' : 'ok',
+      undoCost: undo.cost,
+      undoState: undo.state,
+      point: this.point,
     });
   }
 
@@ -432,7 +465,6 @@ class Game {
     this.clearScan();
     this.refresh();
     this.track({ type: 'command', level: this.level.id, command });
-    this.haptics.play('move');
     this.playSounds(command, result.events.map((e) => e.outcome));
     const generation = this.generation;
     this.pending++;
@@ -479,16 +511,17 @@ class Game {
     const stars = starsFor(moves, this.par, this.usedBackup);
     const previous = this.save.best[id];
     if (previous === undefined || previous === 0 || moves < previous) this.save.best[id] = moves;
-    const reward = rewardFor(moves, this.par, this.session.budget, this.usedBackup || this.usedHint);
+    const reward = rewardFor(moves, this.par, this.session.budget, { hint: this.usedHint, extraMoves: this.usedBackup });
     const earned = payout(reward.total, this.save.paid[id]);
     this.save.paid[id] = Math.max(this.save.paid[id] ?? 0, reward.total);
     this.save.coins += earned;
+    // Saved below, before anything moves; the counter only shows it once the pop-up's coins have flown over (B6).
+    if (earned > 0) this.counters.hold(this.save.coins);
     this.lastReward = { reward, spare: Math.max(0, this.session.budget - moves), earned, balance: this.save.coins, helped: this.usedBackup || this.usedHint };
     if (earned > 0) this.track({ type: 'coins_earned', level: id, amount: earned, balance: this.save.coins });
     this.persist();
     this.track({ type: 'level_win', level: id, moves, par: this.par, stars, usedBackup: this.usedBackup });
     this.sfx.play('win');
-    this.haptics.play('win');
     this.view.celebrate();
     this.refresh();
     const generation = this.generation;
@@ -502,7 +535,6 @@ class Game {
     this.hud.showCard(
       {
         kind: 'win',
-        level: `Level ${this.levelIndex + 1} · ${this.level.name}`,
         stars,
         moves,
         par: this.par,
@@ -515,6 +547,7 @@ class Game {
       },
       !this.reduced,
     );
+    this.counters.pour(el('cardBody').querySelector<HTMLElement>('.tf-coin-total .tf-coin-ico'), () => this.sfx.play('coin'));
   }
 
   /**
@@ -537,7 +570,6 @@ class Game {
     const offer = rescue.kind === 'rescuable';
     const price = extraMovesPrice(this.save.lab.freeHelp);
     const afford = this.save.coins >= price;
-    const left = this.session.state.robots.filter((r) => !r.collected).map((r) => r.color);
     const hint = (): void => {
       this.hud.hideCard();
       void this.scan();
@@ -545,14 +577,14 @@ class Game {
     this.hud.showCard(
       {
         kind: 'lost',
-        left,
         offer: offer ? { price, state: price === 0 ? 'free' : afford ? 'ok' : 'short', coins: this.save.coins, take: () => this.useBackup() } : undefined,
         note: offer
           ? undefined
           : rescue.kind === 'hopeless'
-            ? 'Extra moves would not solve it from here, so there is no offer. Undo a step or start again: both are free.'
-            : 'We could not check in time whether extra moves would help, so there is no offer. Undo and Retry are free.',
+            ? 'Extra moves would not solve it from here, so there is no offer. Retry is free.'
+            : 'We could not check in time whether extra moves would help, so there is no offer. Retry is free.',
         undo: () => this.undo(),
+        undoPrice: this.undoOffer(),
         retry: () => this.restart(),
         hint: offer ? undefined : hint,
       },
@@ -580,8 +612,36 @@ class Game {
     this.refresh();
   }
 
+  /** What the next Undo costs now. A board-size test board is never paid for. */
+  private undoOffer(): UndoQuote {
+    return undoQuote(this.save.coins, this.save.lab.freeHelp || this.preview, this.undosTaken);
+  }
+
+  /**
+   * Take back one command. It costs `coins.undoCost` per step (finding B4);
+   * Restart stays free, so a player without coins is never stuck.
+   */
   private undo(): void {
-    if (this.replaying || this.busy || !this.session.undo()) return;
+    if (this.replaying || this.busy || this.session.commands.length === 0) return;
+    const offer = this.undoOffer();
+    if (offer.state === 'short') {
+      // Refused: the counter shakes, a few words say why, and the free way out is ringed.
+      this.counters.short();
+      this.sfx.play('bump');
+      this.track({ type: 'undo', level: this.level.id, price: offer.cost, refused: true });
+      this.clearScan();
+      this.point = 'restart';
+      this.setHint(`Undo costs ${offer.cost} coins. Restart is free.`, true);
+      return;
+    }
+    this.session.undo();
+    this.undosTaken++;
+    if (offer.cost > 0) {
+      this.save.coins -= offer.cost;
+      this.persist();
+      this.track({ type: 'coins_spent', level: this.level.id, amount: offer.cost, on: 'undo', balance: this.save.coins });
+    }
+    this.track({ type: 'undo', level: this.level.id, price: offer.cost, refused: false });
     this.generation++;
     this.pending = 0;
     this.hud.hideCard();
@@ -597,6 +657,7 @@ class Game {
     this.pending = 0;
     this.session.restart();
     this.usedBackup = false;
+    this.undosTaken = 0;
     // usedHint stays: a move that was paid for is still known after a restart.
     this.hud.hideCard();
     this.clearScan();
@@ -623,7 +684,7 @@ class Game {
         const price = hintPrice(this.save.lab.freeHelp);
         if (this.save.coins < price) {
           this.counters.short();
-          this.setHint(`That costs ${price} coins. You have ${this.save.coins}.`, true);
+          this.setHint('Not enough coins for the next move.', true);
           return;
         }
         this.save.coins -= price;
@@ -633,9 +694,13 @@ class Game {
           this.track({ type: 'coins_spent', level: this.level.id, amount: price, on: 'hint', balance: this.save.coins });
         }
         this.nudge = this.scanResult.next;
+        this.point = null;
+        // The picture comes from the engine's own step on the current state, so it shows exactly what the move will do.
+        this.hintPicture = previewStep(this.level.board, this.session.state, this.nudge, this.session.rules);
+        this.view.showHint(this.hintPicture);
         this.track({ type: 'hint', level: this.level.id, result: 'on-route', rung: 2 });
         this.sfx.play('scan');
-        this.setHint(`Next: ${COMMAND_LABEL[this.scanResult.next]}`, false);
+        this.setHint(COMMAND_LABEL[this.scanResult.next], false);
       }
       return;
     }
@@ -645,7 +710,7 @@ class Game {
     else {
       const generation = this.generation;
       this.busy = true;
-      this.setHint('Thinking…', false);
+      this.setHint('Checking…', false);
       result = await this.solver.ask<ScanResult>({
         kind: 'scan',
         board: this.level.board,
@@ -661,9 +726,16 @@ class Game {
     this.scanResult = result;
     this.track({ type: 'hint', level: this.level.id, result: result.kind, rung: 1 });
     this.sfx.play('scan');
-    if (result.kind === 'on-route') this.setHint(`Solvable from here · ${result.movesNeeded} to go. Tap Hint again for the next move${hintPrice(this.save.lab.freeHelp) > 0 ? ` (${hintPrice(this.save.lab.freeHelp)} coins)` : ''}.`, false);
-    else if (result.kind === 'dead-end') this.setHint(`Dead end. Undo ${result.undo} move${result.undo === 1 ? '' : 's'} to make it solvable again.`, true);
-    else this.setHint('The hint could not be worked out for this position.', true);
+    if (result.kind === 'on-route') {
+      // The Hint button is ringed with its price on it: the second tap shows the move.
+      this.point = 'scan';
+      this.setHint(`You can still win: ${result.movesNeeded} to go`, false);
+    } else if (result.kind === 'dead-end') {
+      // When only the start is still winnable, Restart gets there for free.
+      const toStart = result.undo >= this.session.commands.length;
+      this.point = toStart ? 'restart' : 'undo';
+      this.setHint(toStart ? 'No win from here. Restart to try again.' : `No win from here. Undo ${result.undo} or Restart.`, true);
+    } else this.setHint('Could not check this one in time.', true);
   }
 
   /** Play the commands so far again from the start; the session is untouched. */
@@ -708,6 +780,7 @@ class Game {
       commands: [...this.session.commands],
       replaying: this.replaying,
       hint: this.hint,
+      hintPicture: this.hintPicture.map(({ id, turned, outcome, toX, toY }) => ({ id, turned, outcome, toX, toY })),
       certified: this.certified,
       best: { ...this.save.best },
       coins: this.save.coins,

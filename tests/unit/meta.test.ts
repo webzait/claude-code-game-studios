@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { CONFIG } from '../../src/config';
-import { deviceVibrate, Haptics } from '../../src/haptics';
-import { extraMovesPrice, hintPrice, payout, rewardFor } from '../../src/game/coins';
-import { applyLab, DEFAULT_LAB, rulesFor, usesCertifiedRules, type LabSettings } from '../../src/game/lab';
+import { extraMovesPrice, hintPrice, NO_HELP, payout, rewardFor, settlePaid, undoPrice, undoQuote, type CoinRules } from '../../src/game/coins';
+import { applyLab, DEFAULT_LAB, levelScreenView, rulesFor, usesCertifiedRules, type LabSettings } from '../../src/game/lab';
 import { isUnlocked, mainAction, resumeIndex, solvedCount, starsFor, starsOfBest } from '../../src/game/progress';
-import { defaultSave, LEGACY_KEY, loadSave, migrate, resetProgress, SAVE_KEY, SAVE_VERSION, writeSave, type KeyValueStore } from '../../src/game/save';
+import { defaultSave, ECONOMY_VERSION, LEGACY_KEY, loadSave, migrate, resetProgress, SAVE_KEY, SAVE_VERSION, writeSave, type KeyValueStore } from '../../src/game/save';
 import { Session } from '../../src/game/session';
 import { LEVELS } from '../../src/levels/index';
 import { solve } from '../../src/solver/bfs';
+import { pathSteps, pathSway } from '../../src/ui/levelPath';
 
 const ids = LEVELS.map((l) => l.id);
 const memory = (initial: Record<string, string> = {}): KeyValueStore & { data: Record<string, string> } => {
@@ -53,15 +53,43 @@ describe('stars', () => {
 
 describe('coins', () => {
   const c = CONFIG.coins;
-  it('a perfect win pays base, every spare move and the perfect bonus', () => {
-    const r = rewardFor(7, 7, 9, false);
-    expect(r).toEqual({ base: c.win, spareMoves: 2 * c.perSpareMove, perfect: c.perfect, total: c.win + 2 * c.perSpareMove + c.perfect });
+  // Par 7 and a budget of 9: 7 moves is three stars, 8 or 9 two, and a win with extra moves one.
+  it('the reward follows the stars: 10, 20 and 30 coins for one, two and three stars', () => {
+    expect(rewardFor(7, 7, 9, NO_HELP)).toMatchObject({ stars: 3, total: 30 });
+    expect(rewardFor(8, 7, 9, NO_HELP)).toMatchObject({ stars: 2, total: 20 });
+    expect(rewardFor(9, 7, 9, NO_HELP)).toMatchObject({ stars: 2, total: 20 });
+    expect(rewardFor(10, 7, 9, { hint: false, extraMoves: true })).toMatchObject({ stars: 1, total: 10 });
   });
-  it('a win on the last move pays the base amount only', () => {
-    expect(rewardFor(9, 7, 9, false).total).toBe(c.win);
+  it('the amounts are the config: base, the two-star bonus and the three-star bonus', () => {
+    expect(rewardFor(7, 7, 9, NO_HELP)).toEqual({ stars: 3, base: c.win, starBonus: c.perfect, spareMoves: 2 * c.perSpareMove, total: c.win + c.perfect + 2 * c.perSpareMove });
+    expect(rewardFor(9, 7, 9, NO_HELP)).toEqual({ stars: 2, base: c.win, starBonus: c.twoStars, spareMoves: 0, total: c.win + c.twoStars });
   });
-  it('a win with paid help pays the base amount only', () => {
-    expect(rewardFor(7, 7, 9, true).total).toBe(c.win);
+  it('a win with extra moves is a one-star win and pays the base amount, however few moves it took', () => {
+    expect(rewardFor(7, 7, 9, { hint: false, extraMoves: true })).toMatchObject({ stars: 1, total: c.win });
+  });
+  it('a win with a paid hint pays by its stars', () => {
+    expect(c.hintedWinPays).toBe('stars');
+    expect(rewardFor(7, 7, 9, { hint: true, extraMoves: false }).total).toBe(rewardFor(7, 7, 9, NO_HELP).total);
+  });
+  it('a hint never earns more than it costs: it can lift a win by one star step at most', () => {
+    expect(c.hintCost).toBeGreaterThanOrEqual(rewardFor(7, 7, 9, NO_HELP).total - rewardFor(9, 7, 9, NO_HELP).total);
+  });
+  it('other amounts run through the same formula: the first economy paid 26, 13 and 10', () => {
+    const first: CoinRules = { ...c, win: 10, twoStars: 0, perfect: 10, perSpareMove: 3, hintedWinPays: 'base' };
+    expect(rewardFor(7, 7, 9, NO_HELP, first).total).toBe(26);
+    expect(rewardFor(8, 7, 9, NO_HELP, first).total).toBe(13);
+    expect(rewardFor(9, 7, 9, NO_HELP, first).total).toBe(10);
+    expect(rewardFor(7, 7, 9, { hint: true, extraMoves: false }, first).total).toBe(10);
+    expect(hintPrice(false, { ...c, hintCost: 15 })).toBe(15);
+    expect(extraMovesPrice(false, { ...c, extraMovesCost: 35 })).toBe(35);
+    expect(undoPrice(false, 1, { ...c, undoCost: 10, freeUndosPerLevel: 1 })).toBe(10);
+    expect(undoQuote(9, false, 0, { ...c, undoCost: 10, freeUndosPerLevel: 0 })).toEqual({ cost: 10, state: 'short' });
+  });
+  it('the prices stand in one scale with the rewards: Undo below a hint, a hint below the extra moves, the start buys one of each', () => {
+    expect(c.undoCost).toBeLessThan(c.hintCost);
+    expect(c.hintCost).toBeLessThan(c.extraMovesCost);
+    expect(c.start).toBeGreaterThanOrEqual(c.undoCost + c.hintCost);
+    for (const amount of [c.start, c.win, c.twoStars, c.perfect, c.hintCost, c.extraMovesCost, c.undoCost]) expect(amount % 5).toBe(0);
   });
   it('a level pays its best reward once; a replay pays only the improvement', () => {
     expect(payout(20, undefined)).toBe(20);
@@ -75,7 +103,7 @@ describe('coins', () => {
     expect(extraMovesPrice(true)).toBe(0);
   });
   it('one perfect level pays for at least one hint, and extra moves cost more than a hint', () => {
-    expect(rewardFor(7, 7, 9, false).total).toBeGreaterThanOrEqual(c.hintCost);
+    expect(rewardFor(7, 7, 9, NO_HELP).total).toBeGreaterThanOrEqual(c.hintCost);
     expect(c.extraMovesCost).toBeGreaterThan(c.hintCost);
   });
 });
@@ -118,20 +146,54 @@ describe('save', () => {
     expect(save.lab.moveSlack).toBe(3);
   });
 
-  it('migrates version 3 (no vibration setting): progress, coins, settings and lab are kept', () => {
+  it('migrates version 3: progress, coins, settings and lab are kept', () => {
     const save = migrate({ version: 3, best: { [ids[0]]: 7 }, coins: 73, paid: { [ids[0]]: 26 }, settings: { mute: true, reduceMotion: true }, lab: { moveSlack: 3, unlockAll: true } }, ids);
     expect(save.version).toBe(SAVE_VERSION);
     expect(save.best).toEqual({ [ids[0]]: 7 });
     expect(save.coins).toBe(73);
     expect(save.paid).toEqual({ [ids[0]]: 26 });
-    expect(save.settings).toEqual({ mute: true, reduceMotion: true, vibration: true });
+    expect(save.settings).toEqual({ mute: true, reduceMotion: true, colourShapes: false });
     expect(save.lab.moveSlack).toBe(3);
     expect(save.lab.unlockAll).toBe(true);
   });
 
-  it('keeps a stored vibration choice and ignores a damaged one', () => {
-    expect(migrate({ version: SAVE_VERSION, settings: { vibration: false } }, ids).settings.vibration).toBe(false);
-    expect(migrate({ version: SAVE_VERSION, settings: { vibration: 'loud' } }, ids).settings.vibration).toBe(true);
+  it('level screen switch: a save from before it gets the path, a stored choice is kept, a damaged one is ignored', () => {
+    expect(DEFAULT_LAB.levelScreen).toBe('path');
+    expect(migrate({ version: SAVE_VERSION, lab: { unlockAll: true } }, ids).lab.levelScreen).toBe('path');
+    expect(migrate({ version: 3, lab: {} }, ids).lab.levelScreen).toBe('path');
+    expect(migrate({ version: SAVE_VERSION, lab: { levelScreen: 'grid' } }, ids).lab.levelScreen).toBe('grid');
+    expect(migrate({ version: SAVE_VERSION, lab: { levelScreen: 'map' } }, ids).lab.levelScreen).toBe('path');
+  });
+
+  it('the level selection is the path, unless a test switch asks for the grid', () => {
+    expect(levelScreenView(DEFAULT_LAB)).toBe('path');
+    expect(levelScreenView({ levelScreen: 'grid', unlockAll: false })).toBe('grid');
+    // "Unlock all" must let a tester open any level, which the path cannot.
+    expect(levelScreenView({ levelScreen: 'path', unlockAll: true })).toBe('grid');
+  });
+
+  it('loads a save that still holds the dropped vibration setting, and leaves it out', () => {
+    const save = migrate({ version: 4, best: { [ids[0]]: 7 }, coins: 73, settings: { mute: true, reduceMotion: false, vibration: false }, lab: { unlockAll: true } }, ids);
+    expect(save.best).toEqual({ [ids[0]]: 7 });
+    expect(save.coins).toBe(73);
+    expect(save.settings).toEqual({ mute: true, reduceMotion: false, colourShapes: false });
+    expect(save.lab.unlockAll).toBe(true);
+  });
+
+  it('migrates version 4 (no colour shapes): everything is kept and the shapes start switched off', () => {
+    const save = migrate({ version: 4, best: { [ids[0]]: 7 }, coins: 73, paid: { [ids[0]]: 26 }, settings: { mute: true, reduceMotion: true }, lab: { moveSlack: 3 } }, ids);
+    expect(save.version).toBe(SAVE_VERSION);
+    expect(save.best).toEqual({ [ids[0]]: 7 });
+    expect(save.coins).toBe(73);
+    expect(save.paid).toEqual({ [ids[0]]: 26 });
+    expect(save.settings).toEqual({ mute: true, reduceMotion: true, colourShapes: false });
+    expect(save.lab.moveSlack).toBe(3);
+    expect(defaultSave().settings.colourShapes).toBe(false);
+  });
+
+  it('keeps a stored colour shapes choice and reads a damaged one as off', () => {
+    expect(migrate({ version: SAVE_VERSION, settings: { colourShapes: true } }, ids).settings.colourShapes).toBe(true);
+    expect(migrate({ version: SAVE_VERSION, settings: { colourShapes: 'yes' } }, ids).settings.colourShapes).toBe(false);
   });
 
   it('damaged, unknown or future data gives a fresh save, never an error', () => {
@@ -170,6 +232,49 @@ describe('save', () => {
     expect(reset.paid).toEqual({});
     expect(reset.settings.mute).toBe(true);
     expect(reset.lab.yellowEarly).toBe(true);
+  });
+});
+
+describe('a save from before the reward followed the stars (design/economy.md)', () => {
+  const levels = [
+    { id: 'a', par: 7 },
+    { id: 'b', par: 7 },
+    { id: 'c', par: 7 },
+    { id: 'd', par: 7 },
+    { id: 'e', par: 7 },
+  ];
+  const c = CONFIG.coins;
+  const three = c.win + c.perfect + CONFIG.moveSlack * c.perSpareMove;
+  const two = c.win + c.twoStars;
+
+  it('an older save is marked as the first economy and keeps its coins and paid amounts; a new one is current', () => {
+    const old = migrate({ version: 5, best: { [ids[0]]: 7 }, coins: 73, paid: { [ids[0]]: 26 }, settings: {}, lab: {} }, ids);
+    expect(old).toMatchObject({ economy: 1, coins: 73, paid: { [ids[0]]: 26 } });
+    expect(defaultSave().economy).toBe(ECONOMY_VERSION);
+    expect(migrate({ ...defaultSave() }, ids).economy).toBe(ECONOMY_VERSION);
+    expect(resetProgress(old).economy).toBe(ECONOMY_VERSION);
+  });
+
+  it('a paid level counts as paid for the result it has, so the same result pays no leftover', () => {
+    // a: three stars paid 26; b: two stars paid 13; c: three stars with a hint, paid 10; d: with extra moves, paid 10.
+    const paid = settlePaid({ a: 26, b: 13, c: 10, d: 10 }, { a: 7, b: 8, c: 7, d: 11 }, levels);
+    expect(paid).toEqual({ a: Math.max(26, three), b: Math.max(13, two), c: Math.max(10, three), d: c.win });
+    expect(payout(rewardFor(7, 7, 9, NO_HELP).total, paid.a)).toBe(0);
+    expect(payout(rewardFor(8, 7, 9, NO_HELP).total, paid.b)).toBe(0);
+  });
+
+  it('a better result pays the step between today\'s amounts', () => {
+    const paid = settlePaid({ b: 13 }, { b: 8 }, levels);
+    expect(payout(rewardFor(7, 7, 9, NO_HELP).total, paid.b)).toBe(three - two);
+  });
+
+  it('never lowers what a level paid, and leaves unpaid and unsolved levels alone', () => {
+    const paid = settlePaid({ a: 500, e: 10 }, { a: 7, b: 7 }, levels);
+    expect(paid).toEqual({ a: 500, e: 10 });
+  });
+
+  it('a win carried over from the first prototype (no move count) is a one-star win', () => {
+    expect(settlePaid({ a: 10 }, { a: 0 }, levels)).toEqual({ a: c.win });
   });
 });
 
@@ -242,22 +347,50 @@ describe('level selection main action', () => {
   });
 });
 
-describe('haptics', () => {
-  it('vibrates_with_the_configured_pattern_when_switched_on', () => {
-    const calls: number[][] = [];
-    const haptics = new Haptics(() => true, (p) => calls.push(p) > 0);
-    expect(haptics.supported).toBe(true);
-    expect(haptics.play('move')).toBe(true);
-    expect(haptics.play('win')).toBe(true);
-    expect(calls).toEqual([CONFIG.haptics.move, CONFIG.haptics.win]);
+describe('the price of Undo (finding B4)', () => {
+  const c = CONFIG.coins;
+  const paid = c.freeUndosPerLevel;
+  it('an Undo costs coins.undoCost, and every further step costs it again', () => {
+    expect(undoPrice(false, paid)).toBe(c.undoCost);
+    expect(undoPrice(false, paid + 1)).toBe(c.undoCost);
+    expect(undoQuote(c.undoCost, false, paid)).toEqual({ cost: c.undoCost, state: 'ok' });
   });
+  it('the first coins.freeUndosPerLevel Undos of an attempt are free, the next one is not', () => {
+    for (let taken = 0; taken < c.freeUndosPerLevel; taken++) expect(undoQuote(0, false, taken)).toEqual({ cost: 0, state: 'free' });
+    expect(undoPrice(false, c.freeUndosPerLevel)).toBe(c.undoCost);
+  });
+  it('a wallet one coin short cannot afford it, and is told the price', () => {
+    expect(undoQuote(c.undoCost - 1, false, paid)).toEqual({ cost: c.undoCost, state: 'short' });
+    expect(undoQuote(0, false, paid)).toEqual({ cost: c.undoCost, state: 'short' });
+  });
+  it('the test lab switch "free help" makes Undo free, even with an empty wallet', () => {
+    expect(undoPrice(true, paid)).toBe(0);
+    expect(undoQuote(0, true, paid + 3)).toEqual({ cost: 0, state: 'free' });
+  });
+  it('the default price is real: Undo is not free out of the box', () => {
+    expect(c.undoCost).toBeGreaterThan(0);
+  });
+});
 
-  it('stays_silent_when_switched_off_or_when_the_device_cannot_vibrate', () => {
-    const calls: number[][] = [];
-    expect(new Haptics(() => false, (p) => calls.push(p) > 0).play('move')).toBe(false);
-    expect(calls).toEqual([]);
-    const none = new Haptics(() => true, deviceVibrate({}));
-    expect(none.supported).toBe(false);
-    expect(none.play('win')).toBe(false);
+describe('level path', () => {
+  const TOTAL = 40;
+  it('shows the current level and the configured number of levels after it', () => {
+    expect(pathSteps(TOTAL, 0, CONFIG.levelsAhead)).toEqual({ current: 0, ahead: Array.from({ length: CONFIG.levelsAhead }, (_, i) => i + 1) });
+    expect(pathSteps(TOTAL, 11, 5)).toEqual({ current: 11, ahead: [12, 13, 14, 15, 16] });
+  });
+  it('never shows a completed level or one past the end', () => {
+    expect(pathSteps(TOTAL, 38, 5)).toEqual({ current: 38, ahead: [39] });
+    expect(pathSteps(TOTAL, 39, 5)).toEqual({ current: 39, ahead: [] });
+    expect(pathSteps(TOTAL, 5, 0).ahead).toEqual([]);
+  });
+  it('has no steps when every level is completed', () => {
+    expect(pathSteps(TOTAL, null, 5)).toEqual({ current: null, ahead: [] });
+    expect(pathSteps(TOTAL, TOTAL, 5)).toEqual({ current: null, ahead: [] });
+  });
+  it('keeps the current level in the middle and sways the rest within the screen', () => {
+    expect(pathSway(0)).toBe(0);
+    for (let step = 1; step <= 12; step++) expect(Math.abs(pathSway(step))).toBeLessThanOrEqual(1);
+    expect(pathSway(1)).toBeGreaterThan(0);
+    expect(pathSway(4)).toBeLessThan(0);
   });
 });

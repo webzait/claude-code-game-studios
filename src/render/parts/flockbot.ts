@@ -2,15 +2,18 @@ import * as THREE from 'three';
 import { CONFIG } from '../../config';
 import type { Color } from '../../engine/types';
 import parts from '../../../data/parts.json';
+import { SHAPE_OUTLINES, shapeOf } from '../../ui/colourShapes';
 import { roundedBlock, roundedRect } from './shapes';
 
+// The Flockbot of the design study (prototypes/flockbot-look), now the game's robot.
 const F = parts.flockbot;
+const TONES = CONFIG.colors.robots;
 
 /** A Flockbot as separate modules, in cell units: it stands on y = 0, faces +z and is one cell wide. */
 export interface FlockbotParts {
   /** Everything, ready to place on a tile. */
   readonly root: THREE.Group;
-  /** Top shell (dome) carrying the symbol. */
+  /** Top shell carrying the symbol. */
   readonly shell: THREE.Mesh;
   /** Face module: window with the two eyes. */
   readonly face: THREE.Group;
@@ -20,6 +23,11 @@ export interface FlockbotParts {
   readonly feet: THREE.Group;
   /** The symbol on top; turn it around y to show the heading. It points north (-z) at rest. */
   readonly symbol: THREE.Group;
+  /**
+   * The "Colour shapes" setting: with it on, the heading triangle lies on a plate in the shape of the
+   * robot's colour (data: `colourShapes`), so the colour can be read without seeing colour. Off at rest.
+   */
+  readonly showShape: (on: boolean) => void;
 }
 
 // The body: a rounded cube. The ears stick out a little, so the body itself is that much narrower than the cell.
@@ -62,8 +70,8 @@ function sideX(y: number, z: number): number {
 
 /** One half of the body, from the seam to the crown (`dome`) or down to the underside, as a closed skin. */
 function bodyHalf(dome: boolean): THREE.BufferGeometry {
-  const around = 176;
-  const up = 56;
+  const around = F.mesh.around;
+  const up = F.mesh.up;
   const [span, round] = dome ? [SHELL_H, F.shellRound] : [ROMP_H, F.rompRound];
   const positions: number[] = [];
   for (let v = 0; v <= up; v++) {
@@ -94,13 +102,38 @@ function bodyHalf(dome: boolean): THREE.BufferGeometry {
   return g;
 }
 
+/** Signed distance from (x, y) to a rounded rectangle `w` by `h` with corner radius `r`, centred on the origin: negative inside. */
+function roundedRectDistance(x: number, y: number, w: number, h: number, r: number): number {
+  const qx = Math.abs(x) - (w / 2 - r);
+  const qy = Math.abs(y) - (h / 2 - r);
+  return Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - r;
+}
+
+/** How deep the visor is sunk into the front at (x, y): 0 outside the lip, `face.recess` inside the window, eased under the lip. */
+function visorSink(x: number, y: number): number {
+  const W = F.face;
+  const inside = -roundedRectDistance(x, y - W.centre, W.width, W.height, W.radius);
+  const t = Math.min(1, Math.max(0, (inside - W.bezel * 0.35) / (W.bezel * 0.5)));
+  return W.recess * t * t * (3 - 2 * t);
+}
+
+/** Press the visor into the front of a body half, so the window lies in a real hollow. */
+function sinkVisor(g: THREE.BufferGeometry): void {
+  const position = g.getAttribute('position');
+  for (let i = 0; i < position.count; i++) {
+    if (position.getZ(i) <= 0) continue;
+    position.setZ(i, position.getZ(i) - visorSink(position.getX(i), position.getY(i)));
+  }
+  g.computeVertexNormals();
+}
+
 /**
  * A flat outline laid onto a curved surface: the shape (in x/y, around the
  * origin) becomes a fan of rings whose depth follows `depthAt`, so it hugs
  * the body instead of standing off it like a plate.
  */
 function wrapped(shape: THREE.Shape, depthAt: (x: number, y: number) => number): THREE.BufferGeometry {
-  const rim = shape.getSpacedPoints(96);
+  const rim = shape.getSpacedPoints(192);
   rim.pop();
   const rings = 14;
   const positions: number[] = [0, 0, depthAt(0, 0)];
@@ -131,11 +164,12 @@ function wrapped(shape: THREE.Shape, depthAt: (x: number, y: number) => number):
 /**
  * A raised frame around a rounded rectangle (in x/y, around the origin) laid
  * onto a curved surface: `band` wide, swelling to `height` in the middle and
- * coming back down to the surface on both edges, like a soft tube.
+ * coming back down to the surface on its outer edge and `sink` below it on
+ * its inner edge, like the soft lip of a hollow.
  */
-function wrappedFrame(w: number, h: number, r: number, band: number, height: number, depthAt: (x: number, y: number) => number): THREE.BufferGeometry {
-  const perCorner = 20;
-  const across = 12;
+function wrappedFrame(w: number, h: number, r: number, band: number, height: number, sink: number, depthAt: (x: number, y: number) => number): THREE.BufferGeometry {
+  const perCorner = 40;
+  const across = 20;
   const centres = [
     [w / 2 - r, h / 2 - r, 0],
     [-(w / 2 - r), h / 2 - r, Math.PI / 2],
@@ -147,7 +181,8 @@ function wrappedFrame(w: number, h: number, r: number, band: number, height: num
   for (let j = 0; j <= across; j++) {
     const s = j / across;
     const radius = r - band * s;
-    const lift = height * Math.sin(Math.PI * s) ** 0.6;
+    const down = Math.min(1, Math.max(0, (s - 0.5) / 0.5));
+    const lift = height * Math.sin(Math.PI * s) ** 0.6 - sink * down * down * (3 - 2 * down);
     for (const [cx, cy, from] of centres) {
       for (let k = 0; k <= perCorner; k++) {
         const angle = from + (k / perCorner) * (Math.PI / 2);
@@ -197,38 +232,36 @@ function shadeBody(g: THREE.BufferGeometry, stops: readonly (readonly [number, s
   g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 }
 
-/** The body's outline at the seam, lying flat: closes a shell or romp that is seen apart. */
-function seamPlate(inset: number): THREE.Shape {
+/**
+ * The body's outline at the seam, lying flat: closes a shell or romp that is seen apart. It follows the
+ * visor's hollow on the front, which is the shape's +y side, or its -y side when `flip` is set.
+ */
+function seamPlate(inset: number, flip = false): THREE.Shape {
+  const front = flip ? -1 : 1;
   const s = new THREE.Shape();
   const steps = 96;
   for (let u = 0; u <= steps; u++) {
     const phi = (u / steps) * Math.PI * 2;
     const x = (HALF_W - inset) * Math.sign(Math.cos(phi)) * Math.abs(Math.cos(phi)) ** F.squircle;
-    const y = (HALF_D - inset) * Math.sign(Math.sin(phi)) * Math.abs(Math.sin(phi)) ** F.squircle;
+    let y = (HALF_D - inset) * Math.sign(Math.sin(phi)) * Math.abs(Math.sin(phi)) ** F.squircle;
+    if (y * front > 0) y -= front * visorSink(x, F.seam) * 1.1;
     if (u === 0) s.moveTo(x, y);
     else s.lineTo(x, y);
   }
   return s;
 }
 
-/** Arrowhead with softened corners and a notched tail, pointing to +y of the shape plane. */
-function arrowShape(size: number): THREE.Shape {
+/** A plain triangle with softened corners, pointing to +y of the shape plane. */
+function triangleShape(size: number): THREE.Shape {
   const half = size / 2;
-  const corners = [
-    new THREE.Vector2(0, half),
-    new THREE.Vector2(half * 0.92, -half * 0.86),
-    new THREE.Vector2(0, -half * 0.86 + size * F.symbol.notch),
-    new THREE.Vector2(-half * 0.92, -half * 0.86),
-  ];
+  const corners = [new THREE.Vector2(0, half), new THREE.Vector2(half * 0.95, -half * 0.8), new THREE.Vector2(-half * 0.95, -half * 0.8)];
   const soften = size * F.symbol.soften;
   const s = new THREE.Shape();
   corners.forEach((corner, i) => {
     const before = corners[(i + corners.length - 1) % corners.length];
     const after = corners[(i + 1) % corners.length];
-    // The notch stays crisper than the three outer corners.
-    const cut = i === 2 ? soften * 0.4 : soften;
-    const from = corner.clone().add(before.clone().sub(corner).setLength(cut));
-    const to = corner.clone().add(after.clone().sub(corner).setLength(cut));
+    const from = corner.clone().add(before.clone().sub(corner).setLength(soften));
+    const to = corner.clone().add(after.clone().sub(corner).setLength(soften));
     if (i === 0) s.moveTo(from.x, from.y);
     else s.lineTo(from.x, from.y);
     s.quadraticCurveTo(corner.x, corner.y, to.x, to.y);
@@ -237,20 +270,60 @@ function arrowShape(size: number): THREE.Shape {
   return s;
 }
 
-const eyeBall = new THREE.SphereGeometry(1, 32, 24);
-const eyeBlack = new THREE.MeshPhysicalMaterial({ color: CONFIG.colors.robots.eye, roughness: 0.08, clearcoat: 1, clearcoatRoughness: 0.04, envMapIntensity: F.material.reflect });
-const eyeGlint = new THREE.MeshBasicMaterial({ color: CONFIG.colors.robots.eyeWhite });
+/** The triangle as a low slab lying on the shell: its tip to north (-z), its top `raise` above the crown. */
+function triangleSlab(size: number, raise: number): THREE.BufferGeometry {
+  const S = F.symbol;
+  const bevel = Math.min(raise * 0.4, 0.008);
+  const g = new THREE.ExtrudeGeometry(triangleShape(size - 2 * bevel), {
+    depth: raise + S.sink - 2 * bevel,
+    bevelEnabled: true,
+    bevelThickness: bevel,
+    bevelSize: bevel,
+    bevelSegments: 4,
+    curveSegments: 12,
+  });
+  // Extruded along z with its tip to +y; lay it flat with the tip to north (-z).
+  g.rotateX(-Math.PI / 2);
+  g.translate(0, bevel - S.sink, 0);
+  return g;
+}
+
+/**
+ * The plate of a colour's shape, lying on the shell under the heading triangle: `size` across the box
+ * the shape is drawn in, its top `raise` above the crown.
+ */
+export function shapePlate(color: Color, size: number, raise: number, sink: number): THREE.BufferGeometry {
+  const outline = SHAPE_OUTLINES[shapeOf(color)];
+  const bevel = Math.min(raise * 0.4, 0.006);
+  const side = outline.side * size - 2 * bevel;
+  const g = new THREE.ExtrudeGeometry(roundedRect(side, side, Math.min(side / 2, Math.max(0.001, outline.corner * size - bevel))), {
+    depth: raise + sink - 2 * bevel,
+    bevelEnabled: true,
+    bevelThickness: bevel,
+    bevelSize: bevel,
+    bevelSegments: 3,
+    curveSegments: 16,
+  });
+  g.rotateX(-Math.PI / 2);
+  g.translate(0, bevel - sink, 0);
+  g.rotateY((outline.turn * Math.PI) / 180);
+  return g;
+}
+
+const eyeBall = new THREE.SphereGeometry(1, 64, 48);
+const eyeBlack = new THREE.MeshPhysicalMaterial({ color: TONES.eye, roughness: 0.08, clearcoat: 1, clearcoatRoughness: 0.04, envMapIntensity: F.material.reflect });
+const eyeGlint = new THREE.MeshBasicMaterial({ color: TONES.eyeWhite });
 // The face looks sideways, away from the light from above; it glows a little so it stays light.
 const windowMat = new THREE.MeshPhysicalMaterial({ color: F.colors.window, roughness: 0.3, clearcoat: 0.5, emissive: F.colors.window, emissiveIntensity: 0.42, side: THREE.DoubleSide });
 
 /**
  * Build one Flockbot from its modules, after the asset sheet: a rounded cube
- * split at a hidden seam into a domed top shell (with the heading symbol) and a
- * lower body, a framed face window with two large eyes, an ear disc on each
- * side and four small feet underneath.
+ * split at a hidden seam into a top shell (with the heading symbol, a plain
+ * triangle) and a lower body, a visor with a raised lip and two large eyes, an
+ * ear disc on each side and four small feet underneath.
  */
 export function buildFlockbot(color: Color): FlockbotParts {
-  const tones = CONFIG.colors.robots[color];
+  const tones = TONES[color];
   const M = F.material;
   const bodyMat = new THREE.MeshPhysicalMaterial({
     vertexColors: true,
@@ -269,6 +342,7 @@ export function buildFlockbot(color: Color): FlockbotParts {
 
   // Lower body: a boxy bowl hanging from the seam.
   const rompGeo = bodyHalf(false);
+  sinkVisor(rompGeo);
   shadeBody(
     rompGeo,
     [
@@ -282,7 +356,7 @@ export function buildFlockbot(color: Color): FlockbotParts {
   rompGeo.translate(0, -half, 0);
   const romp = new THREE.Mesh(rompGeo, bodyMat);
   // The seam: a dark plate just inside the outline, seen as a fine line between shell and body.
-  const plateGeo = new THREE.ExtrudeGeometry(seamPlate(0.008), { depth: Math.max(0.001, F.seamGap * 2), bevelEnabled: false });
+  const plateGeo = new THREE.ExtrudeGeometry(seamPlate(0.008, true), { depth: Math.max(0.001, F.seamGap * 2), bevelEnabled: false });
   plateGeo.rotateX(-Math.PI / 2);
   plateGeo.translate(0, F.seam - Math.max(0.002, F.seamGap), 0);
   // And a lid right at the rim, so no view from above looks past the plate into the body.
@@ -293,6 +367,7 @@ export function buildFlockbot(color: Color): FlockbotParts {
 
   // Top shell: a dome on the same outline, so shell and body are one rounded cube.
   const shellGeo = bodyHalf(true);
+  sinkVisor(shellGeo);
   shadeBody(
     shellGeo,
     [
@@ -322,25 +397,27 @@ export function buildFlockbot(color: Color): FlockbotParts {
     emissive: tones.main,
     emissiveIntensity: M.glow,
   });
-  const frame = new THREE.Mesh(wrappedFrame(W.width, W.height, W.radius, W.bezel, W.bezelHeight, onFront(0)), frameMat);
+  const frame = new THREE.Mesh(wrappedFrame(W.width, W.height, W.radius, W.bezel, W.bezelHeight, W.recess, onFront(0)), frameMat);
   // The window reaches a little under the frame, so no body colour shows between them.
   const inner = W.bezel * 0.8;
-  const pane = new THREE.Mesh(wrapped(roundedRect(W.width - 2 * inner, W.height - 2 * inner, W.radius - inner), onFront(W.depth)), windowMat);
+  const pane = new THREE.Mesh(wrapped(roundedRect(W.width - 2 * inner, W.height - 2 * inner, W.radius - inner), onFront(W.depth - W.recess)), windowMat);
   face.add(frame, pane);
   const E = F.eye;
   for (const side of [-1, 1]) {
     const x = side * E.spread;
-    const z = frontZ(x, W.centre) + W.depth;
+    const z = frontZ(x, W.centre) + W.depth - W.recess;
     // Turn each eye with the curve of the front, so it sits flat on the window.
     const turn = Math.atan2(frontZ(x - 0.02, W.centre) - frontZ(x + 0.02, W.centre), 0.04);
     const eye = new THREE.Group();
     eye.position.set(x, 0, z);
     eye.rotation.y = turn;
     const ball = new THREE.Mesh(eyeBall, eyeBlack);
-    ball.scale.set(E.radius, E.radius * 1.06, E.radius * E.bulge);
+    // Taller than wide: the camera looks down on the face, which squeezes it; this keeps the eyes round on screen.
+    ball.scale.set(E.radius, E.radius * E.tall, E.radius * E.bulge);
     const glint = new THREE.Mesh(eyeBall, eyeGlint);
     glint.scale.set(E.glint, E.glint, E.glint * 0.5);
-    glint.position.set(E.radius * 0.32, E.radius * 0.42, E.radius * E.bulge * 0.8);
+    glint.scale.set(E.glint, E.glint * E.tall, E.glint * 0.5);
+    glint.position.set(E.radius * 0.32, E.radius * E.tall * 0.42, E.radius * E.bulge * 0.8);
     eye.add(ball, glint);
     face.add(eye);
   }
@@ -351,7 +428,7 @@ export function buildFlockbot(color: Color): FlockbotParts {
   const earMat = new THREE.MeshPhysicalMaterial({ color: F.colors.window, roughness: 0.3, clearcoat: 0.6, emissive: F.colors.window, emissiveIntensity: 0.55 });
   const seat = sideX(F.ear.centre, 0) - 0.01;
   const earThick = F.width / 2 - seat;
-  const earGeo = new THREE.CylinderGeometry(F.ear.radius * 0.94, F.ear.radius, earThick, 40);
+  const earGeo = new THREE.CylinderGeometry(F.ear.radius * 0.94, F.ear.radius, earThick, 96);
   for (const side of [-1, 1]) {
     const ear = new THREE.Mesh(earGeo, earMat);
     ear.rotation.z = (-side * Math.PI) / 2;
@@ -371,30 +448,47 @@ export function buildFlockbot(color: Color): FlockbotParts {
     }
   }
 
-  // Symbol: a raised arrowhead on the shell, turning with the heading.
+  // Symbol: a plain triangle on the shell, turning with the heading. `raised` stands a little proud in
+  // white (dark on yellow); `notch` reads as cut into the shell: a dark floor inside a light edge.
   const symbol = new THREE.Group();
+  const plain = new THREE.Group();
   const S = F.symbol;
-  const bevel = S.raise * 0.4;
-  const arrowGeo = new THREE.ExtrudeGeometry(arrowShape(S.size - 2 * bevel), {
-    depth: S.raise + S.sink - 2 * bevel,
-    bevelEnabled: true,
-    bevelThickness: bevel,
-    bevelSize: bevel,
-    bevelSegments: 4,
-    curveSegments: 12,
-  });
-  // Extruded along z with its tip to +y; lay it flat with the tip to north (-z).
-  arrowGeo.rotateX(-Math.PI / 2);
-  arrowGeo.translate(0, bevel - S.sink, 0);
-  const arrow = new THREE.Mesh(
-    arrowGeo,
-    // The dark arrow is kept matt: a glossy one mirrors the sky and turns grey seen from above.
+  if (S.style === 'notch') {
+    const edgeMat = new THREE.MeshStandardMaterial({ color: tones.top, roughness: 0.6, envMapIntensity: 0 });
+    const floorMat = new THREE.MeshStandardMaterial({ color: tones.deep, roughness: 0.8, envMapIntensity: 0 });
+    plain.add(new THREE.Mesh(triangleSlab(S.size, S.raise * 0.4), edgeMat));
+    const floor = new THREE.Mesh(triangleSlab(S.size - 2 * S.notchEdge, S.raise * 0.4), floorMat);
+    floor.position.y = 0.002;
+    plain.add(floor);
+  } else {
+    plain.add(
+      new THREE.Mesh(
+        triangleSlab(S.size, S.raise),
+        // The dark triangle is kept matt: a glossy one mirrors the sky and turns grey seen from above.
+        color === 'yellow'
+          ? new THREE.MeshStandardMaterial({ color: F.colors.symbolDark, roughness: 0.75, envMapIntensity: 0 })
+          : new THREE.MeshStandardMaterial({ color: F.colors.symbolLight, roughness: 0.5, emissive: F.colors.symbolLight, emissiveIntensity: 0.25 }),
+      ),
+    );
+  }
+  // Colour shapes: a plate in the colour's shape, white (dark on yellow) like the plain triangle, and on
+  // it a smaller triangle in the body's colour. The triangle stays the only thing that points.
+  const marked = new THREE.Group();
+  const plateMat =
     color === 'yellow'
       ? new THREE.MeshStandardMaterial({ color: F.colors.symbolDark, roughness: 0.75, envMapIntensity: 0 })
-      : new THREE.MeshPhysicalMaterial({ color: F.colors.symbolLight, roughness: 0.3, clearcoat: 0.7, emissive: F.colors.symbolLight, emissiveIntensity: 0.25 }),
-  );
-  symbol.add(arrow);
+      : new THREE.MeshStandardMaterial({ color: F.colors.symbolLight, roughness: 0.5, emissive: F.colors.symbolLight, emissiveIntensity: 0.25 });
+  const pointerMat = new THREE.MeshStandardMaterial({ color: color === 'yellow' ? tones.main : tones.side, roughness: 0.6, envMapIntensity: 0, emissive: color === 'yellow' ? tones.main : tones.side, emissiveIntensity: 0.3 });
+  const pointer = new THREE.Mesh(triangleSlab(S.shape.triangle, S.raise * 0.6), pointerMat);
+  pointer.position.y = S.shape.raise;
+  marked.add(new THREE.Mesh(shapePlate(color, S.shape.size, S.shape.raise, S.sink), plateMat), pointer);
+  marked.visible = false;
+  symbol.add(plain, marked);
   symbol.position.y = SHELL_TOP + half;
+  const showShape = (on: boolean): void => {
+    plain.visible = !on;
+    marked.visible = on;
+  };
 
   const root = new THREE.Group();
   root.add(feet, romp, shell, face, ears, symbol);
@@ -404,5 +498,5 @@ export function buildFlockbot(color: Color): FlockbotParts {
       node.receiveShadow = true;
     }
   });
-  return { root, shell, face, romp, feet, symbol };
+  return { root, shell, face, romp, feet, symbol, showShape };
 }

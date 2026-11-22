@@ -24,6 +24,7 @@ const BOX_TOP = 0.3;
 const ROBOT_TOP = 1.0;
 
 const GRID = CONFIG.board.grid;
+const HINT = CONFIG.hintPicture;
 
 /** How the board sits in the canvas. */
 export interface BoardLayout {
@@ -96,10 +97,14 @@ export class BoardView {
   private particleGeo = new RoundedBoxGeometry(0.09, 0.09, 0.09, 2, 0.02);
   private layout: BoardLayout = CONFIG.board.roomy;
   private style: BoardStyle = { kitRobots: true, kitBoard: true };
+  private colourShapes = false;
   /** Height of the tile surface the robots stand on. */
   private floorY = 0.06;
   private speedScale = 1;
   private reduced = false;
+  /** The hint picture: one group of flat marks per robot, lying on the tiles. */
+  private hintGroup = new THREE.Group();
+  private hintMarks: { group: THREE.Group; dx: number; dz: number; materials: THREE.MeshBasicMaterial[] }[] = [];
 
   constructor(private canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -160,6 +165,12 @@ export class BoardView {
     this.style = style;
   }
 
+  /** The "Colour shapes" setting: show each robot colour's shape on its robots. Takes effect at once. */
+  setColourShapes(on: boolean): void {
+    this.colourShapes = on;
+    for (const view of this.robots.values()) view.showShape(on);
+  }
+
   /** The level on show, if any. */
   get currentLevel(): Level | null {
     return this.level;
@@ -181,6 +192,8 @@ export class BoardView {
     this.skip();
     this.level = level;
     this.boardGroup.clear();
+    this.clearHint();
+    this.boardGroup.add(this.hintGroup);
     this.robots.clear();
     for (const p of this.particles) this.scene.remove(p.mesh);
     this.particles = [];
@@ -195,6 +208,7 @@ export class BoardView {
       const heading = this.style.heading ?? 'faceUp';
       const viewTilt = (this.layout.tilt * Math.PI) / 180;
       const view = this.style.kitRobots ? buildPartsRobot(r.id, r.color, heading, viewTilt) : buildRobot(r.id, r.color, heading);
+      view.showShape(this.colourShapes);
       this.robots.set(r.id, view);
       this.boardGroup.add(view.root);
     }
@@ -521,6 +535,102 @@ export class BoardView {
     );
   }
 
+  /**
+   * Draw a hint on the board: for every robot what the hinted command will do to it. A robot the
+   * command turns gets a quarter arc from its old heading to its new one; a robot that will step
+   * gets a ghost arrow to its target cell; a robot that will be blocked gets a bump mark at the
+   * edge it runs into. `events` are the engine's own for that command (see `previewStep`); null
+   * or an empty list clears the picture. The marks pulse softly unless motion is reduced.
+   */
+  showHint(events: readonly RobotEvent[] | null): void {
+    this.clearHint();
+    if (!events || !this.level) return;
+    const p = this.pitch;
+    for (const e of events) {
+      const color = this.level.start.robots.find((r) => r.id === e.id)?.color;
+      if (!color) continue;
+      const dx = DIR_DX[e.dir];
+      const dz = DIR_DY[e.dir];
+      const cx = this.cellX(e.fromX);
+      const cz = this.cellZ(e.fromY);
+      /** A point `along` the heading and `side` to its right, in cells from the robot's centre. */
+      const at = (along: number, side: number): THREE.Vector2 => new THREE.Vector2((dx * along - dz * side) * p, (dz * along + dx * side) * p);
+      const shapes: THREE.Vector2[][] = [];
+      if (e.outcome === 'moved' || e.outcome === 'exited') {
+        const a = HINT.arrow;
+        shapes.push([at(a.from, -a.shaft), at(a.neck, -a.shaft), at(a.neck, -a.head), at(a.tip, 0), at(a.neck, a.head), at(a.neck, a.shaft), at(a.from, a.shaft)]);
+      } else {
+        const b = HINT.bump;
+        const end = b.bar + b.thick;
+        shapes.push([at(b.from, -b.shaft), at(b.bar, -b.shaft), at(b.bar, -b.half), at(end, -b.half), at(end, b.half), at(b.bar, b.half), at(b.bar, b.shaft), at(b.from, b.shaft)]);
+      }
+      if (e.turned) {
+        // Clockwise from the old heading to the new one, as the robot itself will turn.
+        const t = HINT.turn;
+        const rad = Math.PI / 180;
+        const to = e.dir * 90 - t.endGap;
+        const from = e.dir * 90 - 90 + t.startGap;
+        const ring = (radius: number, degrees: number): THREE.Vector2 => new THREE.Vector2(Math.sin(degrees * rad) * radius * p, -Math.cos(degrees * rad) * radius * p);
+        const outer: THREE.Vector2[] = [];
+        const inner: THREE.Vector2[] = [];
+        for (let i = 0; i <= 10; i++) {
+          const d = from + ((to - from) * i) / 10;
+          outer.push(ring(t.radius + t.width / 2, d));
+          inner.unshift(ring(t.radius - t.width / 2, d));
+        }
+        shapes.push([...outer, ring(t.radius + t.headWidth / 2, to), ring(t.radius, to + t.head), ring(t.radius - t.headWidth / 2, to), ...inner]);
+      }
+      const group = new THREE.Group();
+      group.position.set(cx, this.floorY + HINT.lift, cz);
+      const flat = (tone: string): THREE.MeshBasicMaterial => new THREE.MeshBasicMaterial({ color: tone, transparent: true, opacity: HINT.opacity, depthTest: false, depthWrite: false, side: THREE.DoubleSide });
+      // The robot's colour with a white edge, drawn over everything so no robot hides a mark.
+      const tint = flat(CONFIG.colors.robots[color].side);
+      const white = flat('#FFFFFF');
+      for (const points of shapes) {
+        const geometry = new THREE.ShapeGeometry(new THREE.Shape(points));
+        geometry.rotateX(Math.PI / 2);
+        // The edge is the same outline, a little larger, drawn under the fill.
+        const rim = new THREE.Mesh(this.outline(points, HINT.outline * p), white);
+        rim.renderOrder = 20;
+        const mark = new THREE.Mesh(geometry, tint);
+        mark.renderOrder = 21;
+        group.add(rim, mark);
+      }
+      this.hintGroup.add(group);
+      this.hintMarks.push({ group, dx, dz, materials: [tint, white] });
+    }
+  }
+
+  /** A closed outline of `points` widened by `grow` on every side, lying flat. */
+  private outline(points: readonly THREE.Vector2[], grow: number): THREE.BufferGeometry {
+    const n = points.length;
+    // Shoelace sum: its sign tells which way round the points run, so "outward" is known.
+    let area = 0;
+    for (let i = 0; i < n; i++) area += points[i].x * points[(i + 1) % n].y - points[(i + 1) % n].x * points[i].y;
+    const sign = area > 0 ? 1 : -1;
+    const grown = points.map((point, i) => {
+      const before = points[(i + n - 1) % n];
+      const after = points[(i + 1) % n];
+      const a = new THREE.Vector2().subVectors(point, before).normalize();
+      const b = new THREE.Vector2().subVectors(after, point).normalize();
+      const normal = new THREE.Vector2(a.y + b.y, -a.x - b.x).normalize().multiplyScalar(sign);
+      const sharp = Math.max(0.35, Math.sqrt((1 + a.dot(b)) / 2));
+      return new THREE.Vector2(point.x + (normal.x * grow) / sharp, point.y + (normal.y * grow) / sharp);
+    });
+    const geometry = new THREE.ShapeGeometry(new THREE.Shape(grown));
+    geometry.rotateX(Math.PI / 2);
+    return geometry;
+  }
+
+  private clearHint(): void {
+    for (const mark of this.hintMarks) {
+      for (const child of mark.group.children) (child as THREE.Mesh).geometry.dispose();
+      for (const material of mark.materials) material.dispose();
+    }
+    this.hintMarks = [];
+    this.hintGroup.clear();
+  }
+
   private pulseExit(): void {
     const pad = this.exitPad;
     if (!pad) return;
@@ -592,6 +702,15 @@ export class BoardView {
       if (view.blinkIn < 0) view.blinkIn = 2.4 + ((view.id * 53 + Math.floor(this.time * 7)) % 17) / 5;
       if (!this.tweens.length) {
         view.body.scale.setScalar(Math.max(view.visibleScale, 0.0001));
+      }
+    }
+    // The hint picture breathes: its marks slide a little along the heading and fade, then come back.
+    if (this.hintMarks.length) {
+      const swing = this.reduced ? 0 : 0.5 - 0.5 * Math.cos((this.time / HINT.pulse.seconds) * Math.PI * 2);
+      for (const mark of this.hintMarks) {
+        const base = mark.group.userData.base as THREE.Vector3 | undefined ?? (mark.group.userData.base = mark.group.position.clone());
+        mark.group.position.set(base.x + mark.dx * swing * HINT.pulse.slide * this.pitch, base.y, base.z + mark.dz * swing * HINT.pulse.slide * this.pitch);
+        for (const material of mark.materials) material.opacity = HINT.opacity * (1 - HINT.pulse.fade * swing);
       }
     }
     if (this.exitRing) {

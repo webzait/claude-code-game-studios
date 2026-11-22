@@ -1,12 +1,13 @@
 import { CONFIG } from '../config';
-import type { Color } from '../engine/types';
-import { countUp, formatCoins, offerButton, rewardBlock, type PriceState, type RewardView } from './coins';
+import PARTS from '../../data/parts.json';
+import { formatCoins, offerButton, priceTag, rewardPlate, spokenPrice, type PriceState, type RewardView } from './coins';
 
 /**
  * The end-of-round pop-up: a sheet resting near the bottom edge, as designed
  * on the parts sheet (`tf-end-*`). One function per situation builds the
  * dialog; the buttons are the shared `tf-btn` blocks and every number and
- * label is real text. Reading order is title, result, then actions.
+ * label is real text. Each situation says one thing: a win is its stars, one
+ * line, the coins really earned and one main button (finding B5).
  */
 
 const STAR = 'M32 8 38.6 23.2 55 24.7 42.6 35.6 46.2 51.7 32 43.2 17.8 51.7 21.4 35.6 9 24.7 25.4 23.2Z';
@@ -40,6 +41,8 @@ const button = (act: string, kind: string, text: string, glyph: Glyph, after = f
   return `<button type="button" id="end-${act}" class="tf-btn ${kind}"><span class="tf-clip"><span class="tf-face">${after ? label + ICONS[glyph] : ICONS[glyph] + label}</span></span></button>`;
 };
 const utility = (act: string, text: string, glyph: Glyph, size = 'tf-end-small'): string => button(act, `tf-utility ${size}`, text, glyph);
+/** A quiet secondary action: icon and label, no block, so it never competes with the main button. */
+const link = (act: string, text: string, glyph: Glyph): string => `<button type="button" id="end-${act}" class="tf-end-link">${ICONS[glyph]}<span>${text}</span></button>`;
 
 const FLECKS = ['#F1454B', '#2E84F1', '#F4C62F', '#39E85C', '#7E6BFF', '#FFE48A'];
 /** A few flecks that fly up from the stars once. */
@@ -58,8 +61,6 @@ const escape = (text: string): string => text.replace(/[&<>"]/g, (c) => ({ '&': 
 /** A level was won. */
 export interface WinCard {
   readonly kind: 'win';
-  /** "Level 5 · Queue Up". */
-  readonly level: string;
   readonly stars: 1 | 2 | 3;
   readonly moves: number;
   /** Shortest solution under the rules in play. */
@@ -77,13 +78,13 @@ export interface WinCard {
 /** The moves ran out. */
 export interface LostCard {
   readonly kind: 'lost';
-  /** Colours of the robots still on the board. */
-  readonly left: readonly Color[];
   /** The checked "+N moves" offer; absent when it was not proven to help. */
   readonly offer?: { readonly price: number; readonly state: Exclude<PriceState, 'used'>; readonly coins: number; readonly take: () => void };
-  /** Why there is no offer. */
+  /** Why there is no offer: the card's one sentence. */
   readonly note?: string;
   readonly undo: () => void;
+  /** What that Undo costs; its tag is set on the button. */
+  readonly undoPrice: { readonly cost: number; readonly state: Exclude<PriceState, 'used'> };
   readonly retry: () => void;
   /** Ask for a hint from here; offered when there is no paid offer. */
   readonly hint?: () => void;
@@ -101,30 +102,45 @@ export interface InfoCard {
 /** Every situation the pop-up can show. */
 export type EndCard = WinCard | LostCard | InfoCard;
 
-function winBody(w: WinCard, flecks: boolean): string {
-  const result = w.backup ? `<b>${w.moves} moves</b> · with extra moves` : w.moves <= w.par ? `<b>${w.moves} moves</b> · the shortest solution` : `<b>${w.moves} moves</b> · shortest is ${w.par}`;
-  const actions = w.last
-    ? `${button('levels', 'tf-end-main tf-end-big wide', 'Levels', 'levels')}<div class="wide">${utility('replay', 'Replay', 'replay')}</div>`
-    : `${button('next', 'tf-end-go tf-end-big wide', 'Next', 'next', true)}${utility('replay', 'Replay', 'replay')}${utility('levels', 'Levels', 'levels')}`;
-  return `${flecks ? confetti() : ''}<div class="tf-end-head"><p class="tf-end-level">${escape(w.level)}</p><h2 class="tf-end-title" id="end-title">${w.last ? 'All home, all done' : 'All home'}</h2></div>
-    <div class="tf-end-stars" role="img" aria-label="${w.stars} of 3 stars">${[0, 1, 2].map((i) => `<span class="tf-end-slot${i < w.stars ? ' won' : ''}" style="--i:${i}">${star(false)}${i < w.stars ? star(true) : ''}</span>`).join('')}</div>
-    <p class="tf-end-result" id="end-result">${result}${w.backup ? '<br />One star when extra moves are used.' : ''}${w.last ? '<br />That was the last level.' : ''}</p>
-    <div class="tf-end-coins">${rewardBlock(w.reward)}</div>
-    <div class="tf-end-actions">${actions}</div>`;
+/**
+ * The one line of a win: the move count against the shortest solution. It stays because it is what explains the stars
+ * (and how to earn the missing ones); the level's name does not, since the top bar behind the sheet still shows it.
+ */
+export function winLine(w: Pick<WinCard, 'moves' | 'par' | 'backup' | 'last'>): string {
+  const moves = `<b>${w.moves} moves</b>`;
+  if (w.last) return `${moves} · that was the last level`;
+  if (w.backup) return `${moves} · with extra moves`;
+  return w.moves <= w.par ? `${moves} · the shortest solution` : `${moves} · shortest is ${w.par}`;
+}
+
+/** The markup of the win pop-up. `flecks` adds the confetti of the entrance. */
+export function winMarkup(w: WinCard, flecks: boolean): string {
+  const actions = w.last ? button('levels', 'tf-end-main tf-end-big wide', 'Levels', 'levels') : button('next', 'tf-end-go tf-end-big wide', 'Next', 'next', true);
+  return `${flecks ? confetti() : ''}<div class="tf-end-stars" role="img" aria-label="${w.stars} of 3 stars">${[0, 1, 2].map((i) => `<span class="tf-end-slot${i < w.stars ? ' won' : ''}" style="--i:${i}">${star(false)}${i < w.stars ? star(true) : ''}</span>`).join('')}</div>
+    <h2 class="tf-end-title tf-end-line" id="end-title">${winLine(w)}</h2>
+    <div class="tf-end-coins" id="end-result">${rewardPlate(w.reward.earned)}</div>
+    <div class="tf-end-actions">${actions}</div>
+    <div class="tf-end-more">${link('replay', 'Replay', 'replay')}${w.last ? '' : link('levels', 'Levels', 'levels')}</div>`;
 }
 
 function lostBody(l: LostCard): string {
-  const chips = l.left.map((c) => `<i style="--c:${CONFIG.colors[c]}"></i>`).join('');
   let offer = '';
+  let why = l.note ?? '';
   if (l.offer) {
     const o = l.offer;
-    const why = o.state === 'short' ? `You have ${formatCoins(o.coins)} coins: ${formatCoins(o.price - o.coins)} short. Undo and Retry are free.` : `Checked: ${CONFIG.extraMoves} more moves are enough from here.`;
-    offer = `${offerButton('end-offer', o.price, o.state)}<p class="tf-end-note">${why}</p>`;
+    why = o.state === 'short' ? `You have ${formatCoins(o.coins)} coins: ${formatCoins(o.price - o.coins)} short. Retry is free.` : `Checked: ${CONFIG.extraMoves} more moves are enough from here.`;
+    offer = offerButton('end-offer', o.price, o.state);
   }
+  // Undo keeps its look; its price is the small coin badge on its bottom edge, as on the Undo button of the puzzle screen.
+  const u = l.undoPrice;
+  const undo = utility('undo', 'Undo', 'undo', `tf-end-mid tf-paid${u.state === 'short' ? ' short' : ''}`)
+    .replace('<button ', `<button aria-label="${spokenPrice('Undo', u.cost, u.state)}" `)
+    .replace('</span></span></button>', `</span></span><span class="tf-coin-badge">${priceTag(u.cost, u.state, PARTS.coins.priceSmall)}</span></button>`);
   return `<div class="tf-end-head"><h2 class="tf-end-title" id="end-title">Out of moves</h2></div>
-    <p class="tf-end-result" id="end-result"><span class="tf-end-left" aria-hidden="true">${chips}</span>${l.left.length} still on the board</p>
-    ${offer}${l.note ? `<p class="tf-end-note">${l.note}</p>` : ''}
-    <div class="tf-end-actions lead">${utility('undo', 'Undo', 'undo', 'tf-end-mid')}${button('retry', 'tf-end-main tf-end-mid', 'Retry', 'retry')}${l.hint ? `<div class="wide">${utility('hint', 'Hint', 'hint')}</div>` : ''}</div>`;
+    <p class="tf-end-note" id="end-result">${why}</p>
+    ${offer}
+    <div class="tf-end-actions lead">${undo}${button('retry', 'tf-end-main tf-end-mid', 'Retry', 'retry')}</div>
+    ${l.hint ? `<div class="tf-end-more">${link('hint', 'Hint', 'hint')}</div>` : ''}`;
 }
 
 function infoBody(c: InfoCard): string {
@@ -134,10 +150,10 @@ function infoBody(c: InfoCard): string {
 
 /**
  * Put the pop-up for `card` into `host` and wire its buttons.
- * @param animate Play the entrance once (card rises, stars land, coins count up); false shows the end state at once.
+ * @param animate Play the entrance once (card rises, stars land); false shows the end state at once.
  */
 export function renderEndCard(host: HTMLElement, card: EndCard, animate: boolean): void {
-  const body = card.kind === 'win' ? winBody(card, animate) : card.kind === 'lost' ? lostBody(card) : infoBody(card);
+  const body = card.kind === 'win' ? winMarkup(card, animate) : card.kind === 'lost' ? lostBody(card) : infoBody(card);
   host.innerHTML = `<section class="tf-end-card sheet ${card.kind}" role="dialog" aria-modal="true" aria-labelledby="end-title" aria-describedby="end-result" tabindex="-1">${body}</section>`;
   const on = (act: string, action: (() => void) | undefined): void => {
     const node = host.querySelector<HTMLButtonElement>(`#end-${act}`);
@@ -147,8 +163,6 @@ export function renderEndCard(host: HTMLElement, card: EndCard, animate: boolean
     on('next', card.next);
     on('replay', card.replay);
     on('levels', card.levels);
-    const sum = host.querySelector<HTMLElement>('.tf-coin-sum');
-    if (animate && sum) countUp(sum, 0, Number(sum.dataset.to), 600, (n) => `+${formatCoins(n)}`, 700);
   } else if (card.kind === 'lost') {
     on('offer', card.offer?.take);
     on('undo', card.undo);

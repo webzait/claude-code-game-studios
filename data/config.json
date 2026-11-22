@@ -105,20 +105,22 @@
     "previewMoves": 99,
     "certifyMaxVisited": 400000
   },
+  "hintPicture": {
+    "opacity": 0.92,
+    "outline": 0.035,
+    "lift": 0.03,
+    "arrow": { "from": 0.5, "neck": 0.84, "tip": 1.1, "shaft": 0.085, "head": 0.22 },
+    "bump": { "from": 0.34, "bar": 0.47, "thick": 0.1, "shaft": 0.07, "half": 0.26 },
+    "turn": { "radius": 0.54, "width": 0.1, "startGap": 6, "endGap": 30, "head": 18, "headWidth": 0.26 },
+    "pulse": { "seconds": 1.1, "slide": 0.07, "fade": 0.25 }
+  },
   "audio": {
     "volume": 0.16
   },
-  "haptics": {
-    "move": [
-      12
-    ],
-    "win": [
-      30,
-      60,
-      30,
-      60,
-      70
-    ]
+  "colourShapes": {
+    "red": "circle",
+    "blue": "square",
+    "yellow": "diamond"
   },
   "board": {
     "roomy": {
@@ -140,17 +142,41 @@
       "cornerRadius": 0.2,
       "wallFill": 0.9,
       "wallHeight": 0.72,
-      "robotFill": 0.9
+      "robotFill": 0.82
     }
   },
   "levelsPerPage": 20,
+  "levelsAhead": 5,
+  "levelPath": {
+    "layout": "winding",
+    "playAgainWhenComplete": false
+  },
+  "logo": {
+    "levels": {
+      "layout": "band",
+      "bandMinHeight": 50,
+      "bandMaxHeight": 124,
+      "bandMaxHeightWide": 150,
+      "tileComfort": 60,
+      "rowMaxHeight": 56
+    },
+    "intro": {
+      "enabled": false,
+      "seconds": 0.7,
+      "scale": 1.35
+    }
+  },
   "coins": {
-    "start": 30,
+    "start": 50,
     "win": 10,
-    "perSpareMove": 3,
-    "perfect": 10,
-    "hintCost": 10,
-    "extraMovesCost": 25
+    "twoStars": 10,
+    "perfect": 20,
+    "perSpareMove": 0,
+    "hintedWinPays": "stars",
+    "hintCost": 20,
+    "extraMovesCost": 40,
+    "undoCost": 5,
+    "freeUndosPerLevel": 0
   },
   "light": {
     "sky": "#FFFFFF",

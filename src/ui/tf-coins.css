@@ -52,12 +52,19 @@ img.tf-coin-ico { filter: drop-shadow(0 1px 0 rgba(138, 94, 4, .6)); }
 .tf-coin-buy.hint .tf-face { box-shadow: inset 0 0 0 1.5px rgba(36, 49, 79, .2), inset 0 -2.5px 1px rgba(255, 255, 255, .3); }
 .tf-coin-buy.hint:disabled { --ink-c: #7c879f; }
 .tf-coin-buy.hint .tf-coin-price:not(.short):not(.free) { background: #e6ebf7; }
+/* Undo: the button as it always was, with its price on a small cream badge over its bottom edge, coin first. */
+.tf-coin-badge { position: absolute; left: 50%; bottom: -2px; z-index: 2; transform: translateX(-50%); display: flex; pointer-events: none; }
+.tf-coin-badge .tf-coin-price { --ph: 19px; --pf: 13px; gap: 3px; padding: 0 8px 0 0; background: #fff4dc; color: #6b3a12; box-shadow: 0 1.5px 0 #d9b98a, 0 3px 4px rgba(36, 49, 79, .3); }
+.tf-coin-badge .tf-coin-price .tf-coin-ico { width: 23px; height: 23px; margin: -2px 0 -2px -5px; }
+.tf-coin-badge .tf-coin-price.free { padding: 0 9px; background: var(--yes-soft); color: var(--yes); box-shadow: 0 1.5px 0 #9fd9b3, 0 3px 4px rgba(36, 49, 79, .3); }
+.tf-coin-badge .tf-coin-price.short { background: var(--no-soft); color: #b3202a; box-shadow: inset 0 0 0 1.5px var(--no), 0 3px 4px rgba(36, 49, 79, .3); }
+.tf-btn:disabled .tf-coin-badge { opacity: .55; }
 .tf-coin-buy.boost { --c-top: #a093ff; --c-main: #7e6bff; --c-side: #5c48d9; --c-deep: #4735b4; --gloss: .3; }
 .tf-coin-buy.offer .tf-face { justify-content: flex-start; padding-left: calc(var(--side) + 12px); padding-right: calc(var(--side) + 12px); }
 .tf-coin-buy.offer .tf-label { flex: 1; text-align: left; text-shadow: 0 1.5px 0 rgba(40, 24, 140, .55); }
 .tf-coin-buy .tf-face .tf-coin-art { width: calc(var(--h) * .74); height: calc(var(--h) * .74); filter: drop-shadow(0 1.5px 1px rgba(30, 20, 110, .45)); }
 /* Cannot afford: the block goes dull but stays up and tappable; the price turns red. */
-.tf-coin-buy.short {
+.tf-coin-buy.short, .tf-paid.short {
   --face-top: color-mix(in srgb, var(--c-top) 45%, #dfe4ee); --face: color-mix(in srgb, var(--c-main) 45%, #cfd6e4);
   --wall: color-mix(in srgb, var(--c-side) 45%, #b3bcd0); --wall-deep: color-mix(in srgb, var(--c-deep) 45%, #a3adc4); --gloss: .1;
 }
@@ -114,3 +121,14 @@ img.tf-coin-ico { filter: drop-shadow(0 1px 0 rgba(138, 94, 4, .6)); }
 .reduce-motion .tf-coin-counter, .reduce-motion .tf-coin-counter.short, .reduce-motion .tf-coin-counter.earn .tf-coin-ico, .reduce-motion .tf-coin-gain { animation: none; transition: none; }
 /* Why a reward is the base amount only. */
 .tf-coin-why { margin: 0; font-size: 12.5px; font-weight: 600; color: #5d6a84; text-align: center; text-wrap: balance; }
+
+/* Coins flying from the win pop-up to the counter (finding B6): a few elements that only change transform and opacity.
+   The outer element carries the sideways move and the picture the rise, each with its own easing, which bends the path into an arc. */
+.tf-coin-flight { position: absolute; inset: 0; z-index: 7; overflow: hidden; pointer-events: none; }
+.tf-coin-fly { position: absolute; left: 0; top: 0; width: var(--s); height: var(--s); will-change: transform; transform: translate(var(--x0), var(--y0)); animation: tf-coin-fly-x var(--ms) cubic-bezier(.5, 0, .85, .6) var(--dl) both; }
+.tf-coin-fly img { display: block; width: 100%; height: 100%; will-change: transform, opacity; filter: none; animation: tf-coin-fly-y var(--ms) cubic-bezier(.3, .35, .5, 1) var(--dl) both, tf-coin-fly-in .1s linear var(--dl) both; }
+@keyframes tf-coin-fly-x { to { transform: translate(calc(var(--x0) + var(--dx)), var(--y0)); } }
+@keyframes tf-coin-fly-y { from { transform: translateY(0) scale(1); } to { transform: translateY(var(--dy)) scale(var(--k)); } }
+@keyframes tf-coin-fly-in { from { opacity: 0; } }
+/* The amount on the pop-up goes pale as its coins leave; it stays readable as the record of what was earned. */
+.tf-coin-total.sent { opacity: .55; transition: opacity var(--fade, .4s) ease-in; }
