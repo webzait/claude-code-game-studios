@@ -1,0 +1,176 @@
+{
+  "forward": {
+    "teaches": "FORWARD moves every robot one step.",
+    "size": "4x4",
+    "red": 2,
+    "par": "3..4",
+    "exit": "corner"
+  },
+  "turn": {
+    "teaches": "A colour command turns that colour a quarter turn clockwise, then everyone steps.",
+    "size": "4x4",
+    "red": "1..2",
+    "par": "4..6",
+    "maxSolutions": 2
+  },
+  "wait-at-wall": {
+    "teaches": "A robot that walks into the edge waits there, so stragglers catch up.",
+    "size": "5x4",
+    "red": "2..3",
+    "headings": "same",
+    "par": "5..8",
+    "maxSolutions": 2,
+    "require": {
+      "tally.blocked-wall": "2.."
+    }
+  },
+  "two-colours": {
+    "teaches": "Only the commanded colour turns, but every robot steps.",
+    "size": "5x5",
+    "red": 2,
+    "blue": 2,
+    "par": "5..8",
+    "maxSolutions": 2
+  },
+  "wall-stopper": {
+    "teaches": "A wall inside the board parks a robot while the rest walks on.",
+    "size": "6x5",
+    "red": 2,
+    "blue": 2,
+    "walls": "2..4",
+    "par": "6..10",
+    "maxSolutions": 2,
+    "require": {
+      "bumpSteps": "2..",
+      "walls": "1.."
+    }
+  },
+  "three-rights": {
+    "teaches": "Turns go clockwise only: a left turn is three rights, and the robot walks while it turns.",
+    "size": "5x5",
+    "red": "1..2",
+    "blue": "1..2",
+    "walls": "0..2",
+    "par": "7..11",
+    "maxSolutions": 3,
+    "require": {
+      "awaySteps": "2.."
+    }
+  },
+  "queue": {
+    "teaches": "Robots in a line wait for the one in front.",
+    "size": "6x5",
+    "red": "2..3",
+    "blue": "2..3",
+    "walls": "1..3",
+    "par": "6..10",
+    "maxSolutions": 2,
+    "require": {
+      "tally.blocked-robot": "2.."
+    }
+  },
+  "same-colour": {
+    "teaches": "One colour, different headings: one press sends them different ways.",
+    "size": "5x5",
+    "red": "3..4",
+    "blue": "0..1",
+    "walls": "0..2",
+    "headings": "any",
+    "par": "6..10",
+    "maxSolutions": 2,
+    "require": {
+      "turns": "3.."
+    }
+  },
+  "conflict": {
+    "teaches": "Two robots that want the same cell both stay where they are.",
+    "size": "5x5",
+    "red": 2,
+    "blue": 2,
+    "walls": "0..2",
+    "par": "6..10",
+    "maxSolutions": 2,
+    "require": {
+      "tally.blocked-conflict": "1.."
+    }
+  },
+  "exit-sides": {
+    "teaches": "The exit can be entered from every open side.",
+    "size": "5x5",
+    "red": 2,
+    "blue": 2,
+    "walls": "0..2",
+    "exit": "inside",
+    "par": "5..9",
+    "maxSolutions": 2,
+    "require": {
+      "exitSides": "3.."
+    }
+  },
+  "together": {
+    "teaches": "Several robots may enter the exit in the same move.",
+    "size": "5x5",
+    "red": 2,
+    "blue": 2,
+    "walls": "0..2",
+    "exit": "edge",
+    "par": "5..9",
+    "maxSolutions": 2,
+    "require": {
+      "maxExitsAtOnce": "2.."
+    }
+  },
+  "three-colours": {
+    "teaches": "Three colours: three kinds of turn to keep apart.",
+    "size": "6x6",
+    "red": 2,
+    "blue": 2,
+    "yellow": "1..2",
+    "walls": "1..3",
+    "par": "7..10",
+    "maxSolutions": 2,
+    "require": {
+      "commandsUsed": 4
+    }
+  },
+  "tight": {
+    "teaches": "A small board: no room to walk around each other.",
+    "size": "4x4",
+    "red": 2,
+    "blue": 2,
+    "walls": "0..2",
+    "par": "6..10",
+    "maxSolutions": 2
+  },
+  "long-board": {
+    "teaches": "A long, narrow board: the order in the corridor decides.",
+    "size": "4x7",
+    "red": 2,
+    "blue": 2,
+    "walls": "1..3",
+    "par": "7..11",
+    "maxSolutions": 2
+  },
+  "crowd": {
+    "teaches": "Many robots: one command, many consequences.",
+    "size": "6x6",
+    "red": "3..4",
+    "blue": "3..4",
+    "yellow": "2..3",
+    "walls": "3..5",
+    "par": "8..11",
+    "maxSolutions": 2,
+    "cap": 400000
+  },
+  "big": {
+    "teaches": "The largest board: long walks, and time to see a plan unfold.",
+    "size": "8x8",
+    "red": "2..3",
+    "blue": "2..3",
+    "yellow": "0..2",
+    "walls": "4..8",
+    "par": "9..13",
+    "maxSolutions": 3,
+    "cap": 400000
+  }
+}

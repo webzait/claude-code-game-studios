@@ -176,5 +176,44 @@
       "extraLean": 0,
       "forward": 0
     }
+  },
+  "levelDesign": {
+    "maxStates": 3000000,
+    "maxPar": 16,
+    "orderSamples": 2000,
+    "score": {
+      "search": 3.5,
+      "searchFrom": 3,
+      "searchTo": 19,
+      "turns": 2.0,
+      "turnsTo": 8,
+      "robots": 1.0,
+      "robotsTo": 12,
+      "narrow": 1.0,
+      "unforgiving": 1.0,
+      "fatalFrom": 0.3,
+      "fatalTo": 0.8,
+      "wrongLooking": 1.5
+    },
+    "generateCap": 120000,
+    "reject": {
+      "orderFreedom": 0.5,
+      "maxSolutions": 4
+    },
+    "poolPerKept": 3
+  },
+  "save": {
+    "v1LevelOrder": [
+      "follow-the-arrow",
+      "one-color-turns",
+      "side-door",
+      "use-the-wall",
+      "queue-up",
+      "traffic-jam",
+      "long-way-round",
+      "two-lanes",
+      "patience",
+      "one-command-many-consequences"
+    ]
   }
 }

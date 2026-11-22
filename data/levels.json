@@ -1,5 +1,29 @@
 [
   {
+    "id": "first-steps",
+    "name": "First Steps",
+    "par": 3,
+    "witness": ["forward","forward","forward"],
+    "grid": [
+      "r> .. .. EX",
+      ".. .. .. ..",
+      ".. .. .. r^",
+      ".. .. .. .."
+    ]
+  },
+  {
+    "id": "quarter-turn",
+    "name": "Quarter Turn",
+    "par": 6,
+    "witness": ["forward","forward","forward","red","forward","forward"],
+    "grid": [
+      "r> .. .. ..",
+      ".. .. .. ..",
+      ".. .. .. ..",
+      ".. .. .. EX"
+    ]
+  },
+  {
     "id": "follow-the-arrow",
     "name": "Follow the Arrow",
     "par": 7,
@@ -12,16 +36,41 @@
     ]
   },
   {
-    "id": "one-color-turns",
-    "name": "One Color Turns",
-    "par": 7,
-    "witness": ["blue","forward","red","forward","blue","forward","forward"],
+    "id": "everyone-steps",
+    "name": "Everyone Steps",
+    "par": 3,
+    "witness": ["blue","forward","forward"],
+    "grid": [
+      "b^ .. .. EX",
+      ".. .. .. ..",
+      ".. .. .. ..",
+      ".. .. .. r^"
+    ]
+  },
+  {
+    "id": "lean-on-it",
+    "name": "Lean on It",
+    "par": 6,
+    "witness": ["forward","forward","red","forward","forward","forward"],
+    "grid": [
+      ".. .. .. .. ..",
+      ".. .. ## .. ..",
+      ".. .. .. .. EX",
+      ".. .. r^ .. ..",
+      "r^ .. .. .. .."
+    ]
+  },
+  {
+    "id": "two-minds",
+    "name": "Two Minds",
+    "par": 6,
+    "witness": ["forward","red","forward","forward","red","forward"],
     "grid": [
       ".. .. .. .. EX",
-      "r^ .. .. .. ..",
-      ".. .. r^ .. ..",
+      ".. r^ .. r^ ..",
       ".. .. .. .. ..",
-      ".. b< .. b< .."
+      ".. .. .. r< r<",
+      ".. .. .. .. .."
     ]
   },
   {
@@ -39,6 +88,44 @@
     ]
   },
   {
+    "id": "wait-your-turn",
+    "name": "Wait Your Turn",
+    "par": 5,
+    "witness": ["forward","forward","red","forward","forward"],
+    "grid": [
+      ".. .. .. .. ..",
+      "rv .. .. .. ..",
+      ".. .. .. .. ..",
+      "EX b< rv b< .."
+    ]
+  },
+  {
+    "id": "one-color-turns",
+    "name": "One Color Turns",
+    "par": 7,
+    "witness": ["blue","forward","red","forward","blue","forward","forward"],
+    "grid": [
+      ".. .. .. .. EX",
+      "r^ .. .. .. ..",
+      ".. .. r^ .. ..",
+      ".. .. .. .. ..",
+      ".. b< .. b< .."
+    ]
+  },
+  {
+    "id": "four-doors",
+    "name": "Four Doors",
+    "par": 5,
+    "witness": ["blue","red","red","forward","forward"],
+    "grid": [
+      ".. .. .. .. ..",
+      ".. b> .. .. ..",
+      ".. .. .. r> ..",
+      "r> EX .. .. ..",
+      ".. b< .. .. .."
+    ]
+  },
+  {
     "id": "use-the-wall",
     "name": "Use the Wall",
     "par": 8,
@@ -49,6 +136,57 @@
       ".. .. b^ .. ## r<",
       ".. .. .. .. .. ..",
       ".. r< .. .. ## b<"
+    ]
+  },
+  {
+    "id": "three-of-a-kind",
+    "name": "Three of a Kind",
+    "par": 6,
+    "witness": ["red","blue","yellow","forward","forward","forward"],
+    "grid": [
+      "EX b< .. .. ..",
+      ".. .. .. .. ..",
+      "r< .. .. .. ..",
+      ".. b< .. .. ..",
+      ".. .. y< .. .."
+    ]
+  },
+  {
+    "id": "close-quarters",
+    "name": "Close Quarters",
+    "par": 6,
+    "witness": ["blue","forward","red","forward","red","forward"],
+    "grid": [
+      "b> .. .. ..",
+      ".. .. .. ..",
+      "r> .. rv ..",
+      "EX bv .. .."
+    ]
+  },
+  {
+    "id": "long-way-round",
+    "name": "Long Way Round",
+    "par": 10,
+    "witness": ["blue","red","forward","forward","forward","red","blue","forward","forward","forward"],
+    "grid": [
+      ".. .. .. .. .. EX",
+      ".. r^ .. .. .. ..",
+      ".. .. .. .. ## b<",
+      ".. .. .. .. .. ..",
+      ".. b< .. r< .. .."
+    ]
+  },
+  {
+    "id": "after-you",
+    "name": "After You",
+    "par": 7,
+    "witness": ["blue","red","red","blue","forward","forward","forward"],
+    "grid": [
+      ".. .. .. b^ ..",
+      ".. .. .. .. r^",
+      ".. .. .. .. ..",
+      ".. .. .. .. rv",
+      ".. .. .. b^ EX"
     ]
   },
   {
@@ -66,6 +204,21 @@
     ]
   },
   {
+    "id": "the-corridor",
+    "name": "The Corridor",
+    "par": 8,
+    "witness": ["forward","forward","forward","red","red","blue","forward","forward"],
+    "grid": [
+      ".. .. .. ..",
+      ".. bv .. bv",
+      ".. .. .. ..",
+      "rv .. .. ..",
+      ".. .. .. ..",
+      ".. r> .. ..",
+      "EX .. .. .."
+    ]
+  },
+  {
     "id": "traffic-jam",
     "name": "Traffic Jam",
     "par": 8,
@@ -80,16 +233,170 @@
     ]
   },
   {
-    "id": "long-way-round",
-    "name": "Long Way Round",
-    "par": 10,
-    "witness": ["blue","red","forward","forward","forward","red","blue","forward","forward","forward"],
+    "id": "staircase",
+    "name": "Staircase",
+    "par": 8,
+    "witness": ["forward","forward","forward","forward","red","forward","forward","forward"],
     "grid": [
       ".. .. .. .. .. EX",
-      ".. r^ .. .. .. ..",
-      ".. .. .. .. ## b<",
+      ".. .. .. .. r^ ..",
+      ".. .. .. r^ .. ..",
+      ".. .. r^ .. .. ..",
+      ".. r^ .. .. .. .."
+    ]
+  },
+  {
+    "id": "one-command-many-consequences",
+    "name": "One Command, Many Consequences",
+    "par": 10,
+    "witness": ["forward","yellow","red","forward","blue","yellow","red","forward","forward","forward"],
+    "grid": [
+      ".. r^ y^ b> b> EX",
+      ".. ## r^ ## .. y^",
+      ".. .. .. .. r^ ..",
+      "y< .. .. .. ## ..",
+      "## .. b^ y< r< b^",
+      ".. .. ## .. .. .."
+    ]
+  },
+  {
+    "id": "easy-does-it",
+    "name": "Easy Does It",
+    "par": 6,
+    "witness": ["blue","forward","forward","red","forward","forward"],
+    "grid": [
+      "b^ y> .. .. .. EX",
       ".. .. .. .. .. ..",
-      ".. b< .. r< .. .."
+      ".. .. .. .. .. ..",
+      ".. .. r^ .. .. ..",
+      ".. .. .. .. .. .."
+    ]
+  },
+  {
+    "id": "parking-spot",
+    "name": "Parking Spot",
+    "par": 7,
+    "witness": ["forward","red","forward","forward","red","forward","forward"],
+    "grid": [
+      ".. b> b> .. EX",
+      ".. .. .. .. ..",
+      ".. .. r< .. ..",
+      ".. ## r< .. ..",
+      ".. .. .. .. .."
+    ]
+  },
+  {
+    "id": "all-together-now",
+    "name": "All Together Now",
+    "par": 7,
+    "witness": ["red","forward","forward","forward","red","forward","red"],
+    "grid": [
+      "b> EX b< .. .. ..",
+      ".. b^ .. .. .. ..",
+      "r< .. .. .. rv rv",
+      ".. .. .. .. .. ..",
+      ".. .. .. .. .. .."
+    ]
+  },
+  {
+    "id": "wide-open",
+    "name": "Wide Open",
+    "par": 7,
+    "witness": ["forward","blue","forward","forward","red","blue","forward"],
+    "grid": [
+      "EX .. .. .. .. .. ..",
+      ".. b< .. .. bv .. ..",
+      ".. .. .. r< .. .. ..",
+      ".. .. .. .. .. .. ..",
+      "r^ .. .. .. .. .. .."
+    ]
+  },
+  {
+    "id": "centre-stage",
+    "name": "Centre Stage",
+    "par": 7,
+    "witness": ["blue","red","forward","forward","red","forward","forward"],
+    "grid": [
+      "r^ .. .. b> ..",
+      ".. .. r> EX ..",
+      ".. .. .. .. ..",
+      ".. .. .. b< ..",
+      ".. r< .. .. .."
+    ]
+  },
+  {
+    "id": "peel-off",
+    "name": "Peel Off",
+    "par": 7,
+    "witness": ["forward","forward","blue","yellow","red","forward","forward"],
+    "grid": [
+      ".. .. .. .. EX",
+      "y^ .. b^ .. ..",
+      ".. .. r^ b^ ..",
+      ".. .. .. .. ..",
+      ".. .. .. .. r^"
+    ]
+  },
+  {
+    "id": "three-rights",
+    "name": "Three Rights",
+    "par": 10,
+    "witness": ["forward","forward","red","red","forward","red","forward","forward","forward","forward"],
+    "grid": [
+      ".. rv .. .. b> EX",
+      ".. .. .. .. .. ..",
+      ".. .. .. .. r^ ..",
+      ".. .. .. .. .. ..",
+      ".. .. .. .. .. .."
+    ]
+  },
+  {
+    "id": "elbow-room",
+    "name": "Elbow Room",
+    "par": 8,
+    "witness": ["forward","forward","red","blue","forward","red","forward","forward"],
+    "grid": [
+      "r^ b> .. yv",
+      "b> .. .. ..",
+      ".. .. .. ..",
+      "r^ .. ## EX"
+    ]
+  },
+  {
+    "id": "the-long-hall",
+    "name": "The Long Hall",
+    "par": 8,
+    "witness": ["forward","forward","red","blue","red","forward","forward","forward"],
+    "grid": [
+      ".. .. .. .. b> .. r> EX",
+      ".. .. .. .. .. .. .. ..",
+      ".. .. .. b^ b^ r< .. r^",
+      ".. .. .. .. .. .. .. .."
+    ]
+  },
+  {
+    "id": "gridlock",
+    "name": "Gridlock",
+    "par": 9,
+    "witness": ["forward","red","red","forward","red","blue","forward","forward","forward"],
+    "grid": [
+      ".. .. .. .. .. ..",
+      ".. bv .. .. .. ..",
+      ".. .. .. .. .. ..",
+      "rv r^ r^ .. bv ..",
+      "EX b< .. .. .. .."
+    ]
+  },
+  {
+    "id": "tight-squeeze",
+    "name": "Tight Squeeze",
+    "par": 10,
+    "witness": ["red","blue","forward","forward","blue","forward","forward","blue","forward","forward"],
+    "grid": [
+      "b^ .. .. .. ..",
+      "r> .. .. .. ..",
+      "r> .. .. bv ..",
+      "EX rv .. .. .."
     ]
   },
   {
@@ -103,6 +410,76 @@
       "b^ r^ .. .. ## b<",
       "r^ b^ .. .. .. ..",
       ".. .. .. .. ## r<"
+    ]
+  },
+  {
+    "id": "back-of-the-line",
+    "name": "Back of the Line",
+    "par": 9,
+    "witness": ["forward","forward","blue","blue","forward","forward","forward","blue","forward"],
+    "grid": [
+      ".. b^ .. .. .. ..",
+      ".. .. .. .. .. ..",
+      "rv bv .. .. .. ..",
+      ".. .. .. .. .. ..",
+      "EX r< r< .. .. r<"
+    ]
+  },
+  {
+    "id": "full-house",
+    "name": "Full House",
+    "par": 8,
+    "witness": ["forward","forward","red","blue","red","forward","forward","forward"],
+    "grid": [
+      ".. .. .. .. r^ EX",
+      ".. .. .. ## r< r^",
+      ".. .. b^ .. r< b^",
+      "b^ .. .. .. .. b^",
+      ".. .. .. .. .. ..",
+      ".. .. .. .. .. .."
+    ]
+  },
+  {
+    "id": "roundabout",
+    "name": "Roundabout",
+    "par": 9,
+    "witness": ["red","forward","red","red","forward","forward","red","forward","forward"],
+    "grid": [
+      ".. .. .. .. .. r< ..",
+      ".. .. .. .. .. yv ..",
+      ".. .. .. .. .. .. r<",
+      ".. .. .. .. b> EX b<",
+      ".. .. .. .. .. .. ..",
+      ".. .. .. ## .. y^ ..",
+      ".. .. .. r> .. .. .."
+    ]
+  },
+  {
+    "id": "colour-guard",
+    "name": "Colour Guard",
+    "par": 9,
+    "witness": ["forward","forward","blue","yellow","red","yellow","forward","forward","forward"],
+    "grid": [
+      ".. .. .. .. .. ..",
+      ".. .. .. r> b> ..",
+      ".. .. .. .. .. ..",
+      ".. .. .. .. .. ..",
+      ".. r> .. y> y^ b>",
+      ".. .. .. .. .. EX"
+    ]
+  },
+  {
+    "id": "single-file",
+    "name": "Single File",
+    "par": 8,
+    "witness": ["forward","forward","forward","forward","forward","blue","red","forward"],
+    "grid": [
+      ".. .. .. .. .. ..",
+      ".. .. .. .. .. yv",
+      ".. .. .. .. .. ..",
+      ".. r> .. .. .. yv",
+      ".. .. .. b> .. ..",
+      "b> r> .. .. .. EX"
     ]
   },
   {
@@ -120,17 +497,32 @@
     ]
   },
   {
-    "id": "one-command-many-consequences",
-    "name": "One Command, Many Consequences",
-    "par": 10,
-    "witness": ["forward","yellow","red","forward","blue","yellow","red","forward","forward","forward"],
+    "id": "detour",
+    "name": "Detour",
+    "par": 8,
+    "witness": ["forward","forward","red","forward","forward","forward","red","forward"],
     "grid": [
-      ".. r^ y^ b> b> EX",
-      ".. ## r^ ## .. y^",
-      ".. .. .. .. r^ ..",
-      "y< .. .. .. ## ..",
-      "## .. b^ y< r< b^",
-      ".. .. ## .. .. .."
+      "r> .. .. .. ..",
+      "bv .. .. .. ..",
+      ".. .. .. .. rv",
+      ".. .. .. .. ..",
+      "EX .. .. .. b<"
+    ]
+  },
+  {
+    "id": "grand-parade",
+    "name": "Grand Parade",
+    "par": 10,
+    "witness": ["blue","forward","forward","red","red","forward","forward","forward","forward","forward"],
+    "grid": [
+      "b> .. .. .. .. .. .. ..",
+      ".. .. .. .. .. .. .. ..",
+      "yv .. .. .. .. .. .. ..",
+      "b> .. .. .. .. .. .. ..",
+      ".. rv .. .. .. .. .. ..",
+      ".. .. .. .. .. .. .. ..",
+      "yv .. .. .. .. .. .. ..",
+      "EX r> r> r> .. .. bv bv"
     ]
   }
 ]
