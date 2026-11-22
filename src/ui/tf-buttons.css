@@ -84,11 +84,13 @@
   position: relative; display: flex; justify-content: center; gap: var(--tool-gap); padding-bottom: var(--tag-over);
 }
 .tf-tools .tf-btn { --w: var(--tool-w); --h: var(--tool-h); --d: calc(var(--h) * var(--tf-depth, .2)); --r: var(--tool-r); --press-fraction: .8; --icon: calc(var(--h) * .62); }
-.tf-tools .tf-utility { --c-top: #ffffff; --c-main: #eef2fa; --c-side: #7483a8; --c-deep: #55648a; --ink-c: #2a3658; --gloss: .9; --cast: rgba(24, 38, 80, .5); }
+/* The neutral look (`tf-neutral` wherever it is needed outside the tools row): the same on the puzzle screen and on the pop-up. */
+.tf-tools .tf-utility, .tf-neutral { --c-top: #ffffff; --c-main: #eef2fa; --c-side: #7483a8; --c-deep: #55648a; --ink-c: #2a3658; --ink-shadow: transparent; --gloss: .9; --cast: rgba(24, 38, 80, .5); }
 /* The slate rim: the block's body shows a little wider round the face than on the other buttons. */
-.tf-tools .tf-utility .tf-face { --side: 3px; --lip: 3px; box-shadow: inset 0 0 0 1.5px rgba(30, 42, 80, .55), inset 0 -1.5px 1px rgba(255, 255, 255, .2);
+.tf-tools .tf-utility .tf-face, .tf-neutral .tf-face { --side: calc(var(--h) * .08); --lip: calc(var(--h) * .08); box-shadow: inset 0 0 0 1.5px rgba(30, 42, 80, .55), inset 0 -1.5px 1px rgba(255, 255, 255, .2);
   background: linear-gradient(180deg, #8a98ba 0, var(--wall) calc(var(--h) * .5), var(--wall) calc(var(--h) + var(--d) * .55), var(--wall-deep) 100%); }
-.tf-tools .tf-utility .tf-face::before { border-radius: calc(var(--r) - 3px); }
+.tf-tools .tf-utility .tf-face::before, .tf-neutral .tf-face::before { border-radius: calc(var(--r) - var(--side)); }
+.tf-neutral:disabled { --ink-c: #7c879f; }
 .tf-tools .tf-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 /* Hint while its hint is on the board: the lamp is lit. The block stays half sunk and warm, and its tag says "Used". */
 .tf-tools .tf-btn.showing:disabled {

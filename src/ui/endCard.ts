@@ -25,11 +25,12 @@ const icon = (shape: string): string => `<svg viewBox="0 0 24 24" aria-hidden="t
 const stroke = (d: string, width: number): string => `<path d="${d}" fill="none" stroke="currentColor" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"/>`;
 const ICONS = {
   undo: icon(`<path d="M9.4 4.2 3.6 9.3l5.8 5.1z" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>` + stroke('M9 9.3h5.4a5.3 5.3 0 0 1 0 10.6H9.6', 3.5)),
-  retry: icon(stroke('M17.1 16.9A7 7 0 1 1 15.5 8', 3.5) + stroke('M18.4 3.2v6h-6', 3.5)),
+  // Retry starts the level again: the same picture as Restart on the puzzle screen.
+  retry: icon(stroke('M5.6 5.4v13.2', 3.6) + '<path d="M18.6 5.6v12.8L9.8 12z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>'),
   replay: icon('<path d="M7.4 5v14l11.4-7z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>'),
   next: icon(stroke('M4.5 12h13.5M12.4 5.4 19 12l-6.6 6.6', 3.8)),
   levels: icon('<rect x="3.5" y="3.5" width="7" height="7" rx="2" fill="currentColor"/><rect x="13.5" y="3.5" width="7" height="7" rx="2" fill="currentColor"/><rect x="3.5" y="13.5" width="7" height="7" rx="2" fill="currentColor"/><rect x="13.5" y="13.5" width="7" height="7" rx="2" fill="currentColor"/>'),
-  hint: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.7 15.4a5.9 5.9 0 1 1 6.6 0v1.9H8.7z" fill="#f4c62f" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M9.9 20.6h4.2" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M12 .9v1.4M4.3 3.6l1 1M19.7 3.6l-1 1M1.4 10.4h1.5M22.6 10.4h-1.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>`,
+  hint: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.3 15.6a6.6 6.6 0 1 1 7.4 0v2H8.3z" fill="#f4c62f" stroke="currentColor" stroke-width="2.8" stroke-linejoin="round"/><path d="M9.6 21.4h4.8" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>`,
   none: '',
 };
 type Glyph = keyof typeof ICONS;
@@ -39,7 +40,8 @@ const button = (act: string, kind: string, text: string, glyph: Glyph, after = f
   const label = `<span class="tf-label">${text}</span>`;
   return `<button type="button" id="end-${act}" class="tf-btn ${kind}"><span class="tf-clip"><span class="tf-face">${after ? label + ICONS[glyph] : ICONS[glyph] + label}</span></span></button>`;
 };
-const utility = (act: string, text: string, glyph: Glyph, size = 'tf-end-small'): string => button(act, `tf-utility ${size}`, text, glyph);
+/** A neutral button: the same look as the tools of the puzzle screen (finding B9). */
+const utility = (act: string, text: string, glyph: Glyph, size = 'tf-end-small'): string => button(act, `tf-utility tf-neutral ${size}`, text, glyph);
 /** A quiet secondary action: icon and label, no block, so it never competes with the main button. */
 const link = (act: string, text: string, glyph: Glyph): string => `<button type="button" id="end-${act}" class="tf-end-link">${ICONS[glyph]}<span>${text}</span></button>`;
 

@@ -820,7 +820,7 @@ addCoinCards(document.getElementById('sheet')!);
   const stroke = (d: string, width: number): string => `<path d="${d}" fill="none" stroke="currentColor" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"/>`;
   const ICONS = {
     undo: icon(`<path d="M9.4 4.2 3.6 9.3l5.8 5.1z" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>` + stroke('M9 9.3h5.4a5.3 5.3 0 0 1 0 10.6H9.6', 3.5)),
-    retry: icon(stroke('M17.1 16.9A7 7 0 1 1 15.5 8', 3.5) + stroke('M18.4 3.2v6h-6', 3.5)),
+    retry: icon(stroke('M5.6 5.4v13.2', 3.6) + '<path d="M18.6 5.6v12.8L9.8 12z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>'),
     replay: icon('<path d="M7.4 5v14l11.4-7z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>'),
     next: icon(stroke('M4.5 12h13.5M12.4 5.4 19 12l-6.6 6.6', 3.8)),
     levels: icon('<rect x="3.5" y="3.5" width="7" height="7" rx="2" fill="currentColor"/><rect x="13.5" y="3.5" width="7" height="7" rx="2" fill="currentColor"/><rect x="3.5" y="13.5" width="7" height="7" rx="2" fill="currentColor"/><rect x="13.5" y="13.5" width="7" height="7" rx="2" fill="currentColor"/>'),
@@ -832,7 +832,7 @@ addCoinCards(document.getElementById('sheet')!);
     const inner = opts.inner ?? (opts.after ? label + ICONS[glyph] : ICONS[glyph] + label);
     return `<button type="button" class="tf-btn ${kind}"${opts.name ? ` aria-label="${opts.name}"` : ''}${opts.disabled ? ' disabled' : ''}><span class="tf-clip"><span class="tf-face">${inner}</span></span></button>`;
   };
-  const utility = (text: string, glyph: keyof typeof ICONS, size = 'tf-end-small'): string => button(`tf-utility ${size}`, text, glyph);
+  const utility = (text: string, glyph: keyof typeof ICONS, size = 'tf-end-small'): string => button(`tf-utility tf-neutral ${size}`, text, glyph);
 
   // The stand-in board: a 6x6 plate with walls, the exit and whoever is still on it.
   const WALLS = new Set([7, 9, 22, 24, 32]);
