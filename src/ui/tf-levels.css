@@ -225,8 +225,8 @@
 @container tl (max-height: 620px) {
   /* No room above the tray on a short screen: the tab hangs from its bottom edge. */
   .tf-levels-testnote { top: auto; bottom: -6px; }
-  /* The title of the levels to improve is larger; it fits just between the header and the first row. */
-  .tf-levels-i .tf-levels-testnote { top: -13px; bottom: auto; padding: 4px 10px; font-size: 12px; }
+  /* A full page leaves no room for the title of the levels to play again: it stays for screen readers, and the lit star total and Back say where the player is. */
+  .tf-levels-i .tf-levels-testnote { width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); box-shadow: none; }
   .tf-levels-wheretext { font-size: 14px; }
   .tf-levels-done { gap: 16px; }
   .tf-levels-donetitle { font-size: 19px; }

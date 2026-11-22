@@ -27,7 +27,6 @@
 | `levelsPerPage` | Level tiles per page of the grid view of the level selection (test view only: test lab "Level screen: Grid" or "Unlock all levels") |
 | `levelsAhead` | Locked levels shown after the current one on the level selection (the path). Completed levels are not shown (finding B2) |
 | `levelPath.layout` | Shape of the path: `winding` (the steps sway left and right) or `straight` (one column) |
-| `levelPath.playAgainWhenComplete` | `false`: with every level completed and every star earned the screen only shows that state (with stars left to earn it offers "Improve N levels"). `true`: it also offers a "Play again from level 1" button |
 | `stars.three`, `stars.two` | Moves over par that still earn 3 and 2 stars |
 | `lowMoves` | Moves left at which the counter turns into a warning |
 | `rules.exitAcceptsMany` | `true`: several robots may enter the exit in one turn |

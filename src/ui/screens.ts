@@ -21,8 +21,13 @@ export interface LevelsModel {
    */
   view: 'path' | 'grid' | 'improve';
   nodes: MapNode[];
-  /** The completed levels with fewer than three stars, in play order. */
+  /**
+   * The levels the `improve` view offers to play again, in play order: the completed ones with
+   * fewer than three stars, or every level once all of them are completed.
+   */
   improvable: MapNode[];
+  /** That list is every level: the player chooses any level to play again. */
+  replayAll: boolean;
   /** The star total was tapped: open the levels to improve, or leave them again. */
   onImprove: () => void;
   /** Icon of the main action. */
@@ -71,15 +76,15 @@ export function renderLevels(model: LevelsModel): void {
   el('mapStars').textContent = String(stars);
   el('mapProgress').setAttribute('aria-label', `${solved} of ${nodes.length} levels, ${stars} of ${nodes.length * 3} stars`);
   // For a player the star total is a button: it opens the levels that can still be improved. With none it only tells the total.
-  const count = model.improvable.length;
+  const count = model.improvable.filter((n) => n.stars < 3).length;
   const starButton = el<HTMLButtonElement>('toImprove');
   el('starSum').textContent = String(stars);
   el('starMax').textContent = `/${nodes.length * 3}`;
   el('improveCount').textContent = String(count);
   el('improveCount').hidden = count === 0 || view === 'improve';
-  starButton.disabled = count === 0;
+  starButton.disabled = model.improvable.length === 0;
   starButton.setAttribute('aria-pressed', String(view === 'improve'));
-  starButton.setAttribute('aria-label', `${stars} of ${nodes.length * 3} stars${count > 0 ? `. Improve ${count} level${count === 1 ? '' : 's'}` : ''}`);
+  starButton.setAttribute('aria-label', `${stars} of ${nodes.length * 3} stars${model.replayAll ? '. Choose a level to play again' : count > 0 ? `. Improve ${count} level${count === 1 ? '' : 's'}` : ''}`);
   starButton.onclick = () => model.onImprove();
   el('continue').classList.toggle('tf-levels-backbtn', model.playIcon === 'back');
   el('continue').hidden = model.playLabel === null;
@@ -184,7 +189,7 @@ function renderGrid(model: LevelsModel): void {
   const first = page * pageSize + 1;
   const last = Math.min(first + pageSize - 1, nodes.length);
   // The levels to improve are not consecutive, so their pages are counted instead of named by level.
-  el('pageLabel').textContent = model.view === 'improve' ? `Page ${page + 1} of ${pages}` : `Levels ${first}–${last}`;
+  el('pageLabel').textContent = model.view === 'improve' && !model.replayAll ? `Page ${page + 1} of ${pages}` : `Levels ${first}–${last}`;
   el('pageInfo').setAttribute('aria-label', `Page ${page + 1} of ${pages}`);
   el('pageDots').innerHTML = Array.from({ length: pages }, (_, p) => `<i class="${p === page ? 'on' : nodes.slice(p * pageSize, (p + 1) * pageSize).every((n) => n.solved) ? 'full' : ''}"></i>`).join('');
   el<HTMLButtonElement>('pagePrev').disabled = page === 0;

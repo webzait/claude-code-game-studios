@@ -343,7 +343,9 @@ class Game {
     this.page ??= Math.floor(main.index / pageSize);
     const stars = nodes.map((n) => n.stars);
     // In their own list none of them is "the" target: every tile there is equally worth a replay.
-    const improvable = improvableLevels(stars).map((index) => ({ ...nodes[index], target: false }));
+    // With every level completed the player chooses any level to play again; before that only the ones with stars left to earn.
+    const replayAll = main.kind !== 'play';
+    const improvable = (replayAll ? nodes.map((_, index) => index) : improvableLevels(stars)).map((index) => ({ ...nodes[index], target: false }));
     const base = levelScreenView(this.save.lab);
     // Nothing left to improve, or the test grid is on: the list of levels to improve has no place.
     if (base === 'grid' || improvable.length === 0) this.improving = false;
@@ -362,8 +364,8 @@ class Game {
       playLabel = complete ? 'Back' : `Back to level ${main.index + 1}`;
       action = toggleImprove;
     } else if (view === 'path' && complete) {
-      playLabel = improvable.length > 0 ? `Improve ${improvable.length} level${improvable.length === 1 ? '' : 's'}` : CONFIG.levelPath.playAgainWhenComplete ? 'Play again from level 1' : null;
-      action = improvable.length > 0 ? toggleImprove : () => this.startLevel(0);
+      playLabel = 'Choose a level';
+      action = toggleImprove;
     } else {
       playLabel = main.kind === 'play' ? `Play level ${main.index + 1}` : main.kind === 'improve' ? `Improve level ${main.index + 1}` : 'Play again';
       action = () => this.startLevel(main.index);
@@ -373,6 +375,7 @@ class Game {
       view,
       nodes,
       improvable,
+      replayAll,
       current: complete ? null : main.index,
       ahead: CONFIG.levelsAhead,
       layout: CONFIG.levelPath.layout,
@@ -380,7 +383,7 @@ class Game {
       pageSize,
       playLabel,
       playIcon: view === 'improve' ? 'back' : 'play',
-      gridNote: view === 'improve' ? 'Improve your stars' : this.save.lab.unlockAll ? 'Test view · all levels unlocked' : 'Test view · grid',
+      gridNote: view === 'improve' ? (replayAll ? 'Play a level again' : 'Improve your stars') : this.save.lab.unlockAll ? 'Test view · all levels unlocked' : 'Test view · grid',
       onPick: (index) => this.tap(() => this.startLevel(index)),
       onImprove: () => this.tap(toggleImprove),
       onPage: (page) => {
