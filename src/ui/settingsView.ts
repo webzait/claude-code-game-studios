@@ -292,10 +292,14 @@ export function labContent(start: Partial<LabSettings>, hooks: LabHooks = {}): {
       { label: 'Classic', value: 'classic' },
     ]),
     flag('decor', 'Backdrop', 'Harbour and bushes behind the game.'),
+    choice('levelScreen', 'Level screen', 'Path: the current level and the next few. Grid: every level on pages, as before.', [
+      { label: 'Path', value: 'path' },
+      { label: 'Grid', value: 'grid' },
+    ]),
   );
 
   const shortcuts = panel('Shortcuts');
-  shortcuts.body.append(flag('freeHelp', 'Free help', 'Hints and extra moves cost no coins.'), flag('unlockAll', 'Unlock all levels', 'Open every level, solved or not.'));
+  shortcuts.body.append(flag('freeHelp', 'Free help', 'Hints and extra moves cost no coins.'), flag('unlockAll', 'Unlock all levels', 'Open every level, solved or not. Shows the grid of all levels.'));
 
   const sizes = panel('Board size test');
   const sizeRow = row('Open a test board', 'Not a level; nothing is saved.', { stack: true });

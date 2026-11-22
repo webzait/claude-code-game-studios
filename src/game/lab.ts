@@ -33,6 +33,8 @@ export interface LabSettings {
   freeHelp: boolean;
   /** Board framing: `roomy` (steeper camera, thin frame, against the top) or `classic`. */
   board: 'roomy' | 'classic';
+  /** Level selection: `path` (the current level and the next few) or `grid` (every level on pages, a test view). */
+  levelScreen: 'path' | 'grid';
 }
 
 /** The lab as it ships: the certified default game. */
@@ -48,7 +50,17 @@ export const DEFAULT_LAB: LabSettings = {
   robots: 'kit',
   heading: 'towardPlayer',
   boardPieces: 'kit',
+  levelScreen: 'path',
 };
+
+/**
+ * Which level selection is on show. The path hides every level but the current
+ * one and the next few, so "unlock all levels" switches to the grid as well:
+ * a tester must be able to open any level.
+ */
+export function levelScreenView(lab: Pick<LabSettings, 'levelScreen' | 'unlockAll'>): 'path' | 'grid' {
+  return lab.levelScreen === 'grid' || lab.unlockAll ? 'grid' : 'path';
+}
 
 /** Rules the lab asks for. */
 export function rulesFor(lab: LabSettings): Rules {

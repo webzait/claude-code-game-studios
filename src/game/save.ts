@@ -94,6 +94,8 @@ export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
     // Saves from before the switch existed have no heading style: they get the default, the whole robot turning.
     if (HEADING_STYLES.includes(lab.heading as HeadingStyle)) save.lab.heading = lab.heading as HeadingStyle;
     if (lab.boardPieces === 'kit' || lab.boardPieces === 'builtin') save.lab.boardPieces = lab.boardPieces;
+    // Saves from before the path existed have no level screen choice: they get the default, the path.
+    if (lab.levelScreen === 'path' || lab.levelScreen === 'grid') save.lab.levelScreen = lab.levelScreen;
   }
   return save;
 }

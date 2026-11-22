@@ -142,3 +142,83 @@
 .reduce-motion .tf-levels-tile { transition: none; }
 .reduce-motion .tf-logo-intro .tf-levels-logo, .reduce-motion .tf-logo-intro .tf-levels-head > *, .reduce-motion .tf-logo-intro .tf-levels-body, .reduce-motion .tf-logo-intro .tf-levels-dock { animation: none; }
 .reduce-motion .tf-levels-tile.is-next::after { animation: none; }
+
+/* ---- The path (finding B2): the level to play now and the next few. Completed levels are not shown. ----
+   Chosen by a class on the screen: tf-levels-p = path, tf-levels-a = the paged grid (test view). */
+.tf-levels-vh { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.tf-levels-path[hidden], .tf-levels-done[hidden], .tf-levels-tray[hidden], .tf-levels-where[hidden], .tf-levels-dock[hidden], .tf-levels-play[hidden] { display: none; }
+/* The pill keeps the stars; where the player is stands in the dock, above the main action. */
+.tf-levels-p .tf-levels-count { display: none; }
+.tf-levels-p .tf-levels-progress { flex-direction: row; align-items: center; font-size: 16px; gap: 5px; }
+.tf-levels-p .tf-levels-progress .tf-levels-star { width: 17px; height: 17px; }
+/* The path is its own size container: every step measures itself against the room the path has. */
+.tf-levels-path { container: tlp / size; position: relative; flex: 1; min-height: 0; margin: 0 var(--tl-pad); }
+.tf-levels-trail { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.tf-levels-trail path { fill: none; stroke-linecap: round; }
+.tf-levels-trail-shade { stroke: rgba(30, 80, 160, .3); stroke-width: 9; stroke-dasharray: .1 17; transform: translateY(3px); }
+.tf-levels-trail-dots { stroke: #fff; stroke-width: 9; stroke-dasharray: .1 17; }
+/* The current level sits at the bottom, next to the main action; the levels to come rise from it and get smaller. */
+.tf-levels-steps {
+  --cur: clamp(76px, min(24cqh, 38cqw), 140px); --gap: clamp(5px, 1.8cqh, 14px); --amp: min(25cqw, 132px);
+  /* The locked steps share the height the current one leaves. They are not controls, so on the smallest phone they may go under 44 px. */
+  --lock: clamp(36px, calc((100cqh - var(--cur) - 35px) / var(--n, 5) - var(--gap) - 5px), 84px);
+  position: absolute; inset: 0; margin: 0; padding: 4px 0 17px; list-style: none;
+  display: flex; flex-direction: column-reverse; align-items: center; justify-content: flex-start; gap: var(--gap);
+}
+.tf-levels-steps > li { flex: none; display: block; translate: calc(var(--x, 0) * var(--amp) * (1 - var(--i, 0) * .04)) 0; }
+.tf-levels-straight .tf-levels-steps { --amp: 0px; }
+/* A step: a round pillow with a real side wall, the same family as the level tiles and the board. */
+.tf-levels-step {
+  --d: 5px; --top: #e2e9fe; --face: #c6d3fa; --wall: #7f97dc; --ink: #3b4b82;
+  position: relative; width: var(--s); height: var(--s); margin: 0 0 var(--d); padding: 0; border: 0; border-radius: 50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(var(--s) * .03);
+  background: linear-gradient(180deg, var(--top), var(--face)); color: var(--ink);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, .75), inset 0 0 0 2px rgba(113, 138, 210, .4), 0 var(--d) 0 var(--wall), 0 calc(var(--d) + 4px) 8px rgba(26, 62, 140, .28);
+  font: inherit; font-weight: 900; font-size: calc(var(--s) * .37); line-height: 1; letter-spacing: -.01em; font-variant-numeric: tabular-nums;
+}
+/* Locked: further away is a little smaller, never under 44 px. */
+.tf-levels-step.is-locked, .tf-levels-step.is-finish { --s: calc(var(--lock) * (1 - (var(--i, 1) - 1) * .05)); }
+/* The end of the path, shown once the last level is in sight. */
+.tf-levels-step.is-finish { --top: #fff3bf; --face: #f6c542; --wall: #d39c0d; --ink: #6b4a00; box-shadow: inset 0 2px 0 rgba(255, 255, 255, .7), inset 0 0 0 2px rgba(150, 105, 0, .2), 0 var(--d) 0 var(--wall), 0 calc(var(--d) + 4px) 8px rgba(26, 62, 140, .28); }
+.tf-levels-step.is-finish svg { width: 54%; height: 54%; }
+.tf-levels-lock { display: block; width: calc(var(--s) * .24); height: calc(var(--s) * .24); flex: none; opacity: .75; background: center / contain no-repeat url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 15'><path d='M3.6 6.4V4.4a3.4 3.4 0 0 1 6.8 0v2' fill='none' stroke='%233b4b82' stroke-width='2.2' stroke-linecap='round'/><rect x='1' y='6' width='12' height='8.6' rx='2.6' fill='%233b4b82'/></svg>"); }
+/* Current: exit green with a white ring, the one thing on the path that can be pressed. */
+.tf-levels-step.is-current {
+  --s: var(--cur); --d: 9px; --top: #7bfb85; --face: #39e85c; --wall: #1fb241; --ink: #0b3d1c;
+  font-size: calc(var(--s) * .42); cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; transition: transform .07s ease-out, box-shadow .07s ease-out;
+  box-shadow: inset 0 3px 0 rgba(255, 255, 255, .55), inset 0 0 0 2px rgba(11, 61, 28, .14), 0 var(--d) 0 var(--wall), 0 0 0 5px #fff, 0 var(--d) 0 5px #fff, 0 calc(var(--d) + 10px) 14px rgba(26, 62, 140, .3);
+}
+.tf-levels-step.is-current small { font-size: calc(var(--s) * .115); font-weight: 900; letter-spacing: .14em; opacity: .8; }
+.tf-levels-step.is-current::after { content: ""; position: absolute; inset: -12px -12px calc(-12px - var(--d)); border-radius: 999px; border: 4px solid rgba(168, 255, 174, .95); pointer-events: none; animation: tf-levels-breathe 1.4s ease-in-out infinite alternate; }
+.tf-levels-step.is-current:active, .tf-levels-step.is-current.is-pressed { transform: translateY(calc(var(--d) - 2px)); box-shadow: inset 0 3px 0 rgba(255, 255, 255, .4), inset 0 0 0 2px rgba(11, 61, 28, .2), 0 2px 0 var(--wall), 0 0 0 5px #fff, 0 2px 0 5px #fff; }
+/* Keyboard focus: a dark ring right outside the white one; the breathing halo makes way for it. */
+.tf-levels-step.is-current:focus-visible { outline: 4px solid #24314f; outline-offset: 6px; }
+.tf-levels-step.is-current:focus-visible::after { display: none; }
+/* Where the player is: one line and a bar above the main action. */
+.tf-levels-where { width: 100%; max-width: 420px; display: flex; align-items: center; gap: 12px; }
+.tf-levels-wheretext { flex: none; margin: 0; font-weight: 900; font-size: 15px; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tf-levels-bar { flex: 1; height: 10px; border-radius: 5px; background: #dfe5f3; box-shadow: inset 0 1px 0 rgba(36, 49, 79, .12); overflow: hidden; }
+.tf-levels-bar i { display: block; height: 100%; min-width: 10px; border-radius: 5px; background: linear-gradient(180deg, #5ef26f, #2fd150); }
+/* Everything completed: a calm end state, no path. */
+.tf-levels-done { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; padding: 0 var(--tl-pad); text-align: center; }
+.tf-levels-step.is-done { --s: clamp(96px, 26cqh, 150px); --d: 9px; --top: #fff3bf; --face: #f6c542; --wall: #d39c0d; --ink: #6b4a00; box-shadow: inset 0 3px 0 rgba(255, 255, 255, .6), inset 0 0 0 2px rgba(150, 105, 0, .18), 0 var(--d) 0 var(--wall), 0 0 0 5px #fff, 0 var(--d) 0 5px #fff, 0 calc(var(--d) + 10px) 14px rgba(26, 62, 140, .3); }
+.tf-levels-step.is-done svg { width: 52%; height: 52%; }
+.tf-levels-donecard { display: grid; gap: 8px; justify-items: center; padding: 16px 22px; border-radius: 22px; background: #f8faff; box-shadow: inset 0 1.5px 0 #fff, 0 4px 0 rgba(113, 138, 210, .45), 0 10px 14px rgba(26, 62, 140, .2); }
+.tf-levels-donetitle { margin: 0; font-size: 22px; font-weight: 900; line-height: 1.1; }
+.tf-levels-donetext { margin: 0; display: inline-flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; color: #4a587a; }
+/* The grid is a test view now; a tab on the tray says so. */
+.tf-levels-tray { position: relative; }
+.tf-levels-testnote { position: absolute; left: 50%; top: -11px; translate: -50% 0; margin: 0; padding: 4px 10px; border-radius: 10px; background: #24314f; color: #fff; font-size: 11px; font-weight: 800; letter-spacing: .04em; line-height: 1; white-space: nowrap; z-index: 1; }
+@container tl (max-height: 620px) {
+  /* No room above the tray on a short screen: the tab hangs from its bottom edge. */
+  .tf-levels-testnote { top: auto; bottom: -6px; }
+  .tf-levels-wheretext { font-size: 14px; }
+  .tf-levels-done { gap: 16px; }
+  .tf-levels-donetitle { font-size: 19px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tf-levels-step.is-current { transition: none; }
+  .tf-levels-step.is-current::after { animation: none; }
+}
+.reduce-motion .tf-levels-step.is-current { transition: none; }
+.reduce-motion .tf-levels-step.is-current::after { animation: none; }
