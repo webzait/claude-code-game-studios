@@ -29,17 +29,11 @@ hier, is in de data instelbaar en kan door de eigenaar worden omgedraaid.
 | B2 | Levelselectie — `claude/turnflock-level-path` | Alleen het huidige level en de volgende vijf zijn te zien (`levelsAhead`); gehaalde levels verdwijnen. Opnieuw spelen van een gehaald level kan alleen nog via "Replay" direct na de winst. |
 | B5, B6 | Pop-up — `claude/turnflock-win-popup` | B5: sterren, één regel met het resultaat, één bedrag aan verdiende munten en één hoofdknop; de uitsplitsing en het saldo vervallen, Replay en Levels worden kleine knoppen. B6: de munten vliegen van de pop-up naar de teller, die meetelt. |
 
-### 2026-11-22, gevonden bij het sluiten van de sessies
-
-De sessie van het instellingenscherm had als laatste stap de keuzes van de eigenaar in het ontwerp
-verwerkt (commit `16f584d` op `claude/turnflock-part-settings` in de oude repo). Dat ontwerp is
-nieuwer dan wat in het spel zit.
-
-| Nr | Bevinding | Raakt | Opgepakt |
-|---|---|---|---|
-| B7 | Trillen en "grotere tekst" zijn door de eigenaar geschrapt, maar Trillen zit nog in het spel | Instellingenscherm, `src/haptics.ts`, opslag | Sessie instellingen — `claude/turnflock-settings-choices` |
-| B8 | "Colour shapes" (een vorm per kleur, als hulp bij kleurenblindheid) is door de eigenaar gekozen, maar zit nog niet in het spel | Instellingenscherm, robots, commandoknoppen | Sessie instellingen — `claude/turnflock-settings-choices` |
-
 ## Afgehandeld
 
-Nog niets.
+| Nr | Bevinding | Afgehandeld | Commit | Wat er nu is |
+|---|---|---|---|---|
+| B7 | Trillen en "grotere tekst" zijn door de eigenaar geschrapt, maar Trillen zat nog in het spel | 2026-11-22 | `c58ef5f` op `claude/turnflock-settings-choices` | De schakelaar Vibration, `src/haptics.ts`, de trilpatronen in de data en de tests zijn weg. Een oude save met een trilwaarde laadt gewoon; de waarde wordt genegeerd. "Larger text" zat niet in het spel. De mock-up op de onderdelenpagina volgt het ontwerp: geen Vibration, geen Larger text, geen labels "New idea". |
+| B8 | "Colour shapes" (een vorm per kleur, als hulp bij kleurenblindheid) was gekozen maar zat nog niet in het spel | 2026-11-22 | `07f6a8f` op `claude/turnflock-settings-choices` | Spelersinstelling, standaard uit. Aan: het richtingsdriehoekje van elke robot ligt op een plaatje in de vorm van zijn kleur (rood cirkel, blauw vierkant, geel ruit) en de bijbehorende commandoknop draagt dezelfde vorm in de hoek. Werkt direct, ook in een level dat bezig is, en wordt bewaard (save-versie 5). Welke kleur welke vorm krijgt staat in `data/config.json` (`colourShapes`). Bewijs en simulaties van kleurenblindheid: `production/qa/evidence/findings-settings-choices/`. Niet getest op een echte telefoon of door iemand die kleurenblind is. |
+
+Gezien bij B8, niet aangepast (valt buiten de bevinding): in de simulatie van rood-groen-kleurenblindheid krijgt de groene uitgang hetzelfde geel als een gele robot; het vinkje blijft wel zichtbaar. De hint op het bord (B1, andere sessie) moet bij "Colour shapes" aan ook de vorm tonen als ze robots per kleur aanwijst.
