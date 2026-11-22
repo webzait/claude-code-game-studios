@@ -5,9 +5,14 @@ import { LEVELS } from '../../src/levels/index';
 import { solve } from '../../src/solver/bfs';
 import catalogData from '../../design/levels-catalog.json';
 import { fastSolve, prepare } from '../../tools/level-design/fast';
+import { replayMeasures } from '../../tools/level-design/measure';
 import { board } from './helpers';
 
 const byId = (id: string) => LEVELS.find((l) => l.id === id)!;
+/** Page 3: the turn-tile page. */
+const PAGE_3 = LEVELS.slice(2 * CONFIG.levelsPerPage, 3 * CONFIG.levelsPerPage);
+/** The two levels FORWARD alone wins: the very first, and the one that introduces the turn tile. */
+const FORWARD_ONLY = ['first-steps', 'turntable'];
 const colours = (id: string): string[] => [...new Set(byId(id).start.robots.map((r) => r.color))].sort();
 
 describe('solver', () => {
@@ -30,8 +35,8 @@ describe('solver', () => {
 });
 
 describe('levels', () => {
-  it('ships two full pages of levels with unique ids and names', () => {
-    expect(LEVELS.length).toBe(2 * CONFIG.levelsPerPage);
+  it('ships three full pages of levels with unique ids and names', () => {
+    expect(LEVELS.length).toBe(3 * CONFIG.levelsPerPage);
     expect(new Set(LEVELS.map((l) => l.id)).size).toBe(LEVELS.length);
     expect(new Set(LEVELS.map((l) => l.name)).size).toBe(LEVELS.length);
   });
@@ -77,6 +82,31 @@ describe('levels', () => {
     expect(first.every((l) => l.par <= 7 && l.start.robots.length <= 3)).toBe(true);
   });
 
+  it('keeps the turn tile off pages 1 and 2: the first forty levels play as they always did', () => {
+    expect(LEVELS.slice(0, 2 * CONFIG.levelsPerPage).every((l) => l.board.turnTiles === undefined)).toBe(true);
+  });
+
+  it('teaches the turn tile in the first five levels of page 3, starting with a board that does all the turning', () => {
+    const first = PAGE_3.slice(0, 5);
+    expect(first.every((l) => l.board.turnTiles?.some(Boolean))).toBe(true);
+    // Level 41: FORWARD alone wins, and the one turn in it is the tile's.
+    expect(new Set(first[0].witness)).toEqual(new Set(['forward']));
+    expect(replayMeasures(first[0], first[0].witness).tileTurns).toBe(1);
+    expect(first.every((l) => l.par <= 7 && l.start.robots.length <= 3)).toBe(true);
+    // One of the five is about a tile to stay off: its solution never touches it.
+    expect(first.filter((l) => replayMeasures(l, l.witness).tileTurns === 0).length).toBe(1);
+  });
+
+  it('uses the tile in most levels of page 3 and leaves it out of a few, with two or three tiles at most', () => {
+    const tiles = PAGE_3.map((l) => l.board.turnTiles?.filter(Boolean).length ?? 0);
+    expect(tiles.filter((n) => n > 0).length).toBeGreaterThanOrEqual(16);
+    expect(tiles.filter((n) => n > 0).length).toBeLessThan(PAGE_3.length);
+    expect(Math.max(...tiles)).toBeLessThanOrEqual(3);
+    const sizes = new Set(PAGE_3.map((l) => `${l.board.width}x${l.board.height}`));
+    expect(sizes.has('8x8')).toBe(true);
+    expect(sizes.size).toBeGreaterThanOrEqual(7);
+  });
+
   it('has a design note for every level: a known idea, an origin and one sentence', () => {
     const catalog = catalogData as { ideas: Record<string, string>; origins: Record<string, string>; levels: Record<string, { idea: string; origin: string; about: string }> };
     expect(Object.keys(catalog.levels).sort()).toEqual(LEVELS.map((l) => l.id).sort());
@@ -111,10 +141,11 @@ describe('levels', () => {
         expect(result.solution?.length).toBe(level.par);
       });
 
-      it(index === 0 ? 'is the one level won by only pressing forward' : 'cannot be won by only pressing forward', () => {
+      const forwardWins = FORWARD_ONLY.includes(level.id);
+      it(forwardWins ? 'is one of the two levels won by only pressing forward' : 'cannot be won by only pressing forward', () => {
         const session = new Session(level, { budget });
         while (session.status === 'playing') session.apply('forward');
-        expect(session.status).toBe(index === 0 ? 'won' : 'lost');
+        expect(session.status).toBe(forwardWins ? 'won' : 'lost');
       });
     });
   }

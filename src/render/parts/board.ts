@@ -21,6 +21,8 @@ const mats = {
   check: new THREE.MeshPhysicalMaterial({ color: K.check, roughness: 0.3, clearcoat: 0.5, clearcoatRoughness: 0.3, emissive: K.check, emissiveIntensity: 0.25 }),
   rim: glossy(K.frame, 0.32, 0.5),
   underlay: glossy(K.frameShadow, 0.45, 0.1),
+  /** The turn tile's arrows: flat, matt and unlit by the gloss, so they stay dark from every side. */
+  turnInk: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7 }),
 };
 
 function shadowed<T extends THREE.Object3D>(node: T): T {
@@ -154,6 +156,149 @@ export function buildFloorTile(alt = false, pegs = true): THREE.Group {
     }
   }
   return shadowed(tile);
+}
+
+/** The two drawn designs of the turn tile: `pair` (two chasing arrows on a white disc, the one in the game) and `hook` (one long arrow on a violet disc, kept for comparison on the parts page). */
+export type TurnTileDesign = 'pair' | 'hook';
+
+/**
+ * One curved arrow lying flat: an arc of `span` degrees around the origin that runs CLOCKWISE seen
+ * from above, starting at `start` degrees (0 = north, 90 = east), with an arrowhead of `head` degrees at its
+ * leading end. Sizes in cells.
+ */
+function clockwiseArrow(a: { radius: number; width: number; span: number; head: number; headWidth: number }, start: number): THREE.BufferGeometry {
+  const rad = Math.PI / 180;
+  // Compass degrees to a point in the shape's plane (x east, y north); the shape is laid flat afterwards.
+  const at = (radius: number, degrees: number): THREE.Vector2 => new THREE.Vector2(Math.sin(degrees * rad) * radius, Math.cos(degrees * rad) * radius);
+  const body = a.span - a.head;
+  const steps = Math.max(6, Math.round(body / 8));
+  const outer: THREE.Vector2[] = [];
+  const inner: THREE.Vector2[] = [];
+  for (let i = 0; i <= steps; i++) {
+    const d = start + (body * i) / steps;
+    outer.push(at(a.radius + a.width / 2, d));
+    inner.unshift(at(a.radius - a.width / 2, d));
+  }
+  // A round tail, so the arrow reads as a stroke and not as a wedge.
+  // From the inner side round the back to the outer side.
+  const tail: THREE.Vector2[] = [];
+  const centre = at(a.radius, start);
+  const out = at(1, start);
+  const back = at(1, start - 90);
+  for (let i = 1; i < 6; i++) {
+    const phi = (i / 6) * Math.PI;
+    const u = (-Math.cos(phi) * a.width) / 2;
+    const v = (Math.sin(phi) * a.width) / 2;
+    tail.push(new THREE.Vector2(centre.x + out.x * u + back.x * v, centre.y + out.y * u + back.y * v));
+  }
+  const end = start + body;
+  const points = [...outer, at(a.radius + a.headWidth / 2, end), at(a.radius, end + a.head), at(a.radius - a.headWidth / 2, end), ...inner, ...tail];
+  const g = new THREE.ShapeGeometry(new THREE.Shape(points));
+  g.rotateX(-Math.PI / 2);
+  return g;
+}
+
+let turnGlowMap: THREE.DataTexture | null = null;
+/** A soft ring of light around the turn tile's disc, for the flash when it turns a robot. Made once. */
+function turnGlowTexture(): THREE.DataTexture {
+  if (turnGlowMap) return turnGlowMap;
+  const { inner, outer } = P.turnTile.glow;
+  const n = 96;
+  const c = new THREE.Color(K.turnGlow);
+  const data = new Uint8Array(n * n * 4);
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+    const r = Math.hypot((i + 0.5) / n - 0.5, (j + 0.5) / n - 0.5) * 2 * outer;
+    const mid = (inner + outer) / 2;
+    const k = Math.max(0, 1 - Math.abs(r - mid) / ((outer - inner) / 2));
+    data.set([c.r * 255, c.g * 255, c.b * 255, 255 * k * k * (3 - 2 * k)], (j * n + i) * 4);
+  }
+  turnGlowMap = new THREE.DataTexture(data, n, n, THREE.RGBAFormat);
+  turnGlowMap.colorSpace = THREE.SRGBColorSpace;
+  turnGlowMap.magFilter = THREE.LinearFilter;
+  turnGlowMap.minFilter = THREE.LinearFilter;
+  turnGlowMap.needsUpdate = true;
+  return turnGlowMap;
+}
+
+/**
+ * 7. Turn tile: a floor tile with a turntable let into it. A robot that arrives on it is turned a
+ * quarter clockwise, whatever its colour, so the tile wears none of the robot colours: a white
+ * round disc with two dark arrows chasing each other clockwise, in a periwinkle collar that
+ * reaches almost to the tile's edge and so stays visible around a robot standing on it.
+ *
+ * The body and collar never move. The disc is the child named `turn-disc`, also at
+ * `userData.disc`: the game turns it around y together with the robot. `userData.glow` is a flat
+ * ring of light with a material of its own, normally invisible (`opacity` 0); the game flashes
+ * it up to `glow.peak` while the tile turns a robot. The glow is light, not body, and does not
+ * count towards the tile's measured size.
+ */
+export function buildTurnTile(alt = false, pegs = true, design: TurnTileDesign = 'pair'): THREE.Group {
+  const t = P.turnTile;
+  const top = P.floorTile.height;
+  const tile = buildFloorTile(alt, pegs);
+
+  // Collar: a flat band just above the tile top, darker at its outer edge so it reads as a groove.
+  const collar = once('turnCollar', () => {
+    const g = new THREE.RingGeometry(t.disc - 0.01, t.ringOuter, 48, 2);
+    g.rotateX(-Math.PI / 2);
+    const position = g.getAttribute('position');
+    const colors = new Float32Array(position.count * 3);
+    const inner = tone(K.turnRing);
+    const outer = tone(K.turnRingEdge);
+    for (let i = 0; i < position.count; i++) {
+      const r = Math.hypot(position.getX(i), position.getZ(i));
+      const c = inner.clone().lerp(outer, Math.min(1, Math.max(0, (r - t.disc) / (t.ringOuter - t.disc))) ** 2);
+      colors.set([c.r, c.g, c.b], i * 3);
+    }
+    g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    return g;
+  });
+  const band = new THREE.Mesh(collar, kit.tile);
+  band.position.y = top + t.lift;
+  tile.add(band);
+
+  const disc = new THREE.Group();
+  disc.name = 'turn-disc';
+  disc.position.y = top;
+  const face = design === 'pair' ? K.turnDisc : K.turnAltDisc;
+  const plate = once(`turnDisc-${design}`, () => profiledBlock(t.disc * 2, t.disc * 2, t.disc, [
+    { inset: 0, y: 0, color: design === 'pair' ? K.turnDiscEdge : K.turnRingEdge },
+    ...roundOver(0, t.discHeight - t.discRound, t.discRound, blend(design === 'pair' ? K.turnDiscEdge : K.turnAltDisc, face), 3),
+  ], 10));
+  disc.add(new THREE.Mesh(plate, kit.tile));
+  const ink = design === 'pair' ? K.turnInk : K.turnAltInk;
+  const spec = design === 'pair' ? t.arrow : { ...t.hook, count: 1 };
+  for (let k = 0; k < spec.count; k++) {
+    const arrow = once(`turnArrow-${design}-${k}`, () => {
+      const g = clockwiseArrow(spec, spec.start + (k * 360) / spec.count);
+      paint(g, ink);
+      return g;
+    });
+    const mark = new THREE.Mesh(arrow, mats.turnInk);
+    mark.position.y = t.discHeight + t.lift;
+    disc.add(mark);
+  }
+  tile.add(disc);
+  shadowed(tile);
+  disc.traverse((n) => {
+    n.castShadow = false;
+  });
+
+  const span = t.glow.outer * 2;
+  const light = new THREE.PlaneGeometry(span, span);
+  light.rotateX(-Math.PI / 2);
+  light.translate(0, t.discHeight + 3 * t.lift, 0);
+  // Keep the light out of the tile's bounding box: see the doc comment.
+  const half = P.floorTile.size / 2;
+  light.boundingBox = new THREE.Box3(new THREE.Vector3(-half, 0, -half), new THREE.Vector3(half, 0, half));
+  const glow = new THREE.Mesh(light, new THREE.MeshBasicMaterial({ map: turnGlowTexture(), transparent: true, opacity: 0, depthWrite: false, toneMapped: false }));
+  glow.name = 'turn-glow';
+  glow.position.y = top;
+  glow.renderOrder = 1;
+  tile.add(glow);
+  tile.userData.disc = disc;
+  tile.userData.glow = glow;
+  return tile;
 }
 
 /** Give every vertex of `g` the same colour, for a part drawn with a vertex-coloured material. */

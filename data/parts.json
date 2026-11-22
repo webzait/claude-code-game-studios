@@ -148,6 +148,39 @@
       "cellPx": 42
     }
   },
+  "turnTile": {
+    "disc": 0.35,
+    "discHeight": 0.016,
+    "discRound": 0.012,
+    "ringOuter": 0.455,
+    "lift": 0.002,
+    "arrow": {
+      "count": 2,
+      "radius": 0.2,
+      "width": 0.105,
+      "span": 128,
+      "head": 52,
+      "headWidth": 0.27,
+      "start": 52
+    },
+    "hook": {
+      "radius": 0.19,
+      "width": 0.1,
+      "span": 265,
+      "head": 62,
+      "headWidth": 0.26,
+      "start": 130
+    },
+    "glow": {
+      "inner": 0.3,
+      "outer": 0.5,
+      "peak": 0.95
+    },
+    "fieldView": {
+      "tilt": 30,
+      "cellPx": [53, 42]
+    }
+  },
   "rim": {
     "width": 0.267,
     "height": 0.4,
