@@ -14,7 +14,6 @@ export interface HudModel {
   total: number;
   movesLeft: number;
   canUndo: boolean;
-  canReplay: boolean;
   canScan: boolean;
   inputLocked: boolean;
   colorsInLevel: ReadonlySet<Color>;
@@ -39,7 +38,6 @@ export interface HudHandlers {
   command(c: Command): void;
   undo(): void;
   restart(): void;
-  replay(): void;
   scan(): void;
   back(): void;
 }
@@ -78,7 +76,6 @@ export class Hud {
     }
     el('undo').addEventListener('click', () => handlers.undo());
     el('restart').addEventListener('click', () => handlers.restart());
-    el('replay').addEventListener('click', () => handlers.replay());
     el('scan').addEventListener('click', () => handlers.scan());
     el('levelBack').addEventListener('click', () => handlers.back());
     window.addEventListener('keydown', (e) => {
@@ -118,7 +115,6 @@ export class Hud {
     setPrice(undo, 'Undo', m.undoCost, m.undoState);
     undo.disabled = !m.canUndo;
     el<HTMLButtonElement>('restart').disabled = !m.canUndo;
-    el<HTMLButtonElement>('replay').disabled = !m.canReplay;
     const scan = el<HTMLButtonElement>('scan');
     setPrice(scan, 'Hint', m.hintCost, m.hintState);
     scan.disabled = !m.canScan || m.hintState === 'used';

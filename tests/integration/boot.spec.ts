@@ -307,10 +307,10 @@ test('the bottom buttons are one set, and every price is the same tag in the sam
   await open(page);
   await page.click('#node-1');
   await press(page, 'forward');
-  const ids = ['undo', 'restart', 'replay', 'scan'];
+  const ids = ['undo', 'restart', 'scan'];
   const boxes = [];
   for (const id of ids) boxes.push((await page.locator(`#${id}`).boundingBox())!);
-  // Four equal blocks on one line, each a full touch target.
+  // Equal blocks on one line, each a full touch target.
   for (const box of boxes) {
     expect(box.width).toBeCloseTo(boxes[0].width, 0);
     expect(box.height).toBeCloseTo(boxes[0].height, 0);
@@ -319,9 +319,10 @@ test('the bottom buttons are one set, and every price is the same tag in the sam
   }
   // A picture only, so each has its name for a screen reader.
   await expect(page.locator('#restart')).toHaveAttribute('aria-label', 'Restart');
-  await expect(page.locator('#replay')).toHaveAttribute('aria-label', 'Replay');
+  // Replay is not on the puzzle screen; it is on the win pop-up.
+  await expect(page.locator('#replay')).toHaveCount(0);
   // A price is one tag over the bottom edge, in the middle; a free tool has none.
-  await expect(page.locator('#restart .tf-coin-price, #replay .tf-coin-price')).toHaveCount(0);
+  await expect(page.locator('#restart .tf-coin-price')).toHaveCount(0);
   const hang: number[] = [];
   for (const [i, id] of ids.entries()) {
     if (id !== 'undo' && id !== 'scan') continue;
@@ -338,7 +339,7 @@ test('the bottom buttons are one set, and every price is the same tag in the sam
   expect(boxes[0].y + boxes[0].height + hang[0]).toBeLessThanOrEqual(commands.y);
   // The tools tray and the command row share one grid: the outer columns line up.
   expect(boxes[0].x).toBeCloseTo(commands.x, 0);
-  expect(boxes[3].x + boxes[3].width).toBeCloseTo(commands.x + commands.width, 0);
+  expect(boxes[2].x + boxes[2].width).toBeCloseTo(commands.x + commands.width, 0);
 });
 
 test('Hint: the status is free, the next move costs coins and is drawn on the board, and without coins it is refused', async ({ page }) => {

@@ -83,7 +83,6 @@ const path = (d: string, width: number): string => `<path d="${d}" fill="none" s
 export const TOOL_ICONS = {
   Undo: `<path d="M9.4 4.2 3.6 9.3l5.8 5.1z" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>` + path('M9 9.3h5.4a5.3 5.3 0 0 1 0 10.6H9.6', 3.6),
   Restart: path('M5.6 5.4v13.2', 3.6) + `<path d="M18.6 5.6v12.8L9.8 12z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>`,
-  Replay: `<path d="M7.4 5v14l11.4-7z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>`,
   Hint: `<path d="M8.3 15.6a6.6 6.6 0 1 1 7.4 0v2H8.3z" fill="#f4c62f" stroke="currentColor" stroke-width="2.8" stroke-linejoin="round"/>` + path('M9.6 21.4h4.8', 3) + `<path d="M9.3 9.4a2.9 2.9 0 0 1 2.2-2.2" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/>`,
 };
 /** A tool's name on the sheet. */
@@ -94,7 +93,7 @@ export interface ToolView {
   readonly price?: PriceState;
   readonly state?: '' | 'pressed' | 'disabled';
 }
-/** One tool of the puzzle screen's tray: the same block for Undo, Restart, Replay and Hint. */
+/** One tool of the puzzle screen's tray: the same block for Undo, Restart and Hint. */
 export function toolButton(name: ToolName, view: ToolView = {}): string {
   const used = view.price === 'used';
   const cls = `tf-btn tf-utility${view.price ? ' tf-paid' : ''}${view.price === 'short' ? ' short' : ''}${view.state === 'pressed' ? ' pressed' : ''}${used ? ' showing' : ''}`;
@@ -282,7 +281,7 @@ export function addCoinCards(sheet: HTMLElement): void {
     <div id="coins-price-compact">${toolTray([toolButton('Undo', { cost: COINS.undoCost, price: 'ok' }), toolButton('Undo', { cost: COINS.undoCost, price: 'short' }), toolButton('Undo', { cost: 0, price: 'free' }), toolButton('Undo', { cost: 1250, price: 'ok' })])}<div class="tf-tools-caption"><span>betaalbaar</span><span>te weinig munten</span><span>gratis</span><span>1 250</span></div></div>
     <h3 class="btn-title">${offerName} · ${COINS.extraMovesCost} munten</h3>
     <div class="btn-row panel tf-coin-offers" id="coins-price-offer">${PRICE_STATES.map((s) => cell(offer(s, '290px'), PRICE_LABEL[s])).join('')}</div>
-    <p class="note">Eén prijskaartje voor alles wat munten kost (bevinding B9): de munt ligt over het linkereind van een crème plaatje met het bedrag, en het kaartje staat altijd op dezelfde plek, midden over de onderrand van de knop. De prijs is dus te lezen vóór het tikken. Te weinig munten: het kaartje wordt rood en de knop dof, maar hij blijft tikbaar en de teller antwoordt met zijn schudje. Gratis (testlab): het woord "Gratis" in groen, zonder munt. Al gebruikt: een grijs kaartje met een vinkje; bij Hint brandt de lamp zolang de hint op het bord staat. Een knop zonder prijs (Restart, Replay) heeft geen kaartje; de rij houdt de ruimte eronder wel vrij, zodat alle knoppen op één lijn staan.</p>`,
+    <p class="note">Eén prijskaartje voor alles wat munten kost (bevinding B9): de munt ligt over het linkereind van een crème plaatje met het bedrag, en het kaartje staat altijd op dezelfde plek, midden over de onderrand van de knop. De prijs is dus te lezen vóór het tikken. Te weinig munten: het kaartje wordt rood en de knop dof, maar hij blijft tikbaar en de teller antwoordt met zijn schudje. Gratis (testlab): het woord "Gratis" in groen, zonder munt. Al gebruikt: een grijs kaartje met een vinkje; bij Hint brandt de lamp zolang de hint op het bord staat. Een knop zonder prijs (Restart) heeft geen kaartje; de rij houdt de ruimte eronder wel vrij, zodat alle knoppen op één lijn staan.</p>`,
   );
 
   // 4. The reward.
