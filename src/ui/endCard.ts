@@ -30,7 +30,7 @@ const ICONS = {
   replay: icon('<path d="M7.4 5v14l11.4-7z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>'),
   next: icon(stroke('M4.5 12h13.5M12.4 5.4 19 12l-6.6 6.6', 3.8)),
   levels: icon('<rect x="3.5" y="3.5" width="7" height="7" rx="2" fill="currentColor"/><rect x="13.5" y="3.5" width="7" height="7" rx="2" fill="currentColor"/><rect x="3.5" y="13.5" width="7" height="7" rx="2" fill="currentColor"/><rect x="13.5" y="13.5" width="7" height="7" rx="2" fill="currentColor"/>'),
-  hint: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.3 15.6a6.6 6.6 0 1 1 7.4 0v2H8.3z" fill="#f4c62f" stroke="currentColor" stroke-width="2.8" stroke-linejoin="round"/><path d="M9.6 21.4h4.8" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>`,
+  hint: `<svg viewBox="0 0 24 24" aria-hidden="true"><path class="tf-lamp" d="M8.3 15.6a6.6 6.6 0 1 1 7.4 0v2H8.3z" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linejoin="round"/><path d="M9.6 21.4h4.8" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>`,
   none: '',
 };
 type Glyph = keyof typeof ICONS;

@@ -83,7 +83,7 @@ const path = (d: string, width: number): string => `<path d="${d}" fill="none" s
 export const TOOL_ICONS = {
   Undo: `<path d="M9.4 4.2 3.6 9.3l5.8 5.1z" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>` + path('M9 9.3h5.4a5.3 5.3 0 0 1 0 10.6H9.6', 3.6),
   Restart: path('M5.6 5.4v13.2', 3.6) + `<path d="M18.6 5.6v12.8L9.8 12z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>`,
-  Hint: `<path d="M8.3 15.6a6.6 6.6 0 1 1 7.4 0v2H8.3z" fill="#f4c62f" stroke="currentColor" stroke-width="2.8" stroke-linejoin="round"/>` + path('M9.6 21.4h4.8', 3) + `<path d="M9.3 9.4a2.9 2.9 0 0 1 2.2-2.2" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/>`,
+  Hint: `<path class="tf-lamp" d="M8.3 15.6a6.6 6.6 0 1 1 7.4 0v2H8.3z" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linejoin="round"/>` + path('M9.6 21.4h4.8', 3) + `<path d="M9.3 9.6a2.9 2.9 0 0 1 2.4-2.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
 };
 /** A tool's name on the sheet. */
 export type ToolName = keyof typeof TOOL_ICONS;
