@@ -7,6 +7,7 @@
  * tests/unit/level-tools.test.ts checks this copy against the engine move for move.
  */
 import type { Board, Command, GameState } from '../../src/engine/types';
+import { exitsOf } from '../../src/engine/engine';
 import { COMMANDS, DIR_DX, DIR_DY } from '../../src/engine/types';
 
 const GONE = 255;
@@ -15,7 +16,8 @@ const GONE = 255;
 export interface FastLevel {
   readonly width: number;
   readonly cells: number;
-  readonly exit: number;
+  /** Per cell: bit c set when an exit there takes colour c (0 red, 1 blue, 2 yellow); 0 where there is no exit. */
+  readonly exitMask: Uint8Array;
   readonly exitAcceptsMany: boolean;
   /** `next[cell * 4 + dir]`: the cell in front, or -1 for a wall or the edge. */
   readonly next: Int16Array;
@@ -43,6 +45,8 @@ export function prepare(board: Board, start: GameState, exitAcceptsMany = true):
   }
   const turn = new Uint8Array(cells);
   if (board.turnTiles) for (let cell = 0; cell < cells; cell++) turn[cell] = board.turnTiles[cell] ? 1 : 0;
+  const exitMask = new Uint8Array(cells);
+  for (const e of exitsOf(board)) exitMask[e.y * board.width + e.x] |= e.color === null ? 7 : 1 << COMMANDS.indexOf(e.color);
   const n = start.robots.length;
   const state = new Uint8Array(n * 2);
   const colour = new Uint8Array(n);
@@ -51,7 +55,7 @@ export function prepare(board: Board, start: GameState, exitAcceptsMany = true):
     state[n + i] = r.dir;
     colour[i] = COMMANDS.indexOf(r.color);
   });
-  return { width: board.width, cells, exit: board.exitY * board.width + board.exitX, exitAcceptsMany, next, turn, colour, start: state, n };
+  return { width: board.width, cells, exitMask, exitAcceptsMany, next, turn, colour, start: state, n };
 }
 
 /** Scratch arrays shared by every step on one level. */
@@ -64,7 +68,7 @@ function scratch(level: FastLevel): { occupant: Int16Array; claims: Uint8Array; 
  * `command` is an index into COMMANDS; 3 is FORWARD. Mirrors the stages of the engine's `step`.
  */
 export function fastStep(level: FastLevel, from: Uint8Array, to: Uint8Array, command: number, s = scratch(level)): void {
-  const { n, next, colour, exit } = level;
+  const { n, next, colour, exitMask } = level;
   const { occupant, claims, target, blocked } = s;
   for (let i = 0; i < n; i++) {
     const cell = from[i];
@@ -84,7 +88,7 @@ export function fastStep(level: FastLevel, from: Uint8Array, to: Uint8Array, com
   }
   for (let i = 0; i < n; i++) {
     const t = target[i];
-    if (t >= 0 && claims[t] >= 2 && !(t === exit && level.exitAcceptsMany)) blocked[i] = 1;
+    if (t >= 0 && claims[t] >= 2 && !(level.exitAcceptsMany && (exitMask[t] >> colour[i]) & 1)) blocked[i] = 1;
   }
   const blockStayers = (): void => {
     for (let changed = true; changed; ) {
@@ -126,7 +130,7 @@ export function fastStep(level: FastLevel, from: Uint8Array, to: Uint8Array, com
     }
     occupant[cell] = -1;
     if (target[i] >= 0) claims[target[i]] = 0;
-    to[i] = blocked[i] ? cell : target[i] === exit ? GONE : target[i];
+    to[i] = blocked[i] ? cell : (exitMask[target[i]] >> colour[i]) & 1 ? GONE : target[i];
     // Arrived on a turn tile: one more quarter turn.
     if (!blocked[i] && to[i] !== GONE && level.turn[to[i]]) to[n + i] = (to[n + i] + 1) & 3;
   }

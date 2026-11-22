@@ -33,6 +33,10 @@ export interface Recipe {
   readonly walls?: number | string;
   /** Turn tiles: a number or a range. */
   readonly tiles?: number | string;
+  /** One exit per colour in play, each taking only that colour, instead of the one exit for everyone. */
+  readonly colourExits?: boolean;
+  /** Set by the generator itself: the colours that get an exit (those actually placed). */
+  readonly exitColours?: readonly ('red' | 'blue' | 'yellow')[];
   /** Where the exit goes: corner, edge, inside or any. */
   readonly exit?: 'corner' | 'edge' | 'inside' | 'any';
   /** Headings: `any`, or `same` (every robot of a colour starts with the same heading). */
@@ -111,22 +115,31 @@ export function randomGrid(recipe: Recipe, rnd: () => number): string[] | null {
   const free = (x: number, y: number): boolean => cells[y][x] === '..';
 
   const corners: [number, number][] = [[0, 0], [width - 1, 0], [0, height - 1], [width - 1, height - 1]];
-  let ex = 0;
-  let ey = 0;
   const where = recipe.exit ?? 'corner';
-  for (let guard = 0; guard < 100; guard++) {
-    if (where === 'corner') [ex, ey] = corners[pick(4)];
-    else {
-      ex = pick(width);
-      ey = pick(height);
-      const onEdge = ex === 0 || ey === 0 || ex === width - 1 || ey === height - 1;
-      const isCorner = corners.some(([cx, cy]) => cx === ex && cy === ey);
-      if (where === 'edge' && (!onEdge || isCorner)) continue;
-      if (where === 'inside' && onEdge) continue;
+  const placeExit = (code: string): boolean => {
+    for (let guard = 0; guard < 100; guard++) {
+      let ex: number;
+      let ey: number;
+      if (where === 'corner') [ex, ey] = corners[pick(4)];
+      else {
+        ex = pick(width);
+        ey = pick(height);
+        const onEdge = ex === 0 || ey === 0 || ex === width - 1 || ey === height - 1;
+        const isCorner = corners.some(([cx, cy]) => cx === ex && cy === ey);
+        if (where === 'edge' && (!onEdge || isCorner)) continue;
+        if (where === 'inside' && onEdge) continue;
+      }
+      if (!free(ex, ey)) continue;
+      cells[ey][ex] = code;
+      return true;
     }
-    break;
-  }
-  cells[ey][ex] = 'EX';
+    return false;
+  };
+  if (recipe.colourExits) {
+    // One exit per colour in play, each taking that colour only.
+    const inPlay = recipe.exitColours ?? (['red', 'blue', 'yellow'] as const).filter((c) => range(recipe[c], [0, 0])[1] > 0);
+    for (const colour of inPlay) if (!placeExit(`E${colour[0].toUpperCase()}`)) return null;
+  } else if (!placeExit('EX')) return null;
 
   let walls = between(range(recipe.walls, [0, 0]));
   for (let guard = 0; walls > 0 && guard < 200; guard++) {
@@ -177,7 +190,8 @@ export function plannedGrid(recipe: Recipe, rnd: () => number): string[] | null 
     const [lo, hi] = range(recipe[c], [0, 0]);
     return lo + pick(hi - lo + 1);
   });
-  const base = randomGrid({ ...recipe, red: 0, blue: 0, yellow: 0 }, rnd);
+  const exitColours = (['red', 'blue', 'yellow'] as const).filter((_, i) => counts[i] > 0);
+  const base = randomGrid({ ...recipe, red: 0, blue: 0, yellow: 0, exitColours }, rnd);
   if (!base) return null;
   const colours = COMMANDS.filter((c, i) => c !== 'forward' && counts[i] > 0);
   const [parLo, parHi] = range(recipe.par, [4, 10]);
@@ -367,7 +381,7 @@ export function summary(m: Metrics): string {
   return (
     `score ${m.score} · par ${m.par} · ${m.optimalSolutions} shortest · turns ${m.turns} · search ${m.searchStates} · ` +
     `fatal ${m.fatalShare} · forced ${m.forcedPar}/${m.par} · away ${m.awaySteps} · bump ${m.bumpSteps} · ` +
-    `order ${m.orderFreedom} · exits at once ${m.maxExitsAtOnce} · sides ${m.exitSides} · ${JSON.stringify(m.tally)}`
+    `order ${m.orderFreedom} · exits at once ${m.maxExitsAtOnce} · sides ${m.exitSides} · tile turns ${m.tileTurns} · wrong door ${m.wrongDoor} · ${JSON.stringify(m.tally)}`
   );
 }
 

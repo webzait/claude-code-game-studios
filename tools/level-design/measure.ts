@@ -3,8 +3,8 @@
  * and whether the solution asks for a move that looks wrong. All numbers come from
  * the state graph (graph.ts); none is typed in by hand.
  */
-import { step } from '../../src/engine/engine';
-import { COMMANDS, DIR_DX, DIR_DY, type Board, type Command, type Outcome, type Rules } from '../../src/engine/types';
+import { exitsOf, step } from '../../src/engine/engine';
+import { COMMANDS, DIR_DX, DIR_DY, type Board, type Color, type Command, type Outcome, type Rules } from '../../src/engine/types';
 import { CONFIG } from '../../src/config';
 import type { Level } from '../../src/levels/parse';
 import { solve } from '../../src/solver/bfs';
@@ -17,6 +17,10 @@ export interface Metrics {
   readonly walls: number;
   /** Turn tiles on the board. */
   readonly tiles: number;
+  /** Exits that take one colour only. */
+  readonly colourExits: number;
+  /** Times, along the solution, a robot stepped onto an exit that does not take its colour. */
+  readonly wrongDoor: number;
   readonly robots: number;
   readonly colours: number;
   /** Length of the shortest solution; null when the level cannot be won within the explored budget. */
@@ -75,12 +79,17 @@ export interface MeasureOptions {
   readonly par?: number;
 }
 
-/** Steps from every cell to the exit around the walls, ignoring robots (-1: walled off). */
-export function exitDistances(board: Board): Int16Array {
+/**
+ * Steps from every cell to the nearest exit around the walls, ignoring robots (-1: walled off).
+ * With `color`, only the exits that take that colour count.
+ */
+export function exitDistances(board: Board, color?: Color): Int16Array {
   const dist = new Int16Array(board.width * board.height).fill(-1);
-  const exit = board.exitY * board.width + board.exitX;
-  dist[exit] = 0;
-  let queue = [exit];
+  const exit = exitsOf(board)
+    .filter((e) => color === undefined || e.color === null || e.color === color)
+    .map((e) => e.y * board.width + e.x);
+  for (const cell of exit) dist[cell] = 0;
+  let queue = exit;
   while (queue.length > 0) {
     const next: number[] = [];
     for (const cell of queue) {
@@ -173,11 +182,13 @@ export function replayMeasures(
   level: Level,
   solution: readonly Command[],
   rules?: Rules,
-): { tally: Partial<Record<Outcome, number>>; maxExitsAtOnce: number; tileTurns: number; exitSides: number; turns: number; commandsUsed: number; walls: number; tiles: number; robots: number; colours: number } {
+): { tally: Partial<Record<Outcome, number>>; maxExitsAtOnce: number; tileTurns: number; wrongDoor: number; exitSides: number; turns: number; commandsUsed: number; walls: number; tiles: number; colourExits: number; robots: number; colours: number } {
   const tally: Partial<Record<Outcome, number>> = {};
   const sides = new Set<number>();
   let maxExitsAtOnce = 0;
   let tileTurns = 0;
+  let wrongDoor = 0;
+  const doors = new Set(exitsOf(level.board).map((e) => e.y * level.board.width + e.x));
   let state = level.start;
   for (const command of solution) {
     const result = step(level.board, state, command, rules);
@@ -185,6 +196,7 @@ export function replayMeasures(
     for (const e of result.events) {
       tally[e.outcome] = (tally[e.outcome] ?? 0) + 1;
       if (e.tileTurned) tileTurns++;
+      if (e.outcome === 'moved' && doors.has(e.toY * level.board.width + e.toX)) wrongDoor++;
       if (e.outcome === 'exited') {
         exits++;
         sides.add(e.dir);
@@ -197,11 +209,13 @@ export function replayMeasures(
     tally,
     maxExitsAtOnce,
     tileTurns,
+    wrongDoor,
     exitSides: sides.size,
     turns: solution.filter((c) => c !== 'forward').length,
     commandsUsed: new Set(solution).size,
     walls: level.board.walls.filter(Boolean).length,
     tiles: level.board.turnTiles?.filter(Boolean).length ?? 0,
+    colourExits: exitsOf(level.board).filter((e) => e.color !== null).length,
     robots: level.start.robots.length,
     colours: new Set(level.start.robots.map((r) => r.color)).size,
   };
@@ -249,6 +263,7 @@ export function measure(level: Level, options: MeasureOptions = {}): Metrics {
     height: board.height,
     walls: board.walls.filter(Boolean).length,
     tiles: board.turnTiles?.filter(Boolean).length ?? 0,
+    colourExits: exitsOf(board).filter((e) => e.color !== null).length,
     robots: start.robots.length,
     colours,
     budget,
@@ -258,7 +273,7 @@ export function measure(level: Level, options: MeasureOptions = {}): Metrics {
   if (par === null) {
     return {
       ...base, par: null, solution: null, optimalSolutions: 0, searchStates: graph.size, deadShare: 1, fatalShare: 1,
-      forcedPar: 0, forcedBudget: 0, awaySteps: 0, bumpSteps: 0, orderFreedom: 0, turns: 0, exitSides: 0, commandsUsed: 0, tally: {}, maxExitsAtOnce: 0, tileTurns: 0,
+      forcedPar: 0, forcedBudget: 0, awaySteps: 0, bumpSteps: 0, orderFreedom: 0, turns: 0, exitSides: 0, commandsUsed: 0, tally: {}, maxExitsAtOnce: 0, tileTurns: 0, wrongDoor: 0,
       score: 0, scoreParts: {},
     };
   }
@@ -289,7 +304,8 @@ export function measure(level: Level, options: MeasureOptions = {}): Metrics {
     const child = children[s * 4 + c];
     return child === WIN ? toWin[s] === 1 : child >= 0 && toWin[child] === toWin[s] - 1;
   };
-  const dist = exitDistances(board);
+  // Each robot is measured against the exits that take its colour.
+  const dists = { red: exitDistances(board, 'red'), blue: exitDistances(board, 'blue'), yellow: exitDistances(board, 'yellow') };
   const ways = new Map<number, number>();
   const least = new Map<number, [number, number]>();
   const visit = (s: number): void => {
@@ -305,7 +321,10 @@ export function measure(level: Level, options: MeasureOptions = {}): Metrics {
       let stepBump = 0;
       for (const e of step(board, state, COMMANDS[c], options.rules).events) {
         if (e.outcome.startsWith('blocked')) stepBump = 1;
-        else if (dist[e.toY * board.width + e.toX] > dist[e.fromY * board.width + e.fromX]) stepAway = 1;
+        else {
+          const dist = dists[start.robots[e.id].color];
+          if (dist[e.toY * board.width + e.toX] > dist[e.fromY * board.width + e.fromX]) stepAway = 1;
+        }
       }
       if (child === WIN) {
         count += 1;
@@ -380,6 +399,7 @@ export function measure(level: Level, options: MeasureOptions = {}): Metrics {
     tally,
     maxExitsAtOnce,
     tileTurns,
+    wrongDoor: replayMeasures(level, solution, options.rules).wrongDoor,
   };
   const { score, parts } = difficulty(partial);
   return { ...partial, score, scoreParts: parts };

@@ -199,5 +199,28 @@
       "tileTurns": 0,
       "tiles": "1.."
     }
+  },
+  "colour-exit": {
+    "teaches": "Each colour has its own exit; to the other colours that exit is plain floor.",
+    "size": "5x5",
+    "red": "1..2",
+    "blue": "1..2",
+    "colourExits": true,
+    "par": "5..8",
+    "planTurns": "1..3",
+    "maxSolutions": 2
+  },
+  "wrong-door": {
+    "teaches": "A robot can walk across, or wait on, an exit that is not its own.",
+    "size": "5x5",
+    "red": "1..2",
+    "blue": "1..2",
+    "colourExits": true,
+    "par": "6..9",
+    "planTurns": "2..3",
+    "maxSolutions": 2,
+    "require": {
+      "wrongDoor": "1.."
+    }
   }
 }

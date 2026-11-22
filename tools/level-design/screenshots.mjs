@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const OUT = 'production/qa/evidence/levels';
+const OUT = process.env.SHOTS_OUT ?? 'production/qa/evidence/levels';
 const levels = JSON.parse(readFileSync('data/levels.json', 'utf8'));
 const config = JSON.parse(readFileSync('data/config.json', 'utf8'));
 const play = process.argv.slice(2).map(Number);
@@ -20,11 +20,12 @@ const executablePath = process.env.PAGE_SHOT_BROWSER || which || undefined;
 const browser = await chromium.launch({ executablePath, args: ['--use-gl=angle', '--use-angle=swiftshader-webgl', '--enable-unsafe-swiftshader'] });
 const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true });
 // Open every level: the save is plain data in localStorage.
-await context.addInitScript(() => {
+// SHOTS_SHAPES=1 also switches on the "Colour shapes" setting.
+await context.addInitScript((shapes) => {
   if (!localStorage.getItem('turnflock.save')) {
-    localStorage.setItem('turnflock.save', JSON.stringify({ version: 4, best: {}, coins: 0, paid: {}, settings: { mute: true }, lab: { unlockAll: true } }));
+    localStorage.setItem('turnflock.save', JSON.stringify({ version: 4, best: {}, coins: 0, paid: {}, settings: { mute: true, colourShapes: shapes }, lab: { unlockAll: true } }));
   }
-});
+}, process.env.SHOTS_SHAPES === '1');
 const page = await context.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
@@ -54,7 +55,7 @@ for (const number of numbers) {
   for (const command of level.witness) await page.dispatchEvent(`.cmd[data-cmd=${command}]`, 'pointerdown');
   const after = await snap();
   results.push({ number, id: level.id, par: level.par, status: after.status, moves: after.commands.length, collected: `${after.collected}/${after.total}` });
-  await page.locator('#card .tf-end-card').waitFor({ state: 'visible', timeout: 60000 });
+  await page.locator('#card .tf-end-card').waitFor({ state: 'visible', timeout: 240000 });
   await settle(600);
   await page.screenshot({ path: `${OUT}/level-${tag}-won.png` });
   await page.click('#end-levels');
