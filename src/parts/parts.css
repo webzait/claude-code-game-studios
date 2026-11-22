@@ -189,7 +189,6 @@ body { margin: 0; background: #eef3fb; color: var(--ink); font-family: ui-rounde
 
 /* Chips: small labels. Never the only carrier of meaning; each one is text. */
 .tf-set-chip { display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 10px; font-size: 11px; font-weight: 800; letter-spacing: .03em; white-space: nowrap; text-transform: none; }
-.tf-set-chip.new { background: #e9e5ff; color: #4a39c9; }
 .tf-set-chip.test { background: #24314f; color: #fff; }
 .tf-set-chip.changed { background: #ffe9a3; color: #5a4300; box-shadow: inset 0 0 0 1px rgba(122, 91, 0, .3); }
 
