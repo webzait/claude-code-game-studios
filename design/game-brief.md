@@ -50,7 +50,8 @@ Each level has a move budget of the shortest solution plus two. Running out ends
 - [x] Level design tools: measure every level, generate candidates per idea, report (`tools/level-design/`, `design/level-report.md`)
 - [x] Turn tile in the engine (a tile that turns whoever steps onto it), agreed 2026-11-22; not drawn yet
 - [ ] Page 3: twenty turn-tile levels, certified in `data/levels-upcoming.json`, waiting for the tile to be drawn
-- [x] Coins: earned per win (base, spare moves, perfect bonus), spent on the next-move hint and on extra moves; no shop, no ads
+- [x] Coins: earned per win (base, spare moves, perfect bonus), spent on the next-move hint, on Undo and on extra moves; no real shop, no ads
+- [x] Test shop (2026-11-22): pretend coin purchases behind a `PurchaseProvider` interface, "Get coins" links at the cannot-afford moments, a test ledger and switches in the test lab. Nothing is charged and nothing leaves the device; what a real shop needs and the economy note are in `design/shop.md`
 
 ## Keep
 -
