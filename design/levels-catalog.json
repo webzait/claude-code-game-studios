@@ -225,10 +225,7 @@
       "idea": "big",
       "origin": "tidied",
       "about": "Pronkstuk van pagina 2: tien robots op een leeg 8×8-bord lopen in optocht naar de hoek."
-    }
-  },
-  "retired": {},
-  "upcoming": {
+    },
     "turntable": {
       "idea": "turn-tile",
       "origin": "hand",
@@ -329,5 +326,8 @@
       "origin": "tidied",
       "about": "Pronkstuk van pagina 3: tien robots in drie kleuren op een leeg 8×8-bord; de ene tegel in de onderste rij draait er vier."
     }
+  },
+  "retired": {},
+  "upcoming": {
   }
 }
