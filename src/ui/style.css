@@ -64,7 +64,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 #level .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
 #level .back { width: 42px; height: 43px; }
 /* The object: a round level medallion sitting over the left end of a bar; the bar holds the moves left in a sunken well. */
-.tf-status { --medal: 52px; --lap: 28px; position: relative; flex: none; display: grid; justify-items: center; padding-left: calc(var(--medal) - var(--lap)); }
+.tf-status { --medal: 57px; --lap: 30px; position: relative; flex: none; display: grid; justify-items: center; padding-left: calc(var(--medal) - var(--lap)); }
 .tf-status-plate {
   position: relative; z-index: 1; display: flex; align-items: stretch; height: 43px; padding: 0 8px 0 calc(var(--lap) + 6px); border-radius: 16px;
   background: var(--panel-grad); box-shadow: var(--panel-edge); font-variant-numeric: tabular-nums;
@@ -98,7 +98,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 @media (max-width: 359px) {
   #level .top { gap: 5px; }
   #level .back { width: 38px; }
-  .tf-status { --medal: 48px; --lap: 27px; }
+  .tf-status { --medal: 53px; --lap: 29px; }
   .tf-status-plate { padding: 0 6px 0 calc(var(--lap) + 4px); }
   .tf-status-well { min-width: 42px; padding: 0 6px; }
   .tf-status-label { letter-spacing: .07em; }
