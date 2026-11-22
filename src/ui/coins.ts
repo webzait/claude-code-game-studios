@@ -47,11 +47,10 @@ export function spokenPrice(name: string, cost: number, state: PriceState): stri
   return `${name}, ${cost} coins${state === 'short' ? ', you do not have enough coins' : ''}`;
 }
 
-/** Turn the Undo button of the tools row into a priced button: its arrow, then the price tag `setPrice` fills in. */
+/** Give the Undo button its price: the button stays as it is, and a small coin badge that `setPrice` fills in sits on its bottom edge. */
 export function mountUndoButton(button: HTMLButtonElement): void {
-  button.classList.add('tf-coin-buy', 'undo', 'compact');
-  button.querySelector('.tf-label')?.remove();
-  button.querySelector('.tf-face')!.insertAdjacentHTML('beforeend', '<span class="tf-coin-slot"></span>');
+  button.classList.add('tf-paid');
+  button.insertAdjacentHTML('beforeend', '<span class="tf-coin-slot tf-coin-badge"></span>');
 }
 
 /** Turn the Hint button of the tools row into the compact priced button, sized by that row; `setPrice` fills in the tag. */
