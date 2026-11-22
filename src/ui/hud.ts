@@ -1,6 +1,7 @@
 import { CONFIG } from '../config';
 import { COMMANDS, type Color, type Command } from '../engine/types';
-import { mountHintButton, mountUndoButton, setPrice, type PriceState } from './coins';
+import PARTS from '../../data/parts.json';
+import { mountPricedButton, setPrice, type PriceState } from './coins';
 import { END_DEFS, renderEndCard, type EndCard } from './endCard';
 
 /** What the level HUD needs to draw one frame of status. */
@@ -54,8 +55,17 @@ export class Hud {
   onCardHidden: (() => void) | null = null;
 
   constructor(handlers: HudHandlers, isLevelOpen: () => boolean) {
-    mountHintButton(el<HTMLButtonElement>('scan'));
-    mountUndoButton(el<HTMLButtonElement>('undo'));
+    // The bottom area's build (finding B9) comes from data/parts.json: one depth and corner rule for every block,
+    // and whether the tools stand in a tray and show their names.
+    const family = PARTS.buttons.family;
+    const controls = el('tools').parentElement!;
+    controls.style.setProperty('--tf-depth', String(family.depth));
+    controls.style.setProperty('--tf-round', String(family.radius));
+    el('tools').style.setProperty('--tool-h', `${PARTS.buttons.tools.height}px`);
+    el('tools').classList.toggle('no-tray', !PARTS.buttons.tools.tray);
+    el('tools').classList.toggle('labels', PARTS.buttons.tools.labels);
+    mountPricedButton(el<HTMLButtonElement>('undo'));
+    mountPricedButton(el<HTMLButtonElement>('scan'));
     el('card').insertAdjacentHTML('afterbegin', END_DEFS);
     for (const button of Array.from(document.querySelectorAll<HTMLButtonElement>('.cmd'))) {
       const command = button.dataset.cmd as Command;
@@ -112,6 +122,7 @@ export class Hud {
     const scan = el<HTMLButtonElement>('scan');
     setPrice(scan, 'Hint', m.hintCost, m.hintState);
     scan.disabled = !m.canScan || m.hintState === 'used';
+    scan.classList.toggle('showing', m.hintState === 'used');
     for (const id of ['undo', 'restart', 'scan'] as const) el(id).classList.toggle('nudge', m.point === id && !el<HTMLButtonElement>(id).disabled);
     const hint = el('hint');
     hint.textContent = m.hint;

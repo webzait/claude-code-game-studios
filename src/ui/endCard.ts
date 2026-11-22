@@ -1,6 +1,5 @@
 import { CONFIG } from '../config';
-import PARTS from '../../data/parts.json';
-import { formatCoins, offerButton, priceTag, rewardPlate, spokenPrice, type PriceState, type RewardView } from './coins';
+import { formatCoins, offerButton, priceSlot, priceTag, rewardPlate, spokenPrice, type PriceState, type RewardView } from './coins';
 
 /**
  * The end-of-round pop-up: a sheet resting near the bottom edge, as designed
@@ -123,7 +122,8 @@ export function winMarkup(w: WinCard, flecks: boolean): string {
     <div class="tf-end-more">${link('replay', 'Replay', 'replay')}${w.last ? '' : link('levels', 'Levels', 'levels')}</div>`;
 }
 
-function lostBody(l: LostCard): string {
+/** The markup of the out-of-moves pop-up. */
+export function lostBody(l: LostCard): string {
   let offer = '';
   let why = l.note ?? '';
   if (l.offer) {
@@ -131,11 +131,11 @@ function lostBody(l: LostCard): string {
     why = o.state === 'short' ? `You have ${formatCoins(o.coins)} coins: ${formatCoins(o.price - o.coins)} short. Retry is free.` : `Checked: ${CONFIG.extraMoves} more moves are enough from here.`;
     offer = offerButton('end-offer', o.price, o.state);
   }
-  // Undo keeps its look; its price is the small coin badge on its bottom edge, as on the Undo button of the puzzle screen.
+  // Undo carries the same price tag in the same place as on the puzzle screen and on the offer: over its bottom edge.
   const u = l.undoPrice;
   const undo = utility('undo', 'Undo', 'undo', `tf-end-mid tf-paid${u.state === 'short' ? ' short' : ''}`)
     .replace('<button ', `<button aria-label="${spokenPrice('Undo', u.cost, u.state)}" `)
-    .replace('</span></span></button>', `</span></span><span class="tf-coin-badge">${priceTag(u.cost, u.state, PARTS.coins.priceSmall)}</span></button>`);
+    .replace('</span></span></button>', `</span></span>${priceSlot(priceTag(u.cost, u.state))}</button>`);
   return `<div class="tf-end-head"><h2 class="tf-end-title" id="end-title">Out of moves</h2></div>
     <p class="tf-end-note" id="end-result">${why}</p>
     ${offer}

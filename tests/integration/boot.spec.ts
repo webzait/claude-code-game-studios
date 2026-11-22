@@ -288,6 +288,9 @@ test('out of moves two steps from home: extra moves are offered and really win',
   // The price is on the button before it is tapped; Undo and Retry stay beside it.
   await expect(page.locator('#end-offer')).toHaveAttribute('aria-label', `+${config.extraMoves} moves, ${config.coins.extraMovesCost} coins`, { timeout: 15000 });
   await expect(page.locator('#end-offer')).toContainText(String(config.coins.extraMovesCost));
+  // The offer and the Undo beside it carry the same price tag, each over its own bottom edge (finding B9).
+  await expect(page.locator('#end-offer > .tf-coin-slot .tf-coin-price')).toHaveText(String(config.coins.extraMovesCost));
+  await expect(page.locator('#end-undo > .tf-coin-slot .tf-coin-price')).toHaveText(String(undoCost));
   await expect(page.locator('#end-retry')).toBeVisible();
   await page.click('#end-offer');
   expect(await snap(page)).toMatchObject({ status: 'playing', movesLeft: config.extraMoves, coins: config.coins.start - config.coins.extraMovesCost });
@@ -298,6 +301,44 @@ test('out of moves two steps from home: extra moves are offered and really win',
   await expect(page.locator('.tf-end-stars')).toHaveAttribute('aria-label', '1 of 3 stars');
   // A helped win pays the base amount only.
   expect((await snap(page)).coins).toBe(config.coins.start - config.coins.extraMovesCost + config.coins.win);
+});
+
+test('the bottom buttons are one set, and every price is the same tag in the same place (finding B9)', async ({ page }) => {
+  await open(page);
+  await page.click('#node-1');
+  await press(page, 'forward');
+  const ids = ['undo', 'restart', 'replay', 'scan'];
+  const boxes = [];
+  for (const id of ids) boxes.push((await page.locator(`#${id}`).boundingBox())!);
+  // Four equal blocks on one line, each a full touch target.
+  for (const box of boxes) {
+    expect(box.width).toBeCloseTo(boxes[0].width, 0);
+    expect(box.height).toBeCloseTo(boxes[0].height, 0);
+    expect(box.y).toBeCloseTo(boxes[0].y, 0);
+    expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44);
+  }
+  // A picture only, so each has its name for a screen reader.
+  await expect(page.locator('#restart')).toHaveAttribute('aria-label', 'Restart');
+  await expect(page.locator('#replay')).toHaveAttribute('aria-label', 'Replay');
+  // A price is one tag over the bottom edge, in the middle; a free tool has none.
+  await expect(page.locator('#restart .tf-coin-price, #replay .tf-coin-price')).toHaveCount(0);
+  const hang: number[] = [];
+  for (const [i, id] of ids.entries()) {
+    if (id !== 'undo' && id !== 'scan') continue;
+    await expect(page.locator(`#${id} .tf-coin-slot .tf-coin-price`)).toHaveCount(1);
+    const tag = (await page.locator(`#${id} .tf-coin-slot`).boundingBox())!;
+    expect(tag.x + tag.width / 2).toBeCloseTo(boxes[i].x + boxes[i].width / 2, 0);
+    expect(tag.y).toBeLessThan(boxes[i].y + boxes[i].height);
+    hang.push(tag.y + tag.height - (boxes[i].y + boxes[i].height));
+  }
+  expect(hang[0]).toBeGreaterThan(0);
+  expect(hang[1]).toBeCloseTo(hang[0], 0);
+  // The tags stay clear of the command row and of the screen.
+  const commands = (await page.locator('#commands').boundingBox())!;
+  expect(boxes[0].y + boxes[0].height + hang[0]).toBeLessThanOrEqual(commands.y);
+  // The tools tray and the command row share one grid: the outer columns line up.
+  expect(boxes[0].x).toBeCloseTo(commands.x, 0);
+  expect(boxes[3].x + boxes[3].width).toBeCloseTo(commands.x + commands.width, 0);
 });
 
 test('Hint: the status is free, the next move costs coins and is drawn on the board, and without coins it is refused', async ({ page }) => {

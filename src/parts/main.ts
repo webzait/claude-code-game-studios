@@ -3,7 +3,6 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import { CONFIG } from '../config';
 import type { Color } from '../engine/types';
 import parts from '../../data/parts.json';
-import hintIcon from '../../assets/turnflock/ui/hint.webp';
 import { boardPixels, buildExit, buildFloorTile, buildObstacle, buildRim, buildRimCorner, buildRimEdge, buildUnderlay, rimLayout } from '../render/parts/board';
 import { buildFlockbot } from '../render/parts/flockbot';
 import '../ui/tf-buttons.css';
@@ -17,7 +16,7 @@ import decorBushLarge from '../../assets/turnflock/decor/decor-bush-large.webp';
 import decorBushSmall from '../../assets/turnflock/decor/decor-bush-small.webp';
 import decorTuftClover from '../../assets/turnflock/decor/decor-tuft-clover.webp';
 import decorSprigTop from '../../assets/turnflock/decor/decor-sprig-top.webp';
-import { addCoinCards } from './coins';
+import { addCoinCards, toolButton, toolTray, type ToolName } from './coins';
 import coinIcon from '../../assets/turnflock/ui/coin.webp';
 import extraMovesIcon from '../../assets/turnflock/ui/extra-moves.webp';
 import { addSettingsCards } from './settings';
@@ -306,10 +305,6 @@ for (const [cols, rows] of [[5, 5], [6, 6], [8, 8], [4, 7]] as const) {
   const turnShape = (width: number): string => stroke('M17.1 16.9A7 7 0 1 1 15.5 8', width) + stroke('M18.4 3.2v6h-6', width);
   const turn = icon(turnShape(3.6));
   const up = icon(stroke('M12 20.6V6M5.2 11.4 12 4.6l6.8 6.8', 4));
-  const undo = icon(`<path d="M9.4 4.2 3.6 9.3l5.8 5.1z" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>` + stroke('M9 9.3h5.4a5.3 5.3 0 0 1 0 10.6H9.6', 3.5));
-  const restart = icon(turnShape(3.5));
-  const replay = icon('<path d="M7.4 5v14l11.4-7z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>');
-  const bulb = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.7 15.4a5.9 5.9 0 1 1 6.6 0v1.9H8.7z" fill="#f4c62f" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M9.9 20.6h4.2" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M12 .9v1.4M4.3 3.6l1 1M19.7 3.6l-1 1M1.4 10.4h1.5M22.6 10.4h-1.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 9.6a2.6 2.6 0 0 1 2-2" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>`;
 
   const b = parts.buttons;
   const p = b.phone;
@@ -318,9 +313,6 @@ for (const [cols, rows] of [[5, 5], [6, 6], [8, 8], [4, 7]] as const) {
   /** One button. `state` only fixes a look for the sheet; in the game :active and the disabled attribute do it. */
   const button = (kind: string, s: Size, inner: string, name: string, state: State = '', extra = ''): string =>
     `<button type="button" class="tf-btn ${kind}${state === 'pressed' || state === 'nudge' ? ` ${state}` : ''}" style="${vars(s)}${extra}" aria-label="${name}"${state === 'disabled' ? ' disabled' : ''}><span class="tf-clip"><span class="tf-face">${inner}</span></span></button>`;
-  const label = (text: string): string => `<span class="tf-label">${text}</span>`;
-  const utility = (s: Size, glyph: string, text: string, state: State = '', extra = ''): string => button('tf-utility', s, glyph + label(text), text, state, extra);
-  const hint = (s: Size, state: State = '', kind = 'tf-hint'): string => button(kind, s, bulb + label('Hint'), 'Hint', state);
   const action = (s: Size, color: string, state: State = ''): string => button(`tf-action ${color}`, s, color === 'forward' ? up : turn, color === 'forward' ? 'Vooruit' : `Draai ${color}`, state);
   const cell = (html: string, text: string): string => `<div class="btn-cell">${html}<span>${text}</span></div>`;
   const STATES: [State, string][] = [['', 'rust'], ['pressed', 'ingedrukt'], ['disabled', 'uit']];
@@ -328,41 +320,47 @@ for (const [cols, rows] of [[5, 5], [6, 6], [8, 8], [4, 7]] as const) {
   const COLORS = ['red', 'blue', 'yellow', 'forward'] as const;
   const COLOR_NAMES = { red: 'rood', blue: 'blauw', yellow: 'geel', forward: 'vooruit' } as const;
 
-  const utilityRow = `<div class="tf-line">${utility(p.utility, undo, 'Undo')}${utility(p.utility, restart, 'Restart')}${utility(p.utility, replay, 'Replay')}</div>`;
-  const actionRow = `<div class="tf-line">${COLORS.map((c) => action(p.action, c, c === 'blue' ? 'nudge' : '')).join('')}</div>`;
-  const phone = `<div class="tf-phone" id="buttons-phone">
-      <div class="tf-bar"><span class="tf-pill grow">Level 5</span><span class="tf-pill">0 / 12</span><span class="tf-pill">12 zetten</span>${hint(p.hintCompact, '', 'tf-hint compact')}</div>
+  const TOOLS: ToolName[] = ['Undo', 'Restart', 'Replay', 'Hint'];
+  const coins = CONFIG.coins;
+  /** The four tools as the puzzle screen shows them; `state` freezes all four in one state. */
+  const tools = (state: State = ''): string[] =>
+    TOOLS.map((name) => toolButton(name, { ...(name === 'Undo' ? { cost: coins.undoCost, price: 'ok' as const } : name === 'Hint' ? { cost: coins.hintCost, price: 'ok' as const } : {}), state: state === 'nudge' ? '' : state }));
+  const t = b.tools;
+  const toolDepth = Math.round(t.height * b.family.depth * 10) / 10;
+  const actionRow = (colors: readonly (typeof COLORS)[number][]): string => `<div class="tf-line" style="gap:${p.gap}px">${colors.map((c) => action({ ...p.action, width: (p.stripWidth - 2 * p.padding - (colors.length - 1) * p.gap) / colors.length }, c, c === 'blue' ? 'nudge' : '')).join('')}</div>`;
+  const phone = (id: string, colors: readonly (typeof COLORS)[number][], extra = ''): string => `<div class="tf-phone" id="${id}">
       <div class="tf-board">speelbord</div>
-      <div class="tf-controls">${utilityRow}${actionRow}</div>
+      <div class="tf-controls tf-family">${toolTray(tools(), extra)}${actionRow(colors)}</div>
     </div>`;
 
   const el = document.createElement('section');
   el.className = 'card wide';
   el.id = 'buttons';
-  el.innerHTML = `<h2>Knoppen</h2><p class="dims">utility ${b.utility.width}×${b.utility.height} px, ${b.utility.depth} px diep · actie ${b.action.width}×${b.action.height} px, ${b.action.depth} px diep · hint ${b.hint.width}×${b.hint.height} px, ${b.hint.depth} px diep</p>
-  <h3 class="btn-title">Op bladmaat</h3>
-  <div class="btn-row" id="buttons-sheet">
-    ${cell(utility(b.utility, undo, 'Undo'), 'Utility: Undo')}
-    ${cell(utility(b.utility, restart, 'Restart'), 'Utility: Restart')}
-    ${cell(utility(b.utility, replay, 'Replay'), 'Utility: Replay')}
-    ${cell(hint(b.hint), 'Hint-knop')}
-    ${COLORS.map((c) => cell(action(b.action, c), `Actie · ${COLOR_NAMES[c]}`)).join('')}
+  el.innerHTML = `<h2>Knoppen</h2><p class="dims">één familie: diepte = ${b.family.depth} × vlakhoogte, hoek = ${b.family.radius} × vlakhoogte, indrukken ${Math.round(b.pressFraction * 100)}% · gereedschap (Undo, Restart, Replay, Hint): vier gelijke blokken, vlak ${t.height} px + ${toolDepth} px diep, in één bak · actie ${b.action.width}×${b.action.height} px, ${b.action.depth} px diep</p>
+  <h3 class="btn-title">Gereedschap · vier gelijke knoppen in één bak</h3>
+  <div id="buttons-sheet">${toolTray(tools())}<div class="tf-tools-caption">${TOOLS.map((n) => `<span>${n}</span>`).join('')}</div></div>
+  <h3 class="btn-title">Toestanden · gereedschap</h3>
+  <div id="buttons-states-utility">
+    ${toolTray(tools('pressed'))}<div class="tf-tools-caption wide"><span>ingedrukt</span></div>
+    ${toolTray(tools('disabled'))}<div class="tf-tools-caption wide"><span>uit (niets terug te nemen, niets af te spelen)</span></div>
+    ${toolTray([toolButton('Undo', { cost: coins.undoCost, price: 'short' }), toolButton('Restart'), toolButton('Replay'), toolButton('Hint', { cost: coins.hintCost, price: 'used' })])}<div class="tf-tools-caption"><span>te weinig munten</span><span></span><span></span><span>hint staat op het bord</span></div>
   </div>
-  <h3 class="btn-title">Toestanden · utility en hint</h3>
-  <div class="tf-states three" id="buttons-states-utility">
-    ${STATES.map(([, n]) => `<span>${n}</span>`).join('')}
-    ${STATES.map(([s]) => utility(b.utility, undo, 'Undo', s)).join('')}
-    ${STATES.map(([s]) => hint(b.hint, s)).join('')}
-    ${button('tf-hint', b.hint, `<img src="${hintIcon}" alt="" />` + label('Hint'), 'Hint')}<span class="wide">← alternatief met hint.webp</span>
+  <h3 class="btn-title">Op bladmaat · actieknoppen</h3>
+  <div class="btn-row" id="buttons-sheet-action">
+    ${COLORS.map((c) => cell(action(b.action, c), `Actie · ${COLOR_NAMES[c]}`)).join('')}
   </div>
   <h3 class="btn-title">Toestanden · actieknop (telefoonmaat)</h3>
   <div class="tf-states four" id="buttons-states-action">
     ${ACTION_STATES.map(([, n]) => `<span>${n}</span>`).join('')}
     ${COLORS.map((c) => ACTION_STATES.map(([s]) => action(p.action, c, s)).join('')).join('')}
   </div>
-  <h3 class="btn-title">Telefoon ${p.stripWidth} px · Hint compact in de bovenbalk</h3>
-  ${phone}
-  <p class="note">Echte HTML-knoppen met CSS: tekst blijft tekst, maten komen uit <code>--w --h --d --r</code>. Elke knop is één gegoten blok met een bovenvlak, een ronde rand en schuine flanken: bij indrukken zakt het hele blok ${Math.round(b.pressFraction * 100)}% van de diepte weg; de voetafdruk en het raakvlak blijven gelijk. Blauw toont in de telefoonstroken de nudge.</p>`;
+  <h3 class="btn-title">Telefoon ${p.stripWidth} px · vier opdrachten en twee opdrachten</h3>
+  ${phone('buttons-phone', COLORS)}
+  ${phone('buttons-phone-two', ['red', 'forward'])}
+  <h3 class="btn-title">Omkeerbare keuzes (data/parts.json → buttons.tools)</h3>
+  ${phone('buttons-phone-labels', COLORS, ' labels')}<div class="tf-tools-caption wide"><span>"labels": true · namen in de knop</span></div>
+  ${phone('buttons-phone-notray', COLORS, ' no-tray')}<div class="tf-tools-caption wide"><span>"tray": false · zonder bak</span></div>
+  <p class="note">Echte HTML-knoppen met CSS: tekst blijft tekst, maten komen uit <code>--w --h --d --r</code>. Elke knop is één gegoten blok met een bovenvlak, een ronde rand en schuine flanken: bij indrukken zakt het hele blok ${Math.round(b.pressFraction * 100)}% van de diepte weg; de voetafdruk en het raakvlak blijven gelijk. De gereedschapsknoppen en de actieknoppen zijn dezelfde bouw op twee maten en staan op hetzelfde raster: de vier kolommen van de bak liggen recht boven de vier actieknoppen. Gereedschap toont alleen een pictogram; de naam is er voor schermlezers. Een prijs staat op het ene prijskaartje over de onderrand (zie de muntenkaart); een knop zonder prijs heeft geen kaartje en staat toch op dezelfde lijn. Blauw toont in de telefoonstroken de nudge.</p>`;
   document.getElementById('sheet')!.appendChild(el);
 }
 

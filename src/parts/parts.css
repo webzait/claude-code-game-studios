@@ -37,6 +37,14 @@ body { margin: 0; background: #eef3fb; color: var(--ink); font-family: ui-rounde
 .tf-phone .tf-board { margin: 0 14px; height: 54px; border-radius: 14px; border: 2px dashed #aab6d3; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--muted); }
 .tf-phone .tf-controls { margin-top: 10px; padding: 12px 14px 14px; background: #f8faff; border-top: 1.5px solid #e6ebf5; display: grid; gap: 10px; }
 .tf-phone .tf-line { display: flex; justify-content: space-between; }
+/* The buttons card (finding B9): the tools tray on the sunny backdrop, with a caption under each column. */
+.tf-phone .tf-controls.tf-family { margin-top: 10px; padding: 10px 14px 14px; gap: 7px; background: linear-gradient(180deg, #70c4fb, #5ab6f3); border-top: 0; }
+.tf-phone + .tf-phone, .tf-tools-caption + .tf-phone { margin-top: 10px; }
+.card > div > .tf-tools, #buttons-states-utility > .tf-tools { margin: 0 auto; }
+#buttons-sheet, #buttons-states-utility, #coins-price-hint, #coins-price-compact { padding: 14px 0 10px; background: linear-gradient(180deg, #70c4fb, #5ab6f3); border-radius: 12px; }
+#buttons-states-utility > .tf-tools:not(:first-child) { margin-top: 8px; }
+.tf-tools-caption { width: 362px; margin: 6px auto 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center; font-size: 11px; font-weight: 700; color: #24314f; }
+.tf-tools-caption.wide { grid-template-columns: 1fr; }
 
 /* Flockbot cards: the bot at the size it has on the board. */
 .bot-small { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 8px; padding: 6px; border-radius: 12px; background: #eef2fb; }
@@ -292,3 +300,4 @@ body { margin: 0; background: #eef3fb; color: var(--ink); font-family: ui-rounde
 .tf-set-cell.wide { justify-items: stretch; padding: 8px 0 6px; }
 .tf-set-cap { font-size: 11px; font-weight: 700; color: #5d6a84; }
 
+.tf-coin-offers .btn-cell { gap: 18px; }
