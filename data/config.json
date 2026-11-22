@@ -146,8 +146,7 @@
   "levelsPerPage": 20,
   "levelsAhead": 5,
   "levelPath": {
-    "layout": "winding",
-    "playAgainWhenComplete": false
+    "layout": "winding"
   },
   "logo": {
     "levels": {

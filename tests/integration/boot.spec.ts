@@ -147,15 +147,15 @@ test('every level can be played to a win in order, ending back at the level sele
   await expect(page.locator('#doneView')).toBeVisible();
   await expect(page.locator('#doneView')).toContainText('All levels completed');
   await expect(page.locator('#doneText')).toHaveText(`${levels.length * 3} of ${levels.length * 3} stars`);
-  await expect(page.locator('#steps .tf-levels-step.is-current')).toHaveCount(0);
-  await expect(page.locator('#continue')).toBeHidden();
-  await expect(page.locator('#toImprove')).toBeDisabled();
-  // The grid test view still shows every level: one page at a time, every tile with three stars.
-  await openLab(page);
-  await page.click('[data-key=levelScreen] [data-value=grid]');
-  await closeLab(page);
+  await expect(page.locator('#steps .tf-levels-step')).toHaveCount(0);
+  // From here the player chooses any level to play again: every level, one page at a time, each with three stars.
+  await expect(page.locator('#continue')).toHaveText('Choose a level');
+  await page.click('#continue');
+  await expect(page.locator('#gridNote')).toHaveText('Play a level again');
   await expect(page.locator('.tf-levels-tile.s3')).toHaveCount(tilesOnPage);
-  await expect(page.locator('#continue')).toHaveText('Play again');
+  await expect(page.locator('#continue')).toHaveText('Back');
+  await page.click(`#node-${TWO_COLOURS + 1}`);
+  expect(await snap(page)).toMatchObject({ screen: 'level', level: TWO_COLOURS });
   expect(errors).toEqual([]);
 });
 
