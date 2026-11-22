@@ -23,4 +23,5 @@ software WebGL, 390×844 at 2× unless noted. Frame strips were taken with the p
 | `select-all-60-completed.png` | Level selection after all sixty: completed state, 180 of 180 stars |
 | `lab-grid-page-3-unlocked.png` | Test lab grid with "unlock all": third page, levels 41 to 60 |
 | `hand-42-lost.png`, `hand-42-dead-end-hint.png` | Level 42 played with a wrong first move: lost; the hint says so after one move |
+| `hand-44-playing.png` | Level 44 with BLUE pressed one move early: a blue robot runs onto the tile and is turned away, one move left and no win (the level's trap) |
 | `hand-44-won.png`, `hand-47-lost.png`, `hand-54-won.png`, `hand-58-won.png` | Levels played with own commands that are not the stored solution |

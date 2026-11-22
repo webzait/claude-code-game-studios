@@ -566,6 +566,8 @@ test('on a turn-tile level, out of moves one step from home: extra moves are off
   expect(await snap(page)).toMatchObject({ status: 'playing', movesLeft: config.extraMoves });
   await press(page, 'forward');
   expect((await snap(page)).status).toBe('won');
+  await expect(page.locator('#end-title')).toContainText('extra moves', { timeout: 15000 });
+  await expect(page.locator('#card .tf-coin-sum')).toHaveText(`+${config.coins.win}`);
   // A helped win pays the base amount only, on a tile level as on any other.
   expect((await snap(page)).coins).toBe(config.coins.start - config.coins.extraMovesCost + config.coins.win);
 });
