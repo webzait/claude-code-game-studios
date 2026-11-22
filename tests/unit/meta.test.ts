@@ -7,7 +7,7 @@ import { defaultSave, LEGACY_KEY, loadSave, migrate, resetProgress, SAVE_KEY, SA
 import { Session } from '../../src/game/session';
 import { LEVELS } from '../../src/levels/index';
 import { solve } from '../../src/solver/bfs';
-import { pathSteps, pathSway } from '../../src/ui/levelPath';
+import { improvableLevels, pathSteps, pathSway } from '../../src/ui/levelPath';
 
 const ids = LEVELS.map((l) => l.id);
 const memory = (initial: Record<string, string> = {}): KeyValueStore & { data: Record<string, string> } => {
@@ -321,5 +321,11 @@ describe('level path', () => {
     for (let step = 1; step <= 12; step++) expect(Math.abs(pathSway(step))).toBeLessThanOrEqual(1);
     expect(pathSway(1)).toBeGreaterThan(0);
     expect(pathSway(4)).toBeLessThan(0);
+  });
+  it('lists the completed levels with fewer than three stars as the ones to improve', () => {
+    // Stars per level in play order; 0 is not completed yet.
+    expect(improvableLevels([3, 2, 3, 1, 0, 0])).toEqual([1, 3]);
+    expect(improvableLevels([3, 3, 0])).toEqual([]);
+    expect(improvableLevels([])).toEqual([]);
   });
 });

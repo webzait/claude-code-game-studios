@@ -15,9 +15,18 @@ export interface MapNode {
 
 /** What the level selection draws. */
 export interface LevelsModel {
-  /** `path`: the current level and the next few. `grid`: every level on pages (test view). */
-  view: 'path' | 'grid';
+  /**
+   * `path`: the current level and the next few. `improve`: the completed levels that have fewer
+   * than three stars, to play again. `grid`: every level on pages (test view).
+   */
+  view: 'path' | 'grid' | 'improve';
   nodes: MapNode[];
+  /** The completed levels with fewer than three stars, in play order. */
+  improvable: MapNode[];
+  /** The star total was tapped: open the levels to improve, or leave them again. */
+  onImprove: () => void;
+  /** Icon of the main action. */
+  playIcon: 'play' | 'back';
   /** Position of the level to play now; null when every level is completed. */
   current: number | null;
   /** Locked levels shown after the current one on the path. */
@@ -45,28 +54,40 @@ export function renderLevels(model: LevelsModel): void {
   const stars = nodes.reduce((sum, n) => sum + n.stars, 0);
   const done = view === 'path' && model.current === null;
   const map = el('map');
-  map.classList.toggle('tf-levels-a', view === 'grid');
+  map.classList.toggle('tf-levels-a', view !== 'path');
+  map.classList.toggle('tf-levels-i', view === 'improve');
   map.classList.toggle('tf-levels-p', view === 'path');
   map.classList.toggle('tf-levels-straight', model.layout !== 'winding');
-  el('gridView').hidden = view !== 'grid';
+  el('gridView').hidden = view === 'path';
   el('pathView').hidden = view !== 'path' || done;
   el('doneView').hidden = !done;
-  el('pager').hidden = view !== 'grid';
+  el('pager').hidden = view === 'path';
   el('pathProgress').hidden = view !== 'path' || done;
   // Only the view on show keeps its content: both name their levels `node-N`, and a hidden copy would double them.
-  if (view !== 'grid') el('nodes').replaceChildren();
+  if (view === 'path') el('nodes').replaceChildren();
   if (view !== 'path' || done) el('steps').replaceChildren();
   el('mapCount').textContent = String(solved);
   el('mapTotal').textContent = `/ ${nodes.length}`;
   el('mapStars').textContent = String(stars);
-  // On the path the pill shows the stars only; where the player is stands above the main action.
-  el('mapProgress').setAttribute('aria-label', view === 'grid' ? `${solved} of ${nodes.length} levels, ${stars} of ${nodes.length * 3} stars` : `${stars} of ${nodes.length * 3} stars`);
+  el('mapProgress').setAttribute('aria-label', `${solved} of ${nodes.length} levels, ${stars} of ${nodes.length * 3} stars`);
+  // For a player the star total is a button: it opens the levels that can still be improved. With none it only tells the total.
+  const count = model.improvable.length;
+  const starButton = el<HTMLButtonElement>('toImprove');
+  el('starSum').textContent = String(stars);
+  el('starMax').textContent = `/${nodes.length * 3}`;
+  el('improveCount').textContent = String(count);
+  el('improveCount').hidden = count === 0 || view === 'improve';
+  starButton.disabled = count === 0;
+  starButton.setAttribute('aria-pressed', String(view === 'improve'));
+  starButton.setAttribute('aria-label', `${stars} of ${nodes.length * 3} stars${count > 0 ? `. Improve ${count} level${count === 1 ? '' : 's'}` : ''}`);
+  starButton.onclick = () => model.onImprove();
+  el('continue').classList.toggle('tf-levels-backbtn', model.playIcon === 'back');
   el('continue').hidden = model.playLabel === null;
   el('continueLabel').textContent = model.playLabel ?? '';
   el('continue').setAttribute('aria-label', model.playLabel ?? '');
   // Completed with nothing to offer: the dock would be an empty panel.
   map.querySelector<HTMLElement>('.tf-levels-dock')!.hidden = done && model.playLabel === null;
-  if (view === 'grid') {
+  if (view !== 'path') {
     el('gridNote').textContent = model.gridNote;
     renderGrid(model);
   } else if (done) {
@@ -155,13 +176,15 @@ function drawTrail(): void {
 
 /** The grid: one page of level tiles and the pager. Pages keep it usable with hundreds of levels. */
 function renderGrid(model: LevelsModel): void {
-  const { nodes, page, pageSize, onPick } = model;
+  const { page, pageSize, onPick } = model;
+  const nodes = model.view === 'improve' ? model.improvable : model.nodes;
   const pages = Math.max(1, Math.ceil(nodes.length / pageSize));
   // With a single page there is nothing to leaf through.
   if (pages < 2) el('pager').hidden = true;
   const first = page * pageSize + 1;
   const last = Math.min(first + pageSize - 1, nodes.length);
-  el('pageLabel').textContent = `Levels ${first}–${last}`;
+  // The levels to improve are not consecutive, so their pages are counted instead of named by level.
+  el('pageLabel').textContent = model.view === 'improve' ? `Page ${page + 1} of ${pages}` : `Levels ${first}–${last}`;
   el('pageInfo').setAttribute('aria-label', `Page ${page + 1} of ${pages}`);
   el('pageDots').innerHTML = Array.from({ length: pages }, (_, p) => `<i class="${p === page ? 'on' : nodes.slice(p * pageSize, (p + 1) * pageSize).every((n) => n.solved) ? 'full' : ''}"></i>`).join('');
   el<HTMLButtonElement>('pagePrev').disabled = page === 0;
