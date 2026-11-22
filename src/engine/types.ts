@@ -25,6 +25,13 @@ export interface Robot {
   readonly collected: boolean;
 }
 
+/** One exit: where it is and which robots it takes (`null`: every colour). */
+export interface Exit {
+  readonly x: number;
+  readonly y: number;
+  readonly color: Color | null;
+}
+
 /** Static board: never changes during a level. */
 export interface Board {
   readonly width: number;
@@ -33,6 +40,13 @@ export interface Board {
   readonly walls: readonly boolean[];
   readonly exitX: number;
   readonly exitY: number;
+  /**
+   * Every exit of a board that has more than the one plain exit: several exits, or exits that take one
+   * colour only. Absent on a board with a single exit for everyone at (`exitX`, `exitY`), which stays the
+   * first exit in this list when it is present. An exit that does not take a robot's colour is plain floor
+   * to that robot: it can stand on it and is not collected.
+   */
+  readonly exits?: readonly Exit[];
   /**
    * Row-major turn-tile flags, length width * height; absent on a board without turn tiles.
    * A robot that steps onto a turn tile turns 90 degrees clockwise there, whatever its colour.
