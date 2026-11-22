@@ -7,6 +7,10 @@ import hintIcon from '../../assets/turnflock/ui/hint.webp';
 import { boardPixels, buildExit, buildFloorTile, buildObstacle, buildRim, buildRimCorner, buildRimEdge, buildUnderlay, rimLayout } from '../render/parts/board';
 import { buildFlockbot } from '../render/parts/flockbot';
 import '../ui/tf-buttons.css';
+import '../ui/tf-coins.css';
+import '../ui/tf-levels.css';
+import '../ui/tf-end.css';
+import '../ui/tf-settings.css';
 import '../ui/tf-scene.css';
 import './parts.css';
 import decorBushLarge from '../../assets/turnflock/decor/decor-bush-large.webp';
@@ -56,7 +60,7 @@ const VIEWS = {
   side: { label: 'Zijaanzicht', dir: new THREE.Vector3(1, 0.0001, 0) },
   top: { label: 'Bovenaanzicht', dir: new THREE.Vector3(0, 1, 0.0001) },
   quarter: { label: 'Driekwart', dir: new THREE.Vector3(-0.55, 0.62, 1) },
-  tilt: { label: `Bijna recht van boven (spelcamera, ${CONFIG.board.roomy.tilt}°)`, dir: new THREE.Vector3(0, 1, Math.tan((CONFIG.board.roomy.tilt * Math.PI) / 180)) },
+  tilt: { label: `Spelcamera (${CONFIG.board.roomy.tilt}° uit het lood)`, dir: new THREE.Vector3(0, 1, Math.tan((CONFIG.board.roomy.tilt * Math.PI) / 180)) },
   drawing: { label: '', dir: new THREE.Vector3(0, 0.6, 1) },
 } as const;
 type ViewName = keyof typeof VIEWS;
@@ -805,7 +809,7 @@ addCoinCards(document.getElementById('sheet')!);
 }
 
 // End-of-round pop-up: plain HTML and CSS (tf-end-*) in a phone frame over a stand-in for the board.
-// A mock-up of every situation the game's card has today; it is not wired into the playable game.
+// A mock-up of every situation; the game builds the same card in src/ui/endCard.ts from the shared styles (src/ui/tf-end.css).
 {
   const STAR = 'M32 8 38.6 23.2 55 24.7 42.6 35.6 46.2 51.7 32 43.2 17.8 51.7 21.4 35.6 9 24.7 25.4 23.2Z';
   const starPath = (fill: string, width: number, extra = ''): string => `<path d="${STAR}" fill="${fill}" stroke="${fill}" stroke-width="${width}" stroke-linejoin="round" ${extra}/>`;
@@ -921,7 +925,7 @@ addCoinCards(document.getElementById('sheet')!);
   const el = document.createElement('section');
   el.className = 'card wide';
   el.id = 'endpopup';
-  el.innerHTML = `${defs}<h2>Eind-pop-up</h2><p class="dims">telefoonkader 390×844 px · echte HTML en CSS · nog niet in de game</p>
+  el.innerHTML = `${defs}<h2>Eind-pop-up</h2><p class="dims">telefoonkader 390×844 px · echte HTML en CSS · de game gebruikt dezelfde stijlen</p>
   <h3 class="tf-end-group">De ster · gevuld en leeg, op 24, 32, 44 en 64 px</h3>
   <div class="tf-end-row" id="endpopup-stars">
     <div class="tf-end-starsheet">${sizes.map((s) => `<div>${star(true, `style="width:${s}px;height:${s}px"`)}<span>${s} px</span></div>`).join('')}${sizes.map((s) => `<div>${star(false, `style="width:${s}px;height:${s}px"`)}<span>${s} px</span></div>`).join('')}</div>

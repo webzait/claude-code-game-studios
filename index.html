@@ -14,35 +14,35 @@
       <div class="tf-decor-layer"><img class="tf-decor-piece tf-decor-sprig-tl" data-art="decor-sprig" alt="" /><img class="tf-decor-piece tf-decor-tuft-tr" data-art="decor-clover" alt="" /><img class="tf-decor-piece tf-decor-back-l" data-art="decor-large" alt="" /><img class="tf-decor-piece tf-decor-back-r" data-art="decor-clover" alt="" /><img class="tf-decor-piece tf-decor-front-l" data-art="decor-small" alt="" /><img class="tf-decor-piece tf-decor-front-r" data-art="decor-large" alt="" /></div>
     </div>
     <div id="app">
-      <section class="screen" id="map">
-        <header class="top">
-          <div class="title">
-            <div class="level-no brand">TURNFLOCK</div>
-            <div class="level-name">Choose a level</div>
-          </div>
-          <div class="pill" aria-label="Coins"><img class="ico coin" data-art="coin" alt="" /><span id="coins">0</span></div>
-          <div class="pill" id="mapCount"></div>
-          <button class="back" id="toSettings" aria-label="Settings"><svg viewBox="0 0 24 24" class="ico"><path d="M4 7h10M18 7h2M4 17h2M10 17h10" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" /><circle cx="16" cy="7" r="2.4" fill="none" stroke="currentColor" stroke-width="2.4" /><circle cx="8" cy="17" r="2.4" fill="none" stroke="currentColor" stroke-width="2.4" /></svg></button>
+      <section class="screen tf-levels-phone tf-levels-a" id="map">
+        <header class="tf-levels-head">
+          <h1 class="tf-levels-title" aria-label="Turnflock"><span>TURN</span><span>FLOCK</span></h1>
+          <span id="mapCoins"></span>
+          <span class="tf-levels-pill tf-levels-progress" id="mapProgress"><span><span id="mapCount">0</span><small id="mapTotal"></small></span><span><i class="tf-levels-star"></i><span id="mapStars">0</span></span></span>
+          <button type="button" class="tf-btn tf-utility" id="toSettings" aria-label="Settings"><span class="tf-clip"><span class="tf-face"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"></path><circle cx="16" cy="7" r="2.4" fill="none" stroke="currentColor" stroke-width="2.6"></circle><circle cx="8" cy="17" r="2.4" fill="none" stroke="currentColor" stroke-width="2.6"></circle></svg></span></span></button>
         </header>
-        <button class="primary big" id="continue">Play</button>
-        <div class="scroll">
-          <div class="nodes" id="nodes"></div>
-        </div>
-        <div class="pager" id="pager" hidden>
-          <button class="back" id="pagePrev" aria-label="Previous levels"><svg viewBox="0 0 24 24" class="ico"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
-          <div class="pill" id="pageLabel"></div>
-          <button class="back" id="pageNext" aria-label="Next levels"><svg viewBox="0 0 24 24" class="ico"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
-        </div>
+        <div class="tf-levels-body"><div class="tf-levels-tray"><div class="tf-levels-grid" id="nodes"></div></div></div>
+        <footer class="tf-levels-dock">
+          <div class="tf-levels-pager" id="pager">
+            <button type="button" class="tf-btn tf-utility" id="pagePrev" aria-label="Previous levels"><span class="tf-clip"><span class="tf-face"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></span></button>
+            <div class="tf-levels-pageinfo" id="pageInfo"><span id="pageLabel"></span><span class="tf-levels-dots" id="pageDots"></span></div>
+            <button type="button" class="tf-btn tf-utility" id="pageNext" aria-label="Next levels"><span class="tf-clip"><span class="tf-face"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></span></button>
+          </div>
+          <button type="button" class="tf-btn tf-action tf-levels-play" id="continue" aria-label="Play"><span class="tf-clip"><span class="tf-face"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.4 5v14l11.4-7z" fill="currentColor" stroke="currentColor" stroke-width="3.4" stroke-linejoin="round"></path></svg><span class="tf-label" id="continueLabel">Play</span></span></span></button>
+        </footer>
       </section>
 
       <section class="screen" id="level" hidden>
         <header class="top">
-          <button class="back" id="levelBack" aria-label="Back to levels"><svg viewBox="0 0 24 24" class="ico"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
-          <div class="title">
-            <div class="level-no" id="levelNo">LEVEL 1</div>
-            <div class="level-name" id="levelName"></div>
+          <div class="top-row">
+            <button class="back" id="levelBack" aria-label="Back to levels"><svg viewBox="0 0 24 24" class="ico"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
+            <div class="title">
+              <div class="level-no" id="levelNo">LEVEL 1</div>
+              <div class="level-name" id="levelName"></div>
+            </div>
+            <span id="levelCoins"></span>
           </div>
-          <div class="stats">
+          <div class="top-row stats">
             <div class="pill" id="collectedPill" aria-label="Robots collected">
               <svg viewBox="0 0 24 24" class="ico"><rect x="4" y="7" width="16" height="13" rx="4.5" fill="currentColor" /><circle cx="9.3" cy="13" r="1.9" fill="#fff" /><circle cx="14.7" cy="13" r="1.9" fill="#fff" /><rect x="11.2" y="2.5" width="1.6" height="5" rx=".8" fill="currentColor" /><circle cx="12" cy="2.8" r="1.7" fill="currentColor" /></svg>
               <span id="collected">0/0</span>
@@ -51,11 +51,11 @@
               <span class="moves-num" id="moves">0</span>
               <span class="moves-label">MOVES</span>
             </div>
-            <button type="button" class="tf-btn tf-hint compact" id="scan" aria-label="Hint"><span class="tf-clip"><span class="tf-face"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.7 15.4a5.9 5.9 0 1 1 6.6 0v1.9H8.7z" fill="#f4c62f" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"></path><path d="M9.9 20.6h4.2" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"></path><path d="M12 .9v1.4M4.3 3.6l1 1M19.7 3.6l-1 1M1.4 10.4h1.5M22.6 10.4h-1.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path><path d="M9.6 9.6a2.6 2.6 0 0 1 2-2" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"></path></svg><span class="tf-label">Hint</span></span></span><span class="hint-price" aria-hidden="true"><img class="ico coin" data-art="coin" alt="" /><span id="hintLabel"></span></span></button>
+            <button type="button" id="scan" aria-label="Hint"></button>
           </div>
         </header>
         <main class="stage"><canvas id="board"></canvas></main>
-        <div class="hint" id="hint" role="status" aria-live="polite"></div>
+        <div class="hint-line" id="hint" role="status" aria-live="polite"></div>
         <footer class="controls">
           <div class="tools">
             <button type="button" class="tf-btn tf-utility" id="undo"><span class="tf-clip"><span class="tf-face"><svg viewBox="0 0 24 24" aria-hidden="true"><g class="tf-ink-shadow" transform="translate(0 1.3)"><path d="M9.4 4.2 3.6 9.3l5.8 5.1z" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"></path><path d="M9 9.3h5.4a5.3 5.3 0 0 1 0 10.6H9.6" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path></g><g><path d="M9.4 4.2 3.6 9.3l5.8 5.1z" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"></path><path d="M9 9.3h5.4a5.3 5.3 0 0 1 0 10.6H9.6" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path></g></svg><span class="tf-label">Undo</span></span></span></button>
@@ -71,26 +71,17 @@
         </footer>
       </section>
 
-      <section class="screen" id="settings" hidden>
-        <header class="top">
-          <button class="back" id="settingsBack" aria-label="Back to levels"><svg viewBox="0 0 24 24" class="ico"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
-          <div class="title"><div class="level-no">Settings</div></div>
-        </header>
-        <div class="scroll" id="settingsBody"></div>
-      </section>
+      <section class="screen tf-set-frame" id="settings" hidden></section>
+      <section class="screen tf-set-frame" id="lab" hidden></section>
 
-      <section class="overlay card" id="card" hidden>
-        <div class="card-inner">
-          <div class="stars" id="stars"></div>
-          <div class="wallet" id="cardCoins" hidden><img class="ico coin" data-art="coin" alt="" /><span id="cardCoinsText"></span></div>
-          <h2 id="cardTitle"></h2>
-          <p id="cardText"></p>
-          <div class="card-actions">
-            <button class="ghost" id="cardSecondary"></button>
-            <button class="primary" id="cardPrimary"></button>
-          </div>
-          <button class="ghost extra" id="cardExtra" hidden><img class="ico art" id="cardExtraIcon" data-art="extra" alt="" hidden /><span id="cardExtraLabel"></span></button>
-          <p class="note" id="cardNote" hidden></p>
+      <section class="overlay tf-end-host" id="card" hidden>
+        <div class="tf-end-dim"></div>
+        <div id="cardBody"></div>
+      </section>
+      <section class="overlay coin-info" id="coinInfo" hidden>
+        <div class="tf-coin-info" role="dialog" aria-modal="true" aria-labelledby="coinInfoTitle">
+          <div id="coinInfoBody"></div>
+          <button type="button" class="tf-btn tf-utility" id="coinInfoClose"><span class="tf-clip"><span class="tf-face"><span class="tf-label">Close</span></span></span></button>
         </div>
       </section>
     </div>

@@ -72,7 +72,8 @@
   },
   "camera": {
     "marginX": 12,
-    "marginY": 18
+    "marginY": 18,
+    "fov": 30
   },
   "stars": {
     "three": 0,
@@ -107,9 +108,21 @@
   "audio": {
     "volume": 0.16
   },
+  "haptics": {
+    "move": [
+      12
+    ],
+    "win": [
+      30,
+      60,
+      30,
+      60,
+      70
+    ]
+  },
   "board": {
     "roomy": {
-      "tilt": 12,
+      "tilt": 30,
       "frame": 0.36,
       "spareAbove": 0.5
     },
@@ -148,7 +161,7 @@
     "shadow": 0.32
   },
   "robot": {
-    "lean": 0.68,
+    "lean": 0.3,
     "eyeSize": 0.175,
     "eyeSpread": 0.175,
     "eyeHeight": 0.19,
@@ -157,6 +170,50 @@
     "topLight": 0.2,
     "arrowScale": 0.95,
     "arrowForward": 0.05,
-    "squash": 0.86
+    "squash": 0.86,
+    "faceUp": {
+      "followCamera": 0,
+      "extraLean": 0,
+      "forward": 0
+    }
+  },
+  "levelDesign": {
+    "maxStates": 3000000,
+    "maxPar": 16,
+    "orderSamples": 2000,
+    "score": {
+      "search": 3.5,
+      "searchFrom": 3,
+      "searchTo": 19,
+      "turns": 2.0,
+      "turnsTo": 8,
+      "robots": 1.0,
+      "robotsTo": 12,
+      "narrow": 1.0,
+      "unforgiving": 1.0,
+      "fatalFrom": 0.3,
+      "fatalTo": 0.8,
+      "wrongLooking": 1.5
+    },
+    "generateCap": 120000,
+    "reject": {
+      "orderFreedom": 0.5,
+      "maxSolutions": 4
+    },
+    "poolPerKept": 3
+  },
+  "save": {
+    "v1LevelOrder": [
+      "follow-the-arrow",
+      "one-color-turns",
+      "side-door",
+      "use-the-wall",
+      "queue-up",
+      "traffic-jam",
+      "long-way-round",
+      "two-lanes",
+      "patience",
+      "one-command-many-consequences"
+    ]
   }
 }

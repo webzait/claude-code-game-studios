@@ -1,0 +1,143 @@
+/* End-of-round pop-up (tf-end-*): the card, its stars, buttons and the win animation. Shared by the game and the parts sheet. The container named tf-end is the screen the card sits on. */
+.tf-end-sr { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.tf-end-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+/* The dim: one flat translucent layer, no blur. Lighter at the top so a sheet leaves the board readable. */
+.tf-end-dim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(22, 32, 62, .2) 0, rgba(22, 32, 62, .3) 45%, rgba(22, 32, 62, .62) 100%); }
+.tf-end-dim.even { background: rgba(22, 32, 62, .56); }
+
+/* The card: the same moulded family as the buttons (light top, a rounded edge and a real bottom wall). */
+.tf-end-card {
+  position: absolute; left: 10px; right: 10px; margin: 0 auto; max-width: 440px; padding: 18px 16px 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  background: linear-gradient(180deg, #ffffff 0, #f8faff 70px); border: 1.5px solid #e6ebf5; border-radius: 30px;
+  box-shadow: inset 0 2px 0 #fff, inset 0 -3px 2px rgba(201, 210, 227, .5), 0 7px 0 #c9d2e3, 0 9px 0 rgba(36, 49, 79, .14), 0 20px 28px rgba(15, 24, 52, .38);
+}
+/* A win gets a little warmth behind the stars. */
+.tf-end-card:has(.tf-end-stars) { background: radial-gradient(150px 84px at 50% 0, #fff1bd, rgba(255, 241, 189, 0) 100%), linear-gradient(180deg, #ffffff 0, #f8faff 70px); }
+/* Option A: centred card. Option B: a sheet resting near the bottom edge, inside the thumb's reach. */
+.tf-end-card.centre { top: 0; bottom: 0; height: fit-content; margin: auto; }
+.tf-end-card.sheet { bottom: calc(19px + env(safe-area-inset-bottom, 0px)); }
+.tf-end-card > * { margin: 0; }
+.tf-end-head { order: 0; max-width: 100%; }
+.tf-end-level { margin: 0 0 2px; font-size: 13px; font-weight: 800; letter-spacing: .04em; color: #5d6a84; overflow-wrap: anywhere; text-wrap: balance; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.tf-end-title { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 900; letter-spacing: -.01em; color: #24314f; text-wrap: balance; }
+.tf-end-result { font-size: 16px; line-height: 1.3; font-weight: 700; color: #5d6a84; text-wrap: balance; }
+.tf-end-result b { color: #24314f; font-weight: 800; }
+.tf-end-note { max-width: 34ch; font-size: 14.5px; line-height: 1.4; font-weight: 600; color: #5d6a84; text-wrap: pretty; }
+.tf-end-tag { padding: 4px 10px; border-radius: 10px; background: #e6ebf5; font-size: 12px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: #5d6a84; }
+
+/* Stars: read after the title, drawn above it, riding the card's top edge. */
+.tf-end-stars { order: -1; position: relative; display: flex; align-items: flex-end; justify-content: center; gap: 2px; margin: -52px 0 -4px; }
+.tf-end-slot { position: relative; width: 58px; height: 58px; }
+.tf-end-slot:nth-child(1) { transform: rotate(-12deg); }
+.tf-end-slot:nth-child(2) { width: 76px; height: 76px; margin-bottom: 12px; }
+.tf-end-slot:nth-child(3) { transform: rotate(12deg); }
+.tf-end-star { display: block; width: 100%; height: 100%; overflow: visible; }
+.tf-end-slot .tf-end-star { position: absolute; inset: 0; }
+.tf-end-slot .tf-end-star.off { filter: drop-shadow(0 2px 3px rgba(15, 24, 52, .35)); }
+.tf-end-slot .tf-end-star.on { filter: drop-shadow(0 3px 3px rgba(122, 86, 0, .4)); }
+/* The ring that flashes where a star lands; invisible at rest. */
+.tf-end-slot::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 4px solid #ffe48a; opacity: 0; pointer-events: none; }
+
+/* Coins earned. */
+.tf-end-coins { display: flex; flex-direction: column; align-items: center; gap: 4px; max-width: 100%; }
+.tf-end-earned { margin: 0; display: inline-flex; align-items: center; gap: 8px; padding: 5px 16px 5px 7px; border-radius: 20px; background: linear-gradient(180deg, #fff8dc, #ffefb5); border: 1.5px solid #ffe48a; box-shadow: 0 3px 0 #f0d47a; }
+.tf-end-earned img { width: 34px; height: 34px; flex: none; }
+.tf-end-count { font-size: 26px; line-height: 1; font-weight: 900; color: #7a5600; font-variant-numeric: tabular-nums; min-width: 3ch; text-align: left; }
+.tf-end-total { font-size: 14px; font-weight: 800; color: #7a5600; opacity: .85; white-space: nowrap; }
+.tf-end-earned.none { background: #eef2fa; border-color: #e6ebf5; box-shadow: 0 3px 0 #d9e0ee; padding-right: 14px; }
+.tf-end-earned.none img { filter: grayscale(.75) opacity(.75); width: 28px; height: 28px; }
+.tf-end-earned.none .tf-end-total { color: #5d6a84; opacity: 1; white-space: normal; text-align: left; }
+.tf-end-break { margin: 0; font-size: 13px; line-height: 1.35; font-weight: 700; color: #5d6a84; text-wrap: balance; }
+
+/* Actions. The buttons are the existing tf-btn blocks; only tones and sizes are added here. */
+.tf-end-actions { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+.tf-end-actions .wide { grid-column: 1 / -1; }
+.tf-end-actions.lead { grid-template-columns: 1fr 1.35fr; }
+.tf-end-card .tf-btn { --w: 100%; --press-fraction: .8; }
+.tf-end-big { --h: 58px; --d: 13px; --r: 23px; --fs: 23px; --icon: 26px; }
+.tf-end-mid { --h: 50px; --d: 12px; --r: 20px; --fs: 19px; --icon: 24px; }
+.tf-end-small { --h: 44px; --d: 10px; --r: 18px; --fs: 17px; --icon: 22px; }
+.tf-end-go { --c-top: #7af792; --c-main: #39e85c; --c-side: #1fb241; --c-deep: #178f35; --ink-c: #0b3a1b; --ink-shadow: rgba(255, 255, 255, .5); --gloss: .34; }
+.tf-end-main { --c-top: #59a5ff; --c-main: #2e84f1; --c-side: #1a61be; --c-deep: #154c95; }
+.tf-end-buy { --c-top: #a093ff; --c-main: #7e6bff; --c-side: #5a48d4; --c-deep: #4535ad; }
+.tf-end-main .tf-label, .tf-end-buy .tf-label { text-shadow: 0 1.5px 0 rgba(0, 0, 0, .22); }
+.tf-end-go .tf-label { text-shadow: 0 1.5px 0 rgba(255, 255, 255, .45); }
+.tf-end-buy .tf-face img { width: 26px; height: 26px; }
+.tf-end-buy .tf-face { gap: 6px; }
+
+/* Out of moves: who is still on the board, and the checked offer. */
+.tf-end-left { display: inline-flex; gap: 4px; margin-right: 8px; vertical-align: -3px; }
+.tf-end-left i { width: 17px; height: 17px; border-radius: 6px; background: var(--c); box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .22), inset 0 2px 0 rgba(255, 255, 255, .35); }
+.tf-end-offer { width: 100%; display: grid; grid-template-columns: 48px 1fr 104px; align-items: center; gap: 4px 10px; padding: 10px 10px 8px; border-radius: 22px; background: #f1eeff; border: 1.5px solid #dcd5ff; text-align: left; }
+.tf-end-offer > img { width: 48px; height: 48px; }
+.tf-end-offer strong { display: block; font-size: 18px; line-height: 1.15; font-weight: 900; color: #24314f; }
+.tf-end-offer span.why { display: block; font-size: 13px; line-height: 1.3; font-weight: 700; color: #5d6a84; }
+.tf-end-wallet { grid-column: 1 / -1; margin: 2px 0 0; padding-top: 6px; border-top: 1.5px solid #e2dcff; font-size: 13px; font-weight: 700; color: #5d6a84; text-align: center; }
+.tf-end-wallet b { color: #24314f; }
+
+/* The win, played once: the card rises, the stars land one by one, a few flecks fly, the coins count up.
+   Nothing here blocks input: the buttons are in place and tappable from the first frame. */
+.tf-end-confetti { position: absolute; left: 50%; top: -18px; width: 0; height: 0; pointer-events: none; }
+.tf-end-confetti i { position: absolute; left: -4px; top: -4px; width: 8px; height: 11px; border-radius: 3px; background: var(--c); opacity: 0; }
+.tf-end-play .tf-end-dim { animation: tf-end-fade .25s ease-out backwards; }
+.tf-end-play .tf-end-card { animation: tf-end-rise .34s cubic-bezier(.2, .9, .3, 1.2) backwards; }
+.tf-end-play .tf-end-star.on { animation: tf-end-land .44s cubic-bezier(.3, 1.4, .5, 1) backwards; animation-delay: calc(.28s + var(--i) * .2s); }
+.tf-end-play .tf-end-slot.won::after { animation: tf-end-ring .5s ease-out backwards; animation-delay: calc(.42s + var(--i) * .2s); }
+.tf-end-play .tf-end-confetti i { animation: tf-end-fleck 1s cubic-bezier(.15, .7, .4, 1) backwards; animation-delay: calc(.5s + var(--dl)); }
+.tf-end-play .tf-end-earned { animation: tf-end-pop .3s ease-out 1.15s backwards; }
+@keyframes tf-end-fade { from { opacity: 0; } }
+@keyframes tf-end-rise { from { opacity: 0; transform: translateY(36px) scale(.97); } }
+@keyframes tf-end-land { 0% { opacity: 0; transform: scale(.2) rotate(-50deg) translateY(-30px); } 55% { opacity: 1; transform: scale(1.22) rotate(6deg); } 78% { transform: scale(.94); } 100% { transform: none; } }
+@keyframes tf-end-ring { 0% { opacity: .9; transform: scale(.5); } 100% { opacity: 0; transform: scale(1.45); } }
+@keyframes tf-end-fleck { 0% { opacity: 1; transform: translate(0, 0) rotate(0); } 70% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--x), var(--y)) rotate(var(--r)); } }
+@keyframes tf-end-pop { 0% { transform: none; } 50% { transform: scale(1.08); } 100% { transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .tf-end-play .tf-end-dim, .tf-end-play .tf-end-card, .tf-end-play .tf-end-star.on, .tf-end-play .tf-end-slot.won::after, .tf-end-play .tf-end-confetti i, .tf-end-play .tf-end-earned { animation: none; }
+}
+
+/* Small phones: tighter, nothing dropped. Tablets: the card keeps its phone width. */
+@container tf-end (max-width: 350px) {
+  .tf-end-card { left: 8px; right: 8px; padding: 16px 12px 12px; gap: 8px; border-radius: 26px; }
+  .tf-end-title { font-size: 26px; }
+  .tf-end-result { font-size: 15px; }
+  .tf-end-stars { margin-top: -46px; }
+  .tf-end-slot { width: 50px; height: 50px; }
+  .tf-end-slot:nth-child(2) { width: 66px; height: 66px; margin-bottom: 10px; }
+  .tf-end-big { --h: 54px; --fs: 21px; }
+  .tf-end-mid { --fs: 17px; --icon: 21px; }
+  .tf-end-actions.lead { grid-template-columns: 1fr 1.1fr; }
+  .tf-end-actions .tf-label { white-space: nowrap; }
+  .tf-end-offer { grid-template-columns: 44px 1fr; }
+  .tf-end-offer > img { width: 44px; height: 44px; }
+  .tf-end-offer .tf-btn { grid-column: 1 / -1; }
+}
+@container tf-end (min-width: 600px) {
+  .tf-end-card.sheet { bottom: 40px; }
+}
+
+/* The game has its own "reduce motion" setting besides the system one. */
+.reduce-motion .tf-end-play .tf-end-dim, .reduce-motion .tf-end-play .tf-end-card, .reduce-motion .tf-end-play .tf-end-star.on, .reduce-motion .tf-end-play .tf-end-slot.won::after, .reduce-motion .tf-end-play .tf-end-confetti i, .reduce-motion .tf-end-play .tf-end-earned, .reduce-motion .tf-end-play .tf-coin-total { animation: none; }
+
+/* In the game the card holds the coin controls' reward and offer (tf-coins.css). */
+.tf-end-card:focus { outline: none; }
+.tf-end-card:focus-visible { outline: 3px solid #24314f; outline-offset: 3px; }
+.tf-end-coins { width: 100%; }
+.tf-end-card .tf-coin-reward { gap: 6px; }
+.tf-end-card .tf-coin-buy.offer { --w: 100%; }
+.tf-end-play .tf-coin-total { animation: tf-end-pop .3s ease-out 1.15s backwards; }
+@media (prefers-reduced-motion: reduce) {
+  .tf-end-play .tf-coin-total { animation: none; }
+}
+/* Short phones: the reward sum is set tighter so the top of the screen stays in view. */
+@container tf-end (max-height: 640px) {
+  .tf-end-card { gap: 6px; }
+  .tf-end-card .tf-coin-reward { gap: 4px; }
+  .tf-end-card .tf-coin-total { --rf: 26px; padding: 3px 16px 8px 8px; border-radius: 16px; }
+  .tf-end-card .tf-coin-total .tf-coin-ico { --s: 30px; }
+  .tf-end-card .tf-coin-line { padding: 3px 2px; font-size: 13px; }
+  .tf-end-card .tf-coin-balance, .tf-end-card .tf-coin-why { font-size: 12px; }
+  .tf-end-big { --h: 48px; --d: 10px; --fs: 20px; }
+  .tf-end-small { --h: 40px; --d: 8px; --fs: 16px; }
+  .tf-end-actions { gap: 8px; margin-top: 2px; }
+}

@@ -6,6 +6,7 @@ import { boardFootprint, buildExit, buildFloorTile, buildObstacle, buildRim, bui
 import { CONFIG } from '../config';
 import { DIR_DX, DIR_DY, type Color, type GameState, type RobotEvent } from '../engine/types';
 import type { Level } from '../levels/parse';
+import { headingAngle, nearestAngle, squashScale, turnAngle, type HeadingStyle } from './heading';
 import { fuse, type Kit } from './kit';
 import { buildPartsRobot, buildRobot, type RobotView } from './robot';
 
@@ -13,6 +14,8 @@ import { buildPartsRobot, buildRobot, type RobotView } from './robot';
 export interface BoardStyle {
   readonly kitRobots: boolean;
   readonly kitBoard: boolean;
+  /** How a robot shows its heading; the whole robot turns when left out. */
+  readonly heading?: HeadingStyle;
 }
 
 /** Height range of the board itself, and of a robot standing on it, in world units. */
@@ -77,7 +80,7 @@ function slab(w: number, d: number, r: number, h: number): THREE.BufferGeometry 
 export class BoardView {
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
-  private camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
+  private camera = new THREE.PerspectiveCamera(CONFIG.camera.fov, 1, 0.5, 400);
   private boardGroup = new THREE.Group();
   private robots = new Map<number, RobotView>();
   private tweens: Tween[] = [];
@@ -189,7 +192,9 @@ export class BoardView {
     else this.buildPlainBoard(level);
 
     for (const r of level.start.robots) {
-      const view = this.style.kitRobots ? buildPartsRobot(r.id, r.color) : buildRobot(r.id, r.color);
+      const heading = this.style.heading ?? 'faceUp';
+      const viewTilt = (this.layout.tilt * Math.PI) / 180;
+      const view = this.style.kitRobots ? buildPartsRobot(r.id, r.color, heading, viewTilt) : buildRobot(r.id, r.color, heading);
       this.robots.set(r.id, view);
       this.boardGroup.add(view.root);
     }
@@ -321,7 +326,8 @@ export class BoardView {
   }
 
   /**
-   * Frame the board with a parallel camera: every cell is the same size on screen. The board is as
+   * Frame the board with a perspective camera, tilted from straight down, so the board has depth:
+   * its near edge is drawn larger than its far edge. The board is as
    * wide as the canvas allows (less the side margin), or as tall, whichever limit is reached first.
    */
   private fitCamera(): void {
@@ -335,24 +341,47 @@ export class BoardView {
     const size = this.boardSize();
     const hw = size.w / 2;
     const hd = size.d / 2;
-    // On screen the board is its depth seen at an angle, plus the visible part of its thickness.
-    const boxHeight = 2 * hd * Math.cos(tilt) + (BOX_TOP - BOX_BOTTOM) * Math.sin(tilt);
-    const headroom = (ROBOT_TOP - BOX_TOP) * Math.sin(tilt);
-    const scale = Math.min(
-      (w - 2 * CONFIG.camera.marginX) / (2 * hw),
-      (h - 2 * CONFIG.camera.marginY) / (boxHeight + headroom),
-    );
-    this.camera.left = -w / (2 * scale);
-    this.camera.right = w / (2 * scale);
-    this.camera.top = h / (2 * scale);
-    this.camera.bottom = -h / (2 * scale);
+    const target = new THREE.Vector3(0, 0, 0);
+    this.camera.aspect = w / h;
+    this.camera.clearViewOffset();
     this.camera.updateProjectionMatrix();
-    const spare = h / scale - boxHeight;
-    const boxCentre = ((BOX_TOP + BOX_BOTTOM) / 2) * Math.sin(tilt);
-    const target = new THREE.Vector3(0, 0, ((0.5 - this.layout.spareAbove) * spare - boxCentre) / Math.cos(tilt));
-    this.camera.position.copy(target).addScaledVector(dir, 30);
-    this.camera.lookAt(target);
-    this.camera.updateMatrixWorld();
+    // The board as a box, measured on screen from a given camera distance, in CSS pixels.
+    const corners: THREE.Vector3[] = [];
+    for (const x of [-hw, hw]) for (const y of [BOX_BOTTOM, BOX_TOP]) for (const z of [-hd, hd]) corners.push(new THREE.Vector3(x, y, z));
+    const point = new THREE.Vector3();
+    const toScreen = (p: THREE.Vector3): { x: number; y: number } => {
+      point.copy(p).project(this.camera);
+      return { x: ((point.x + 1) / 2) * w, y: ((1 - point.y) / 2) * h };
+    };
+    const measure = (distance: number): { width: number; top: number; bottom: number; headroom: number } => {
+      this.camera.position.copy(target).addScaledVector(dir, distance);
+      this.camera.lookAt(target);
+      this.camera.updateMatrixWorld();
+      const on = corners.map(toScreen);
+      const xs = on.map((p) => p.x);
+      const ys = on.map((p) => p.y);
+      const backTop = toScreen(new THREE.Vector3(0, BOX_TOP, -hd)).y;
+      const robotTop = toScreen(new THREE.Vector3(0, ROBOT_TOP, -hd)).y;
+      return { width: Math.max(...xs) - Math.min(...xs), top: Math.min(...ys), bottom: Math.max(...ys), headroom: Math.max(0, backTop - robotTop) };
+    };
+    const fits = (distance: number): boolean => {
+      const m = measure(distance);
+      return m.width <= w - 2 * CONFIG.camera.marginX && m.bottom - m.top + m.headroom <= h - 2 * CONFIG.camera.marginY;
+    };
+    // The nearest distance at which the board still fits: as wide as the margins allow, or as tall.
+    let near = 1;
+    let far = 300;
+    for (let i = 0; i < 40; i++) {
+      const mid = (near + far) / 2;
+      if (fits(mid)) far = mid;
+      else near = mid;
+    }
+    const m = measure(far);
+    // Place the board in the spare height without changing the perspective: slide the picture, not the camera.
+    const spare = h - (m.bottom - m.top);
+    const wanted = h / 2 - (0.5 - this.layout.spareAbove) * spare;
+    this.camera.setViewOffset(w, h, 0, (m.top + m.bottom) / 2 - wanted, w, h);
+    this.camera.updateProjectionMatrix();
     this.sun.position.set(target.x - 4.5, 9, target.z - 3.5);
     this.sun.target.position.copy(target);
     const cam = this.sun.shadow.camera;
@@ -375,9 +404,7 @@ export class BoardView {
       const tx = this.cellX(r.x);
       const tz = this.cellZ(r.y);
       // Nearest equivalent heading, so an undo turns back the short way.
-      const want = -r.dir * (Math.PI / 2);
-      const turns = Math.round((view.angle - want) / (Math.PI * 2));
-      const ta = want + turns * Math.PI * 2;
+      const ta = nearestAngle(view.angle, headingAngle(r.dir));
       const ts = r.collected ? 0 : 1;
       if (!animate) {
         this.pose(view, tx, tz, ta, ts);
@@ -439,7 +466,7 @@ export class BoardView {
           const view = this.robots.get(e.id)!;
           const from = view.angle;
           return this.addTween(a.turnTime / speed, (k) => {
-            view.angle = from - (Math.PI / 2) * easeOutBack(k);
+            view.angle = turnAngle(from, easeOutBack(k));
             view.aim(view.angle);
             view.body.position.y = Math.sin(Math.PI * k) * 0.07 * lively;
           });
@@ -486,11 +513,9 @@ export class BoardView {
           view.root.position.x = fx + dx * off;
           view.root.position.z = fz + dz * off;
           const squash = Math.max(0, Math.sin(Math.PI * Math.min(k / 0.6, 1))) * 0.14 * lively;
-          const along = 1 - squash;
-          const across = 1 + squash * 0.6;
-          // The body does not turn, so squash along the world axis it is travelling on.
-          if (dx !== 0) view.body.scale.set(along, 1 + squash * 0.3, across);
-          else view.body.scale.set(across, 1 + squash * 0.3, along);
+          // Squash along the way the robot itself travels: its heading, whichever way the body is turned.
+          const s = squashScale(headingAngle(e.dir), squash);
+          view.body.scale.set(s.x, s.y, s.z);
         });
       }),
     );

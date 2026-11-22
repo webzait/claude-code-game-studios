@@ -1,8 +1,9 @@
 import { CONFIG } from '../config';
+import { HEADING_STYLES, type HeadingStyle } from '../render/heading';
 import { DEFAULT_LAB, type LabSettings } from './lab';
 
 /** Current save format. Raise it and extend `migrate` when the shape changes. */
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 /** Storage key of the current format. */
 export const SAVE_KEY = 'turnflock.save';
 /** Storage key of the first prototype's format (version 1). */
@@ -21,6 +22,8 @@ export interface SaveData {
     mute: boolean;
     /** null follows the device's reduced-motion preference. */
     reduceMotion: boolean | null;
+    /** A short buzz on moves and wins, on devices that can vibrate. */
+    vibration: boolean;
   };
   lab: LabSettings;
 }
@@ -34,14 +37,14 @@ export interface KeyValueStore {
 
 /** A fresh save. */
 export function defaultSave(): SaveData {
-  return { version: SAVE_VERSION, best: {}, coins: CONFIG.coins.start, paid: {}, settings: { mute: false, reduceMotion: null }, lab: { ...DEFAULT_LAB } };
+  return { version: SAVE_VERSION, best: {}, coins: CONFIG.coins.start, paid: {}, settings: { mute: false, reduceMotion: null, vibration: true }, lab: { ...DEFAULT_LAB } };
 }
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 
 /**
  * Bring any stored value to the current format. Version 1 stored solved level
- * positions; they are mapped to ids through `levelIds`. Unknown or damaged
+ * positions; they are mapped to ids through `save.v1LevelOrder` in the config. Unknown or damaged
  * data gives a fresh save rather than an error.
  */
 export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
@@ -50,18 +53,21 @@ export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
   if (raw.version === undefined && Array.isArray(raw.solved)) {
     // Version 1: { solved: number[], level: number }. Best scores were not kept; record par-unknown wins as 0.
     for (const index of raw.solved) {
-      if (typeof index === 'number' && levelIds[index]) save.best[levelIds[index]] = 0;
+      // Positions meant the level order of that time, kept in config; today's order is a different one.
+      const id = typeof index === 'number' ? CONFIG.save.v1LevelOrder[index] : undefined;
+      if (id && levelIds.includes(id)) save.best[id] = 0;
     }
     return save;
   }
   // Version 2 had no coins: the player keeps progress and starts with the opening balance.
-  if (raw.version !== SAVE_VERSION && raw.version !== 2) return save;
+  // Version 3 had no vibration setting: everything is kept and vibration starts at its default.
+  if (raw.version !== SAVE_VERSION && raw.version !== 3 && raw.version !== 2) return save;
   if (isRecord(raw.best)) {
     for (const [id, moves] of Object.entries(raw.best)) {
       if (levelIds.includes(id) && typeof moves === 'number' && moves >= 0) save.best[id] = moves;
     }
   }
-  if (raw.version === SAVE_VERSION) {
+  if (raw.version === SAVE_VERSION || raw.version === 3) {
     if (typeof raw.coins === 'number' && raw.coins >= 0) save.coins = Math.floor(raw.coins);
     if (isRecord(raw.paid)) {
       for (const [id, amount] of Object.entries(raw.paid)) {
@@ -72,6 +78,7 @@ export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
   if (isRecord(raw.settings)) {
     save.settings.mute = raw.settings.mute === true;
     save.settings.reduceMotion = typeof raw.settings.reduceMotion === 'boolean' ? raw.settings.reduceMotion : null;
+    if (typeof raw.settings.vibration === 'boolean') save.settings.vibration = raw.settings.vibration;
   }
   if (isRecord(raw.lab)) {
     const lab = raw.lab;
@@ -84,6 +91,8 @@ export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
     if (typeof lab.freeHelp === 'boolean') save.lab.freeHelp = lab.freeHelp;
     if (typeof lab.decor === 'boolean') save.lab.decor = lab.decor;
     if (lab.robots === 'kit' || lab.robots === 'builtin') save.lab.robots = lab.robots;
+    // Saves from before the switch existed have no heading style: they get the default, the whole robot turning.
+    if (HEADING_STYLES.includes(lab.heading as HeadingStyle)) save.lab.heading = lab.heading as HeadingStyle;
     if (lab.boardPieces === 'kit' || lab.boardPieces === 'builtin') save.lab.boardPieces = lab.boardPieces;
   }
   return save;

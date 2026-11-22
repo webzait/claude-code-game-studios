@@ -179,3 +179,4 @@ dist-single/
 /playwright-report/
 .vitest/
 dist-parts/
+tools/level-design/.cache/

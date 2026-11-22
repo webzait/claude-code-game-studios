@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { CONFIG } from '../../src/config';
+import { deviceVibrate, Haptics } from '../../src/haptics';
 import { extraMovesPrice, hintPrice, payout, rewardFor } from '../../src/game/coins';
 import { applyLab, DEFAULT_LAB, rulesFor, usesCertifiedRules, type LabSettings } from '../../src/game/lab';
-import { isUnlocked, resumeIndex, solvedCount, starsFor } from '../../src/game/progress';
+import { isUnlocked, mainAction, resumeIndex, solvedCount, starsFor, starsOfBest } from '../../src/game/progress';
 import { defaultSave, LEGACY_KEY, loadSave, migrate, resetProgress, SAVE_KEY, SAVE_VERSION, writeSave, type KeyValueStore } from '../../src/game/save';
 import { Session } from '../../src/game/session';
 import { LEVELS } from '../../src/levels/index';
@@ -96,7 +97,8 @@ describe('save', () => {
     const store = memory({ [LEGACY_KEY]: JSON.stringify({ solved: [0, 1], level: 2 }) });
     const save = loadSave(store, ids);
     expect(save.version).toBe(SAVE_VERSION);
-    expect(Object.keys(save.best)).toEqual([ids[0], ids[1]]);
+    // Positions are those of the first prototype's order, not of today's.
+    expect(Object.keys(save.best)).toEqual(['follow-the-arrow', 'one-color-turns']);
   });
 
   it('prefers the current format over the old one', () => {
@@ -114,6 +116,22 @@ describe('save', () => {
     expect(save.paid).toEqual({});
     expect(save.settings.mute).toBe(true);
     expect(save.lab.moveSlack).toBe(3);
+  });
+
+  it('migrates version 3 (no vibration setting): progress, coins, settings and lab are kept', () => {
+    const save = migrate({ version: 3, best: { [ids[0]]: 7 }, coins: 73, paid: { [ids[0]]: 26 }, settings: { mute: true, reduceMotion: true }, lab: { moveSlack: 3, unlockAll: true } }, ids);
+    expect(save.version).toBe(SAVE_VERSION);
+    expect(save.best).toEqual({ [ids[0]]: 7 });
+    expect(save.coins).toBe(73);
+    expect(save.paid).toEqual({ [ids[0]]: 26 });
+    expect(save.settings).toEqual({ mute: true, reduceMotion: true, vibration: true });
+    expect(save.lab.moveSlack).toBe(3);
+    expect(save.lab.unlockAll).toBe(true);
+  });
+
+  it('keeps a stored vibration choice and ignores a damaged one', () => {
+    expect(migrate({ version: SAVE_VERSION, settings: { vibration: false } }, ids).settings.vibration).toBe(false);
+    expect(migrate({ version: SAVE_VERSION, settings: { vibration: 'loud' } }, ids).settings.vibration).toBe(true);
   });
 
   it('damaged, unknown or future data gives a fresh save, never an error', () => {
@@ -190,5 +208,56 @@ describe('test lab', () => {
       else expect(result.capped, level.id).toBe(true);
     }
     expect(proven).toBeGreaterThanOrEqual(8);
+  });
+});
+
+describe('level selection main action', () => {
+  const levels = [
+    { id: 'a', par: 5 },
+    { id: 'b', par: 6 },
+    { id: 'c', par: 7 },
+  ];
+
+  it('points_at_the_first_unsolved_level', () => {
+    expect(mainAction(levels, {})).toEqual({ index: 0, kind: 'play' });
+    expect(mainAction(levels, { a: 5 })).toEqual({ index: 1, kind: 'play' });
+    expect(mainAction(levels, { a: 5, c: 7 })).toEqual({ index: 1, kind: 'play' });
+  });
+
+  it('with_everything_solved_points_at_the_first_level_without_three_stars', () => {
+    const over = CONFIG.stars.three + 1;
+    expect(mainAction(levels, { a: 5, b: 6 + over, c: 7 + over })).toEqual({ index: 1, kind: 'improve' });
+  });
+
+  it('with_three_stars_everywhere_starts_again_at_level_one', () => {
+    expect(mainAction(levels, { a: 5, b: 6, c: 7 })).toEqual({ index: 0, kind: 'again' });
+  });
+
+  it('counts_stars_of_a_stored_best_and_one_star_for_a_prototype_win', () => {
+    expect(starsOfBest(undefined, 5)).toBe(0);
+    expect(starsOfBest(0, 5)).toBe(1);
+    expect(starsOfBest(5, 5)).toBe(3);
+    expect(starsOfBest(5 + CONFIG.stars.two, 5)).toBe(2);
+    expect(starsOfBest(5 + CONFIG.stars.two + 1, 5)).toBe(1);
+  });
+});
+
+describe('haptics', () => {
+  it('vibrates_with_the_configured_pattern_when_switched_on', () => {
+    const calls: number[][] = [];
+    const haptics = new Haptics(() => true, (p) => calls.push(p) > 0);
+    expect(haptics.supported).toBe(true);
+    expect(haptics.play('move')).toBe(true);
+    expect(haptics.play('win')).toBe(true);
+    expect(calls).toEqual([CONFIG.haptics.move, CONFIG.haptics.win]);
+  });
+
+  it('stays_silent_when_switched_off_or_when_the_device_cannot_vibrate', () => {
+    const calls: number[][] = [];
+    expect(new Haptics(() => false, (p) => calls.push(p) > 0).play('move')).toBe(false);
+    expect(calls).toEqual([]);
+    const none = new Haptics(() => true, deviceVibrate({}));
+    expect(none.supported).toBe(false);
+    expect(none.play('win')).toBe(false);
   });
 });

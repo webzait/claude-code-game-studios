@@ -1,0 +1,333 @@
+{
+  "ideas": {
+    "forward": "VOORUIT zet iedereen één stap",
+    "turn": "Een kleur draait een kwartslag met de klok mee en stapt dan",
+    "wait-at-wall": "Wie tegen de rand loopt, wacht: achterblijvers halen in",
+    "two-colours": "Alleen de gekozen kleur draait, maar iedereen stapt",
+    "wall-stopper": "Een muur of rand zet een robot stil terwijl de rest doorloopt",
+    "same-colour": "Eén kleur, verschillende richtingen",
+    "exit-sides": "De uitgang in via verschillende kanten",
+    "queue": "In de rij: wachten op de robot voor je",
+    "three-colours": "Drie kleuren uit elkaar houden",
+    "tight": "Klein bord: geen ruimte om om elkaar heen te lopen",
+    "three-rights": "Alleen rechtsom: links is drie keer rechts, en je loopt terwijl je draait",
+    "conflict": "Twee robots die hetzelfde vakje willen, blijven allebei staan",
+    "board-shape": "Andere bordvormen: lang, breed, smal",
+    "together": "Meerdere robots tegelijk de uitgang in",
+    "crowd": "Veel robots: één commando, veel gevolgen",
+    "big": "Het grootste bord (8×8)",
+    "turn-tile": "Een draaitegel draait wie erop stapt: het bord doet het draaien",
+    "tile-to-avoid": "Een draaitegel in de weg: wie erop stapt, loopt verkeerd"
+  },
+  "origins": {
+    "hand": "met de hand gemaakt",
+    "hand-earlier": "met de hand gemaakt (bestaand level)",
+    "tidied": "gegenereerd en opgeschoond",
+    "generated": "gegenereerd, ongewijzigd gekozen"
+  },
+  "levels": {
+    "first-steps": {
+      "idea": "forward",
+      "origin": "hand",
+      "about": "Alleen VOORUIT: twee robots lopen van twee kanten de uitgang in."
+    },
+    "quarter-turn": {
+      "idea": "turn",
+      "origin": "hand",
+      "about": "Eén robot loopt tot de rand en heeft dan precies één keer ROOD nodig."
+    },
+    "follow-the-arrow": {
+      "idea": "wait-at-wall",
+      "origin": "hand-earlier",
+      "about": "Drie robots lopen omhoog en wachten bij de rand tot één keer ROOD ze samen naar de uitgang stuurt."
+    },
+    "everyone-steps": {
+      "idea": "two-colours",
+      "origin": "hand",
+      "about": "BLAUW draait alleen blauw, maar rood stapt in dezelfde zet mee."
+    },
+    "lean-on-it": {
+      "idea": "wall-stopper",
+      "origin": "hand",
+      "about": "Een muurtje houdt de voorste robot tegen tot de achterste op dezelfde rij staat."
+    },
+    "two-minds": {
+      "idea": "same-colour",
+      "origin": "generated",
+      "about": "Vier rode robots met twee richtingen: elke ROOD stuurt de ene groep goed en de andere eerst om."
+    },
+    "side-door": {
+      "idea": "exit-sides",
+      "origin": "hand-earlier",
+      "about": "De uitgang zit halverwege de rand; rood en blauw komen er van verschillende kanten in."
+    },
+    "wait-your-turn": {
+      "idea": "queue",
+      "origin": "generated",
+      "about": "De blauwe robot kan pas weg als de rode voor hem is gedraaid en doorloopt."
+    },
+    "one-color-turns": {
+      "idea": "two-colours",
+      "origin": "hand-earlier",
+      "about": "Twee kleuren om beurten draaien terwijl de andere kleur gewoon doorloopt."
+    },
+    "four-doors": {
+      "idea": "exit-sides",
+      "origin": "generated",
+      "about": "De uitgang ligt in het bord en wordt van alle vier de kanten binnengelopen."
+    },
+    "use-the-wall": {
+      "idea": "wall-stopper",
+      "origin": "hand-earlier",
+      "about": "Twee muren houden robots vast tot hun kleur aan de beurt is."
+    },
+    "three-of-a-kind": {
+      "idea": "three-colours",
+      "origin": "generated",
+      "about": "Drie kleuren, elk één keer draaien, in de juiste volgorde."
+    },
+    "close-quarters": {
+      "idea": "tight",
+      "origin": "generated",
+      "about": "Vier robots op 4×4: elke draai van de één duwt de ander een vakje op."
+    },
+    "long-way-round": {
+      "idea": "three-rights",
+      "origin": "hand-earlier",
+      "about": "Een robot moet eerst van de uitgang weg om rechtsom te kunnen aankomen."
+    },
+    "after-you": {
+      "idea": "conflict",
+      "origin": "generated",
+      "about": "Twee robots willen hetzelfde vakje en blijven staan; dat uitstel is precies wat nodig is."
+    },
+    "queue-up": {
+      "idea": "queue",
+      "origin": "hand-earlier",
+      "about": "Drie kleuren in een rij die elk op het juiste moment afslaan."
+    },
+    "the-corridor": {
+      "idea": "board-shape",
+      "origin": "generated",
+      "about": "Een lang bord van 4×7: eerst samen lopen, dan kort na elkaar afslaan."
+    },
+    "traffic-jam": {
+      "idea": "queue",
+      "origin": "hand-earlier",
+      "about": "Zes robots in twee rijen die op elkaar wachten bij de muren."
+    },
+    "staircase": {
+      "idea": "wait-at-wall",
+      "origin": "hand",
+      "about": "Adempauze: vier robots op een diagonaal lopen omhoog, wachten bij de rand en gaan na één ROOD in een rij naar binnen."
+    },
+    "one-command-many-consequences": {
+      "idea": "crowd",
+      "origin": "hand-earlier",
+      "about": "Pronkstuk van pagina 1: twaalf robots in drie kleuren, één kortste oplossing."
+    },
+    "easy-does-it": {
+      "idea": "three-colours",
+      "origin": "generated",
+      "about": "Drie kleuren op een ruim bord, met maar twee draaien: geel hoeft alleen te lopen."
+    },
+    "parking-spot": {
+      "idea": "wall-stopper",
+      "origin": "generated",
+      "about": "Een muur houdt één rode robot een zet tegen, zodat de twee rode later netjes achter elkaar de bovenste rij op komen."
+    },
+    "all-together-now": {
+      "idea": "together",
+      "origin": "generated",
+      "about": "De eerste zet brengt drie blauwe robots tegelijk de uitgang in, van drie kanten; de drie rode moeten daarna nog de lange weg."
+    },
+    "wide-open": {
+      "idea": "board-shape",
+      "origin": "generated",
+      "about": "Een breed bord van 7×5: lange looplijnen en drie draaien op het goede moment."
+    },
+    "centre-stage": {
+      "idea": "exit-sides",
+      "origin": "generated",
+      "about": "Uitgang midden in het bord; vijf robots komen van drie kanten."
+    },
+    "peel-off": {
+      "idea": "three-colours",
+      "origin": "generated",
+      "about": "Iedereen loopt samen omhoog, daarna slaat elke kleur om de beurt af."
+    },
+    "three-rights": {
+      "idea": "three-rights",
+      "origin": "generated",
+      "about": "Twee keer ROOD kort na elkaar en later nog een keer: rood loopt een lus om goed aan te komen."
+    },
+    "elbow-room": {
+      "idea": "tight",
+      "origin": "generated",
+      "about": "Vijf robots in drie kleuren op 4×4, met één muur naast de uitgang."
+    },
+    "the-long-hall": {
+      "idea": "board-shape",
+      "origin": "generated",
+      "about": "Een lage gang van 8×4: twee blauwe robots wachten boven tegen de rand tot hun kleur aan de beurt is."
+    },
+    "gridlock": {
+      "idea": "conflict",
+      "origin": "generated",
+      "about": "Rijen én botsingen: robots houden elkaar tegen, en twee die hetzelfde vakje willen wachten allebei."
+    },
+    "tight-squeeze": {
+      "idea": "tight",
+      "origin": "generated",
+      "about": "Vijf robots op 5×4 langs de linkerrand; blauw draait drie keer, steeds op een ander moment."
+    },
+    "two-lanes": {
+      "idea": "queue",
+      "origin": "hand-earlier",
+      "about": "Twee rijen naast elkaar; rood draait een heel rondje om uit de pas te raken."
+    },
+    "back-of-the-line": {
+      "idea": "same-colour",
+      "origin": "generated",
+      "about": "Vier rode robots lopen als één rij; de twee blauwe moeten er op het juiste moment tussen."
+    },
+    "full-house": {
+      "idea": "crowd",
+      "origin": "generated",
+      "about": "Acht robots dicht bij de uitgang: wie eerst gaat, bepaalt of de rest erlangs kan."
+    },
+    "roundabout": {
+      "idea": "exit-sides",
+      "origin": "tidied",
+      "about": "Het 7×7-bord met de uitgang binnenin: zeven robots komen van alle vier de kanten."
+    },
+    "colour-guard": {
+      "idea": "three-colours",
+      "origin": "generated",
+      "about": "Zes robots in drie kleuren, vier draaien achter elkaar in vaste volgorde."
+    },
+    "single-file": {
+      "idea": "queue",
+      "origin": "generated",
+      "about": "Vijf zetten samen lopen en wachten in de rij, dan pas twee draaien."
+    },
+    "patience": {
+      "idea": "wall-stopper",
+      "origin": "hand-earlier",
+      "about": "Piek van pagina 2: twaalf zetten, één kortste oplossing, veel bewust botsen en weglopen."
+    },
+    "detour": {
+      "idea": "three-rights",
+      "origin": "generated",
+      "about": "Adempauze: vier robots, twee keer ROOD, en blauw hoeft alleen te lopen."
+    },
+    "grand-parade": {
+      "idea": "big",
+      "origin": "tidied",
+      "about": "Pronkstuk van pagina 2: tien robots op een leeg 8×8-bord lopen in optocht naar de hoek."
+    }
+  },
+  "retired": {},
+  "upcoming": {
+    "turntable": {
+      "idea": "turn-tile",
+      "origin": "hand",
+      "about": "Alleen VOORUIT: de tegel draait de robot naar de uitgang, zonder kleurknop."
+    },
+    "corner-piece": {
+      "idea": "turn-tile",
+      "origin": "generated",
+      "about": "Eén keer ROOD stuurt beide robots omlaag; de tegel in de onderste rij draait er één naar de uitgang."
+    },
+    "two-for-one": {
+      "idea": "turn-tile",
+      "origin": "generated",
+      "about": "Twee rode robots lopen na elkaar over dezelfde tegel en worden allebei gedraaid; blauw heeft zijn eigen knop nodig."
+    },
+    "mind-the-tile": {
+      "idea": "tile-to-avoid",
+      "origin": "generated",
+      "about": "De tegel ligt vlak bij de uitgang, maar de oplossing raakt hem niet aan."
+    },
+    "bank-shot": {
+      "idea": "turn-tile",
+      "origin": "generated",
+      "about": "Tegel en muur samen: twee robots worden door de tegel gedraaid, en een muur houdt er één even tegen."
+    },
+    "merge-lane": {
+      "idea": "queue",
+      "origin": "generated",
+      "about": "Vijf robots in de rij bij de uitgang; één wordt onderweg door de tegel gedraaid."
+    },
+    "standoff": {
+      "idea": "conflict",
+      "origin": "generated",
+      "about": "Twee blauwe robots willen hetzelfde vakje en wachten; de tegel aan de linkerrand brengt er één terug in de goede richting."
+    },
+    "switchback": {
+      "idea": "board-shape",
+      "origin": "generated",
+      "about": "Het lange 4×7-bord met twee tegels: blauw wordt twee keer door het bord gedraaid."
+    },
+    "three-way": {
+      "idea": "three-colours",
+      "origin": "generated",
+      "about": "Samen omhoog lopen, dan elke kleur één keer; één robot neemt de tegel."
+    },
+    "open-floor": {
+      "idea": "crowd",
+      "origin": "tidied",
+      "about": "Zonder tegel: zeven robots op een leeg 7×7-bord, met twee robots die tegenover elkaar staan en niet kunnen ruilen."
+    },
+    "carousel": {
+      "idea": "same-colour",
+      "origin": "generated",
+      "about": "Vier rode robots en twee tegels onder elkaar: het bord draait zes keer, de speler maar twee keer."
+    },
+    "spiral-in": {
+      "idea": "exit-sides",
+      "origin": "generated",
+      "about": "Uitgang in het bord, van vier kanten binnen; de tegel stuurt twee robots de hoek om."
+    },
+    "long-table": {
+      "idea": "board-shape",
+      "origin": "tidied",
+      "about": "Zonder tegel: het brede 8×6-bord met zeven robots in drie kleuren; vier draaien vroeg, daarna lopen."
+    },
+    "pinball": {
+      "idea": "tight",
+      "origin": "generated",
+      "about": "Vier robots en één tegel op 4×4; blauw draait drie keer."
+    },
+    "crowded-corner": {
+      "idea": "crowd",
+      "origin": "tidied",
+      "about": "Acht robots in de hoek bij de uitgang en twee tegels die samen vier keer een robot draaien."
+    },
+    "tricolour": {
+      "idea": "three-colours",
+      "origin": "generated",
+      "about": "Zes robots in drie kleuren en twee tegels; geel draait vier keer."
+    },
+    "cliff-walk": {
+      "idea": "big",
+      "origin": "tidied",
+      "about": "Het 8×8-bord: zeven robots langs de rechterrand, en één tegel naast de uitgang."
+    },
+    "whirl": {
+      "idea": "turn-tile",
+      "origin": "tidied",
+      "about": "Piek van pagina 3: acht robots op 7×7, twee tegels en zes draaien."
+    },
+    "conga-line": {
+      "idea": "wait-at-wall",
+      "origin": "generated",
+      "about": "Adempauze: zes rode robots, één keer ROOD, en de tegel in de hoek draait er drie naar de uitgang."
+    },
+    "grand-finale": {
+      "idea": "big",
+      "origin": "tidied",
+      "about": "Pronkstuk van pagina 3: tien robots in drie kleuren op een leeg 8×8-bord; de ene tegel in de onderste rij draait er vier."
+    }
+  }
+}

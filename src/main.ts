@@ -1,7 +1,12 @@
 import './ui/style.css';
 import './ui/tf-buttons.css';
+import './ui/tf-coins.css';
+import './ui/tf-levels.css';
+import './ui/tf-end.css';
+import './ui/tf-settings.css';
 import './ui/tf-scene.css';
 import { Sfx } from './audio';
+import { deviceVibrate, Haptics } from './haptics';
 import { CONFIG } from './config';
 import { step } from './engine/engine';
 import type { Color, Command } from './engine/types';
@@ -9,25 +14,24 @@ import { witnessNext, type RescueResult, type ScanResult } from './game/assist';
 import { extraMovesPrice, hintPrice, payout, rewardFor } from './game/coins';
 import { applyLab, rulesFor, usesCertifiedRules, type LabSettings } from './game/lab';
 import { MemorySink, type MetricsEvent } from './game/metrics';
-import { isUnlocked, resumeIndex, starsFor } from './game/progress';
+import { isUnlocked, mainAction, starsFor, starsOfBest } from './game/progress';
 import { loadSave, resetProgress, writeSave, type KeyValueStore, type SaveData } from './game/save';
 import { Session } from './game/session';
 import { LEVELS, TEST_BOARDS, type GameLevel } from './levels/index';
 import { BoardView } from './render/boardView';
 import { loadKit } from './render/kit';
-import coinIcon from '../assets/turnflock/ui/coin.webp';
-import hintIcon from '../assets/turnflock/ui/hint.webp';
-import extraMovesIcon from '../assets/turnflock/ui/extra-moves.webp';
 import decorLarge from '../assets/turnflock/decor/decor-bush-large.webp';
 import decorSmall from '../assets/turnflock/decor/decor-bush-small.webp';
 import decorClover from '../assets/turnflock/decor/decor-tuft-clover.webp';
 import decorSprig from '../assets/turnflock/decor/decor-sprig-top.webp';
 import { SolverClient } from './solver/client';
 import type { CertifyResult } from './solver/requests';
+import { CoinCounters, coinInfo, type RewardView } from './ui/coins';
 import { el, Hud } from './ui/hud';
-import { renderLevels, renderSettings, type MapNode } from './ui/screens';
+import { renderLevels, type MapNode } from './ui/screens';
+import { labChangedCount, labScreen, playerScreen } from './ui/settingsView';
 
-type ScreenName = 'map' | 'level' | 'settings';
+type ScreenName = 'map' | 'level' | 'settings' | 'lab';
 
 /** What automated checks may read from the running game. */
 export interface Snapshot {
@@ -76,9 +80,11 @@ class Game {
   private save: SaveData = loadSave(this.store, LEVEL_IDS);
   private metrics = new MemorySink();
   private sfx = new Sfx(() => this.save.settings.mute);
+  private haptics = new Haptics(() => this.save.settings.vibration, deviceVibrate(window.navigator));
   private solver = new SolverClient();
   private view = new BoardView(el<HTMLCanvasElement>('board'));
   private hud: Hud;
+  private counters: CoinCounters;
   /** True once the asset kit's 3D models are in use. */
   private kitReady = false;
   private screen: ScreenName = 'map';
@@ -96,8 +102,8 @@ class Game {
   private witness: readonly Command[] | null = LEVELS[0].witness;
   /** False when the level could not be proven solvable under a test rule. */
   private certified = true;
-  /** Coins paid out by the latest win, shown on the result card. */
-  private earnedNow = 0;
+  /** The latest win's reward, as shown on the result card. */
+  private lastReward: RewardView | null = null;
   private usedBackup = false;
   /** A paid hint revealed a move during this attempt. */
   private usedHint = false;
@@ -114,6 +120,10 @@ class Game {
   private nudge: Command | null = null;
   private scanKey = '';
   private scanResult: ScanResult | null = null;
+  /** The button that opened the coin explainer; focus returns to it. */
+  private coinInfoOpener: HTMLElement | null = null;
+  /** The settings screen is being opened from the test lab. */
+  private fromLab = false;
 
   constructor() {
     this.hud = new Hud(
@@ -127,13 +137,20 @@ class Game {
       },
       () => this.screen === 'level',
     );
+    this.counters = new CoinCounters([el('mapCoins'), el('levelCoins')], () => this.reduced, (button) => this.tap(() => this.openCoinInfo(button)));
+    el('coinInfoBody').innerHTML = coinInfo('coinInfoTitle');
+    el('coinInfoClose').addEventListener('click', () => this.tap(() => this.closeCoinInfo()));
+    el('coinInfo').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) this.closeCoinInfo();
+    });
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') this.closeCoinInfo();
+    });
     el('toSettings').addEventListener('click', () => this.tap(() => this.show('settings')));
-    el('continue').addEventListener('click', () => this.tap(() => this.startLevel(resumeIndex(LEVEL_IDS, this.save.best))));
-    el('settingsBack').addEventListener('click', () => this.tap(() => this.show('map')));
     new ResizeObserver(() => this.view.resize()).observe(document.querySelector('.stage') as HTMLElement);
     // Kit artwork: images are bundled; the page sets them here so one build works from any folder.
     for (const img of Array.from(document.querySelectorAll<HTMLImageElement>('img[data-art]'))) {
-      const art: Record<string, string> = { coin: coinIcon, hint: hintIcon, extra: extraMovesIcon, 'decor-large': decorLarge, 'decor-small': decorSmall, 'decor-clover': decorClover, 'decor-sprig': decorSprig };
+      const art: Record<string, string> = { 'decor-large': decorLarge, 'decor-small': decorSmall, 'decor-clover': decorClover, 'decor-sprig': decorSprig };
       img.src = art[img.dataset.art ?? ''] ?? '';
     }
     this.applySettings();
@@ -159,6 +176,20 @@ class Game {
     action();
   }
 
+  /** The plus button: there is no shop, so it explains what coins are and what they cost. */
+  private openCoinInfo(opener: HTMLElement): void {
+    this.coinInfoOpener = opener;
+    el('coinInfo').hidden = false;
+    el('coinInfoClose').focus();
+  }
+
+  private closeCoinInfo(): void {
+    if (el('coinInfo').hidden) return;
+    el('coinInfo').hidden = true;
+    this.coinInfoOpener?.focus();
+    this.coinInfoOpener = null;
+  }
+
   private get reduced(): boolean {
     return this.save.settings.reduceMotion ?? window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
@@ -175,7 +206,7 @@ class Game {
     document.documentElement.classList.toggle('reduce-motion', this.reduced);
     this.view.setMotion(this.save.lab.speed, this.reduced);
     this.view.setLayout(CONFIG.board[this.save.lab.board]);
-    this.view.setStyle({ kitRobots: this.save.lab.robots === 'kit', kitBoard: this.save.lab.boardPieces === 'kit' });
+    this.view.setStyle({ kitRobots: this.save.lab.robots === 'kit', kitBoard: this.save.lab.boardPieces === 'kit', heading: this.save.lab.heading });
     document.documentElement.classList.toggle('no-decor', !this.save.lab.decor);
   }
 
@@ -187,40 +218,39 @@ class Game {
     this.replaying = false;
     this.busy = false;
     this.screen = screen;
-    for (const name of ['map', 'level', 'settings'] as const) el(name).hidden = name !== screen;
+    for (const name of ['map', 'level', 'settings', 'lab'] as const) el(name).hidden = name !== screen;
     this.hud.hideCard();
+    this.closeCoinInfo();
     this.view.skip();
+    this.counters.set(this.save.coins);
     if (screen === 'map') {
       this.page = null;
       this.drawMap();
     }
     if (screen === 'settings') this.drawSettings();
+    if (screen === 'lab') this.drawLab();
   }
 
   private drawMap(): void {
     const best = this.save.best;
-    const resume = resumeIndex(LEVEL_IDS, best);
-    const nodes: MapNode[] = LEVELS.map((level, index) => {
-      const moves = best[level.id];
-      return {
-        number: index + 1,
-        name: level.name,
-        unlocked: isUnlocked(LEVEL_IDS, best, index, this.save.lab.unlockAll),
-        solved: moves !== undefined,
-        // A win carried over from the first prototype has no move count: show one star.
-        stars: moves === undefined ? 0 : moves === 0 ? 1 : starsFor(moves, level.par, false),
-        current: index === resume && moves === undefined,
-      };
-    });
+    const main = mainAction(LEVELS, best);
+    const nodes: MapNode[] = LEVELS.map((level, index) => ({
+      number: index + 1,
+      name: level.name,
+      unlocked: isUnlocked(LEVEL_IDS, best, index, this.save.lab.unlockAll),
+      solved: best[level.id] !== undefined,
+      stars: starsOfBest(best[level.id], level.par),
+      target: index === main.index,
+    }));
     const pageSize = CONFIG.levelsPerPage;
-    this.page ??= Math.floor(resume / pageSize);
-    const allDone = nodes.every((n) => n.solved);
+    // The screen opens on the page of the level the main button points at.
+    this.page ??= Math.floor(main.index / pageSize);
+    el('continue').onclick = () => this.tap(() => this.startLevel(main.index));
     renderLevels({
       nodes,
       page: this.page,
       pageSize,
-      coins: this.save.coins,
-      continueLabel: allDone ? `Play again · Level ${resume + 1}` : best[LEVEL_IDS[0]] === undefined ? 'Play · Level 1' : `Continue · Level ${resume + 1}`,
+      playLabel: main.kind === 'play' ? `Play level ${main.index + 1}` : main.kind === 'improve' ? `Improve level ${main.index + 1}` : 'Play again',
       onPick: (index) => this.tap(() => this.startLevel(index)),
       onPage: (page) => {
         this.page = page;
@@ -229,34 +259,56 @@ class Game {
     });
   }
 
+  /** The player's own settings. The controls keep their own state, so a change only saves and applies. */
   private drawSettings(): void {
-    renderSettings(this.save, {
-      setMute: (mute) => {
-        this.save.settings.mute = mute;
-        this.afterSetting();
-      },
-      setReduceMotion: (value) => {
-        this.save.settings.reduceMotion = value;
-        this.afterSetting();
-      },
-      testBoards: TEST_BOARDS.map((b) => `${b.board.width}×${b.board.height}`),
-      previewBoard: (index) => this.tap(() => this.startPreview(index)),
-      setLab: (patch) => {
-        Object.assign(this.save.lab, patch);
-        this.afterSetting();
-      },
-      resetProgress: () => {
-        this.save = resetProgress(this.save);
-        this.afterSetting();
-      },
+    const change = (apply: () => void): void => {
+      apply();
+      this.persist();
+      this.applySettings();
+      this.sfx.play('tap');
+    };
+    const screen = playerScreen({
+      mute: this.save.settings.mute,
+      reduceMotion: this.save.settings.reduceMotion,
+      vibration: this.save.settings.vibration,
+      canVibrate: this.haptics.supported,
+      labChanged: labChangedCount(this.save.lab),
+      setMute: (mute) => change(() => (this.save.settings.mute = mute)),
+      setReduceMotion: (value) => change(() => (this.save.settings.reduceMotion = value)),
+      setVibration: (on) =>
+        change(() => {
+          this.save.settings.vibration = on;
+          this.haptics.play('move');
+        }),
+      resetProgress: () => change(() => (this.save = resetProgress(this.save))),
+      back: () => this.tap(() => this.show('map')),
+      openLab: () => this.tap(() => this.show('lab')),
     });
+    el('settings').replaceChildren(screen.root);
+    // Coming back from the lab, keyboard focus returns to the row that led there.
+    if (this.fromLab) screen.entry.focus();
+    this.fromLab = false;
   }
 
-  private afterSetting(): void {
-    this.persist();
-    this.applySettings();
-    this.sfx.play('tap');
-    this.drawSettings();
+  /** The test lab, on a screen of its own behind the entry at the bottom of the settings. */
+  private drawLab(): void {
+    const screen = labScreen(this.save.lab, {
+      boards: TEST_BOARDS.map((b) => `${b.board.width}×${b.board.height}`),
+      openBoard: (index) => this.tap(() => this.startPreview(index)),
+      onChange: (lab) => {
+        this.save.lab = lab;
+        this.persist();
+        this.applySettings();
+        this.sfx.play('tap');
+      },
+      back: () =>
+        this.tap(() => {
+          this.fromLab = true;
+          this.show('settings');
+        }),
+    });
+    el('lab').replaceChildren(screen.root);
+    screen.back.focus();
   }
 
   // ----------------------------------------------------------------- level
@@ -285,19 +337,22 @@ class Game {
           return;
         }
         this.busy = false;
-        this.hud.showCard({
-          title: 'Not proven solvable',
-          text: result.kind === 'unsolvable' ? 'With the single-file exit rule this level has no solution in a fair number of moves.' : 'The check for the single-file exit rule could not finish for this level.',
-          stars: 0,
-          primary: { label: 'Levels', action: () => this.show('map') },
-          secondary: {
-            label: 'Play anyway',
-            action: () => {
-              this.hud.hideCard();
-              this.setHint('Test rule: this level is not proven solvable', true);
+        this.hud.showCard(
+          {
+            kind: 'info',
+            title: 'Not proven solvable',
+            text: result.kind === 'unsolvable' ? 'With the single-file exit rule this level has no solution in a fair number of moves.' : 'The check for the single-file exit rule could not finish for this level.',
+            levels: () => this.tap(() => this.show('map')),
+            second: {
+              label: 'Play anyway',
+              action: () => {
+                this.hud.hideCard();
+                this.setHint('Test rule: this level is not proven solvable', true);
+              },
             },
           },
-        });
+          !this.reduced,
+        );
       });
   }
 
@@ -346,6 +401,9 @@ class Game {
   private refresh(): void {
     const colors = new Set<Color>(this.level.start.robots.map((r) => r.color));
     const status = this.session.status;
+    const price = hintPrice(this.save.lab.freeHelp);
+    const revealed = this.scanResult?.kind === 'on-route' && this.nudge !== null;
+    this.counters.set(this.save.coins);
     this.hud.update({
       levelNumber: this.levelIndex + 1,
       levelLabel: this.preview ? 'TEST' : undefined,
@@ -361,7 +419,8 @@ class Game {
       nudge: this.nudge ?? (this.levelIndex === 0 && !this.touched ? 'forward' : null),
       hint: this.hint,
       hintWarn: this.hintWarn,
-      hintLabel: this.scanResult?.kind === 'on-route' && this.nudge === null && hintPrice(this.save.lab.freeHelp) > 0 ? String(hintPrice(this.save.lab.freeHelp)) : '',
+      hintCost: price,
+      hintState: revealed ? 'used' : price === 0 ? 'free' : this.save.coins < price ? 'short' : 'ok',
     });
   }
 
@@ -373,6 +432,7 @@ class Game {
     this.clearScan();
     this.refresh();
     this.track({ type: 'command', level: this.level.id, command });
+    this.haptics.play('move');
     this.playSounds(command, result.events.map((e) => e.outcome));
     const generation = this.generation;
     this.pending++;
@@ -402,7 +462,16 @@ class Game {
   private onWin(): void {
     if (this.preview) {
       this.view.celebrate();
-      this.hud.showCard({ title: 'Test board cleared', text: 'This board only shows how the board scales. Nothing was saved.', stars: 0, primary: { label: 'Levels', action: () => this.tap(() => this.show('map')) }, secondary: { label: 'Again', action: () => this.tap(() => this.startPreview(this.previewIndex)) } });
+      this.hud.showCard(
+        {
+          kind: 'info',
+          title: 'Test board cleared',
+          text: 'This board only shows how the board scales. Nothing was saved.',
+          levels: () => this.tap(() => this.show('map')),
+          second: { label: 'Again', action: () => this.tap(() => this.startPreview(this.previewIndex)) },
+        },
+        !this.reduced,
+      );
       return;
     }
     const id = this.level.id;
@@ -414,11 +483,12 @@ class Game {
     const earned = payout(reward.total, this.save.paid[id]);
     this.save.paid[id] = Math.max(this.save.paid[id] ?? 0, reward.total);
     this.save.coins += earned;
-    this.earnedNow = earned;
+    this.lastReward = { reward, spare: Math.max(0, this.session.budget - moves), earned, balance: this.save.coins, helped: this.usedBackup || this.usedHint };
     if (earned > 0) this.track({ type: 'coins_earned', level: id, amount: earned, balance: this.save.coins });
     this.persist();
     this.track({ type: 'level_win', level: id, moves, par: this.par, stars, usedBackup: this.usedBackup });
     this.sfx.play('win');
+    this.haptics.play('win');
     this.view.celebrate();
     this.refresh();
     const generation = this.generation;
@@ -427,16 +497,24 @@ class Game {
     });
   }
 
-  private showWin(moves: number, stars: number): void {
-    const last = this.levelIndex === LEVELS.length - 1;
-    this.hud.showCard({
-      title: 'All home',
-      text: `${moves} moves${stars === 3 ? ' · perfect' : ''}${this.usedBackup ? ' · with extra moves' : ''}`,
-      stars,
-      coins: this.earnedNow > 0 ? `+${this.earnedNow} · ${this.save.coins} in total` : `Best reward already paid · ${this.save.coins} in total`,
-      primary: last ? { label: 'Levels', action: () => this.tap(() => this.show('map')) } : { label: 'Next', action: () => this.tap(() => this.startLevel(this.levelIndex + 1)) },
-      secondary: { label: 'Replay', action: () => void this.replay() },
-    });
+  private showWin(moves: number, stars: 1 | 2 | 3): void {
+    if (!this.lastReward) return;
+    this.hud.showCard(
+      {
+        kind: 'win',
+        level: `Level ${this.levelIndex + 1} · ${this.level.name}`,
+        stars,
+        moves,
+        par: this.par,
+        backup: this.usedBackup,
+        last: this.levelIndex === LEVELS.length - 1,
+        reward: this.lastReward,
+        next: () => this.tap(() => this.startLevel(this.levelIndex + 1)),
+        replay: () => void this.replay(),
+        levels: () => this.tap(() => this.show('map')),
+      },
+      !this.reduced,
+    );
   }
 
   /**
@@ -459,34 +537,37 @@ class Game {
     const offer = rescue.kind === 'rescuable';
     const price = extraMovesPrice(this.save.lab.freeHelp);
     const afford = this.save.coins >= price;
-    this.hud.showCard({
-      title: 'Out of moves',
-      text: `${this.session.total - this.session.collected} still on the board`,
-      stars: 0,
-      primary: { label: 'Retry', action: () => this.restart() },
-      secondary: { label: 'Undo', action: () => this.undo() },
-      extra: offer
-        ? { label: price > 0 ? `+${CONFIG.extraMoves} moves · ${price} coins` : `+${CONFIG.extraMoves} moves`, action: () => this.useBackup(), disabled: !afford, icon: true }
-        : {
-            label: 'Hint',
-            action: () => {
-              this.hud.hideCard();
-              void this.scan();
-            },
-          },
-      note: offer
-        ? afford
-          ? `Checked: this position can be solved with them. You have ${this.save.coins} coins.`
-          : `Checked: this position can be solved with them, but you have ${this.save.coins} coins.`
-        : rescue.kind === 'hopeless'
-          ? 'Extra moves would not solve this position, so they are not offered.'
-          : 'Could not check whether extra moves would help, so they are not offered.',
-    });
+    const left = this.session.state.robots.filter((r) => !r.collected).map((r) => r.color);
+    const hint = (): void => {
+      this.hud.hideCard();
+      void this.scan();
+    };
+    this.hud.showCard(
+      {
+        kind: 'lost',
+        left,
+        offer: offer ? { price, state: price === 0 ? 'free' : afford ? 'ok' : 'short', coins: this.save.coins, take: () => this.useBackup() } : undefined,
+        note: offer
+          ? undefined
+          : rescue.kind === 'hopeless'
+            ? 'Extra moves would not solve it from here, so there is no offer. Undo a step or start again: both are free.'
+            : 'We could not check in time whether extra moves would help, so there is no offer. Undo and Retry are free.',
+        undo: () => this.undo(),
+        retry: () => this.restart(),
+        hint: offer ? undefined : hint,
+      },
+      !this.reduced,
+    );
   }
 
   private useBackup(): void {
     const price = extraMovesPrice(this.save.lab.freeHelp);
-    if (this.save.coins < price) return;
+    if (this.save.coins < price) {
+      // The offer stays tappable when it is too expensive; the counter answers.
+      this.counters.short();
+      this.sfx.play('bump');
+      return;
+    }
     this.save.coins -= price;
     this.persist();
     if (price > 0) this.track({ type: 'coins_spent', level: this.level.id, amount: price, on: 'extra_moves', balance: this.save.coins });
@@ -541,7 +622,8 @@ class Game {
         // Revealing the move is the paid step; the status before it is free.
         const price = hintPrice(this.save.lab.freeHelp);
         if (this.save.coins < price) {
-          this.setHint(`The next move costs ${price} coins. You have ${this.save.coins}.`, true);
+          this.counters.short();
+          this.setHint(`That costs ${price} coins. You have ${this.save.coins}.`, true);
           return;
         }
         this.save.coins -= price;

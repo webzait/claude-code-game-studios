@@ -1,9 +1,7 @@
 import { CONFIG } from '../config';
 import { COMMANDS, type Color, type Command } from '../engine/types';
-
-/** Five-point star used on the result card and the map. */
-export const STAR =
-  '<svg viewBox="0 0 24 24"><path d="M12 2.6l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17l-5.7 3.1 1.2-6.4L2.8 9.3l6.4-.8z" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+import { mountHintButton, setHintPrice, type PriceState } from './coins';
+import { END_DEFS, renderEndCard, type EndCard } from './endCard';
 
 /** What the level HUD needs to draw one frame of status. */
 export interface HudModel {
@@ -23,8 +21,10 @@ export interface HudModel {
   nudge: Command | null;
   hint: string;
   hintWarn: boolean;
-  /** Text on the hint button, e.g. "Hint" or "Hint · 10". */
-  hintLabel: string;
+  /** Price of the next move, shown on the Hint button before it is tapped. */
+  hintCost: number;
+  /** Whether that price can be paid, is waived, or the move is already revealed. */
+  hintState: PriceState;
 }
 
 /** Callbacks from the level HUD to the game. */
@@ -37,12 +37,6 @@ export interface HudHandlers {
   back(): void;
 }
 
-/** One button on the result card. */
-export interface CardButton {
-  label: string;
-  action: () => void;
-}
-
 /** Look up an element that the page is known to contain. */
 export const el = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 
@@ -52,6 +46,8 @@ export class Hud {
   private lastCollected = -1;
 
   constructor(handlers: HudHandlers, isLevelOpen: () => boolean) {
+    mountHintButton(el<HTMLButtonElement>('scan'));
+    el('card').insertAdjacentHTML('afterbegin', END_DEFS);
     for (const button of Array.from(document.querySelectorAll<HTMLButtonElement>('.cmd'))) {
       const command = button.dataset.cmd as Command;
       // pointerdown, not click: the game answers on touch, not on release.
@@ -101,8 +97,9 @@ export class Hud {
     el<HTMLButtonElement>('undo').disabled = !m.canUndo;
     el<HTMLButtonElement>('restart').disabled = !m.canUndo;
     el<HTMLButtonElement>('replay').disabled = !m.canReplay;
-    el<HTMLButtonElement>('scan').disabled = !m.canScan;
-    el('hintLabel').textContent = m.hintLabel;
+    const scan = el<HTMLButtonElement>('scan');
+    setHintPrice(scan, m.hintCost, m.hintState);
+    scan.disabled = !m.canScan || m.hintState === 'used';
     const hint = el('hint');
     hint.textContent = m.hint;
     hint.classList.toggle('warn', m.hintWarn);
@@ -121,44 +118,21 @@ export class Hud {
     window.setTimeout(() => button.classList.remove('pressed'), 140);
   }
 
-  /** Show the result card. `stars` 0 hides the star row. */
-  showCard(opts: {
-    title: string;
-    text: string;
-    stars: number;
-    primary: CardButton;
-    secondary: CardButton;
-    extra?: CardButton & { disabled?: boolean; icon?: boolean };
-    note?: string;
-    coins?: string;
-  }): void {
-    el('cardTitle').textContent = opts.title;
-    el('cardText').textContent = opts.text;
-    el('stars').innerHTML = opts.stars > 0 ? [1, 2, 3].map((i) => STAR.replace('<svg', `<svg class="${i <= opts.stars ? 'on' : ''}"`)).join('') : '';
-    const bind = (id: string, button: CardButton | undefined): void => {
-      const node = el<HTMLButtonElement>(id);
-      node.hidden = !button;
-      node.textContent = button?.label ?? '';
-      node.onclick = button?.action ?? null;
-    };
-    bind('cardPrimary', opts.primary);
-    bind('cardSecondary', opts.secondary);
-    const extra = el<HTMLButtonElement>('cardExtra');
-    extra.hidden = !opts.extra;
-    extra.onclick = opts.extra?.action ?? null;
-    el('cardExtraLabel').textContent = opts.extra?.label ?? '';
-    el('cardExtraIcon').hidden = opts.extra?.icon !== true;
-    el<HTMLButtonElement>('cardExtra').disabled = opts.extra?.disabled === true;
-    el('cardCoins').hidden = !opts.coins;
-    el('cardCoinsText').textContent = opts.coins ?? '';
-    const note = el('cardNote');
-    note.hidden = !opts.note;
-    note.textContent = opts.note ?? '';
-    el('card').hidden = false;
+  /** Show the end-of-round pop-up. `animate` false shows its end state at once (reduced motion). */
+  showCard(card: EndCard, animate: boolean): void {
+    const host = el('card');
+    renderEndCard(el('cardBody'), card, animate);
+    host.hidden = false;
+    host.classList.remove('tf-end-play');
+    if (animate) {
+      void host.offsetWidth;
+      host.classList.add('tf-end-play');
+    }
   }
 
   /** Hide the result card. */
   hideCard(): void {
     el('card').hidden = true;
+    el('cardBody').innerHTML = '';
   }
 }

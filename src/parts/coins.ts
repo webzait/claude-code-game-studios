@@ -9,7 +9,7 @@ import extraMovesImage from '../../assets/turnflock/ui/extra-moves.webp';
  * The coin controls on the parts sheet: counter, plus button, price tags,
  * reward display and the coin icon at small sizes. Plain HTML and CSS in the
  * same family as the buttons (`tf-btn`); every number and label is real text.
- * Nothing here is wired into the playable game yet.
+ * The game uses the same styles (src/ui/tf-coins.css) with its own English markup (src/ui/coins.ts).
  */
 
 const C = parts.coins;
