@@ -1,0 +1,129 @@
+{
+  "meadow": {
+    "title": "Meadow",
+    "bpm": 88,
+    "bars": 24,
+    "notes": 374,
+    "renderMs": 774,
+    "memoryMB": 12.6,
+    "seconds": 65.455,
+    "peak": 0.5126,
+    "rms": 0.1,
+    "dcOffset": -0.000032,
+    "largestStep": 0.10372,
+    "seamStep": 0.00198,
+    "loudestSecond": 0.1379,
+    "quietestSecond": 0.0632,
+    "energyBelow150Hz": 0.1252,
+    "energyAbove4kHz": 0.000029,
+    "inGame": {
+      "volume": 0.5,
+      "peak": 0.256,
+      "rms": 0.05
+    },
+    "voices": [
+      {
+        "instrument": "marimba",
+        "relative": "0.0 dB"
+      },
+      {
+        "instrument": "bass",
+        "relative": "-6.5 dB"
+      },
+      {
+        "instrument": "pad",
+        "relative": "-9.6 dB"
+      },
+      {
+        "instrument": "kalimba",
+        "relative": "-4.3 dB"
+      }
+    ]
+  },
+  "drift": {
+    "title": "Drift",
+    "bpm": 66,
+    "bars": 16,
+    "notes": 194,
+    "renderMs": 565,
+    "memoryMB": 11.2,
+    "seconds": 58.182,
+    "peak": 0.7242,
+    "rms": 0.1,
+    "dcOffset": -0.000017,
+    "largestStep": 0.09036,
+    "seamStep": 0.00172,
+    "loudestSecond": 0.1579,
+    "quietestSecond": 0.0463,
+    "energyBelow150Hz": 0.1431,
+    "energyAbove4kHz": 0.000013,
+    "inGame": {
+      "volume": 0.5,
+      "peak": 0.362,
+      "rms": 0.05
+    },
+    "voices": [
+      {
+        "instrument": "keys",
+        "relative": "0.0 dB"
+      },
+      {
+        "instrument": "pad",
+        "relative": "-5.0 dB"
+      },
+      {
+        "instrument": "bass",
+        "relative": "-8.9 dB"
+      },
+      {
+        "instrument": "bell",
+        "relative": "-6.7 dB"
+      }
+    ]
+  },
+  "stroll": {
+    "title": "Stroll",
+    "bpm": 100,
+    "bars": 24,
+    "notes": 528,
+    "renderMs": 345,
+    "memoryMB": 11.1,
+    "seconds": 57.6,
+    "peak": 0.8345,
+    "rms": 0.1,
+    "dcOffset": -0.000105,
+    "largestStep": 0.16699,
+    "seamStep": 0.00094,
+    "loudestSecond": 0.128,
+    "quietestSecond": 0.0426,
+    "energyBelow150Hz": 0.1711,
+    "energyAbove4kHz": 0.001009,
+    "inGame": {
+      "volume": 0.5,
+      "peak": 0.417,
+      "rms": 0.05
+    },
+    "voices": [
+      {
+        "instrument": "pluck",
+        "relative": "0.0 dB"
+      },
+      {
+        "instrument": "bass",
+        "relative": "-1.4 dB"
+      },
+      {
+        "instrument": "shaker",
+        "relative": "-24.7 dB"
+      },
+      {
+        "instrument": "marimba",
+        "relative": "-7.6 dB"
+      },
+      {
+        "instrument": "kalimba",
+        "relative": "-0.2 dB"
+      }
+    ]
+  }
+}

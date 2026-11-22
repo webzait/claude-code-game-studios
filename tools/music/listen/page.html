@@ -1,0 +1,93 @@
+<title>Turnflock muziekproef</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;900&display=swap">
+<style>
+  /* Layout: one narrow column, a card per variant with its own play button; the shared controls sit under the cards. */
+  :root {
+    --sky: #dcebfa;
+    --card: #f7faff;
+    --ink: #22305c;
+    --soft: #5a6890;
+    --line: #b9c7f0;
+    --blue: #2675e8;
+    --blue-deep: #0f5bdb;
+    --green: #1f9d54;
+    --on-accent: #ffffff;
+    --track: #d7e1f0;
+    --font: "Nunito", ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --sky: #141b33; --card: #1e2847; --ink: #e8eeff; --soft: #a3b0d6; --line: #3a4878; --blue: #5e9bff; --blue-deep: #8db8ff; --green: #5fd692; --on-accent: #0c1430; --track: #2c3862; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --sky: #141b33; --card: #1e2847; --ink: #e8eeff; --soft: #a3b0d6; --line: #3a4878; --blue: #5e9bff; --blue-deep: #8db8ff; --green: #5fd692; --on-accent: #0c1430; --track: #2c3862; color-scheme: dark; }
+
+  body { background: var(--sky); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.5; font-weight: 500; }
+  .page { max-width: 34rem; margin: 0 auto; padding-block: 1.5rem 3rem; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 1.25rem; }
+  h1 { font-size: 1.7rem; font-weight: 900; line-height: 1.15; margin: 0; text-wrap: balance; }
+  h2 { font-size: 1.25rem; font-weight: 900; margin: 0; }
+  h3 { font-size: 0.8rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: var(--soft); margin: 0; }
+  p { margin: 0; }
+  .lead { color: var(--soft); }
+  .cards { display: flex; flex-direction: column; gap: 0.9rem; }
+  .card { background: var(--card); border: 2px solid var(--line); border-radius: 18px; padding: 1rem; display: flex; flex-direction: column; gap: 0.7rem; }
+  .card.on { border-color: var(--blue); }
+  .head { display: flex; align-items: center; gap: 0.9rem; }
+  .head > div { min-width: 0; flex: 1; }
+  .facts { color: var(--soft); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+  button { font: inherit; font-weight: 900; color: inherit; cursor: pointer; }
+  button:focus-visible, input:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+  .play { flex: none; width: 3.6rem; height: 3.6rem; border-radius: 50%; border: 0; background: var(--blue); color: var(--on-accent); display: grid; place-items: center; }
+  .play svg { width: 1.6rem; height: 1.6rem; fill: currentColor; }
+  .play[disabled] { opacity: 0.55; cursor: progress; }
+  .bar { height: 0.6rem; border-radius: 1rem; background: var(--track); overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--blue); border-radius: 1rem; }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; justify-content: space-between; }
+  .time { font-variant-numeric: tabular-nums; color: var(--soft); font-size: 0.9rem; }
+  .chip { border: 2px solid var(--line); background: transparent; border-radius: 2rem; padding: 0.35rem 0.9rem; font-size: 0.9rem; }
+  .chip:active { background: var(--track); }
+  .panel { display: flex; flex-direction: column; gap: 0.7rem; }
+  .volume { display: flex; align-items: center; gap: 0.8rem; }
+  .volume input { flex: 1; min-width: 0; accent-color: var(--blue); }
+  .volume output { font-variant-numeric: tabular-nums; font-weight: 900; min-width: 2.6rem; text-align: right; }
+  .chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .note { color: var(--soft); font-size: 0.92rem; }
+  ul { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.3rem; }
+  .ok { color: var(--green); font-weight: 900; }
+  #status { min-height: 1.5em; color: var(--soft); }
+</style>
+
+<main class="page">
+  <header class="panel">
+    <h1>Welke muziek past bij Turnflock?</h1>
+    <p class="lead">Drie eigen stukken, in code gemaakt. Tik op een afspeelknop om te luisteren; een ander stuk starten stopt het vorige. Elk stuk herhaalt zich eindeloos, precies zoals in het spel.</p>
+    <p id="status" role="status"></p>
+  </header>
+
+  <section class="cards" id="cards" aria-label="De drie varianten"></section>
+
+  <section class="panel" aria-labelledby="vol-title">
+    <h3 id="vol-title">Volume zoals in het spel</h3>
+    <div class="volume">
+      <input type="range" id="volume" min="0" max="1" step="0.05" aria-labelledby="vol-title">
+      <output id="volume-out" for="volume"></output>
+    </div>
+    <p class="note">Dit getal is <code>music.volume</code> in de instellingen van het spel. Vind je een andere stand prettiger, geef het getal door.</p>
+  </section>
+
+  <section class="panel" aria-labelledby="fx-title">
+    <h3 id="fx-title">Geluidseffecten erbovenop</h3>
+    <p class="note">De geluidjes van het spel, op hun eigen volume. Tik erop terwijl de muziek speelt om te horen of ze goed samengaan.</p>
+    <div class="chips" id="effects"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="meas-title">
+    <h3 id="meas-title">Wat gemeten is, en wat niet</h3>
+    <ul class="note">
+      <li><span class="ok">Gemeten:</span> geen tik op het herhaalpunt, geen oversturing, de juiste lengte, geen stille gaten, en dezelfde toonsoort als de geluidseffecten.</li>
+      <li><strong>Niet te meten:</strong> of het mooi, rustig en vrolijk klinkt. Dat oordeel is aan jou. De maker kan zelf geen geluid horen.</li>
+    </ul>
+    <p class="note">Tip: luister ook een paar minuten met het geluid zacht, en één keer via de luidspreker van je telefoon. De knop “Naar het herhaalpunt” springt naar tien tellen voor het einde, zodat je de overgang hoort.</p>
+  </section>
+</main>
+
+<script>/*SCRIPT*/</script>

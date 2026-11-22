@@ -142,6 +142,19 @@
     "rapid": { "minGap": 0.03, "softWindow": 0.12, "softGain": 0.7, "fadeOut": 0.012 },
     "limits": { "pressSeconds": 0.33, "motionSeconds": 0.13, "denySeconds": 0.21, "onsetMs": 8, "peak": 0.2, "busyPeak": 0.7 }
   },
+  "music": {
+    "variant": "meadow",
+    "volume": 0.5,
+    "tempo": { "meadow": 88, "drift": 66, "stroll": 100 },
+    "level": 0.1,
+    "peakLimit": 0.9,
+    "sampleRate": 24000,
+    "fadeIn": 1.5,
+    "fadeOut": 0.4,
+    "screens": ["map", "level", "settings", "lab"],
+    "renderSliceMs": 6,
+    "backgroundPauseMs": 150
+  },
   "colourShapes": {
     "red": "circle",
     "blue": "square",

@@ -6,7 +6,7 @@ import './ui/tf-end.css';
 import './ui/tf-settings.css';
 import './ui/tf-scene.css';
 import './ui/tf-shop.css';
-import { Sfx, type PlayedSound } from './audio';
+import { AudioHub, Sfx, type PlayedSound } from './audio';
 import { movePlan, soundSet } from './sound/sets';
 import { CONFIG } from './config';
 import type { Color, Command, Robot, RobotEvent } from './engine/types';
@@ -19,6 +19,8 @@ import { isUnlocked, mainAction, starsFor, starsOfBest } from './game/progress';
 import { ECONOMY_VERSION, loadSave, resetProgress, writeSave, type KeyValueStore, type SaveData } from './game/save';
 import { Session } from './game/session';
 import { configuredPacks, plusOpens, receiptLine, SimulatedProvider, walletAfter, type CoinPack, type PurchaseProvider } from './game/shop';
+import { renderInBackground } from './music/background';
+import { MusicController, WebAudioMusic } from './music/player';
 import { LEVELS, TEST_BOARDS, type GameLevel } from './levels/index';
 import { BoardView } from './render/boardView';
 import { loadKit } from './render/kit';
@@ -70,6 +72,8 @@ export interface Snapshot {
   sounds: PlayedSound[];
   /** The loudest sample leaving the game at this moment (0–1). */
   soundPeak: number;
+  /** Music: the variant that should be heard (null: none), whether a source is sounding, and the audio context's state. */
+  music: { playing: string | null; sounding: boolean; context: string };
 }
 
 declare global {
@@ -105,7 +109,11 @@ class Game {
   private store = storage();
   private save: SaveData = settled(loadSave(this.store, LEVEL_IDS));
   private metrics = new MemorySink();
-  private sfx = new Sfx(() => this.save.settings.mute, () => this.save.lab.soundSet);
+  /** One audio context for effects and music. */
+  private audio = new AudioHub();
+  private sfx = new Sfx(() => this.save.settings.mute, () => this.save.lab.soundSet, this.audio);
+  private musicOut = new WebAudioMusic(this.audio, renderInBackground);
+  private music = new MusicController(this.musicOut, CONFIG.music.screens, { enabled: this.save.settings.music, variant: this.save.lab.music, screen: 'map', visible: !document.hidden });
   private solver = new SolverClient();
   private view = new BoardView(el<HTMLCanvasElement>('board'));
   private hud: Hud;
@@ -208,6 +216,7 @@ class Game {
       const art: Record<string, string> = { 'decor-large': decorLarge, 'decor-small': decorSmall, 'decor-clover': decorClover, 'decor-sprig': decorSprig };
       img.src = art[img.dataset.art ?? ''] ?? '';
     }
+    this.listenForSound();
     this.applySettings();
     setupLogo(el('map'), CONFIG.logo, { reducedMotion: this.reduced });
     this.show('map');
@@ -225,6 +234,28 @@ class Game {
         // The built-in shapes stay in use; nothing else depends on the kit.
         this.kitReady = false;
       });
+  }
+
+  /**
+   * Music may start at the player's first touch or key (browsers allow no sound before it), and all
+   * sound stops while the page is in the background.
+   */
+  private listenForSound(): void {
+    const touched = (): void => {
+      this.music.unlock();
+      // Some phones only accept the release of a touch, not its start: try again on each until sound runs.
+      if (!document.hidden && this.music.playing) this.audio.resume();
+    };
+    for (const type of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'] as const) window.addEventListener(type, touched, { capture: true, passive: true });
+    const seen = (visible: boolean): void => {
+      this.music.set({ visible });
+      if (visible) this.audio.resume();
+      // The short fade-out gets its moment before the audio work is paused.
+      else setTimeout(() => document.hidden && this.audio.suspend(), CONFIG.music.backgroundPauseMs);
+    };
+    document.addEventListener('visibilitychange', () => seen(!document.hidden));
+    window.addEventListener('pagehide', () => seen(false));
+    window.addEventListener('pageshow', () => seen(!document.hidden));
   }
 
   private tap(action: () => void): void {
@@ -307,6 +338,7 @@ class Game {
     this.view.setStyle({ kitRobots: this.save.lab.robots === 'kit', kitBoard: this.save.lab.boardPieces === 'kit', heading: this.save.lab.heading });
     document.documentElement.classList.toggle('no-decor', !this.save.lab.decor);
     this.counters.setPlusLabel(plusOpens(this.save.lab) === 'shop' ? 'Get coins, test shop' : 'About coins');
+    this.music.set({ enabled: this.save.settings.music, variant: this.save.lab.music });
     applyColourShapes(this.save.settings.colourShapes);
     this.view.setColourShapes(this.save.settings.colourShapes);
   }
@@ -319,6 +351,7 @@ class Game {
     this.replaying = false;
     this.busy = false;
     this.screen = screen;
+    this.music.set({ screen });
     for (const name of ['map', 'level', 'settings', 'lab'] as const) el(name).hidden = name !== screen;
     this.hud.hideCard();
     this.closeCoinInfo();
@@ -412,6 +445,8 @@ class Game {
       reduceMotion: this.save.settings.reduceMotion,
       labChanged: labChangedCount(this.save.lab),
       setMute: (mute) => change(() => (this.save.settings.mute = mute)),
+      music: this.save.settings.music,
+      setMusic: (on) => change(() => (this.save.settings.music = on)),
       setReduceMotion: (value) => change(() => (this.save.settings.reduceMotion = value)),
       colourShapes: this.save.settings.colourShapes,
       setColourShapes: (on) => change(() => (this.save.settings.colourShapes = on)),
@@ -913,6 +948,7 @@ class Game {
       ledger: [...this.save.ledger.entries],
       sounds: [...this.sfx.played],
       soundPeak: this.sfx.peak(),
+      music: { playing: this.music.playing, sounding: this.musicOut.sounding, context: this.audio.state },
     };
   }
 }

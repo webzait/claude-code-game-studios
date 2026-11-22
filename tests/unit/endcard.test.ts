@@ -92,7 +92,8 @@ describe('win pop-up: the one amount shown is the real payout', () => {
     const inGame = page.slice(page.indexOf('id="restart"'), page.indexOf('</button>', page.indexOf('id="restart"')));
     const html = winMarkup(winCard(PAR, undefined).card, false);
     const popup = html.slice(html.indexOf('id="end-retry"'), html.indexOf('</button>', html.indexOf('id="end-retry"')));
-    const shapes = (svg: string): string[] => [...svg.matchAll(/ d="([^"]+)"/g)].map((m) => m[1]).sort();
+    // The same outlines; a drawn shadow repeats them and does not make it another symbol.
+    const shapes = (svg: string): string[] => [...new Set([...svg.matchAll(/ d="([^"]+)"/g)].map((m) => m[1]))].sort();
     expect(shapes(popup).length).toBeGreaterThan(0);
     expect(shapes(popup)).toEqual(shapes(inGame));
   });

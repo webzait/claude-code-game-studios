@@ -1,5 +1,6 @@
 import { CONFIG } from '../config';
 import { DEFAULT_LAB, usesCertifiedRules, type LabSettings } from '../game/lab';
+import { MUSIC_VARIANTS, scoreOf } from '../music/tracks';
 import parts from '../../data/parts.json';
 import { SHAPE_COLOURS, shapeOf, shapesInWords, shapeSvg } from './colourShapes';
 import pkg from '../../package.json';
@@ -331,6 +332,11 @@ export function labContent(start: Partial<LabSettings>, hooks: LabHooks = {}): {
     choice('soundSet', 'Button sounds', (v) => soundSet(v).blurb, soundSetIds().map((id) => ({ label: soundSet(id).name, value: id }))),
   );
 
+  const music = panel('Music');
+  music.body.append(
+    choice('music', 'Background music', (v) => scoreOf(v).mood, MUSIC_VARIANTS.map((value) => ({ label: scoreOf(value).title, value }))),
+  );
+
   const sizes = panel('Board size test');
   const sizeRow = row('Open a test board', 'Not a level; nothing is saved.', { stack: true });
   const sizeButtons = h(`<div class="tf-set-quad" role="group" aria-labelledby="${sizeRow.titleId}"></div>`);
@@ -350,7 +356,7 @@ export function labContent(start: Partial<LabSettings>, hooks: LabHooks = {}): {
     status.focus();
   });
   refresh();
-  return { groups: [rules.panel, look.panel, sound.panel, shortcuts.panel, shop.panel, ...(hooks.panels ?? []), sizes.panel], bar, count, onCount: (fn) => listeners.push(fn) };
+  return { groups: [rules.panel, look.panel, sound.panel, music.panel, shortcuts.panel, shop.panel, ...(hooks.panels ?? []), sizes.panel], bar, count, onCount: (fn) => listeners.push(fn) };
 }
 
 /** One screen: a fixed top bar with a back button and a title, and a list that scrolls under it. */
@@ -365,6 +371,8 @@ export function screenShell(title: string, backName: string, chipHtml = ''): { r
 /** What the game's settings screen shows and what it can change. */
 export interface PlayerSettingsModel {
   readonly mute: boolean;
+  /** Background music on; separate from the sound effects. */
+  readonly music: boolean;
   /** null follows the device. */
   readonly reduceMotion: boolean | null;
   /** A shape on each robot colour and its button. */
@@ -372,6 +380,7 @@ export interface PlayerSettingsModel {
   /** How many test lab values differ from the certified game. */
   readonly labChanged: number;
   setMute(mute: boolean): void;
+  setMusic(on: boolean): void;
   setReduceMotion(value: boolean | null): void;
   setColourShapes(on: boolean): void;
   resetProgress(): void;
@@ -396,7 +405,7 @@ export function playerScreen(m: PlayerSettingsModel): { root: HTMLElement; back:
     r.row.appendChild(toggle(r.titleId, on, set, r.hintId));
     return r.row;
   };
-  game.body.append(flag('sound', 'Sound', 'Game sounds.', !m.mute, (on) => m.setMute(!on)));
+  game.body.append(flag('sound', 'Sound', 'Game sounds.', !m.mute, (on) => m.setMute(!on)), flag('music', 'Music', 'Background music.', m.music, (on) => m.setMusic(on)));
   const motion = row('Reduce motion', 'Calmer animations. Auto follows this device.', { stack: true });
   motion.row.dataset.key = 'reduceMotion';
   motion.row.appendChild(

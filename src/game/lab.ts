@@ -2,6 +2,7 @@ import { CONFIG } from '../config';
 import type { Color, Command, Rules } from '../engine/types';
 import type { GameLevel } from '../levels/index';
 import type { HeadingStyle } from '../render/heading';
+import { DEFAULT_VARIANT, type MusicVariant } from '../music/tracks';
 import type { PurchaseOutcome } from './shop';
 
 /**
@@ -42,6 +43,8 @@ export interface LabSettings {
   purchaseOutcome: PurchaseOutcome;
   /** The sound set in use (`data/sound-sets.json`), so the sets can be compared while playing. */
   soundSet: string;
+  /** Which background music plays, to compare the variants in the game itself. The default is `music.variant` in the config. */
+  music: MusicVariant;
 }
 
 /**
@@ -65,6 +68,7 @@ export const DEFAULT_LAB: LabSettings = {
   shop: true,
   purchaseOutcome: 'success',
   soundSet: CONFIG.audio.set,
+  music: DEFAULT_VARIANT,
 };
 
 /**
