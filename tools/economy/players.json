@@ -1,0 +1,32 @@
+[
+  {
+    "id": "frugal",
+    "name": "Zuinige speler",
+    "about": "Speelt gemiddeld goed en gebruikt nooit betaalde hulp: bij een fout tikt hij Restart.",
+    "perfect": [0.7, 0.15], "undos": [0, 0], "hints": [0, 0], "extraMoves": [0, 0]
+  },
+  {
+    "id": "expert",
+    "name": "Puzzelaar",
+    "about": "Vindt bijna altijd de kortste oplossing en neemt hooguit een enkele Undo.",
+    "perfect": [0.95, 0.55], "undos": [0, 2], "hints": [0, 0.1], "extraMoves": [0, 0]
+  },
+  {
+    "id": "average",
+    "name": "Gewone speler",
+    "about": "Vindt de kortste oplossing op makkelijke levels meestal en op zware zelden; neemt een paar Undo's, soms een hint, af en toe +3 moves.",
+    "perfect": [0.7, 0.15], "undos": [0.5, 5], "hints": [0, 0.8], "extraMoves": [0, 0.25]
+  },
+  {
+    "id": "struggler",
+    "name": "Speler met moeite",
+    "about": "Heeft op zware levels veel hulp nodig: veel Undo's, een of twee hints, om het andere zware level +3 moves.",
+    "perfect": [0.5, 0.05], "undos": [1, 8], "hints": [0, 2], "extraMoves": [0, 0.5]
+  },
+  {
+    "id": "tapper",
+    "name": "Jonge tikker",
+    "about": "Tikt Undo zoals een kind dat doet: bij elke misstap, zonder op de prijs te letten, en vraagt snel een hint.",
+    "perfect": [0.5, 0.05], "undos": [3, 12], "hints": [0.2, 2.5], "extraMoves": [0.05, 0.6]
+  }
+]
