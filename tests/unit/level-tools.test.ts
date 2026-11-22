@@ -188,15 +188,13 @@ describe('sieve (fast.ts) against the real engine', () => {
 });
 
 /**
- * A real defect found while measuring, reported here and NOT fixed (the engine and solver are
- * outside this task). `stateKey` writes a collected robot as "~" (character 126), which is also
- * the character of a robot standing on cell 19 and facing south (48 + 19 * 4 + 2). The solver
- * then takes two different positions for the same one and can drop the route to the win.
- *
- * `it.fails` passes while the defect exists and turns red the day it is fixed; remove `.fails` then.
+ * Regression: `stateKey` once wrote a collected robot as "~" (character 126), which is also the
+ * character of a robot standing on cell 19 and facing south (48 + 19 * 4 + 2). The solver then took
+ * two different positions for the same one and could drop the route to the win. Both tests were
+ * seen failing against that code before the key was changed.
  */
-describe('KNOWN DEFECT: stateKey collision (engine), reported not fixed', () => {
-  it.fails('gives different positions different keys', () => {
+describe('stateKey gives every position its own key', () => {
+  it('tells a collected robot from one on cell 19 facing south', () => {
     const level = board(['r> .. .. .. ..', '.. .. .. .. ..', '.. .. .. .. ..', '.. .. .. .. rv', '.. .. .. .. EX']);
     const [a, b] = level.start.robots;
     const gone: GameState = { movesUsed: 0, robots: [a, { ...b, collected: true }] };
@@ -204,12 +202,12 @@ describe('KNOWN DEFECT: stateKey collision (engine), reported not fixed', () => 
     expect(stateKey(level.start, level.board.width)).not.toBe(stateKey(gone, level.board.width));
   });
 
-  it.fails('the solver finds a nine-move win that exists', () => {
+  it('lets the solver find a nine-move win it used to miss', () => {
     const level = board(['EX .. .. .. ..', '.. .. .. r^ ..', '.. .. .. .. ..', '## b< .. .. ..']);
     const win: Command[] = ['blue', 'red', 'red', 'red', 'blue', 'blue', 'blue', 'red', 'blue'];
     // The nine moves really win, on the real engine...
     expect(isWon(run(level, win))).toBe(true);
-    // ...but the solver, given ten moves, reports that there is no solution at all.
+    // ...and the solver, given ten moves, finds it (it used to report no solution at all).
     expect(solve(level.board, level.start, 10).solution?.length).toBe(9);
   });
 });

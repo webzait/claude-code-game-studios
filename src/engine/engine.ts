@@ -170,7 +170,8 @@ export function step(
 export function stateKey(state: GameState, width: number): string {
   let key = '';
   for (const r of state.robots) {
-    key += r.collected ? '~' : String.fromCharCode(48 + (r.y * width + r.x) * 4 + r.dir);
+    // A robot on the board is 48 or higher, so "!" (33) can only ever mean "collected".
+    key += r.collected ? '!' : String.fromCharCode(48 + (r.y * width + r.x) * 4 + r.dir);
   }
   return key;
 }

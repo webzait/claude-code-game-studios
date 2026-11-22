@@ -42,8 +42,8 @@ groter dan nul, dan bestaat er geen kortste oplossing zonder zo'n zet.
    welk deel maakt het level onwinbaar. Dat loopt van 41 tot 68 procent en onderscheidt wel.
 2. **Draaien weegt zwaarder dan lopen.** Twee levels met dezelfde lengte voelen heel anders als het ene
    drie keer draait en het andere zeven keer. Het aantal kleurcommando's is daarom een eigen onderdeel van de score.
-3. **De solver heeft een fout** die tijdens het meten boven water kwam. Zie hoofdstuk 5; het raakt de manier
-   waarop levels worden bewezen.
+3. **De solver had een fout** die tijdens het meten boven water kwam (inmiddels gerepareerd). Zie hoofdstuk 5;
+   het raakte de manier waarop levels worden bewezen.
 
 ### De score (0 tot 10)
 
@@ -307,7 +307,7 @@ nu bij `id` in plaats van bij plek, zodat een andere volgorde ze niet meer breek
 rapport zet er ⚠ bij). Zijn lengte en oplossing zijn wél volledig bewezen; alleen de aandelen "dood" en
 "fatale zet" zijn daar ondergrenzen.
 
-### Gevonden fout in de engine: twee standen met dezelfde sleutel
+### Gevonden en gerepareerde fout in de engine: twee standen met dezelfde sleutel
 
 Tijdens het meten bleek dat `stateKey` in `src/engine/engine.ts` een opgenomen robot schrijft als het teken
 `~` (code 126). Een robot op vakje 19 die naar beneden kijkt, krijgt ook code 126 (48 + 19 × 4 + 2). De
@@ -324,11 +324,11 @@ Gevolgen, alle drie waargenomen:
 Vakje 19 is op een bord van 5 breed (4,3), op 6 breed (1,3), op 4 breed (3,4), op 7 breed (5,2) en op 8
 breed (3,2). De tien bestaande levels zijn nagerekend met de onafhankelijke zoektocht: hun `par` klopt.
 
-**Ik heb dit niet gerepareerd**, zoals afgesproken. Het staat vast in `tests/unit/level-tools.test.ts` als
-twee tests met `it.fails`: ze slagen zolang de fout bestaat en worden rood op de dag dat hij is opgelost
-(dan `.fails` weghalen). De reparatie is één regel (een opgenomen robot een teken geven dat geen vakje kan
-zijn) en verandert geen spelregel. Tot die tijd beschermt de tweede zoektocht in de certificering de levels,
-en wijst de generator borden af waarop de solver zich vergist. Zie beslissing 1.
+**Gerepareerd op 22 november 2026, na jouw akkoord.** Een opgenomen robot krijgt nu een teken dat geen
+vakje kan zijn; er is geen spelregel veranderd. De twee tests die de fout vastlegden zijn vóór de reparatie
+rood gezien en zijn nu gewone regressietests in `tests/unit/level-tools.test.ts`. De `par` van alle 40
+levels is na de reparatie opnieuw bevestigd. De tweede zoektocht in de certificering en de controle in de
+generator blijven staan als vangnet.
 
 ## 6. Het gereedschap
 
@@ -576,23 +576,25 @@ Elk nieuw element krijgt de eerste vijf levels van zijn pagina als leerlevels (�
 level 1–5 nu), en de generator krijgt er een recept bij; de meting en de certificering werken ongewijzigd,
 omdat ze op `step` leunen.
 
-## 8. Beslissingen voor jou
+## 8. Besluiten (eigenaar, 22 november 2026: "akkoord op alles")
 
-1. **De sleutelfout in de engine laten repareren?** Aanbevolen: ja, als aparte kleine taak. Eén regel, geen
-   regelwijziging, en de twee `it.fails`-tests bewijzen dat het werkt. Zonder reparatie blijven hint en
-   redding in zeldzame standen onbetrouwbaar en moet de generator borden blijven weggooien.
-2. **Nieuwe elementen:** akkoord met draaitegel (pagina 3), uitgang per kleur (pagina 4) en drukplaat met
-   poort (pagina 5)? Of een andere keuze uit de tabel, of voorlopig geen?
-3. **Pagina 3:** variant A (met draaitegel) of variant B (alleen huidige regels)?
-4. **De volgorde van pagina 1 en 2:** akkoord dat *Follow the Arrow* van plek 1 naar 3 gaat en dat
-   *Two Lanes* en *Patience* naar pagina 2 verhuizen?
-5. **Bestaande spelers:** door de nieuwe volgorde kan iemand met een oude save opgeloste levels zien achter
-   een nog gesloten level. Laten zo (het spel werkt, er gaat niets verloren), of de ontgrendelregel
-   aanpassen zodat alles tot en met het verste opgeloste level open is? Dat laatste is een wijziging in
-   `src/game/progress.ts` en valt buiten deze taak.
-6. **Handwerk:** de 23 ongewijzigd gekozen levels zo laten, of een ronde waarin elk level met de hand wordt
-   nagelopen op leesbaarheid (robots uitlijnen, borden rustiger maken) en opnieuw wordt bewezen?
-7. **De gewichten van de score:** voorlopig laten, en bijstellen zodra er speeldata is?
+| # | Vraag | Besluit | Stand |
+|--:|---|---|---|
+| 1 | De sleutelfout in de engine repareren | Ja | Gedaan, zie hoofdstuk 5 |
+| 2 | Nieuwe elementen | Draaitegel (pagina 3), uitgang per kleur (pagina 4), drukplaat met poort (pagina 5); eenrichtingstegel als reserve | Nog niet gebouwd |
+| 3 | Pagina 3 | Variant A, met de draaitegel | Nog niet gebouwd |
+| 4 | Volgorde van pagina 1 en 2 | Akkoord: *Follow the Arrow* op plek 3, *Two Lanes* en *Patience* op pagina 2 | Gedaan |
+| 5 | Oude saves met een opgelost level achter een gesloten level | Zo laten | Geen wijziging |
+| 6 | De 23 ongewijzigd gekozen levels | Zo laten | Geen wijziging |
+| 7 | Gewichten van de score | Laten tot er speeldata is | Geen wijziging |
+
+Bij 5 en 6 lagen er twee mogelijkheden zonder aanbeveling. "Akkoord op alles" is daar gelezen als de eerste
+en kleinste: niets veranderen. Wil je de andere (ontgrendelregel aanpassen, of een handmatige ronde over de
+levels), dan is dat één woord.
+
+De draaitegel bouwen is de eerste wijziging aan de kernmechaniek en raakt `src/engine/`, de solver via
+`step`, `parseLevel`, de generator en het tekenwerk in `src/render/`, waar op dit moment een andere sessie
+aan werkt. Dat is daarom een eigen taak, na afstemming over `src/render/`.
 
 ## 9. Niet gecontroleerd
 
