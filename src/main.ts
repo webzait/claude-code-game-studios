@@ -542,7 +542,7 @@ class Game {
         last: this.levelIndex === LEVELS.length - 1,
         reward: this.lastReward,
         next: () => this.tap(() => this.startLevel(this.levelIndex + 1)),
-        replay: () => void this.replay(),
+        retry: () => this.restart(),
         levels: () => this.tap(() => this.show('map')),
       },
       !this.reduced,
