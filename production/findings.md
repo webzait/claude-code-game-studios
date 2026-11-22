@@ -23,6 +23,12 @@ hier, is in de data instelbaar en kan door de eigenaar worden omgedraaid.
 | B2 | Levelselectie — `claude/turnflock-level-path` | Alleen het huidige level en de volgende vijf zijn te zien (`levelsAhead`); gehaalde levels verdwijnen. Opnieuw spelen van een gehaald level kan alleen nog via "Replay" direct na de winst. |
 | B5, B6 | Pop-up — `claude/turnflock-win-popup` | B5: sterren, één regel met het resultaat, één bedrag aan verdiende munten en één hoofdknop; de uitsplitsing en het saldo vervallen, Replay en Levels worden kleine knoppen. B6: de munten vliegen van de pop-up naar de teller, die meetelt. |
 
+### 2026-11-22, later
+
+| Nr | Bevinding (woorden van de eigenaar) | Raakt | Opgepakt |
+|---|---|---|---|
+| B9 | Knoppen onderin allemaal in dezelfde stijl, zodat ze bij elkaar horen. Eenduidige manier van prijs aangeven als dat van toepassing is. Voorbeeld van de eigenaar: `design/reference/turnflock/source/buttons-price-reference.jpg` | Onderste rijen van het puzzelscherm (Undo, Restart, Replay, Hint en de commandoknoppen), prijslabels | Sessie knoppenrij — `claude/turnflock-bottom-buttons` |
+
 ## Afgehandeld
 
 ### 2026-11-22 — puzzelscherm (branch `claude/turnflock-puzzle-screen`)
