@@ -498,7 +498,7 @@ test('settings: colour shapes is off at first, shows each colour\'s shape on its
   }
   await expect(page.locator('.cmd[data-cmd=forward] .tf-cmd-shape')).toHaveCount(0);
   // Saved in the current format, without the dropped vibration value.
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('turnflock.save')!).settings)).toEqual({ mute: false, reduceMotion: null, colourShapes: true });
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('turnflock.save')!).settings)).toEqual({ mute: false, music: true, reduceMotion: null, colourShapes: true });
   // Kept over a reload, and switched off again without one.
   await page.click('#levelBack');
   await page.reload();
