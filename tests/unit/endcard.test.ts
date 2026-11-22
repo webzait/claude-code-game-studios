@@ -17,7 +17,7 @@ function winCard(moves: number, alreadyPaid: number | undefined, helped = false,
   const reward = rewardFor(moves, PAR, BUDGET, helped);
   const earned = payout(reward.total, alreadyPaid);
   const view: RewardView = { reward, spare: Math.max(0, BUDGET - moves), earned, balance: config.coins.start + earned, helped };
-  return { card: { kind: 'win', stars: 3, moves, par: PAR, backup: false, last: false, reward: view, next: noop, replay: noop, levels: noop, ...extra }, earned };
+  return { card: { kind: 'win', stars: 3, moves, par: PAR, backup: false, last: false, reward: view, next: noop, retry: noop, levels: noop, ...extra }, earned };
 }
 /** Every "+N" a player can read in the markup (tags and attributes left out). */
 const amountsShown = (html: string): string[] => html.replace(/<[^>]*>/g, ' ').match(/\+\d[\d ]*/g)?.map((s) => s.trim()) ?? [];
@@ -71,7 +71,7 @@ describe('win pop-up: the one amount shown is the real payout', () => {
     expect(html).not.toContain('tf-coin-balance');
     expect(html.split('tf-end-big').length - 1).toBe(1);
     expect(html).toContain('id="end-next"');
-    expect(html).toContain('id="end-replay"');
+    expect(html).toContain('id="end-retry"');
     expect(html).toContain('id="end-levels"');
   });
 
