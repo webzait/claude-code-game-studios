@@ -80,6 +80,15 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 }
 .tf-status-tab .ico { width: 15px; height: 15px; color: var(--green); }
 .tf-status-tab.bump { animation: bump .28s ease-out; }
+/* A 320 px phone with a four-digit wallet: the plate and the gaps give way so the plus button stays whole. */
+@media (max-width: 359px) {
+  #level .top { gap: 5px; }
+  #level .back { width: 38px; }
+  .tf-status-cell { min-width: 0; padding: 3px 6px 2px; }
+  .tf-status-label { letter-spacing: .07em; }
+  .tools .tf-coin-bulb { --icon: 20px; }
+  .tools .tf-coin-buy.compact .tf-face { gap: 3px; }
+}
 .tf-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .hint-line.warn { color: #b3541e; }
 .stage { flex: 1; min-height: 0; position: relative; margin: 8px -14px 0; }
