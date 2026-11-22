@@ -109,13 +109,13 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 .hint-line.warn { color: #b3541e; }
 .stage { flex: 1; min-height: 0; position: relative; margin: 8px -14px 0; }
 #board { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.controls { display: flex; flex-direction: column; gap: 7px; padding-bottom: 2px; }
-/* The bottom area is one family on one grid (finding B9): the tools tray and the command row share the columns and the
-   gap, and every block here has the same build: depth a fifth of its face, corners a quarter of it. */
+.controls { display: flex; flex-direction: column; gap: 13px; padding-bottom: 2px; }
+/* The bottom area (finding B9): a row of small free-standing tools, a clear gap, then the command row. Every block here
+   has the same depth rule (a fifth of its face); the command buttons' corners are a quarter of their face. */
 .controls .tf-btn { --d: calc(var(--h) * var(--tf-depth, .2)); --r: calc(var(--h) * var(--tf-round, .25)); --press-fraction: .8; }
 @media (max-height: 620px) {
-  .controls { gap: 4.5px; }
-  .controls .tf-tools { --tag-over: 6px; padding-top: 3px; }
+  .controls { gap: 9.5px; }
+  .controls .tf-tools { --tag-over: 6px; }
   .controls .tf-tools .tf-btn { --icon: calc(var(--h) * .56); }
 }
 /* Four action buttons share the width; each stays square until the screen gets too short for that. */

@@ -68,12 +68,12 @@ img.tf-coin-ico { filter: drop-shadow(0 1px 0 rgba(138, 94, 4, .6)); }
 .tf-coin-slot { position: absolute; left: 50%; top: 100%; z-index: 2; display: flex; transform: translate(-50%, calc(var(--tag-over, 8px) - 100%)); pointer-events: none; }
 .tf-btn:disabled .tf-coin-slot { opacity: .7; }
 .tf-btn:disabled .tf-coin-slot:has(.used) { opacity: 1; }
-/* The "+N moves" offer: the shared block in booster purple, its price on the same tag in the same place. */
+/* The "+N moves" offer: the shared block in a green of its own (the helper buttons are violet, Retry is blue), its price on the same tag in the same place. */
 .tf-coin-buy { --icon: calc(var(--h) * .62); --fs: calc(var(--h) * .36); }
 .tf-coin-buy .tf-face { gap: calc(var(--h) * .13); }
-.tf-coin-buy.boost { --c-top: #a093ff; --c-main: #7e6bff; --c-side: #5c48d9; --c-deep: #4735b4; --gloss: .3; }
-.tf-coin-buy.offer .tf-label { text-shadow: 0 1.5px 0 rgba(40, 24, 140, .55); }
-.tf-coin-buy .tf-face .tf-coin-art { width: calc(var(--h) * .74); height: calc(var(--h) * .74); filter: drop-shadow(0 1.5px 1px rgba(30, 20, 110, .45)); }
+.tf-coin-buy.boost { --c-top: #5fe487; --c-main: #2fc45e; --c-side: #1f9a49; --c-deep: #167a38; --gloss: .3; --ink-shadow: rgba(10, 80, 35, .6); }
+.tf-coin-buy.offer .tf-label { text-shadow: 0 1.5px 0 rgba(10, 80, 35, .7), 0 0 3px rgba(10, 80, 35, .35); }
+.tf-coin-buy .tf-face .tf-coin-art { width: calc(var(--h) * .74); height: calc(var(--h) * .74); filter: drop-shadow(0 1.5px 1px rgba(10, 70, 30, .45)); }
 /* Cannot afford: the block goes dull but stays up and tappable; the tag turns red. */
 .tf-coin-buy.short, .tf-paid.short {
   --face-top: color-mix(in srgb, var(--c-top) 45%, #dfe4ee); --face: color-mix(in srgb, var(--c-main) 45%, #cfd6e4);

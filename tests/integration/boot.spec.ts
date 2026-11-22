@@ -370,9 +370,11 @@ test('the bottom buttons are one set, and every price is the same tag in the sam
   // The tags stay clear of the command row and of the screen.
   const commands = (await page.locator('#commands').boundingBox())!;
   expect(boxes[0].y + boxes[0].height + hang[0]).toBeLessThanOrEqual(commands.y);
-  // The tools tray and the command row share one grid: the outer columns line up.
-  expect(boxes[0].x).toBeCloseTo(commands.x, 0);
-  expect(boxes[2].x + boxes[2].width).toBeCloseTo(commands.x + commands.width, 0);
+  // The tools stand apart from the command row and are compact: clearly narrower than a command button, centred as a group.
+  expect(commands.y - (boxes[0].y + boxes[0].height)).toBeGreaterThanOrEqual(16);
+  const cmd = (await page.locator('.cmd:not([hidden])').first().boundingBox())!;
+  expect(boxes[0].width).toBeLessThan(cmd.width);
+  expect(boxes[0].x - commands.x).toBeCloseTo(commands.x + commands.width - (boxes[2].x + boxes[2].width), 0);
 });
 
 test('Hint: the status is free, the next move costs coins and is drawn on the board, and without coins it is refused', async ({ page }) => {
