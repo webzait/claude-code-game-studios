@@ -68,15 +68,43 @@ type PriceState = 'ok' | 'short' | 'free' | 'used';
 const PRICE_LABEL: Record<PriceState, string> = { ok: 'betaalbaar', short: 'te weinig munten', free: 'gratis', used: 'al gebruikt' };
 const check = `<svg class="tf-coin-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.8 10 17.6 19.2 7" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
-/** The price tag that sits on a button: coin and number, or the word that replaces them. */
-function price(cost: number, state: PriceState): string {
-  const style = `style="--ph:${C.price.height}px;--pf:${C.price.font}px"`;
+/** The one price tag (finding B9): the coin over the left end of a small plate with the amount, or the word that replaces them. */
+function price(cost: number, state: PriceState, size: { height: number; font: number } = C.price): string {
+  const style = `style="--ph:${size.height}px;--pf:${size.font}px"`;
   if (state === 'free') return `<span class="tf-coin-price free" ${style}>Gratis</span>`;
   if (state === 'used') return `<span class="tf-coin-price used" ${style}>${check}<span class="tf-coin-word">Gebruikt</span></span>`;
-  return `<span class="tf-coin-price${state === 'short' ? ' short' : ''}" ${style}>${coin(C.price.icon)}<span>${formatCoins(cost)}</span></span>`;
+  return `<span class="tf-coin-price${state === 'short' ? ' short' : ''}" ${style}><img class="tf-coin-ico" src="${coinImage}" alt="" /><span>${formatCoins(cost)}</span></span>`;
 }
+/** Where the tag stands on its button: over the bottom edge, in the middle. */
+const slot = (tag: string): string => `<span class="tf-coin-slot">${tag}</span>`;
 
-const bulb = `<svg class="tf-coin-bulb" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.7 15.4a5.9 5.9 0 1 1 6.6 0v1.9H8.7z" fill="#f4c62f" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M9.9 20.6h4.2" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M12 .9v1.4M4.3 3.6l1 1M19.7 3.6l-1 1M1.4 10.4h1.5M22.6 10.4h-1.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 9.6a2.6 2.6 0 0 1 2-2" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+const path = (d: string, width: number): string => `<path d="${d}" fill="none" stroke="currentColor" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"/>`;
+/** The pictures of the four tools, as in the game (index.html). */
+export const TOOL_ICONS = {
+  Undo: `<path d="M9.4 4.2 3.6 9.3l5.8 5.1z" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>` + path('M9 9.3h5.4a5.3 5.3 0 0 1 0 10.6H9.6', 3.6),
+  Restart: path('M5.6 5.4v13.2', 3.6) + `<path d="M18.6 5.6v12.8L9.8 12z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>`,
+  Hint: `<path d="M8.3 15.6a6.6 6.6 0 1 1 7.4 0v2H8.3z" fill="#f4c62f" stroke="currentColor" stroke-width="2.8" stroke-linejoin="round"/>` + path('M9.6 21.4h4.8', 3) + `<path d="M9.3 9.4a2.9 2.9 0 0 1 2.2-2.2" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/>`,
+};
+/** A tool's name on the sheet. */
+export type ToolName = keyof typeof TOOL_ICONS;
+/** How a tool is shown: its price tag (none for a free tool) and the frozen state of the block. */
+export interface ToolView {
+  readonly cost?: number;
+  readonly price?: PriceState;
+  readonly state?: '' | 'pressed' | 'disabled';
+}
+/** One tool of the puzzle screen's tray: the same block for Undo, Restart and Hint. */
+export function toolButton(name: ToolName, view: ToolView = {}): string {
+  const used = view.price === 'used';
+  const cls = `tf-btn tf-utility${view.price ? ' tf-paid' : ''}${view.price === 'short' ? ' short' : ''}${view.state === 'pressed' ? ' pressed' : ''}${used ? ' showing' : ''}`;
+  const spokenName = view.price ? spoken(name, view.cost ?? 0, view.price) : name;
+  return `<button type="button" class="${cls}" aria-label="${spokenName}"${used || view.state === 'disabled' ? ' disabled' : ''}><span class="tf-clip"><span class="tf-face"><svg viewBox="0 0 24 24" aria-hidden="true">${TOOL_ICONS[name]}</svg><span class="tf-label">${name}</span></span></span>${view.price ? slot(price(view.cost ?? 0, view.price, C.priceSmall)) : ''}</button>`;
+}
+/** The tray the tools stand in, as wide as the tools row of a 390 px phone unless `width` says otherwise. */
+export function toolTray(buttons: readonly string[], extra = '', width: number = parts.buttons.phone.stripWidth - 2 * parts.buttons.phone.padding): string {
+  const t = parts.buttons.tools;
+  return `<div class="tf-tools${extra}" style="--tool-h:${t.height}px;--tool-gap:${t.gap}px;width:${width + 12}px">${buttons.join('')}</div>`;
+}
 
 /** What a screen reader says for a priced button. */
 function spoken(name: string, cost: number, state: PriceState): string {
@@ -85,18 +113,12 @@ function spoken(name: string, cost: number, state: PriceState): string {
   return `${name}, ${cost} munten${state === 'short' ? ', je hebt te weinig munten' : ''}`;
 }
 
-/** A button that costs coins. `short` stays tappable (the counter answers with its shake); `used` is really disabled. */
-function buy(kind: 'hint' | 'boost', size: string, inner: string, name: string, cost: number, state: PriceState, extra = ''): string {
-  const attrs = state === 'used' ? ' disabled' : state === 'short' ? ' aria-disabled="true"' : '';
-  return `<button type="button" class="tf-btn tf-coin-buy ${kind}${state === 'short' ? ' short' : ''}${extra}" style="${size}" aria-label="${spoken(name, cost, state)}"${attrs}><span class="tf-clip"><span class="tf-face">${inner}${price(cost, state)}</span></span></button>`;
-}
-
 const label = (text: string): string => `<span class="tf-label">${text}</span>`;
-const hintButton = (state: PriceState): string => buy('hint', sizeVars(C.hint), bulb + label('Hint'), 'Hint', COINS.hintCost, state);
-const hintCompact = (state: PriceState): string => buy('hint', sizeVars(C.hintCompact), bulb, 'Hint', COINS.hintCost, state, ' compact');
+const hintTool = (state: PriceState): string => toolButton('Hint', { cost: COINS.hintCost, price: state });
 const offerName = `+${CONFIG.extraMoves} zetten`;
+/** The "+N moves" offer. `short` stays tappable (the counter answers with its shake). */
 const offer = (state: PriceState, width = '100%'): string =>
-  buy('boost', sizeVars(C.offer, width), `<img class="tf-coin-art" src="${extraMovesImage}" alt="" />` + label(offerName), offerName, COINS.extraMovesCost, state, ' offer');
+  `<button type="button" class="tf-btn tf-coin-buy boost offer${state === 'short' ? ' short' : ''}" style="${sizeVars(C.offer, width)}" aria-label="${spoken(offerName, COINS.extraMovesCost, state)}"${state === 'used' ? ' disabled' : state === 'short' ? ' aria-disabled="true"' : ''}><span class="tf-clip"><span class="tf-face"><img class="tf-coin-art" src="${extraMovesImage}" alt="" />${label(offerName)}</span></span>${slot(price(COINS.extraMovesCost, state))}</button>`;
 
 /** The reward after a win: the total on a gold plate, the parts it adds up to, and the new balance. */
 function reward(moves: number, par: number, budget: number, balanceBefore: number, alreadyPaid = false): string {
@@ -137,7 +159,7 @@ function phone(width: number, amount: number, withPlus: boolean): string {
   return `<div class="tf-coin-phone" style="--pw:${width}px;--pp:${C.phone.padding}px;--pg:${C.phone.gap}px" data-width="${width}">
     <div class="tf-coin-top">
       <div class="tf-coin-bar"><span class="tf-coin-pill grow">Level 5</span>${withPlus ? counterWithPlus(amount) : counter(amount)}</div>
-      <div class="tf-coin-bar"><span class="tf-coin-pill">0 / 12</span><span class="tf-coin-pill grow">12 zetten</span>${hintCompact(amount < COINS.hintCost ? 'short' : 'ok')}</div>
+      <div class="tf-coin-bar"><span class="tf-coin-pill">0 / 12</span><span class="tf-coin-pill grow">12 zetten</span></div>
     </div>
     <div class="tf-coin-sheet">
       <h4>Geen zetten meer</h4>
@@ -252,14 +274,14 @@ export function addCoinCards(sheet: HTMLElement): void {
   // 3. Price tags.
   add(
     'coins-price',
-    `<h2>Prijskaartje op een knop</h2><p class="dims">kaartje ${C.price.height} px hoog, munt ${C.price.icon} px · hint ${C.hint.width}×${C.hint.height} px · hint compact ${C.hintCompact.width}×${C.hintCompact.height} px · aanbod ${C.offer.height} px hoog, vult de breedte</p>
-    <h3 class="btn-title">Hint · ${COINS.hintCost} munten</h3>
-    <div class="btn-row" id="coins-price-hint">${PRICE_STATES.map((s) => cell(hintButton(s), PRICE_LABEL[s])).join('')}</div>
-    <h3 class="btn-title">Hint compact, voor de bovenbalk</h3>
-    <div class="btn-row panel" id="coins-price-compact">${PRICE_STATES.map((s) => cell(hintCompact(s), PRICE_LABEL[s])).join('')}</div>
+`<h2>Het prijskaartje</h2><p class="dims">één ontwerp: munt over het linkereind van een crème plaatje met het bedrag, altijd over de onderrand van de knop · ${C.priceSmall.height} px hoog op de gereedschapsknoppen, ${C.price.height} px in de pop-up · hangt ${C.priceSmall.over} / ${C.price.over} px onder de knop</p>
+    <h3 class="btn-title">Hint · ${COINS.hintCost} munten · de vier toestanden</h3>
+    <div id="coins-price-hint">${toolTray(PRICE_STATES.map(hintTool))}<div class="tf-tools-caption">${PRICE_STATES.map((s) => `<span>${PRICE_LABEL[s]}</span>`).join('')}</div></div>
+    <h3 class="btn-title">Undo · ${COINS.undoCost} munten per stap · en een prijs van vier cijfers</h3>
+    <div id="coins-price-compact">${toolTray([toolButton('Undo', { cost: COINS.undoCost, price: 'ok' }), toolButton('Undo', { cost: COINS.undoCost, price: 'short' }), toolButton('Undo', { cost: 0, price: 'free' }), toolButton('Undo', { cost: 1250, price: 'ok' })])}<div class="tf-tools-caption"><span>betaalbaar</span><span>te weinig munten</span><span>gratis</span><span>1 250</span></div></div>
     <h3 class="btn-title">${offerName} · ${COINS.extraMovesCost} munten</h3>
     <div class="btn-row panel tf-coin-offers" id="coins-price-offer">${PRICE_STATES.map((s) => cell(offer(s, '290px'), PRICE_LABEL[s])).join('')}</div>
-    <p class="note">De prijs staat altijd op de knop zelf, vóór het tikken: munt en getal in een verzonken kaartje. De Hint-knop is dezelfde witte knop als op de knoppenkaart, met het prijskaartje erbij. Te weinig munten: het kaartje wordt rood en de knop dof, maar hij blijft tikbaar en de teller antwoordt met zijn schudje. Gratis (testlab): het woord "Gratis" in groen, zonder munt. Al gebruikt: de knop is echt uit, met een vinkje; in de compacte knop alleen het vinkje.</p>`,
+    <p class="note">Eén prijskaartje voor alles wat munten kost (bevinding B9): de munt ligt over het linkereind van een crème plaatje met het bedrag, en het kaartje staat altijd op dezelfde plek, midden over de onderrand van de knop. De prijs is dus te lezen vóór het tikken. Te weinig munten: het kaartje wordt rood en de knop dof, maar hij blijft tikbaar en de teller antwoordt met zijn schudje. Gratis (testlab): het woord "Gratis" in groen, zonder munt. Al gebruikt: een grijs kaartje met een vinkje; bij Hint brandt de lamp zolang de hint op het bord staat. Een knop zonder prijs (Restart) heeft geen kaartje; de rij houdt de ruimte eronder wel vrij, zodat alle knoppen op één lijn staan.</p>`,
   );
 
   // 4. The reward.
@@ -297,7 +319,7 @@ export function addCoinCards(sheet: HTMLElement): void {
     `<h2>Munten op de telefoon</h2><p class="dims">${C.phone.widths.join(' px en ')} px breed</p>
     ${C.phone.widths.map((w, i) => `<h3 class="btn-title">${w} px · ${i === 0 ? 'genoeg munten' : 'te weinig munten'}</h3>${phone(w, i === 0 ? 30 : 7, true)}`).join('')}
     <h3 class="btn-title">320 px · krapste geval: hoogste bedrag met plus</h3>
-    <div class="tf-coin-phone bar-only" id="coins-phone-tight" style="--pw:320px;--pp:${C.phone.padding}px;--pg:${C.phone.gap}px"><div class="tf-coin-top"><div class="tf-coin-bar"><span class="tf-coin-pill grow">Level 48</span>${counterWithPlus(99999)}</div><div class="tf-coin-bar"><span class="tf-coin-pill">0 / 12</span><span class="tf-coin-pill grow">12 zetten</span>${hintCompact('ok')}</div></div></div>
+    <div class="tf-coin-phone bar-only" id="coins-phone-tight" style="--pw:320px;--pp:${C.phone.padding}px;--pg:${C.phone.gap}px"><div class="tf-coin-top"><div class="tf-coin-bar"><span class="tf-coin-pill grow">Level 48</span>${counterWithPlus(99999)}</div><div class="tf-coin-bar"><span class="tf-coin-pill">0 / 12</span><span class="tf-coin-pill grow">12 zetten</span></div></div></div>
     <p class="note">De teller staat rechts in een eigen bovenregel naast het level; doel, zetten en Hint staan eronder. Zo past ook 99 999 op 320 px. Het bord is weggelaten.</p>`,
   );
 }

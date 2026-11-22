@@ -147,10 +147,23 @@
    Chosen by a class on the screen: tf-levels-p = path, tf-levels-a = the paged grid (test view). */
 .tf-levels-vh { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .tf-levels-path[hidden], .tf-levels-done[hidden], .tf-levels-tray[hidden], .tf-levels-where[hidden], .tf-levels-dock[hidden], .tf-levels-play[hidden] { display: none; }
-/* The pill keeps the stars; where the player is stands in the dock, above the main action. */
-.tf-levels-p .tf-levels-count { display: none; }
-.tf-levels-p .tf-levels-progress { flex-direction: row; align-items: center; font-size: 16px; gap: 5px; }
-.tf-levels-p .tf-levels-progress .tf-levels-star { width: 17px; height: 17px; }
+/* For a player the star total is a button (it opens the levels to improve); the two-line pill belongs to the test grid. */
+.tf-levels-p .tf-levels-progress, .tf-levels-i .tf-levels-progress { display: none; }
+.tf-levels-a:not(.tf-levels-i) .tf-levels-starbtn { display: none; }
+.tf-levels-starbtn { position: relative; border: 0; margin: 0; font: inherit; font-weight: 800; font-size: 16px; color: inherit; gap: 4px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; min-width: 44px; height: 44px; }
+.tf-levels-starbtn .tf-levels-star { width: 17px; height: 17px; }
+.tf-levels-starbtn small { font-size: 12px; font-weight: 800; color: #5d6a84; margin-left: -2px; }
+.tf-levels-starbtn:disabled { cursor: default; }
+.tf-levels-starbtn:active:not(:disabled) { transform: translateY(2px); box-shadow: inset 0 0 0 1.5px rgba(36, 49, 79, .16), 0 1px 0 rgba(30, 80, 160, .34); }
+.tf-levels-starbtn[aria-pressed="true"] { background: linear-gradient(180deg, #fff6d6, #ffe9a3); box-shadow: inset 0 0 0 2px #e8b422, 0 3px 0 rgba(30, 80, 160, .34); }
+.tf-levels-starbtn:focus-visible { outline: 3px solid #24314f; outline-offset: 3px; }
+.tf-levels-badge { position: absolute; top: -7px; right: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: #f04446; color: #fff; font-size: 12px; font-weight: 900; line-height: 20px; text-align: center; box-shadow: 0 0 0 2px #fff; }
+.tf-levels-badge[hidden] { display: none; }
+/* The levels to improve use the grid; its tab is a title here, and the main action leads back. */
+.tf-levels-i .tf-levels-testnote { padding: 6px 12px; font-size: 13px; letter-spacing: .02em; background: #e8b422; color: #3d2c00; box-shadow: 0 2px 0 #b98a08; }
+.tf-levels-ico-back, .tf-levels-backbtn .tf-levels-ico-play { display: none; }
+.tf-levels-backbtn .tf-levels-ico-back { display: block; }
+.tf-levels-play.tf-levels-backbtn { --c-top: #ffffff; --c-main: #eef2fc; --c-side: #b9c4de; --c-deep: #96a3c2; --glow: #ffffff; --ink-c: #24314f; }
 /* The path is its own size container: every step measures itself against the room the path has. */
 .tf-levels-path { container: tlp / size; position: relative; flex: 1; min-height: 0; margin: 0 var(--tl-pad); }
 .tf-levels-trail { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
@@ -212,6 +225,8 @@
 @container tl (max-height: 620px) {
   /* No room above the tray on a short screen: the tab hangs from its bottom edge. */
   .tf-levels-testnote { top: auto; bottom: -6px; }
+  /* A full page leaves no room for the title of the levels to play again: it stays for screen readers, and the lit star total and Back say where the player is. */
+  .tf-levels-i .tf-levels-testnote { width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); box-shadow: none; }
   .tf-levels-wheretext { font-size: 14px; }
   .tf-levels-done { gap: 16px; }
   .tf-levels-donetitle { font-size: 19px; }

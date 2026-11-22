@@ -25,21 +25,25 @@ export const coinIcon = (size: number): string => `<img class="tf-coin-ico" src=
 
 const CHECK = `<svg class="tf-coin-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.8 10 17.6 19.2 7" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const PLUS = `<svg viewBox="0 0 24 24" aria-hidden="true"><g class="tf-ink-shadow" transform="translate(0 1.4)"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></g><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></svg>`;
-const BULB = `<svg class="tf-coin-bulb" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.7 15.4a5.9 5.9 0 1 1 6.6 0v1.9H8.7z" fill="#f4c62f" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M9.9 20.6h4.2" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M12 .9v1.4M4.3 3.6l1 1M19.7 3.6l-1 1M1.4 10.4h1.5M22.6 10.4h-1.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 9.6a2.6 2.6 0 0 1 2-2" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>`;
-
 const sizeVars = (s: { width?: number; height: number; depth: number; radius: number }): string =>
   `--w:${s.width === undefined ? '100%' : `${s.width}px`};--h:${s.height}px;--d:${s.depth}px;--r:${s.radius}px;--press-fraction:${parts.buttons.pressFraction}`;
 
 /** How a priced button stands: affordable, too expensive, free (test lab) or already used. */
 export type PriceState = 'ok' | 'short' | 'free' | 'used';
 
-/** The price tag that sits on a button: coin and number, or the word that replaces them. */
-export function priceTag(cost: number, state: PriceState, size: { height: number; icon: number; font: number } = C.price): string {
+/**
+ * The one price tag (finding B9): the coin over the left end of a small plate with the amount, or the word that replaces
+ * them. It goes in a `tf-coin-slot`, which stands it over the bottom edge of its button; `size` only scales it.
+ */
+export function priceTag(cost: number, state: PriceState, size: { height: number; font: number } = C.price): string {
   const style = `style="--ph:${size.height}px;--pf:${size.font}px"`;
   if (state === 'free') return `<span class="tf-coin-price free" ${style}>Free</span>`;
   if (state === 'used') return `<span class="tf-coin-price used" ${style}>${CHECK}<span class="tf-coin-word">Used</span></span>`;
-  return `<span class="tf-coin-price${state === 'short' ? ' short' : ''}" ${style}>${coinIcon(size.icon)}<span>${formatCoins(cost)}</span></span>`;
+  return `<span class="tf-coin-price${state === 'short' ? ' short' : ''}" ${style}><img class="tf-coin-ico" src="${coinImage}" alt="" /><span>${formatCoins(cost)}</span></span>`;
 }
+
+/** The place on a button where its price tag stands: put this last inside the button. */
+export const priceSlot = (tag = ''): string => `<span class="tf-coin-slot">${tag}</span>`;
 
 /** What a screen reader says for a priced button. */
 export function spokenPrice(name: string, cost: number, state: PriceState): string {
@@ -48,16 +52,10 @@ export function spokenPrice(name: string, cost: number, state: PriceState): stri
   return `${name}, ${cost} coins${state === 'short' ? ', you do not have enough coins' : ''}`;
 }
 
-/** Give the Undo button its price: the button stays as it is, and a small coin badge that `setPrice` fills in sits on its bottom edge. */
-export function mountUndoButton(button: HTMLButtonElement): void {
+/** Make a button of the tools row a priced one (Undo, Hint): it gets the slot that `setPrice` fills with the tag. */
+export function mountPricedButton(button: HTMLButtonElement): void {
   button.classList.add('tf-paid');
-  button.insertAdjacentHTML('beforeend', '<span class="tf-coin-slot tf-coin-badge"></span>');
-}
-
-/** Turn the Hint button of the tools row into the compact priced button, sized by that row; `setPrice` fills in the tag. */
-export function mountHintButton(button: HTMLButtonElement): void {
-  button.className = 'tf-btn tf-coin-buy hint compact';
-  button.innerHTML = `<span class="tf-clip"><span class="tf-face">${BULB}<span class="tf-coin-slot"></span></span></span>`;
+  button.insertAdjacentHTML('beforeend', priceSlot());
 }
 
 /**
@@ -74,10 +72,10 @@ export function setPrice(button: HTMLButtonElement, name: string, cost: number, 
   button.setAttribute('aria-label', spokenPrice(name, cost, state));
 }
 
-/** The "+N moves" offer: one wide button with its price on it. Too expensive stays tappable, so the counter can answer. */
+/** The "+N moves" offer: one wide button with its price tag over its bottom edge. Too expensive stays tappable, so the counter can answer. */
 export function offerButton(id: string, cost: number, state: Exclude<PriceState, 'used'>): string {
   const name = `+${CONFIG.extraMoves} moves`;
-  return `<button type="button" id="${id}" class="tf-btn tf-coin-buy boost offer${state === 'short' ? ' short' : ''}" style="${sizeVars(C.offer)}" aria-label="${spokenPrice(name, cost, state)}"><span class="tf-clip"><span class="tf-face"><img class="tf-coin-art" src="${extraMovesImage}" alt="" /><span class="tf-label">${name}</span>${priceTag(cost, state)}</span></span></button>`;
+  return `<button type="button" id="${id}" class="tf-btn tf-coin-buy boost offer${state === 'short' ? ' short' : ''}" style="${sizeVars(C.offer)}" aria-label="${spokenPrice(name, cost, state)}"><span class="tf-clip"><span class="tf-face"><img class="tf-coin-art" src="${extraMovesImage}" alt="" /><span class="tf-label">${name}</span></span></span>${priceSlot(priceTag(cost, state))}</button>`;
 }
 
 /** What the reward display needs to know about a win. */
@@ -156,9 +154,10 @@ export class CoinCounters {
   private held: number | null = null;
   private flightTimers: number[] = [];
   private layer: HTMLElement | null = null;
+  private plusButtons: HTMLButtonElement[] = [];
 
   /**
-   * @param hosts Elements that each get a counter and a plus button.
+   * @param hosts Elements that each get a counter and a plus button; a host marked `data-no-plus` gets the counter only.
    * @param reduced True when motion is reduced: amounts jump instead of counting.
    * @param onPlus The plus button was tapped.
    */
@@ -166,11 +165,18 @@ export class CoinCounters {
     const s = C.counter.compact;
     for (const host of hosts) {
       host.classList.add('tf-coin-group');
-      host.innerHTML = `<span class="tf-coin-counter compact" role="status" style="--ch:${s.height}px;--cd:${s.depth}px;--cr:${s.radius}px;--cf:${s.font}px">${coinIcon(s.icon)}<span class="tf-coin-amount">0</span></span><button type="button" class="tf-btn tf-coin-plus" style="${sizeVars(C.plus)}" aria-label="About coins" aria-haspopup="dialog"><span class="tf-clip"><span class="tf-face">${PLUS}</span></span></button>`;
-      const button = host.querySelector<HTMLButtonElement>('button')!;
-      button.addEventListener('click', () => onPlus(button));
+      const plus = host.dataset.noPlus === undefined;
+      host.innerHTML = `<span class="tf-coin-counter compact" role="status" style="--ch:${s.height}px;--cd:${s.depth}px;--cr:${s.radius}px;--cf:${s.font}px">${coinIcon(s.icon)}<span class="tf-coin-amount">0</span></span>${plus ? `<button type="button" class="tf-btn tf-coin-plus" style="${sizeVars(C.plus)}" aria-label="About coins" aria-haspopup="dialog"><span class="tf-clip"><span class="tf-face">${PLUS}</span></span></button>` : ''}`;
+      const button = host.querySelector<HTMLButtonElement>('button');
+      button?.addEventListener('click', () => onPlus(button));
+      if (button) this.plusButtons.push(button);
       this.counters.push(host.querySelector<HTMLElement>('.tf-coin-counter')!);
     }
+  }
+
+  /** Say aloud what the plus buttons open, for example "Get coins, test shop". */
+  setPlusLabel(label: string): void {
+    for (const button of this.plusButtons) button.setAttribute('aria-label', label);
   }
 
   /** Show the wallet. A higher amount than the one on show is celebrated on the counters that are visible. */

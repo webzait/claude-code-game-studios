@@ -136,7 +136,9 @@ test('Levels, Level, Win, Next: no dead ends, and progress survives a reload', a
   expect(await snap(page)).toMatchObject({ best: { [levels[0].id]: levels[0].par }, coins: config.coins.start + perfect });
   await expect(page.locator('#mapCoins .tf-coin-amount')).toHaveText(String(config.coins.start + perfect));
   await expect(page.locator('#pathWhere')).toHaveText(`Level 2 of ${levels.length}`);
-  await expect(page.locator('#mapProgress')).toHaveAttribute('aria-label', `3 of ${levels.length * 3} stars`);
+  // Three stars: nothing to improve, so the star total only tells the total.
+  await expect(page.locator('#toImprove')).toHaveAttribute('aria-label', `3 of ${levels.length * 3} stars`);
+  await expect(page.locator('#toImprove')).toBeDisabled();
   await expect(page.locator('#continue')).toHaveText('Play level 2');
   expect(errors).toEqual([]);
 });
@@ -157,14 +159,15 @@ test('every level can be played to a win in order, ending back at the level sele
   await expect(page.locator('#doneView')).toBeVisible();
   await expect(page.locator('#doneView')).toContainText('All levels completed');
   await expect(page.locator('#doneText')).toHaveText(`${levels.length * 3} of ${levels.length * 3} stars`);
-  await expect(page.locator('#steps .tf-levels-step.is-current')).toHaveCount(0);
-  await expect(page.locator('#continue')).toBeHidden();
-  // The grid test view still shows every level: one page at a time, every tile with three stars.
-  await openLab(page);
-  await page.click('[data-key=levelScreen] [data-value=grid]');
-  await closeLab(page);
+  await expect(page.locator('#steps .tf-levels-step')).toHaveCount(0);
+  // From here the player chooses any level to play again: every level, one page at a time, each with three stars.
+  await expect(page.locator('#continue')).toHaveText('Choose a level');
+  await page.click('#continue');
+  await expect(page.locator('#gridNote')).toHaveText('Play a level again');
   await expect(page.locator('.tf-levels-tile.s3')).toHaveCount(tilesOnPage);
-  await expect(page.locator('#continue')).toHaveText('Play again');
+  await expect(page.locator('#continue')).toHaveText('Back');
+  await page.click(`#node-${TWO_COLOURS + 1}`);
+  expect(await snap(page)).toMatchObject({ screen: 'level', level: TWO_COLOURS });
   expect(errors).toEqual([]);
 });
 
@@ -316,6 +319,9 @@ test('out of moves two steps from home: extra moves are offered and really win',
   // The price is on the button before it is tapped; Undo and Retry stay beside it.
   await expect(page.locator('#end-offer')).toHaveAttribute('aria-label', `+${config.extraMoves} moves, ${config.coins.extraMovesCost} coins`, { timeout: 15000 });
   await expect(page.locator('#end-offer')).toContainText(String(config.coins.extraMovesCost));
+  // The offer and the Undo beside it carry the same price tag, each over its own bottom edge (finding B9).
+  await expect(page.locator('#end-offer > .tf-coin-slot .tf-coin-price')).toHaveText(String(config.coins.extraMovesCost));
+  await expect(page.locator('#end-undo > .tf-coin-slot .tf-coin-price')).toHaveText(String(undoCost));
   await expect(page.locator('#end-retry')).toBeVisible();
   await page.click('#end-offer');
   expect(await snap(page)).toMatchObject({ status: 'playing', movesLeft: config.extraMoves, coins: config.coins.start - config.coins.extraMovesCost });
@@ -326,6 +332,45 @@ test('out of moves two steps from home: extra moves are offered and really win',
   await expect(page.locator('.tf-end-stars')).toHaveAttribute('aria-label', '1 of 3 stars');
   // A win with extra moves is a one-star win: it pays the base amount only.
   expect((await snap(page)).coins).toBe(config.coins.start - config.coins.extraMovesCost + config.coins.win);
+});
+
+test('the bottom buttons are one set, and every price is the same tag in the same place (finding B9)', async ({ page }) => {
+  await open(page);
+  await page.click('#node-1');
+  await press(page, 'forward');
+  const ids = ['undo', 'restart', 'scan'];
+  const boxes = [];
+  for (const id of ids) boxes.push((await page.locator(`#${id}`).boundingBox())!);
+  // Equal blocks on one line, each a full touch target.
+  for (const box of boxes) {
+    expect(box.width).toBeCloseTo(boxes[0].width, 0);
+    expect(box.height).toBeCloseTo(boxes[0].height, 0);
+    expect(box.y).toBeCloseTo(boxes[0].y, 0);
+    expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44);
+  }
+  // A picture only, so each has its name for a screen reader.
+  await expect(page.locator('#restart')).toHaveAttribute('aria-label', 'Restart');
+  // Replay is not on the puzzle screen; it is on the win pop-up.
+  await expect(page.locator('#replay')).toHaveCount(0);
+  // A price is one tag over the bottom edge, in the middle; a free tool has none.
+  await expect(page.locator('#restart .tf-coin-price')).toHaveCount(0);
+  const hang: number[] = [];
+  for (const [i, id] of ids.entries()) {
+    if (id !== 'undo' && id !== 'scan') continue;
+    await expect(page.locator(`#${id} .tf-coin-slot .tf-coin-price`)).toHaveCount(1);
+    const tag = (await page.locator(`#${id} .tf-coin-slot`).boundingBox())!;
+    expect(tag.x + tag.width / 2).toBeCloseTo(boxes[i].x + boxes[i].width / 2, 0);
+    expect(tag.y).toBeLessThan(boxes[i].y + boxes[i].height);
+    hang.push(tag.y + tag.height - (boxes[i].y + boxes[i].height));
+  }
+  expect(hang[0]).toBeGreaterThan(0);
+  expect(hang[1]).toBeCloseTo(hang[0], 0);
+  // The tags stay clear of the command row and of the screen.
+  const commands = (await page.locator('#commands').boundingBox())!;
+  expect(boxes[0].y + boxes[0].height + hang[0]).toBeLessThanOrEqual(commands.y);
+  // The tools tray and the command row share one grid: the outer columns line up.
+  expect(boxes[0].x).toBeCloseTo(commands.x, 0);
+  expect(boxes[2].x + boxes[2].width).toBeCloseTo(commands.x + commands.width, 0);
 });
 
 test('Hint: the status is free, the next move costs coins and is drawn on the board, and without coins it is refused', async ({ page }) => {
@@ -464,7 +509,8 @@ test('settings: colour shapes is off at first, shows each colour\'s shape on its
   expect(errors).toEqual([]);
 });
 
-test('the plus button explains coins and sells nothing', async ({ page }) => {
+test('with the test shop switched off, the plus button explains coins and sells nothing', async ({ page }) => {
+  await solvedUpTo(page, 0, { shop: false });
   await open(page);
   await page.click('#mapCoins button');
   await expect(page.locator('#coinInfo')).toBeVisible();
@@ -526,6 +572,44 @@ test('test lab: "unlock all" and "Level screen: Grid" show the old grid as a tes
   await closeLab(page);
   await expect(page.locator('.tf-levels-tile')).toHaveCount(0);
   await expect(page.locator('#steps .tf-levels-step.is-current')).toHaveText(/4/);
+});
+
+test('improving stars: the star total opens the completed levels under three stars, and a level that reaches three leaves the list', async ({ page }) => {
+  // Levels 1 to 4 completed: level 2 with one star, level 4 with two, the others with three.
+  const best = Object.fromEntries(levels.slice(0, 4).map((l, i) => [l.id, l.par + (i === 1 ? config.stars.two + 1 : i === 3 ? config.stars.two : 0)]));
+  await page.addInitScript(
+    ([save]) => {
+      if (!localStorage.getItem('turnflock.save')) localStorage.setItem('turnflock.save', save);
+    },
+    [JSON.stringify({ version: 4, best, coins: config.coins.start, paid: {}, settings: {}, lab: {} })],
+  );
+  const errors = await open(page);
+  // The path itself still shows no completed level.
+  await expect(page.locator('#node-2')).toHaveCount(0);
+  await expect(page.locator('#toImprove')).toHaveAttribute('aria-label', `9 of ${levels.length * 3} stars. Improve 2 levels`);
+  const box = await page.locator('#toImprove').boundingBox();
+  expect(box && box.width >= 44 && box.height >= 44).toBe(true);
+  await page.click('#toImprove');
+  await expect(page.locator('#gridNote')).toHaveText('Improve your stars');
+  await expect(page.locator('.tf-levels-tile')).toHaveCount(2);
+  await expect(page.locator('#node-2')).toHaveClass(/\bs1\b/);
+  await expect(page.locator('#node-4')).toHaveClass(/\bs2\b/);
+  await expect(page.locator('#node-1')).toHaveCount(0);
+  // The main action leads back to the path, and the star total opens the list again.
+  await expect(page.locator('#continue')).toHaveText('Back to level 5');
+  await page.click('#continue');
+  await expect(page.locator('#steps .tf-levels-step.is-current')).toHaveText(/5/);
+  await page.click('#toImprove');
+  await page.click('#node-2');
+  expect(await snap(page)).toMatchObject({ screen: 'level', level: 1 });
+  await playWitness(page, 1);
+  await expect(page.locator('.tf-end-stars')).toHaveAttribute('aria-label', '3 of 3 stars', { timeout: 15000 });
+  await page.click('#end-levels');
+  // Back in the list: level 2 has three stars now and is gone; level 4 is still there.
+  await expect(page.locator('.tf-levels-tile')).toHaveCount(1);
+  await expect(page.locator('#node-4')).toBeVisible();
+  await expect(page.locator('#toImprove')).toHaveAttribute('aria-label', `11 of ${levels.length * 3} stars. Improve 1 level`);
+  expect(errors).toEqual([]);
 });
 
 // Page 3: the turn tile. A robot that arrives on it is turned a quarter clockwise by the board.

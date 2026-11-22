@@ -137,6 +137,9 @@
 .tf-end-card:focus-visible { outline: 3px solid #24314f; outline-offset: 3px; }
 .tf-end-coins { width: 100%; }
 .tf-end-card .tf-coin-buy.offer { --w: 100%; }
+/* A priced button carries its tag over its bottom edge (finding B9); the card keeps that much room under it. */
+.tf-end-card { --tag-over: 9px; }
+.tf-end-card .tf-coin-buy.offer, .tf-end-card .tf-paid { margin-bottom: 7px; }
 .tf-end-play .tf-coin-total { animation: tf-end-pop .3s ease-out .6s backwards; }
 @media (prefers-reduced-motion: reduce) {
   .tf-end-play .tf-coin-total { animation: none; }

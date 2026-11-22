@@ -5,17 +5,19 @@ import './ui/tf-levels.css';
 import './ui/tf-end.css';
 import './ui/tf-settings.css';
 import './ui/tf-scene.css';
+import './ui/tf-shop.css';
 import { Sfx } from './audio';
 import { CONFIG } from './config';
-import { step } from './engine/engine';
 import type { Color, Command, Robot, RobotEvent } from './engine/types';
 import { previewStep, witnessNext, type RescueResult, type ScanResult } from './game/assist';
 import { extraMovesPrice, hintPrice, payout, rewardFor, settlePaid, undoQuote, type UndoQuote } from './game/coins';
 import { applyLab, levelScreenView, rulesFor, usesCertifiedRules, type LabSettings } from './game/lab';
+import { emptyLedger, record, type LedgerEntry } from './game/ledger';
 import { MemorySink, type MetricsEvent } from './game/metrics';
 import { isUnlocked, mainAction, starsFor, starsOfBest } from './game/progress';
 import { ECONOMY_VERSION, loadSave, resetProgress, writeSave, type KeyValueStore, type SaveData } from './game/save';
 import { Session } from './game/session';
+import { configuredPacks, plusOpens, receiptLine, SimulatedProvider, walletAfter, type CoinPack, type PurchaseProvider } from './game/shop';
 import { LEVELS, TEST_BOARDS, type GameLevel } from './levels/index';
 import { BoardView } from './render/boardView';
 import { loadKit } from './render/kit';
@@ -28,9 +30,12 @@ import type { CertifyResult } from './solver/requests';
 import { CoinCounters, coinInfo, type RewardView } from './ui/coins';
 import { el, Hud } from './ui/hud';
 import { setupLogo } from './ui/logo';
+import { improvableLevels } from './ui/levelPath';
 import { renderLevels, type MapNode } from './ui/screens';
 import { applyColourShapes } from './ui/colourShapes';
+import { ledgerPanel } from './ui/ledgerView';
 import { labChangedCount, labScreen, playerScreen } from './ui/settingsView';
+import { ShopView, type PurchaseReport } from './ui/shopView';
 
 type ScreenName = 'map' | 'level' | 'settings' | 'lab';
 
@@ -56,6 +61,10 @@ export interface Snapshot {
   kitReady: boolean;
   lab: LabSettings;
   events: MetricsEvent[];
+  /** The test shop sheet is open. */
+  shopOpen: boolean;
+  /** The test ledger's lines, oldest first. */
+  ledger: LedgerEntry[];
 }
 
 declare global {
@@ -101,6 +110,8 @@ class Game {
   private screen: ScreenName = 'map';
   /** Page of the level selection on show; null opens the page of the current level. */
   private page: number | null = null;
+  /** The level selection shows the completed levels that can still be improved, instead of the path. */
+  private improving = false;
   private levelIndex = 0;
   /** A board-size test board is open instead of a level. */
   private preview = false;
@@ -141,6 +152,20 @@ class Game {
   private coinInfoOpener: HTMLElement | null = null;
   /** The settings screen is being opened from the test lab. */
   private fromLab = false;
+  /**
+   * The purchase layer. The game only knows the interface; this build has the simulated provider alone,
+   * which charges nothing and makes no request. Its outcome is the test lab's switch.
+   */
+  private provider: PurchaseProvider = new SimulatedProvider(configuredPacks(), {
+    outcome: () => this.save.lab.purchaseOutcome,
+    delay: (ms) => wait((this.reduced ? ms / 2 : ms) / 1000),
+    processingMs: CONFIG.shop.processingMs,
+  });
+  private shop: ShopView;
+  /** The wallet just fell short of a price on the puzzle screen: the hint line carries the "Get coins" link. */
+  private offerCoins = false;
+  /** What the solver said about the lost position on show, so its pop-up can be redrawn after a visit to the shop. */
+  private lastRescue: RescueResult | null = null;
 
   constructor() {
     this.hud = new Hud(
@@ -148,13 +173,19 @@ class Game {
         command: (c) => this.command(c),
         undo: () => this.undo(),
         restart: () => this.restart(),
-        replay: () => void this.replay(),
         scan: () => void this.scan(),
         back: () => this.show('map'),
+        getCoins: (opener) => this.tap(() => this.openCoins(opener)),
       },
-      () => this.screen === 'level',
+      // Keys play the level only while nothing lies over it.
+      () => this.screen === 'level' && !this.shop.isOpen && el('coinInfo').hidden === true,
     );
-    this.counters = new CoinCounters([el('mapCoins'), el('levelCoins')], () => this.reduced, (button) => this.tap(() => this.openCoinInfo(button)));
+    this.shop = new ShopView(el('app'), {
+      buy: (pack) => this.buyPack(pack),
+      tap: () => this.sfx.play('tap'),
+      closed: () => this.onShopClosed(),
+    });
+    this.counters = new CoinCounters([el('mapCoins'), el('levelCoins'), this.shop.balanceHost], () => this.reduced, (button) => this.tap(() => this.openCoins(button)));
     this.hud.onCardHidden = () => this.counters.settle();
     el('coinInfoBody').innerHTML = coinInfo('coinInfoTitle');
     el('coinInfoClose').addEventListener('click', () => this.tap(() => this.closeCoinInfo()));
@@ -209,6 +240,48 @@ class Game {
     this.coinInfoOpener = null;
   }
 
+  /** The plus button and every "Get coins" link: the test shop, or with the shop switched off the explainer. */
+  private openCoins(opener: HTMLElement): void {
+    if (plusOpens(this.save.lab) === 'explainer') return this.openCoinInfo(opener);
+    this.counters.settle();
+    void this.provider.listPacks().then((packs) => this.shop.open(packs, opener));
+  }
+
+  /** One line of the test ledger, stamped with the time and the wallet as it is now. */
+  private log(kind: LedgerEntry['kind'], item: string, coins: number): void {
+    record(this.save.ledger, { at: Date.now(), kind, item, coins, balance: this.save.coins }, CONFIG.shop.ledgerMax);
+  }
+
+  /** A pack was confirmed in the shop: ask the purchase layer, and only on success add the coins. */
+  private async buyPack(pack: CoinPack): Promise<PurchaseReport> {
+    const result = await this.provider.buy(pack.id);
+    const before = this.save.coins;
+    this.save.coins = walletAfter(before, result);
+    if (result.status === 'success') {
+      this.log('bought', result.pack.id, result.pack.coins);
+      this.persist();
+      this.sfx.play('coin');
+      // The shortage is over: the warning and its link go, and a hint that was being asked for is pointed at again.
+      if (this.offerCoins) {
+        this.offerCoins = false;
+        this.hint = '';
+        this.hintWarn = false;
+        this.point = this.scanResult?.kind === 'on-route' && this.nudge === null ? 'scan' : null;
+      }
+    } else this.sfx.play('bump');
+    this.track({ type: 'purchase', pack: pack.id, result: result.status, coins: this.save.coins - before, balance: this.save.coins });
+    if (this.screen === 'level') this.refresh();
+    else this.counters.set(this.save.coins);
+    return { result, line: receiptLine(result, this.save.coins) };
+  }
+
+  /** Back from the shop: everything is as it was, and prices on show are judged against the wallet as it is now. */
+  private onShopClosed(): void {
+    if (this.screen !== 'level') return;
+    if (this.session.status === 'lost' && !el('card').hidden && this.lastRescue) this.showLost(this.lastRescue, false);
+    this.refresh();
+  }
+
   private get reduced(): boolean {
     return this.save.settings.reduceMotion ?? window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
@@ -227,6 +300,7 @@ class Game {
     this.view.setLayout(CONFIG.board[this.save.lab.board]);
     this.view.setStyle({ kitRobots: this.save.lab.robots === 'kit', kitBoard: this.save.lab.boardPieces === 'kit', heading: this.save.lab.heading });
     document.documentElement.classList.toggle('no-decor', !this.save.lab.decor);
+    this.counters.setPlusLabel(plusOpens(this.save.lab) === 'shop' ? 'Get coins, test shop' : 'About coins');
     applyColourShapes(this.save.settings.colourShapes);
     this.view.setColourShapes(this.save.settings.colourShapes);
   }
@@ -242,6 +316,7 @@ class Game {
     for (const name of ['map', 'level', 'settings', 'lab'] as const) el(name).hidden = name !== screen;
     this.hud.hideCard();
     this.closeCoinInfo();
+    this.shop.close();
     this.view.skip();
     this.counters.set(this.save.coins);
     if (screen === 'map') {
@@ -266,24 +341,51 @@ class Game {
     const pageSize = CONFIG.levelsPerPage;
     // The screen opens on the page of the level the main button points at.
     this.page ??= Math.floor(main.index / pageSize);
-    const view = levelScreenView(this.save.lab);
-    // The path only knows "the level to play now". With everything completed it shows that state, and offers a way on only when the config asks for it.
+    const stars = nodes.map((n) => n.stars);
+    // In their own list none of them is "the" target: every tile there is equally worth a replay.
+    // With every level completed the player chooses any level to play again; before that only the ones with stars left to earn.
+    const replayAll = main.kind !== 'play';
+    const improvable = (replayAll ? nodes.map((_, index) => index) : improvableLevels(stars)).map((index) => ({ ...nodes[index], target: false }));
+    const base = levelScreenView(this.save.lab);
+    // Nothing left to improve, or the test grid is on: the list of levels to improve has no place.
+    if (base === 'grid' || improvable.length === 0) this.improving = false;
+    const view = this.improving ? 'improve' : base;
+    if (view === 'improve') this.page = Math.min(this.page, Math.ceil(improvable.length / pageSize) - 1);
+    const toggleImprove = (): void => {
+      this.improving = !this.improving;
+      this.page = this.improving ? 0 : null;
+      this.drawMap();
+    };
+    // The path only knows "the level to play now". With everything completed it shows that state; what is left is improving, or playing again when the config asks for it.
     const complete = main.kind !== 'play';
-    const again = view === 'path' && complete;
-    const target = again ? 0 : main.index;
-    const playLabel = again ? (CONFIG.levelPath.playAgainWhenComplete ? 'Play again from level 1' : null) : main.kind === 'play' ? `Play level ${main.index + 1}` : main.kind === 'improve' ? `Improve level ${main.index + 1}` : 'Play again';
-    el('continue').onclick = () => this.tap(() => this.startLevel(target));
+    let playLabel: string | null;
+    let action: () => void;
+    if (view === 'improve') {
+      playLabel = complete ? 'Back' : `Back to level ${main.index + 1}`;
+      action = toggleImprove;
+    } else if (view === 'path' && complete) {
+      playLabel = 'Choose a level';
+      action = toggleImprove;
+    } else {
+      playLabel = main.kind === 'play' ? `Play level ${main.index + 1}` : main.kind === 'improve' ? `Improve level ${main.index + 1}` : 'Play again';
+      action = () => this.startLevel(main.index);
+    }
+    el('continue').onclick = () => this.tap(action);
     renderLevels({
       view,
       nodes,
+      improvable,
+      replayAll,
       current: complete ? null : main.index,
       ahead: CONFIG.levelsAhead,
       layout: CONFIG.levelPath.layout,
       page: this.page,
       pageSize,
       playLabel,
-      gridNote: this.save.lab.unlockAll ? 'Test view · all levels unlocked' : 'Test view · grid',
+      playIcon: view === 'improve' ? 'back' : 'play',
+      gridNote: view === 'improve' ? (replayAll ? 'Play a level again' : 'Improve your stars') : this.save.lab.unlockAll ? 'Test view · all levels unlocked' : 'Test view · grid',
       onPick: (index) => this.tap(() => this.startLevel(index)),
+      onImprove: () => this.tap(toggleImprove),
       onPage: (page) => {
         this.page = page;
         this.tap(() => this.drawMap());
@@ -307,7 +409,12 @@ class Game {
       setReduceMotion: (value) => change(() => (this.save.settings.reduceMotion = value)),
       colourShapes: this.save.settings.colourShapes,
       setColourShapes: (on) => change(() => (this.save.settings.colourShapes = on)),
-      resetProgress: () => change(() => (this.save = resetProgress(this.save))),
+      resetProgress: () =>
+        change(() => {
+          const before = this.save.coins;
+          this.save = resetProgress(this.save);
+          this.log('set', 'balance', this.save.coins - before);
+        }),
       back: () => this.tap(() => this.show('map')),
       openLab: () => this.tap(() => this.show('lab')),
     });
@@ -322,6 +429,26 @@ class Game {
     const screen = labScreen(this.save.lab, {
       boards: TEST_BOARDS.map((b) => `${b.board.width}×${b.board.height}`),
       openBoard: (index) => this.tap(() => this.startPreview(index)),
+      panels: [
+        ledgerPanel({
+          balance: () => this.save.coins,
+          ledger: () => this.save.ledger,
+          levelNames: Object.fromEntries(LEVEL_IDS.map((id, index) => [id, `level ${index + 1}`])),
+          clear: () => {
+            this.save.ledger = emptyLedger();
+            this.persist();
+            this.sfx.play('tap');
+          },
+          setBalance: (coins) => {
+            const before = this.save.coins;
+            this.save.coins = coins;
+            this.log('set', 'balance', coins - before);
+            this.persist();
+            this.counters.set(coins);
+            this.sfx.play('tap');
+          },
+        }),
+      ],
       onChange: (lab) => {
         this.save.lab = lab;
         this.persist();
@@ -423,6 +550,7 @@ class Game {
     this.hintWarn = false;
     this.nudge = null;
     this.point = null;
+    this.offerCoins = false;
     this.hintPicture = [];
     this.view.showHint(null);
     this.scanKey = '';
@@ -444,7 +572,6 @@ class Game {
       total: this.session.total,
       movesLeft: this.session.movesLeft,
       canUndo: this.session.commands.length > 0 && !this.replaying && !this.busy,
-      canReplay: this.session.commands.length > 0 && !this.replaying && !this.busy,
       canScan: status !== 'won' && !this.replaying && !this.busy,
       inputLocked: this.replaying || this.busy || status !== 'playing',
       colorsInLevel: colors,
@@ -456,6 +583,7 @@ class Game {
       undoCost: undo.cost,
       undoState: undo.state,
       point: this.point,
+      getCoins: this.offerCoins && plusOpens(this.save.lab) === 'shop',
     });
   }
 
@@ -520,7 +648,10 @@ class Game {
     // Saved below, before anything moves; the counter only shows it once the pop-up's coins have flown over (B6).
     if (earned > 0) this.counters.hold(this.save.coins);
     this.lastReward = { reward, spare: Math.max(0, this.session.budget - moves), earned, balance: this.save.coins, helped: this.usedBackup || this.usedHint };
-    if (earned > 0) this.track({ type: 'coins_earned', level: id, amount: earned, balance: this.save.coins });
+    if (earned > 0) {
+      this.track({ type: 'coins_earned', level: id, amount: earned, balance: this.save.coins });
+      this.log('earned', id, earned);
+    }
     this.persist();
     this.track({ type: 'level_win', level: id, moves, par: this.par, stars, usedBackup: this.usedBackup });
     this.sfx.play('win');
@@ -569,9 +700,17 @@ class Game {
     });
     if (generation !== this.generation || this.session.status !== 'lost') return;
     this.track({ type: 'level_fail', level: this.level.id, rescuable: rescue.kind === 'rescuable' ? 'yes' : rescue.kind === 'hopeless' ? 'no' : 'not-assessed' });
+    this.lastRescue = rescue;
+    this.showLost(rescue, !this.reduced);
+  }
+
+  /** The out-of-moves pop-up for a checked position, with every price judged against the wallet as it is now. */
+  private showLost(rescue: RescueResult, animate: boolean): void {
     const offer = rescue.kind === 'rescuable';
     const price = extraMovesPrice(this.save.lab.freeHelp);
     const afford = this.save.coins >= price;
+    const undoPrice = this.undoOffer();
+    const short = (offer && price > 0 && !afford) || undoPrice.state === 'short';
     const hint = (): void => {
       this.hud.hideCard();
       void this.scan();
@@ -586,11 +725,13 @@ class Game {
             ? 'Extra moves would not solve it from here, so there is no offer. Retry is free.'
             : 'We could not check in time whether extra moves would help, so there is no offer. Retry is free.',
         undo: () => this.undo(),
-        undoPrice: this.undoOffer(),
+        undoPrice,
         retry: () => this.restart(),
         hint: offer ? undefined : hint,
+        // Short of coins: the shop is one quiet link under the free Retry. It opens over the pop-up and returns to it.
+        getCoins: short && plusOpens(this.save.lab) === 'shop' ? () => this.tap(() => this.openCoins(el('end-getcoins'))) : undefined,
       },
-      !this.reduced,
+      animate,
     );
   }
 
@@ -603,6 +744,7 @@ class Game {
       return;
     }
     this.save.coins -= price;
+    if (price > 0) this.log('spent', 'extra_moves', -price);
     this.persist();
     if (price > 0) this.track({ type: 'coins_spent', level: this.level.id, amount: price, on: 'extra_moves', balance: this.save.coins });
     this.session.grantBonus(CONFIG.extraMoves);
@@ -633,6 +775,7 @@ class Game {
       this.track({ type: 'undo', level: this.level.id, price: offer.cost, refused: true });
       this.clearScan();
       this.point = 'restart';
+      this.offerCoins = true;
       this.setHint(`Undo costs ${offer.cost} coins. Restart is free.`, true);
       return;
     }
@@ -640,6 +783,7 @@ class Game {
     this.undosTaken++;
     if (offer.cost > 0) {
       this.save.coins -= offer.cost;
+      this.log('spent', 'undo', -offer.cost);
       this.persist();
       this.track({ type: 'coins_spent', level: this.level.id, amount: offer.cost, on: 'undo', balance: this.save.coins });
     }
@@ -686,10 +830,12 @@ class Game {
         const price = hintPrice(this.save.lab.freeHelp);
         if (this.save.coins < price) {
           this.counters.short();
+          this.offerCoins = true;
           this.setHint('Not enough coins for the next move.', true);
           return;
         }
         this.save.coins -= price;
+        if (price > 0) this.log('spent', 'hint', -price);
         this.persist();
         if (price > 0) {
           this.usedHint = true;
@@ -740,35 +886,6 @@ class Game {
     } else this.setHint('Could not check this one in time.', true);
   }
 
-  /** Play the commands so far again from the start; the session is untouched. */
-  private async replay(): Promise<void> {
-    if (this.replaying || this.busy || this.session.commands.length === 0) return;
-    const generation = ++this.generation;
-    this.pending = 0;
-    this.replaying = true;
-    this.hud.hideCard();
-    this.refresh();
-    const level = this.session.level;
-    let state = level.start;
-    this.view.sync(state, true);
-    await wait(0.45);
-    for (const command of this.session.commands) {
-      if (generation !== this.generation) return;
-      const result = step(level.board, state, command, this.session.rules);
-      state = result.state;
-      this.hud.flash(command);
-      await this.view.play(result.events, 1);
-      await wait(CONFIG.anim.replayGap);
-    }
-    if (generation !== this.generation) return;
-    this.view.sync(this.session.state, false);
-    this.replaying = false;
-    this.refresh();
-    const status = this.session.status;
-    if (status === 'won') this.showWin(this.session.commands.length, starsFor(this.session.commands.length, this.par, this.usedBackup));
-    else if (status === 'lost') void this.onLost();
-  }
-
   /** Read-only snapshot for automated checks. */
   snapshot(): Snapshot {
     return {
@@ -790,6 +907,8 @@ class Game {
       kitReady: this.kitReady,
       lab: { ...this.save.lab },
       events: [...this.metrics.events],
+      shopOpen: this.shop.isOpen,
+      ledger: [...this.save.ledger.entries],
     };
   }
 }

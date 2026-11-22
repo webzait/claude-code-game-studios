@@ -24,3 +24,12 @@ export function pathSteps(total: number, current: number | null, ahead: number):
 export function pathSway(step: number, period = 5): number {
   return Math.round(Math.sin((step * 2 * Math.PI) / period) * 100) / 100;
 }
+
+/**
+ * Positions of the levels that can still be improved: completed, but with
+ * fewer than three stars. `stars` holds each level's stars in play order, 0
+ * when it is not completed. A level with three stars is finished for good.
+ */
+export function improvableLevels(stars: readonly number[]): number[] {
+  return stars.flatMap((s, index) => (s > 0 && s < 3 ? [index] : []));
+}

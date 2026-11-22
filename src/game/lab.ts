@@ -2,6 +2,7 @@ import { CONFIG } from '../config';
 import type { Color, Command, Rules } from '../engine/types';
 import type { GameLevel } from '../levels/index';
 import type { HeadingStyle } from '../render/heading';
+import type { PurchaseOutcome } from './shop';
 
 /**
  * Test-phase switches. They let open design questions be tried on a phone
@@ -35,9 +36,17 @@ export interface LabSettings {
   board: 'roomy' | 'classic';
   /** Level selection: `path` (the current level and the next few) or `grid` (every level on pages, a test view). */
   levelScreen: 'path' | 'grid';
+  /** The test shop behind the plus button. Off: the plus button opens the explainer that says there is no shop. */
+  shop: boolean;
+  /** How a pretend purchase ends: it succeeds, the buyer cancels, or it fails. */
+  purchaseOutcome: PurchaseOutcome;
 }
 
-/** The lab as it ships: the certified default game. */
+/**
+ * The lab as it ships: the certified default game. The test shop is on by
+ * default because this build exists to test it and it cannot charge anything;
+ * it must be switched off, or replaced, before a public release.
+ */
 export const DEFAULT_LAB: LabSettings = {
   exitRule: CONFIG.rules.exitAcceptsMany ? 'many' : 'single',
   yellowEarly: false,
@@ -51,6 +60,8 @@ export const DEFAULT_LAB: LabSettings = {
   heading: 'towardPlayer',
   boardPieces: 'kit',
   levelScreen: 'path',
+  shop: true,
+  purchaseOutcome: 'success',
 };
 
 /**
