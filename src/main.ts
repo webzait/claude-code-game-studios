@@ -6,7 +6,6 @@ import './ui/tf-end.css';
 import './ui/tf-settings.css';
 import './ui/tf-scene.css';
 import { Sfx } from './audio';
-import { deviceVibrate, Haptics } from './haptics';
 import { CONFIG } from './config';
 import { step } from './engine/engine';
 import type { Color, Command } from './engine/types';
@@ -81,7 +80,6 @@ class Game {
   private save: SaveData = loadSave(this.store, LEVEL_IDS);
   private metrics = new MemorySink();
   private sfx = new Sfx(() => this.save.settings.mute);
-  private haptics = new Haptics(() => this.save.settings.vibration, deviceVibrate(window.navigator));
   private solver = new SolverClient();
   private view = new BoardView(el<HTMLCanvasElement>('board'));
   private hud: Hud;
@@ -272,16 +270,9 @@ class Game {
     const screen = playerScreen({
       mute: this.save.settings.mute,
       reduceMotion: this.save.settings.reduceMotion,
-      vibration: this.save.settings.vibration,
-      canVibrate: this.haptics.supported,
       labChanged: labChangedCount(this.save.lab),
       setMute: (mute) => change(() => (this.save.settings.mute = mute)),
       setReduceMotion: (value) => change(() => (this.save.settings.reduceMotion = value)),
-      setVibration: (on) =>
-        change(() => {
-          this.save.settings.vibration = on;
-          this.haptics.play('move');
-        }),
       resetProgress: () => change(() => (this.save = resetProgress(this.save))),
       back: () => this.tap(() => this.show('map')),
       openLab: () => this.tap(() => this.show('lab')),
@@ -434,7 +425,6 @@ class Game {
     this.clearScan();
     this.refresh();
     this.track({ type: 'command', level: this.level.id, command });
-    this.haptics.play('move');
     this.playSounds(command, result.events.map((e) => e.outcome));
     const generation = this.generation;
     this.pending++;
@@ -490,7 +480,6 @@ class Game {
     this.persist();
     this.track({ type: 'level_win', level: id, moves, par: this.par, stars, usedBackup: this.usedBackup });
     this.sfx.play('win');
-    this.haptics.play('win');
     this.view.celebrate();
     this.refresh();
     const generation = this.generation;

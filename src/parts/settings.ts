@@ -1,6 +1,6 @@
 import type { LabSettings } from '../game/lab';
 import pkg from '../../package.json';
-import { h, ICON, labContent, NEW, panel, resetControl, row, screenShell, segmented, solverNote, TEST, toggle, uid } from '../ui/settingsView';
+import { h, ICON, labContent, panel, resetControl, row, screenShell, segmented, solverNote, TEST, toggle, uid } from '../ui/settingsView';
 
 /**
  * The settings screen as a standalone mock-up for the parts sheet: player
@@ -30,17 +30,18 @@ export interface SettingsFrame {
 interface PlayerSettings {
   sound: boolean;
   reduceMotion: boolean | null;
-  vibration: boolean;
   shapes: boolean;
-  largeText: boolean;
 }
 
+/** The colour-blind aid's preview: one shape per robot colour. */
+const SHAPES = `<span class="tf-set-shapes" aria-label="Red circle, blue square, yellow diamond"><i class="red"><svg viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="3.4"/></svg></i><i class="blue"><svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2.8" y="2.8" width="6.4" height="6.4" rx="1"/></svg></i><i class="yellow"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1.8 10.2 6 6 10.2 1.8 6z"/></svg></i></span>`;
+
 /** The player's own settings. */
-function playerPanels(frame: SettingsFrame, additions: boolean): HTMLElement[] {
-  const player: PlayerSettings = { sound: true, reduceMotion: null, vibration: true, shapes: false, largeText: false };
+function playerPanels(frame: SettingsFrame): HTMLElement[] {
+  const player: PlayerSettings = { sound: true, reduceMotion: null, shapes: false };
   const game = panel('Game');
-  const flag = (key: 'sound' | 'vibration' | 'shapes' | 'largeText', title: string, hint: string, isNew = false): HTMLElement => {
-    const r = row(title, hint, { chip: isNew ? NEW : '' });
+  const flag = (key: 'sound' | 'shapes', title: string, hint: string): HTMLElement => {
+    const r = row(title, hint);
     r.row.appendChild(toggle(r.titleId, player[key], (on) => (player[key] = on), r.hintId));
     return r.row;
   };
@@ -48,22 +49,11 @@ function playerPanels(frame: SettingsFrame, additions: boolean): HTMLElement[] {
   motion.row.appendChild(
     segmented<boolean | null>(motion.titleId, [{ label: 'Auto', value: null }, { label: 'On', value: true }, { label: 'Off', value: false }], player.reduceMotion, (v) => (player.reduceMotion = v), motion.hintId),
   );
-  game.body.append(flag('sound', 'Sound', 'Game sounds.'));
-  if (additions) game.body.append(flag('vibration', 'Vibration', 'A short buzz on moves and wins.', true));
-  game.body.append(motion.row);
+  const shapes = flag('shapes', 'Colour shapes', 'Adds a shape to each colour.');
+  shapes.querySelector('.tf-set-hint')!.insertAdjacentHTML('beforeend', ` ${SHAPES}`);
+  game.body.append(flag('sound', 'Sound', 'Game sounds.'), shapes, motion.row);
 
   const out = [game.panel];
-  if (additions) {
-    const see = panel('Easier to see', NEW);
-    const shapes = flag('shapes', 'Colour shapes', 'Adds a shape to each colour.');
-    shapes.querySelector('.tf-set-hint')!.insertAdjacentHTML(
-      'beforeend',
-      ` <span class="tf-set-shapes" aria-label="Red circle, blue square, yellow diamond"><i class="red"><svg viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="3.4"/></svg></i><i class="blue"><svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2.8" y="2.8" width="6.4" height="6.4" rx="1"/></svg></i><i class="yellow"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1.8 10.2 6 6 10.2 1.8 6z"/></svg></i></span>`,
-    );
-    see.body.append(shapes, flag('largeText', 'Larger text', 'Bigger labels and numbers.'));
-    out.push(see.panel);
-  }
-
   const progress = panel('Progress');
   progress.body.append(resetControl(frame.armed));
   out.push(progress.panel);
@@ -77,7 +67,7 @@ export function settingsFrame(frame: SettingsFrame): HTMLElement {
   const screen = screenShell;
 
   const main = screen('Settings', 'Back to levels');
-  main.scroll.append(...playerPanels(frame, true));
+  main.scroll.append(...playerPanels(frame));
   const about = panel('About');
   about.body.append(h(`<div class="tf-set-row slim"><div class="tf-set-text"><div class="tf-set-title">Turnflock</div></div><div class="tf-set-value">Version ${pkg.version}</div></div>`));
   main.scroll.append(about.panel);
@@ -200,8 +190,9 @@ export function addSettingsCards(sheet: HTMLElement): void {
     plain.row.appendChild(toggle(plain.titleId, true, noop, plain.hintId));
     const stacked = row('Reduce motion', 'Calmer animations. Auto follows this device.', { stack: true });
     stacked.row.appendChild(segmented(stacked.titleId, [{ label: 'Auto', value: 0 }, { label: 'On', value: 1 }, { label: 'Off', value: 2 }], 0, noop, stacked.hintId));
-    const fresh = row('Vibration', 'A short buzz on moves and wins.', { chip: NEW });
-    fresh.row.appendChild(toggle(fresh.titleId, true, noop, fresh.hintId));
+    const fresh = row('Colour shapes', 'Adds a shape to each colour.');
+    fresh.row.querySelector('.tf-set-hint')!.insertAdjacentHTML('beforeend', ` ${SHAPES}`);
+    fresh.row.appendChild(toggle(fresh.titleId, false, noop, fresh.hintId));
     const head = panel('Game');
     head.body.append(plain.row, stacked.row, fresh.row);
     const rowsBox = h(`<div class="tf-set-demo" id="settings-demo-rows"><h3 class="btn-title">Sectiekop en rijen (titel + één regel uitleg)</h3></div>`);
@@ -236,7 +227,7 @@ export function addSettingsCards(sheet: HTMLElement): void {
       'settings-screen',
       'Instellingenscherm · testlab als apart scherm',
       'telefoon 390×844 px · het scherm leeft: schakelaars, keuzes, “Back to defaults” en de wis-stap werken',
-      'De speler ziet alleen zijn eigen instellingen; onderaan staat één kleine rij “Test lab”. Voor een publieke release vervalt alleen die rij (zie het vierde kader) en laadt de game altijd de standaardwaarden van het lab. De paarse labels “New idea” markeren voorstellen; ze horen niet in de game.',
+      'De speler ziet alleen zijn eigen instellingen; onderaan staat één kleine rij “Test lab”. Voor een publieke release vervalt alleen die rij (zie het vierde kader) en laadt de game altijd de standaardwaarden van het lab.',
     );
     stage.append(
       titled('Spelersinstellingen', settingsFrame({ width: 390, height: 844 })),

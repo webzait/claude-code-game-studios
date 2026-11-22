@@ -22,8 +22,6 @@ export interface SaveData {
     mute: boolean;
     /** null follows the device's reduced-motion preference. */
     reduceMotion: boolean | null;
-    /** A short buzz on moves and wins, on devices that can vibrate. */
-    vibration: boolean;
   };
   lab: LabSettings;
 }
@@ -37,7 +35,7 @@ export interface KeyValueStore {
 
 /** A fresh save. */
 export function defaultSave(): SaveData {
-  return { version: SAVE_VERSION, best: {}, coins: CONFIG.coins.start, paid: {}, settings: { mute: false, reduceMotion: null, vibration: true }, lab: { ...DEFAULT_LAB } };
+  return { version: SAVE_VERSION, best: {}, coins: CONFIG.coins.start, paid: {}, settings: { mute: false, reduceMotion: null }, lab: { ...DEFAULT_LAB } };
 }
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -60,7 +58,7 @@ export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
     return save;
   }
   // Version 2 had no coins: the player keeps progress and starts with the opening balance.
-  // Version 3 had no vibration setting: everything is kept and vibration starts at its default.
+  // Versions 3 and 4 differ only in a vibration setting that the game no longer has: a stored one is ignored.
   if (raw.version !== SAVE_VERSION && raw.version !== 3 && raw.version !== 2) return save;
   if (isRecord(raw.best)) {
     for (const [id, moves] of Object.entries(raw.best)) {
@@ -78,7 +76,6 @@ export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
   if (isRecord(raw.settings)) {
     save.settings.mute = raw.settings.mute === true;
     save.settings.reduceMotion = typeof raw.settings.reduceMotion === 'boolean' ? raw.settings.reduceMotion : null;
-    if (typeof raw.settings.vibration === 'boolean') save.settings.vibration = raw.settings.vibration;
   }
   if (isRecord(raw.lab)) {
     const lab = raw.lab;

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { CONFIG } from '../../src/config';
-import { deviceVibrate, Haptics } from '../../src/haptics';
 import { extraMovesPrice, hintPrice, payout, rewardFor } from '../../src/game/coins';
 import { applyLab, DEFAULT_LAB, rulesFor, usesCertifiedRules, type LabSettings } from '../../src/game/lab';
 import { isUnlocked, mainAction, resumeIndex, solvedCount, starsFor, starsOfBest } from '../../src/game/progress';
@@ -118,20 +117,23 @@ describe('save', () => {
     expect(save.lab.moveSlack).toBe(3);
   });
 
-  it('migrates version 3 (no vibration setting): progress, coins, settings and lab are kept', () => {
+  it('migrates version 3: progress, coins, settings and lab are kept', () => {
     const save = migrate({ version: 3, best: { [ids[0]]: 7 }, coins: 73, paid: { [ids[0]]: 26 }, settings: { mute: true, reduceMotion: true }, lab: { moveSlack: 3, unlockAll: true } }, ids);
     expect(save.version).toBe(SAVE_VERSION);
     expect(save.best).toEqual({ [ids[0]]: 7 });
     expect(save.coins).toBe(73);
     expect(save.paid).toEqual({ [ids[0]]: 26 });
-    expect(save.settings).toEqual({ mute: true, reduceMotion: true, vibration: true });
+    expect(save.settings).toEqual({ mute: true, reduceMotion: true });
     expect(save.lab.moveSlack).toBe(3);
     expect(save.lab.unlockAll).toBe(true);
   });
 
-  it('keeps a stored vibration choice and ignores a damaged one', () => {
-    expect(migrate({ version: SAVE_VERSION, settings: { vibration: false } }, ids).settings.vibration).toBe(false);
-    expect(migrate({ version: SAVE_VERSION, settings: { vibration: 'loud' } }, ids).settings.vibration).toBe(true);
+  it('loads a save that still holds the dropped vibration setting, and leaves it out', () => {
+    const save = migrate({ version: 4, best: { [ids[0]]: 7 }, coins: 73, settings: { mute: true, reduceMotion: false, vibration: false }, lab: { unlockAll: true } }, ids);
+    expect(save.best).toEqual({ [ids[0]]: 7 });
+    expect(save.coins).toBe(73);
+    expect(save.settings).toEqual({ mute: true, reduceMotion: false });
+    expect(save.lab.unlockAll).toBe(true);
   });
 
   it('damaged, unknown or future data gives a fresh save, never an error', () => {
@@ -239,25 +241,5 @@ describe('level selection main action', () => {
     expect(starsOfBest(5, 5)).toBe(3);
     expect(starsOfBest(5 + CONFIG.stars.two, 5)).toBe(2);
     expect(starsOfBest(5 + CONFIG.stars.two + 1, 5)).toBe(1);
-  });
-});
-
-describe('haptics', () => {
-  it('vibrates_with_the_configured_pattern_when_switched_on', () => {
-    const calls: number[][] = [];
-    const haptics = new Haptics(() => true, (p) => calls.push(p) > 0);
-    expect(haptics.supported).toBe(true);
-    expect(haptics.play('move')).toBe(true);
-    expect(haptics.play('win')).toBe(true);
-    expect(calls).toEqual([CONFIG.haptics.move, CONFIG.haptics.win]);
-  });
-
-  it('stays_silent_when_switched_off_or_when_the_device_cannot_vibrate', () => {
-    const calls: number[][] = [];
-    expect(new Haptics(() => false, (p) => calls.push(p) > 0).play('move')).toBe(false);
-    expect(calls).toEqual([]);
-    const none = new Haptics(() => true, deviceVibrate({}));
-    expect(none.supported).toBe(false);
-    expect(none.play('win')).toBe(false);
   });
 });

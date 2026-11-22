@@ -126,7 +126,6 @@ export function panel(title: string, chip = '', about = ''): { panel: HTMLElemen
 }
 
 export const chip = (kind: string, text: string): string => `<span class="tf-set-chip ${kind}">${text}</span>`;
-export const NEW = chip('new', 'New idea');
 export const TEST = chip('test', 'Testing only');
 export const ON_OFF = (on: boolean): string => (on ? 'On' : 'Off');
 
@@ -333,14 +332,10 @@ export interface PlayerSettingsModel {
   readonly mute: boolean;
   /** null follows the device. */
   readonly reduceMotion: boolean | null;
-  readonly vibration: boolean;
-  /** False on a device that cannot vibrate: the switch is left out rather than shown doing nothing. */
-  readonly canVibrate: boolean;
   /** How many test lab values differ from the certified game. */
   readonly labChanged: number;
   setMute(mute: boolean): void;
   setReduceMotion(value: boolean | null): void;
-  setVibration(on: boolean): void;
   resetProgress(): void;
   back(): void;
   openLab(): void;
@@ -364,7 +359,6 @@ export function playerScreen(m: PlayerSettingsModel): { root: HTMLElement; back:
     return r.row;
   };
   game.body.append(flag('sound', 'Sound', 'Game sounds.', !m.mute, (on) => m.setMute(!on)));
-  if (m.canVibrate) game.body.append(flag('vibration', 'Vibration', 'A short buzz on moves and wins.', m.vibration, (on) => m.setVibration(on)));
   const motion = row('Reduce motion', 'Calmer animations. Auto follows this device.', { stack: true });
   motion.row.dataset.key = 'reduceMotion';
   motion.row.appendChild(

@@ -26,7 +26,6 @@
 | `lab.slackOptions`, `lab.speedOptions` | Choices offered in the test lab |
 | `lab.certifyMaxVisited` | Positions examined when re-checking a level under a test rule |
 | `audio.volume` | Loudness of the sound effects |
-| `haptics.move`, `haptics.win` | Vibration patterns in milliseconds (buzz, pause, buzz, …) for a move and for a win; used only when the player's Vibration setting is on and the device can vibrate |
 
 `data/levels.json`: `par` is the solver's shortest solution and `witness` is one command list that wins; both are checked by the tests.
 
