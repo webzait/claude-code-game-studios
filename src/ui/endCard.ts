@@ -25,7 +25,8 @@ const icon = (shape: string): string => `<svg viewBox="0 0 24 24" aria-hidden="t
 const stroke = (d: string, width: number): string => `<path d="${d}" fill="none" stroke="currentColor" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"/>`;
 const ICONS = {
   undo: icon(`<path d="M9.4 4.2 3.6 9.3l5.8 5.1z" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>` + stroke('M9 9.3h5.4a5.3 5.3 0 0 1 0 10.6H9.6', 3.5)),
-  retry: icon(stroke('M17.1 16.9A7 7 0 1 1 15.5 8', 3.5) + stroke('M18.4 3.2v6h-6', 3.5)),
+  /** Start again: two round arrows chasing each other. One round arrow is the turn command of the puzzle screen, so this must not be one. */
+  retry: icon(stroke('M5 11.2a7 7 0 0 1 12.2-3.9l2.2 2.3', 3.2) + stroke('M19.6 4.4v5.4h-5.4', 3.2) + stroke('M19 12.8a7 7 0 0 1-12.2 3.9l-2.2-2.3', 3.2) + stroke('M4.4 19.6v-5.4h5.4', 3.2)),
   replay: icon('<path d="M7.4 5v14l11.4-7z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>'),
   next: icon(stroke('M4.5 12h13.5M12.4 5.4 19 12l-6.6 6.6', 3.8)),
   /** Level selection: a board of nine tiles. */
