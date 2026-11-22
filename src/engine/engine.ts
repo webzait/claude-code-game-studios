@@ -166,11 +166,14 @@ export function step(
   return { state: { robots, movesUsed: state.movesUsed + 1 }, events };
 }
 
+/** Character for a collected robot in a state key: below 48, so no cell-and-heading code can equal it. */
+const COLLECTED_KEY = '!';
+
 /** Compact, order-stable key for a state (ignores move count). Used by the solver. */
 export function stateKey(state: GameState, width: number): string {
   let key = '';
   for (const r of state.robots) {
-    key += r.collected ? '~' : String.fromCharCode(48 + (r.y * width + r.x) * 4 + r.dir);
+    key += r.collected ? COLLECTED_KEY : String.fromCharCode(48 + (r.y * width + r.x) * 4 + r.dir);
   }
   return key;
 }
