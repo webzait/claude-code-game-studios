@@ -138,7 +138,7 @@ Vuistregels die bij het ordenen zijn gebruikt:
 
 Pagina 2 begint lager dan pagina 1 eindigt (4,4 na 7,9): een nieuwe pagina is een nieuw begin.
 
-## 4. Pagina 1, 2 en 3
+## 4. Pagina 1 tot en met 4
 
 ### Pagina 1 (level 1–20): de regels en de eerste combinaties
 
@@ -270,6 +270,49 @@ Eerlijk hierover:
   - *Conga Line* (59) is met 3,6 bewust een adempauze voor het slotlevel, geen vergissing in de volgorde.
   - Geen van de 20 bleek op het scherm saai, verwarrend of oneerlijk genoeg om te vervangen. Dat is het oordeel
     van één maker die de oplossingen kende; een echte speler heeft ze niet gezien.
+
+### Pagina 4 (level 61–80): een uitgang per kleur — in het spel
+
+Gebouwd op 22 november 2026 na "los alles op". De regel staat in hoofdstuk 7 (C). Elk level op deze pagina
+heeft precies één uitgang per kleur die meedoet; de groene uitgang voor iedereen komt hier niet voor.
+
+| # | Level | Idee | Bord | Score | Herkomst |
+|--:|---|---|:-:|--:|---|
+| 61 | Own Door | `colour-exit` | 4×4 | 1,5 | hand |
+| 62 | Just Passing | `wrong-door` | 5×4 | 3,2 | gegenereerd |
+| 63 | Swap Sides | `colour-exit` | 4×3 | 4,5 | hand |
+| 64 | Doorstop | `wrong-door` | 5×5 | 4,6 | gegenereerd |
+| 65 | Three Doors | `three-colours` | 5×5 | 4,8 | gegenereerd |
+| 66 | Ricochet | `turn-tile` | 5×5 | 4,9 | gegenereerd |
+| 67 | Side by Side | `colour-exit` | 6×5 | 4,9 | gegenereerd |
+| 68 | Top and Bottom | `board-shape` | 4×7 | 5,7 | gegenereerd |
+| 69 | After the Red | `queue` | 6×5 | 4,9 | gegenereerd |
+| 70 | Stacked Doors | `exit-sides` | 6×6 | 5,4 | gegenereerd |
+| 71 | Twin Gates | `wrong-door` | 6×6 | 6,3 | gegenereerd |
+| 72 | Four Corners | `tight` | 4×4 | 5,4 | gegenereerd |
+| 73 | Colour Sort | `three-colours` | 6×5 | 6,6 | gegenereerd |
+| 74 | Half and Half | `colour-exit` | 6×5 | 4,9 | gegenereerd |
+| 75 | Three Lanes | `three-colours` | 6×6 | 7,0 | gegenereerd, opgeschoond |
+| 76 | Wide Sort | `board-shape` | 7×7 | 6,8 | gegenereerd, opgeschoond |
+| 77 | Sorting Office | `conflict` | 6×5 | 7,0 | gegenereerd |
+| 78 | Long Sort | `board-shape` | 8×6 | 7,1 | gegenereerd, opgeschoond |
+| 79 | Home Stretch | `colour-exit` | 6×5 | 4,6 | gegenereerd |
+| 80 | Grand Sort | `big` | 8×8 | 7,4 | gegenereerd |
+
+Level 61 tot 65 leren de uitgang per kleur: ieder zijn eigen deur (alleen VOORUIT); over andermans deur
+lopen; kruisen omdat je onder de verkeerde deur staat; iemand die op jouw deur staat; drie kleuren, drie deuren.
+
+Eerlijk hierover:
+- Twee levels met de hand (61 en 63; 63 is het voorbeeldbord uit het voorstel), drie door het gereedschap
+  opgeschoond, vijftien ongewijzigd gekozen.
+- **Level 63 heeft twee kortste oplossingen en is met 4,5 aan de zware kant voor het derde leerlevel.**
+- De piek (7,0 tot 7,1) ligt lager dan die van pagina 3 (8,5), en het pronkstuk (7,4) is het hoogste van de
+  pagina maar haalt de richtscore van 8 niet. Een uitgang per kleur maakt levels niet vanzelf zwaarder: de
+  robots hoeven minder door elkaar heen.
+- Maar één level combineert de uitgang per kleur met de draaitegel (66). Twee recepten die juist de
+  "verkeerde deur" op grote borden vroegen, leverden geen bruikbare kandidaat op.
+- De volledige meting van *Grand Sort* is afgekapt bij 3 miljoen standen; lengte en oplossing zijn bewezen.
+- Het economiemodel (`design/economy.md`) rekent nog met drie pagina's; pagina 4 zit daar niet in.
 
 ## 5. Hoe een level wordt gemaakt en bewezen
 
@@ -426,6 +469,28 @@ richting van elke robot na elke zet gelijk is aan die van de engine.
 
 De rest van dit hoofdstuk is het oorspronkelijke voorstel, ongewijzigd, als verantwoording van de keuze.
 B tot en met G zijn niet gebouwd.
+
+**Stand na 22 november 2026, tweede ronde: ook C1, de uitgang per kleur, is gebouwd** (engine, levelparser,
+zeef, meting, generator en tekenwerk). Wat er precies in zit:
+
+- Celcodes `ER`, `EB`, `EY` naast `EX`. Een bord mag meer dan één uitgang hebben; elke kleur die meedoet moet
+  een uitgang hebben die hem opneemt, anders weigert de parser het level.
+- De regel: een robot wordt alleen opgenomen door een uitgang die zijn kleur neemt. Voor elke andere robot is
+  die uitgang gewone vloer: hij kan erop staan en eroverheen lopen.
+- Meerdere robots die door dezelfde uitgang worden opgenomen, zitten elkaar niet in de weg (zoals altijd).
+  Een robot die er *niet* wordt opgenomen en hetzelfde vakje wil als een ander, wacht, zoals op elke tegel.
+- Staat er een robot van een andere kleur op jouw uitgang, dan kun je er niet in tot hij weg is.
+- Winnen blijft: iedereen opgenomen. De toestand is niet groter geworden en de solver is niet gewijzigd.
+- Tekenwerk: dezelfde uitgang in de tinten van de robotkleur, met een eigen gloed. Met "Colour shapes" aan
+  toont de uitgang de vorm van zijn kleur in plaats van het vinkje. Op geel is het vinkje donker, omdat wit
+  daar wegvalt.
+- Een bord met de ene groene uitgang gedraagt zich exact als voorheen: de eerste 60 levels en hun tests zijn
+  onveranderd groen.
+
+Afwijking van het voorstel hieronder: daar stond dat twee robots van een verkeerde kleur elkaar blokkeren op
+de uitgang. Gebouwd is de iets ruimere regel hierboven (een niet-opgenomen robot wacht zodra *iemand* anders
+hetzelfde vakje wil, ook een robot die wel wordt opgenomen), omdat anders twee robots in één zet hetzelfde
+vakje in zouden gaan. D tot en met G en C2 zijn niet gebouwd.
 
 ### Waar elk element aan moet voldoen
 
@@ -661,7 +726,7 @@ omdat ze op `step` leunen.
 | # | Vraag | Besluit | Stand |
 |--:|---|---|---|
 | 1 | De sleutelfout in de engine repareren | Ja | Gedaan, zie hoofdstuk 5 |
-| 2 | Nieuwe elementen | Draaitegel (pagina 3), uitgang per kleur (pagina 4), drukplaat met poort (pagina 5); eenrichtingstegel als reserve | Draaitegel gebouwd, getekend en geanimeerd. De andere twee niet begonnen |
+| 2 | Nieuwe elementen | Draaitegel (pagina 3), uitgang per kleur (pagina 4), drukplaat met poort (pagina 5); eenrichtingstegel als reserve | Draaitegel en uitgang per kleur gebouwd, getekend en in het spel. Drukplaat met poort niet begonnen: afgesproken was die pas te bouwen als de eerste twee bevallen |
 | 3 | Pagina 3 | Variant A, met de draaitegel | Gedaan: 20 levels in `data/levels.json`, het spel heeft er 60 |
 | 4 | Volgorde van pagina 1 en 2 | Akkoord: *Follow the Arrow* op plek 3, *Two Lanes* en *Patience* op pagina 2 | Gedaan |
 | 5 | Oude saves met een opgelost level achter een gesloten level | Zo laten | Geen wijziging |
@@ -679,7 +744,15 @@ Zie hoofdstuk 4 en 7.
 Op 22 november 2026 volgde het derde akkoord: de tegel tekenen en animeren en pagina 3 in het spel brengen.
 Dat is gedaan; zie hoofdstuk 4 en 7 en de schermafbeeldingen in `production/qa/evidence/turn-tile/`.
 
+Op 22 november 2026 volgde "los alles op". Daarop is pagina 4 met de uitgang per kleur gebouwd (hoofdstuk 4
+en 7) en is de browsertest die alle levels uitspeelt ruimer gaan wachten. Niet gedaan: de twee open pull
+requests van andere sessies bijwerken (het samenvoegen in die branches werd geweigerd), en de drukplaat met
+poort (zie besluit 2).
+
 ## 9. Niet gecontroleerd
+
+- **Pagina 4 is door niemand buiten deze sessie gespeeld.** Of spelers de gekleurde uitgang zonder uitleg
+  begrijpen, en of geel-op-geel en rood naast de rode knop goed lezen op een telefoon, is niet getest.
 
 - **Of echte spelers de volgorde goed vinden.** De score is geijkt op tien levels en op de volgorde van de
   maker. Er heeft niemand gespeeld.

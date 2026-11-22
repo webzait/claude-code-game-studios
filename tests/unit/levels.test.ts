@@ -11,8 +11,10 @@ import { board } from './helpers';
 const byId = (id: string) => LEVELS.find((l) => l.id === id)!;
 /** Page 3: the turn-tile page. */
 const PAGE_3 = LEVELS.slice(2 * CONFIG.levelsPerPage, 3 * CONFIG.levelsPerPage);
-/** The two levels FORWARD alone wins: the very first, and the one that introduces the turn tile. */
-const FORWARD_ONLY = ['first-steps', 'turntable'];
+/** The levels FORWARD alone wins: the very first, and the first of each page that introduces a new element. */
+/** Page 4: an exit per colour. */
+const PAGE_4 = LEVELS.slice(3 * CONFIG.levelsPerPage, 4 * CONFIG.levelsPerPage);
+const FORWARD_ONLY = ['first-steps', 'turntable', 'own-door'];
 const colours = (id: string): string[] => [...new Set(byId(id).start.robots.map((r) => r.color))].sort();
 
 describe('solver', () => {
@@ -35,8 +37,8 @@ describe('solver', () => {
 });
 
 describe('levels', () => {
-  it('ships three full pages of levels with unique ids and names', () => {
-    expect(LEVELS.length).toBe(3 * CONFIG.levelsPerPage);
+  it('ships four full pages of levels with unique ids and names', () => {
+    expect(LEVELS.length).toBe(4 * CONFIG.levelsPerPage);
     expect(new Set(LEVELS.map((l) => l.id)).size).toBe(LEVELS.length);
     expect(new Set(LEVELS.map((l) => l.name)).size).toBe(LEVELS.length);
   });
@@ -97,6 +99,32 @@ describe('levels', () => {
     expect(first.filter((l) => replayMeasures(l, l.witness).tileTurns === 0).length).toBe(1);
   });
 
+  it('keeps exits per colour off pages 1 to 3: the first sixty levels have the one exit for everyone', () => {
+    expect(LEVELS.slice(0, 3 * CONFIG.levelsPerPage).every((l) => l.board.exits === undefined)).toBe(true);
+  });
+
+  it('teaches the exit per colour in the first five levels of page 4, starting with FORWARD alone', () => {
+    const first = PAGE_4.slice(0, 5);
+    expect(first.every((l) => l.board.exits?.every((e) => e.color !== null))).toBe(true);
+    expect(new Set(first[0].witness)).toEqual(new Set(['forward']));
+    expect(first.every((l) => l.par <= 7 && l.start.robots.length <= 5)).toBe(true);
+    // Two of the five are about the wrong door: a robot steps onto an exit that is not its own.
+    expect(first.filter((l) => replayMeasures(l, l.witness).wrongDoor > 0).length).toBeGreaterThanOrEqual(2);
+    // Three colours and three exits arrive inside the first five.
+    expect(first.some((l) => l.board.exits?.length === 3)).toBe(true);
+  });
+
+  it('gives every level of page 4 an exit for each colour in play and nothing else', () => {
+    for (const level of PAGE_4) {
+      const colours = [...new Set(level.start.robots.map((r) => r.color))].sort();
+      const doors = (level.board.exits ?? []).map((e) => e.color).sort();
+      expect(doors, level.id).toEqual(colours);
+    }
+    const sizes = new Set(PAGE_4.map((l) => `${l.board.width}x${l.board.height}`));
+    expect(sizes.has('8x8')).toBe(true);
+    expect(sizes.size).toBeGreaterThanOrEqual(8);
+  });
+
   it('uses the tile in most levels of page 3 and leaves it out of a few, with two or three tiles at most', () => {
     const tiles = PAGE_3.map((l) => l.board.turnTiles?.filter(Boolean).length ?? 0);
     expect(tiles.filter((n) => n > 0).length).toBeGreaterThanOrEqual(16);
@@ -142,7 +170,7 @@ describe('levels', () => {
       });
 
       const forwardWins = FORWARD_ONLY.includes(level.id);
-      it(forwardWins ? 'is one of the two levels won by only pressing forward' : 'cannot be won by only pressing forward', () => {
+      it(forwardWins ? 'is one of the few levels won by only pressing forward' : 'cannot be won by only pressing forward', () => {
         const session = new Session(level, { budget });
         while (session.status === 'playing') session.apply('forward');
         expect(session.status).toBe(forwardWins ? 'won' : 'lost');
