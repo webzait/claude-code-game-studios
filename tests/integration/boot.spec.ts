@@ -210,7 +210,7 @@ test('out of moves in a hopeless position: free Retry, a priced Undo, and no ext
   await expect(page.locator('#end-offer')).toHaveCount(0);
   await expect(page.locator('.tf-end-note')).toContainText('no offer');
   await page.click('#end-hint');
-  await expect(page.locator('#hint')).toContainText('Undo', { timeout: 15000 });
+  await expect(page.locator('#hint')).toContainText('No win from here', { timeout: 15000 });
   await page.click('#restart');
   expect((await snap(page)).movesLeft).toBe(budget(0));
 });
@@ -240,36 +240,44 @@ test('out of moves two steps from home: extra moves are offered and really win',
   expect((await snap(page)).coins).toBe(config.coins.start - config.coins.extraMovesCost + config.coins.win);
 });
 
-test('Hint: the status is free, the next move costs coins, and without coins it is refused', async ({ page }) => {
+test('Hint: the status is free, the next move costs coins and is drawn on the board, and without coins it is refused', async ({ page }) => {
   await solvedUpTo(page, ARROW);
   await open(page);
   await page.click(`#node-${ARROW + 1}`);
   await press(page, 'red'); // leave the witness so the solver has to search
   await page.click('#undo');
+  const wallet = config.coins.start - undoCost; // that Undo was paid for
   await press(page, 'forward');
   // The price is on the Hint button before it is tapped.
   await expect(page.locator('#scan')).toHaveAttribute('aria-label', `Hint, ${config.coins.hintCost} coins`);
   await page.click('#scan');
-  await expect(page.locator('#hint')).toContainText('Solvable from here', { timeout: 30000 });
-  expect((await snap(page)).coins).toBe(config.coins.start);
+  await expect(page.locator('#hint')).toContainText('You can still win', { timeout: 30000 });
+  // The Hint button is ringed for the second tap; nothing is drawn or paid yet.
+  await expect(page.locator('#scan')).toHaveClass(/nudge/);
+  expect(await snap(page)).toMatchObject({ coins: wallet, hintPicture: [] });
   await page.click('#scan');
-  await expect(page.locator('#hint')).toContainText('Next:');
   await expect(page.locator('.cmd.nudge')).toHaveCount(1);
-  expect((await snap(page)).coins).toBe(config.coins.start - config.coins.hintCost);
+  // The hint is a picture on the board: one mark per robot still on it, and only a few words under it.
+  const shown = await snap(page);
+  expect(shown.coins).toBe(wallet - config.coins.hintCost);
+  expect(shown.hintPicture).toHaveLength(shown.total - shown.collected);
+  expect(shown.hint.length).toBeLessThan(30);
+  // Following the hint clears the picture.
+  await page.dispatchEvent('.cmd.nudge', 'pointerdown');
+  expect((await snap(page)).hintPicture).toEqual([]);
   // Spend the rest, one revealed move at a time, until the wallet cannot pay.
-  const affordable = Math.floor(config.coins.start / config.coins.hintCost);
+  const affordable = Math.floor(wallet / config.coins.hintCost);
   for (let i = 1; i < affordable; i++) {
-    await page.dispatchEvent('.cmd.nudge', 'pointerdown');
     await page.click('#scan');
     await page.click('#scan');
     await expect(page.locator('.cmd.nudge')).toHaveCount(1);
+    await page.dispatchEvent('.cmd.nudge', 'pointerdown');
   }
-  await page.dispatchEvent('.cmd.nudge', 'pointerdown');
   await page.click('#scan');
   await page.click('#scan');
-  await expect(page.locator('#hint')).toContainText('costs');
+  await expect(page.locator('#hint')).toContainText('Not enough coins');
   await expect(page.locator('.cmd.nudge')).toHaveCount(0);
-  expect((await snap(page)).coins).toBe(config.coins.start - affordable * config.coins.hintCost);
+  expect(await snap(page)).toMatchObject({ coins: wallet - affordable * config.coins.hintCost, hintPicture: [] });
 });
 
 test('with free help switched on in the test lab, following the hint wins the level', async ({ page }) => {

@@ -59,7 +59,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 #map .tf-levels-pager[hidden] { display: none; }
 /* Level */
 /* The hint line lies over the bottom edge of the play zone, so it takes no height from the controls. */
-.hint-line { height: 22px; margin-top: -26px; margin-bottom: 4px; position: relative; z-index: 1; pointer-events: none; text-align: center; font-weight: 700; font-size: 14px; color: var(--ink); }
+.hint-line { height: 22px; margin-top: -26px; margin-bottom: 4px; position: relative; z-index: 1; pointer-events: none; text-align: center; font-weight: 700; font-size: clamp(12.5px, 3.9vw, 14px); white-space: nowrap; color: var(--ink); text-shadow: 0 0 4px #fff, 0 0 8px rgba(255, 255, 255, .9); }
 /* One row: back, then level and moves left as one plate, then the coin counter. */
 #level .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
 #level .back { width: 42px; height: 43px; }

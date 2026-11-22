@@ -22,6 +22,7 @@
 | `rules.exitAcceptsMany` | `true`: several robots may enter the exit in one turn |
 
 | `moveSlack` | Moves allowed over the shortest solution (the move budget is par + this) |
+| `hintPicture` | The hint drawn on the board (finding B1), in cells: `arrow` is the ghost arrow from a robot to the cell it will step to (`from`, `neck`, `tip` along the way, `shaft` and `head` half-widths); `bump` the mark at the edge where a robot will be blocked; `turn` the quarter arc round a robot the command turns, from its old heading to its new one (`startGap`, `endGap`, `head` in degrees). `opacity`, the white `outline` width, the `lift` above the tiles, and `pulse` (length in seconds, how far the marks slide, how much they fade; off with reduced motion) |
 | `extraMoves` | Extra moves offered when out of moves, if proven to be enough |
 | `scan.maxVisited` | Positions a hint or rescue check may examine before it reports "could not finish" |
 | `lab.yellowEarlyLevels` | Levels recoloured blue to yellow by the "Yellow early" test switch |
