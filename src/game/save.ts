@@ -1,5 +1,6 @@
 import { CONFIG } from '../config';
 import { HEADING_STYLES, type HeadingStyle } from '../render/heading';
+import { CELEBRATION_VARIANTS, type CelebrationVariant } from './celebration';
 import { DEFAULT_LAB, type LabSettings } from './lab';
 import { emptyLedger, readLedger, type Ledger } from './ledger';
 import { PURCHASE_OUTCOMES, type PurchaseOutcome } from './shop';
@@ -114,6 +115,7 @@ export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
     if (lab.levelScreen === 'path' || lab.levelScreen === 'grid') save.lab.levelScreen = lab.levelScreen;
     if (typeof lab.shop === 'boolean') save.lab.shop = lab.shop;
     if (PURCHASE_OUTCOMES.includes(lab.purchaseOutcome as PurchaseOutcome)) save.lab.purchaseOutcome = lab.purchaseOutcome as PurchaseOutcome;
+    if (CELEBRATION_VARIANTS.includes(lab.celebration as CelebrationVariant)) save.lab.celebration = lab.celebration as CelebrationVariant;
   }
   if (withCoins) save.ledger = readLedger(raw.ledger, CONFIG.shop.ledgerMax);
   return save;

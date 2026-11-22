@@ -10,6 +10,7 @@ import { Sfx } from './audio';
 import { CONFIG } from './config';
 import type { Color, Command, Robot, RobotEvent } from './engine/types';
 import { previewStep, witnessNext, type RescueResult, type ScanResult } from './game/assist';
+import { CelebrationRun, planCelebration, type CelebrationPlan, type CelebrationVariant } from './game/celebration';
 import { extraMovesPrice, hintPrice, payout, rewardFor, settlePaid, undoQuote, type UndoQuote } from './game/coins';
 import { applyLab, levelScreenView, rulesFor, usesCertifiedRules, type LabSettings } from './game/lab';
 import { emptyLedger, record, type LedgerEntry } from './game/ledger';
@@ -65,6 +66,8 @@ export interface Snapshot {
   shopOpen: boolean;
   /** The test ledger's lines, oldest first. */
   ledger: LedgerEntry[];
+  /** The latest win's celebration: what was planned, whether its effect still plays and whether the pop-up was asked for. */
+  celebration: (CelebrationPlan & { active: boolean; cardShown: boolean }) | null;
 }
 
 declare global {
@@ -138,6 +141,8 @@ class Game {
   private chain: Promise<void> = Promise.resolve();
   /** Bumped by undo, restart and screen changes so stale animations and solver answers are dropped. */
   private generation = 0;
+  /** The celebration of the latest win, from the last robot's exit until its effect has ended. */
+  private run: CelebrationRun | null = null;
   private replaying = false;
   private busy = false;
   private touched = false;
@@ -194,7 +199,10 @@ class Game {
     });
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') this.closeCoinInfo();
+      this.run?.skip();
     });
+    // A tap anywhere ends the celebration and brings the pop-up at once; the tap still does what it was aimed at.
+    window.addEventListener('pointerdown', () => this.run?.skip(), true);
     el('toSettings').addEventListener('click', () => this.tap(() => this.show('settings')));
     new ResizeObserver(() => this.view.resize()).observe(document.querySelector('.stage') as HTMLElement);
     // Kit artwork: images are bundled; the page sets them here so one build works from any folder.
@@ -309,6 +317,7 @@ class Game {
 
   private show(screen: ScreenName): void {
     this.generation++;
+    this.run?.cancel();
     this.pending = 0;
     this.replaying = false;
     this.busy = false;
@@ -623,16 +632,17 @@ class Game {
 
   private onWin(): void {
     if (this.preview) {
-      this.view.celebrate();
-      this.hud.showCard(
-        {
-          kind: 'info',
-          title: 'Test board cleared',
-          text: 'This board only shows how the board scales. Nothing was saved.',
-          levels: () => this.tap(() => this.show('map')),
-          second: { label: 'Again', action: () => this.tap(() => this.startPreview(this.previewIndex)) },
-        },
-        !this.reduced,
+      this.celebrate(1, () =>
+        this.hud.showCard(
+          {
+            kind: 'info',
+            title: 'Test board cleared',
+            text: 'This board only shows how the board scales. Nothing was saved.',
+            levels: () => this.tap(() => this.show('map')),
+            second: { label: 'Again', action: () => this.tap(() => this.startPreview(this.previewIndex)) },
+          },
+          !this.reduced,
+        ),
       );
       return;
     }
@@ -654,13 +664,57 @@ class Game {
     }
     this.persist();
     this.track({ type: 'level_win', level: id, moves, par: this.par, stars, usedBackup: this.usedBackup });
-    this.sfx.play('win');
-    this.view.celebrate();
     this.refresh();
+    this.celebrate(stars, () => this.showWin(moves, stars));
+  }
+
+  /**
+   * The moment between the last robot's exit and the pop-up: the celebration chosen in the test
+   * lab plays on the board, `showCard` brings the pop-up while it plays on, and a tap skips it.
+   * Everything the win earned is saved before this starts, so skipping or leaving loses nothing.
+   */
+  private celebrate(stars: 1 | 2 | 3, showCard: () => void): void {
+    this.run?.cancel();
+    const plan = planCelebration({ variant: this.save.lab.celebration, stars, reduced: this.reduced, muted: this.save.settings.mute });
     const generation = this.generation;
-    void wait(this.reduced ? 0.2 : 0.55).then(() => {
-      if (generation === this.generation) this.showWin(moves, stars);
+    this.run = new CelebrationRun(
+      plan,
+      {
+        start: (p) => {
+          if (p.sound) this.sfx.play(p.sound);
+          this.view.celebrate(p);
+        },
+        stop: () => this.view.stopCelebration(),
+        showCard: () => {
+          if (generation === this.generation) showCard();
+        },
+      },
+      (seconds, fn) => {
+        const id = window.setTimeout(fn, seconds * 1000);
+        return () => window.clearTimeout(id);
+      },
+    );
+    this.run.begin();
+  }
+
+  /**
+   * For checks and for looking: play a celebration on the board on show without winning anything.
+   * Returns what was played. The board is put back as the level stands when it ends.
+   */
+  showCelebration(variant: CelebrationVariant, stars: 1 | 2 | 3 = 3, reduced = this.reduced): CelebrationPlan {
+    const plan = planCelebration({ variant, stars, reduced, muted: true });
+    this.view.sync(this.session.state, false);
+    this.view.celebrate(plan);
+    const generation = this.generation;
+    void wait(plan.seconds + 0.05).then(() => {
+      if (generation === this.generation && !this.view.celebrating) this.view.sync(this.session.state, false);
     });
+    return plan;
+  }
+
+  /** What the board's last frame cost to draw. For measuring. */
+  drawCost(): { calls: number; triangles: number } {
+    return this.view.drawCost;
   }
 
   private showWin(moves: number, stars: 1 | 2 | 3): void {
@@ -789,6 +843,7 @@ class Game {
     }
     this.track({ type: 'undo', level: this.level.id, price: offer.cost, refused: false });
     this.generation++;
+    this.run?.cancel();
     this.pending = 0;
     this.hud.hideCard();
     this.clearScan();
@@ -800,6 +855,7 @@ class Game {
   private restart(): void {
     if (this.replaying || this.busy) return;
     this.generation++;
+    this.run?.cancel();
     this.pending = 0;
     this.session.restart();
     this.usedBackup = false;
@@ -909,6 +965,7 @@ class Game {
       events: [...this.metrics.events],
       shopOpen: this.shop.isOpen,
       ledger: [...this.save.ledger.entries],
+      celebration: this.run ? { ...this.run.plan, active: this.run.active, cardShown: this.run.cardShown } : null,
     };
   }
 }

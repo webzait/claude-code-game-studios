@@ -39,6 +39,14 @@
 | `lab.slackOptions`, `lab.speedOptions` | Choices offered in the test lab |
 | `lab.certifyMaxVisited` | Positions examined when re-checking a level under a test rule |
 | `audio.volume` | Loudness of the sound effects |
+| `celebration.variant` | The win celebration the game ships with, and the default of the test lab's "Win celebration" choice: `confetti`, `wave` or `hop` (`src/game/celebration.ts`) |
+| `celebration.cardDelay`, `perfectCardDelay` | Seconds from the last robot's exit until the win pop-up appears, for a win and for a three-star win. The effect plays on behind the pop-up; a tap brings the pop-up at once. Keep both well under a second |
+| `celebration.gold`, `white` | The extra colours of a celebration; the others are the level's robot colours and the exit's green |
+| `celebration.confetti` | Confetti: `seconds`/`perfectSeconds` how long it lasts, `pieces`/`perfectPieces` how many flecks, `size` of a fleck in cells, `rise` upward speed, `spread` and `lean` outward speed and pull to the middle of the board (per board width), `gravity`, `fall` the fastest a fleck floats down, `drag`, `fade` seconds of fading at the end, `secondBurst` seconds until the three-star shower from the middle |
+| `celebration.wave` | Light wave: `seconds`/`perfectSeconds` until the last ring reaches the far corner, `width` of a ring in cells, `gap` seconds between the rings of a three-star win, `tile` size of a lit tile as a share of the cell, `opacity`, `lift` of a lit tile in cells |
+| `celebration.hop` | Victory hop: `seconds`/`perfectSeconds` for the whole row of robots, `hopTime` of one jump, `stagger` between two robots (shortened by itself when there are many), `height`/`perfectHeight` and `spread` in cells, `fan` degrees the jumps spread over, `spins`/`perfectSpins` turns in the air |
+| `celebration.calm` | The quiet version for reduced motion, whichever variant is chosen: the tiles glow once for `seconds` at most `opacity`, and the pop-up comes after `cardDelay` |
+| `celebration.sound.perfect` | Notes of the three-star jingle: frequency in Hz, start and length in seconds. Plays only when sound effects are on; a plain win keeps the `win` sound |
 | `colourShapes.red`, `.blue`, `.yellow` | The shape that goes with each robot colour when the player's "Colour shapes" setting is on: `circle`, `square` or `diamond` (outlines in `src/ui/colourShapes.ts`). Shown on the robots, on the matching command buttons and in the settings preview; each colour needs a shape of its own |
 
 `data/levels.json`: `par` is the solver's shortest solution and `witness` is one command list that wins; both are checked by the tests. Cell codes: `..` floor, `##` wall, `EX` exit, `@@` turn tile, `r^ b> yv r<` robots.

@@ -51,6 +51,7 @@ Each level has a move budget of the shortest solution plus two. Running out ends
 - [x] Turn tile (a tile that turns whoever steps onto it), agreed 2026-11-22: in the engine, drawn as a board part, and animated as a beat of its own after the step
 - [x] Page 3: twenty turn-tile levels, levels 41 to 60, in the game; sixty levels in all
 - [x] Coins: earned per win by its stars (10, 20, 30), spent on Undo (5), the next-move hint (20) and extra moves (40); amounts reasoned in `design/economy.md`; no real shop, no ads
+- [x] Win celebration (2026-11-22, proposals to choose from): between the last robot's exit and the win pop-up a short celebration plays on the board. Three variants in the test lab ("Win celebration"): Confetti, Light wave, Victory hop. Three stars is a little more exuberant; reduced motion gets one quiet glow; a tap skips it and the pop-up never waits a second. Values in `celebration` of `data/config.json`, logic in `src/game/celebration.ts`, effects in `src/render/celebration.ts`. The owner still picks the one that ships (`celebration.variant`)
 - [x] Test shop (2026-11-22): pretend coin purchases behind a `PurchaseProvider` interface, "Get coins" links at the cannot-afford moments, a test ledger and switches in the test lab. Nothing is charged and nothing leaves the device; what a real shop needs and the economy note are in `design/shop.md`
 
 ## Keep

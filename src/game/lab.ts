@@ -2,6 +2,7 @@ import { CONFIG } from '../config';
 import type { Color, Command, Rules } from '../engine/types';
 import type { GameLevel } from '../levels/index';
 import type { HeadingStyle } from '../render/heading';
+import { defaultVariant, type CelebrationVariant } from './celebration';
 import type { PurchaseOutcome } from './shop';
 
 /**
@@ -40,6 +41,8 @@ export interface LabSettings {
   shop: boolean;
   /** How a pretend purchase ends: it succeeds, the buyer cancels, or it fails. */
   purchaseOutcome: PurchaseOutcome;
+  /** What plays on the board when a level is won: confetti, a wave of light, or the robots hopping out once more. */
+  celebration: CelebrationVariant;
 }
 
 /**
@@ -62,6 +65,7 @@ export const DEFAULT_LAB: LabSettings = {
   levelScreen: 'path',
   shop: true,
   purchaseOutcome: 'success',
+  celebration: defaultVariant(),
 };
 
 /**
