@@ -28,7 +28,8 @@ const ICONS = {
   retry: icon(stroke('M17.1 16.9A7 7 0 1 1 15.5 8', 3.5) + stroke('M18.4 3.2v6h-6', 3.5)),
   replay: icon('<path d="M7.4 5v14l11.4-7z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>'),
   next: icon(stroke('M4.5 12h13.5M12.4 5.4 19 12l-6.6 6.6', 3.8)),
-  levels: icon('<rect x="3.5" y="3.5" width="7" height="7" rx="2" fill="currentColor"/><rect x="13.5" y="3.5" width="7" height="7" rx="2" fill="currentColor"/><rect x="3.5" y="13.5" width="7" height="7" rx="2" fill="currentColor"/><rect x="13.5" y="13.5" width="7" height="7" rx="2" fill="currentColor"/>'),
+  /** Level selection: a board of nine tiles. */
+  levels: icon([2.2, 9.1, 16].map((y) => [2.2, 9.1, 16].map((x) => `<rect x="${x}" y="${y}" width="5.8" height="5.8" rx="1.7" fill="currentColor"/>`).join('')).join('')),
   hint: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.7 15.4a5.9 5.9 0 1 1 6.6 0v1.9H8.7z" fill="#f4c62f" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M9.9 20.6h4.2" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M12 .9v1.4M4.3 3.6l1 1M19.7 3.6l-1 1M1.4 10.4h1.5M22.6 10.4h-1.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>`,
   none: '',
 };
@@ -40,6 +41,9 @@ const button = (act: string, kind: string, text: string, glyph: Glyph, after = f
   return `<button type="button" id="end-${act}" class="tf-btn ${kind}"><span class="tf-clip"><span class="tf-face">${after ? label + ICONS[glyph] : ICONS[glyph] + label}</span></span></button>`;
 };
 const utility = (act: string, text: string, glyph: Glyph, size = 'tf-end-small'): string => button(act, `tf-utility ${size}`, text, glyph);
+/** A button that is its symbol only; `name` is what a screen reader and a long press say. */
+const symbol = (act: string, kind: string, name: string, glyph: Glyph): string =>
+  `<button type="button" id="end-${act}" class="tf-btn ${kind} tf-end-symbol" aria-label="${name}" title="${name}"><span class="tf-clip"><span class="tf-face">${ICONS[glyph]}</span></span></button>`;
 /** A quiet secondary action: icon and label, no block, so it never competes with the main button. */
 const link = (act: string, text: string, glyph: Glyph): string => `<button type="button" id="end-${act}" class="tf-end-link">${ICONS[glyph]}<span>${text}</span></button>`;
 
@@ -113,12 +117,13 @@ export function winLine(w: Pick<WinCard, 'moves' | 'par' | 'backup' | 'last'>): 
 
 /** The markup of the win pop-up. `flecks` adds the confetti of the entrance. */
 export function winMarkup(w: WinCard, flecks: boolean): string {
-  const actions = w.last ? button('levels', 'tf-end-main tf-end-big wide', 'Levels', 'levels') : button('next', 'tf-end-go tf-end-big wide', 'Next', 'next', true);
+  // Three buttons of one family, each a symbol: Levels, Retry, Next. Retry is the same symbol as Restart on the puzzle
+  // screen. Next is the green one and sits last, under the thumb; the last level has no Next, so Levels takes its colour.
+  const actions = `${symbol('levels', w.last ? 'tf-end-main' : 'tf-utility', 'Levels', 'levels')}${symbol('retry', 'tf-utility', 'Retry', 'retry')}${w.last ? '' : symbol('next', 'tf-end-go', 'Next', 'next')}`;
   return `${flecks ? confetti() : ''}<div class="tf-end-stars" role="img" aria-label="${w.stars} of 3 stars">${[0, 1, 2].map((i) => `<span class="tf-end-slot${i < w.stars ? ' won' : ''}" style="--i:${i}">${star(false)}${i < w.stars ? star(true) : ''}</span>`).join('')}</div>
     <h2 class="tf-end-title tf-end-line" id="end-title">${winLine(w)}</h2>
     <div class="tf-end-coins" id="end-result">${rewardPlate(w.reward.earned)}</div>
-    <div class="tf-end-actions">${actions}</div>
-    <div class="tf-end-more">${link('retry', 'Retry', 'retry')}${w.last ? '' : link('levels', 'Levels', 'levels')}</div>`;
+    <div class="tf-end-actions ${w.last ? 'duo' : 'trio'}">${actions}</div>`;
 }
 
 function lostBody(l: LostCard): string {
