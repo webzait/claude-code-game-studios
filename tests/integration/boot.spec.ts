@@ -357,14 +357,13 @@ test('settings: test lab switches change the next level, settings survive a relo
 });
 
 test('settings: colour shapes is off at first, shows each colour\'s shape on its button at once and is kept; Vibration is gone', async ({ page }) => {
-  // A save from before: version 4, still holding the vibration setting the game no longer has.
-  await page.addInitScript(
-    ([save]) => {
-      if (!localStorage.getItem('turnflock.save')) localStorage.setItem('turnflock.save', save);
-    },
-    [JSON.stringify({ version: 4, best: {}, coins: 73, paid: {}, settings: { vibration: false }, lab: { unlockAll: true } })],
-  );
   const errors = await open(page);
+  // A save from before: version 4, still holding the vibration setting the game no longer has. It is
+  // put in place once and loaded with a reload: an init script would run again on the later reload,
+  // where it sometimes finds the storage of a page opened from disk still empty and overwrites the save.
+  await page.evaluate(() => localStorage.setItem('turnflock.save', JSON.stringify({ version: 4, best: {}, coins: 73, paid: {}, settings: { vibration: false }, lab: { unlockAll: true } })));
+  await page.reload();
+  await expect.poll(() => page.evaluate(() => typeof window.turnflock?.snapshot)).toBe('function');
   expect((await snap(page)).coins).toBe(73);
   await page.click('#toSettings');
   await expect(page.locator('#settings')).not.toContainText('Vibration');
@@ -383,11 +382,13 @@ test('settings: colour shapes is off at first, shows each colour\'s shape on its
     await expect(badge).toHaveAttribute('data-shape', config.colourShapes[colour]);
   }
   await expect(page.locator('.cmd[data-cmd=forward] .tf-cmd-shape')).toHaveCount(0);
+  // Saved in the current format, without the dropped vibration value.
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('turnflock.save')!).settings)).toEqual({ mute: false, reduceMotion: null, colourShapes: true });
   // Kept over a reload, and switched off again without one.
+  await page.click('#levelBack');
   await page.reload();
   await expect.poll(() => page.evaluate(() => typeof window.turnflock?.snapshot)).toBe('function');
   await expect(page.locator('html')).toHaveClass(/colour-shapes/);
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('turnflock.save')!).settings)).toEqual({ mute: false, reduceMotion: null, colourShapes: true });
   await page.click('#toSettings');
   await expect(shapes).toHaveAttribute('aria-checked', 'true');
   await shapes.click();
