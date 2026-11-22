@@ -1,14 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import config from '../../data/config.json';
-import everyLevel from '../../data/levels.json';
+import levels from '../../data/levels.json';
 import { seeded } from '../../tools/level-design/measure';
 import { drawWants, playLevel, playRun, poisson, quantile, rate, scaled, scoresFromReport, summarise, withScores, type EconLevel, type PlayerType, type RuleSet, type Wants } from '../../tools/economy/model';
-
-// Pages 1 and 2 are the levels the economy was reasoned on; page 3 (the turn tile) joined the game later.
-const MODEL_LEVELS = 40;
-const levels = everyLevel.slice(0, MODEL_LEVELS);
-const upcoming = everyLevel.slice(MODEL_LEVELS);
 
 // The economy model (tools/economy, design/economy.md): its arithmetic, and that it reads the game's own data.
 
@@ -122,11 +117,12 @@ describe('economy model: habits and draws', () => {
 
 describe('economy model: the game\'s own data', () => {
   const report = readFileSync('design/level-report.md', 'utf8');
-  const all = withScores([...levels, ...upcoming], scoresFromReport(report));
+  // Every level is in data/levels.json now: page 3 moved there when the turn tile was drawn.
+  const all = withScores(levels, scoresFromReport(report));
   const shipped = all.slice(0, levels.length);
 
   it('test_scores_everyLevelHasItsMeasuredScore', () => {
-    expect(all).toHaveLength(levels.length + upcoming.length);
+    expect(all).toHaveLength(levels.length);
     for (const level of all) {
       expect(level.score).toBeGreaterThan(0);
       expect(level.score).toBeLessThanOrEqual(10);

@@ -5,11 +5,9 @@
  *        npm run economy -- --runs=500   -> fewer or more runs per player (default 2000)
  * Rule sets: tools/economy/sets.json. Player types: tools/economy/players.json. Both are assumptions to edit.
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { PAGE, scaled, scoresFromReport, summarise, withScores, type EconLevel, type PlayerType, type RuleSet, type Summary } from './model';
 
-/** Levels on pages 1 and 2. */
-const MODEL_LEVELS = 40;
 const OUT = 'production/qa/evidence/economy';
 /** Fixed, so the tables are the same on every run. */
 const SEED = 20261122;
@@ -70,11 +68,13 @@ function main(): void {
   const sets = read<RuleSet[]>('tools/economy/sets.json');
   const players = read<PlayerType[]>('tools/economy/players.json');
   const scores = scoresFromReport(readFileSync('design/level-report.md', 'utf8'));
-  // Two ranges: pages 1 and 2 (the levels the economy was reasoned on) and every level in the game.
-  const everyLevel = read<{ id: string; name: string; par: number }[]>('data/levels.json');
-  const shipped = everyLevel.slice(0, MODEL_LEVELS);
-  const ranges = [withScores(shipped, scores)];
-  if (everyLevel.length > shipped.length) ranges.push(withScores(everyLevel, scores));
+  const shipped = read<{ id: string; name: string; par: number }[]>('data/levels.json');
+  const upcoming = existsSync('data/levels-upcoming.json') ? read<{ id: string; name: string; par: number }[]>('data/levels-upcoming.json') : [];
+  // Two ranges, as design/economy.md reasons with: the first two pages, and every level there is.
+  // Page 3 used to sit in data/levels-upcoming.json; since the turn tile is drawn it is in data/levels.json.
+  const all = [...shipped, ...upcoming];
+  const ranges = [withScores(all.slice(0, 2 * PAGE), scores)];
+  if (all.length > 2 * PAGE) ranges.push(withScores(all, scores));
   mkdirSync(OUT, { recursive: true });
 
   const note = `> Gegenereerd door \`npm run economy\` (${runs} runs per speler, vaste seed ${SEED}). Niet met de hand aanpassen.\n> De spelers zijn aannames (\`tools/economy/players.json\`), de bedragen staan in \`tools/economy/sets.json\`. Scenario's, geen voorspellingen.\n> "Eerste keer tekort": het level waarop voor het eerst een gewenste hulp niet te betalen is; mediaan, tussen haakjes het 10e en 90e percentiel, en het deel van de runs waarin het gebeurt.\n> "Moet bijleggen": munten die de speler van buiten moet toevoegen om alles te kopen wat hij wil.`;
