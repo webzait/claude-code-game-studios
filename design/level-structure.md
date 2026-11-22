@@ -697,6 +697,11 @@ Dat is gedaan; zie hoofdstuk 4 en 7 en de schermafbeeldingen in `production/qa/e
 - **De tegel op een echt toestel.** Beoordeeld op schermafbeeldingen van 390×844 uit een browser zonder
   grafische kaart, in gewone kleuren, met "Colour shapes" aan en in een nagebootste rood-groen-kleurenblindheid;
   niet op een telefoon in de hand en niet door iemand die kleurenblind is.
+- **Eén browsertest faalt, en deed dat al vóór dit werk**: "the win coins: Next on the first frame…" zoekt na
+  een gewonnen level 1 de knop van level 1 op het levelscherm, maar het pad toont voltooide levels niet meer.
+  Nagegaan op de commit van vóór de draaitegel (4eda3b2): daar faalt hij op dezelfde regel. Hij hoort bij het
+  munten- en padwerk van een andere sessie en is hier niet aangeraakt. De overige 19 browsertests slagen
+  (waaronder alle 60 levels na elkaar uitspelen, 21,7 minuten in deze omgeving).
 - **Het tempo van de draai** (0,07 s stilstaan, 0,22 s draaien) is op beeldreeksen beoordeeld, niet op gevoel
   bij het spelen op een toestel.
 - **De herhaalbaarheid van de generatorrondes** met de huidige code is niet opnieuw gedraaid.
