@@ -108,7 +108,7 @@ test('Levels, Level, Win, Next: no dead ends, and progress survives a reload', a
   await page.click('#node-1');
   await playWitness(page, 0);
   expect((await snap(page)).status).toBe('won');
-  await expect(page.locator('#end-next')).toHaveText('Next', { timeout: 15000 });
+  await expect(page.locator('#end-next')).toHaveAttribute('aria-label', 'Next', { timeout: 15000 });
   await expect(page.locator('.tf-end-stars')).toHaveAttribute('aria-label', '3 of 3 stars');
   // The pop-up says one thing: one line, the one amount really earned, one main button; no breakdown, no balance (B5).
   const perfectWin = config.coins.win + config.moveSlack * config.coins.perSpareMove + config.coins.perfect;
@@ -116,8 +116,8 @@ test('Levels, Level, Win, Next: no dead ends, and progress survives a reload', a
   await expect(page.locator('#card .tf-coin-total')).toHaveCount(1);
   await expect(page.locator('#card .tf-coin-sum')).toHaveText(`+${perfectWin}`);
   await expect(page.locator('#card .tf-coin-line, #card .tf-coin-balance')).toHaveCount(0);
-  await expect(page.locator('#end-retry')).toHaveText('Retry');
-  await expect(page.locator('#end-levels')).toHaveText('Levels');
+  await expect(page.locator('#end-retry')).toHaveAttribute('aria-label', 'Retry');
+  await expect(page.locator('#end-levels')).toHaveAttribute('aria-label', 'Levels');
   // The coins fly to the counter, which ends on the saved balance (B6); Next never waits for them.
   await expect(page.locator('#levelCoins .tf-coin-amount')).toHaveText(String(config.coins.start + perfectWin), { timeout: 15000 });
   await expect(page.locator('.tf-coin-fly')).toHaveCount(0);

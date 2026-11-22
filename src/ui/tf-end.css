@@ -64,6 +64,9 @@
 .tf-end-actions { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
 .tf-end-actions .wide { grid-column: 1 / -1; }
 .tf-end-actions.lead { grid-template-columns: 1fr 1.35fr; }
+/* A win's buttons: symbols only, all one size, side by side. */
+.tf-end-actions.trio { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.tf-end-symbol { --h: 60px; --d: 13px; --r: 23px; --icon: 40px; }
 .tf-end-card .tf-btn { --w: 100%; --press-fraction: .8; }
 .tf-end-big { --h: 58px; --d: 13px; --r: 23px; --fs: 23px; --icon: 26px; }
 .tf-end-mid { --h: 50px; --d: 12px; --r: 20px; --fs: 19px; --icon: 24px; }
@@ -145,6 +148,7 @@
   .tf-end-card .tf-coin-total .tf-coin-ico { --s: 30px; }
   .tf-end-line { font-size: 17px; }
   .tf-end-big { --h: 48px; --d: 10px; --fs: 20px; }
+  .tf-end-symbol { --h: 52px; --d: 10px; --icon: 34px; }
   .tf-end-small { --h: 40px; --d: 8px; --fs: 16px; }
   .tf-end-actions { gap: 8px; margin-top: 2px; }
 }
