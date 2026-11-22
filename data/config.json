@@ -35,7 +35,17 @@
       "exit": "#39E85C",
       "exitShadow": "#1FB241",
       "exitGlow": "#A8FFAE",
-      "check": "#F9FFFF"
+      "check": "#F9FFFF",
+      "turnTile": "#C3D0F7",
+      "turnTileAlt": "#BAC8F3",
+      "turnDisc": "#FFFFFF",
+      "turnDiscEdge": "#C9D5E9",
+      "turnRing": "#8FA7E6",
+      "turnRingEdge": "#718AD2",
+      "turnInk": "#3D4A6B",
+      "turnGlow": "#8CE8FF",
+      "turnAltDisc": "#8A63E8",
+      "turnAltInk": "#FFFFFF"
     },
     "robots": {
       "red": {
@@ -64,6 +74,11 @@
     "turnTime": 0.17,
     "moveTime": 0.24,
     "exitTime": 0.34,
+    "tileTurnPause": 0.07,
+    "tileTurnTime": 0.22,
+    "tileUndoShare": 0.7,
+    "tileCueDelay": 0.5,
+    "tileCueTime": 0.6,
     "undoTime": 0.16,
     "bumpDistance": 0.2,
     "hopHeight": 0.1,

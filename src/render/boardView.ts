@@ -2,13 +2,14 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import PARTS from '../../data/parts.json';
-import { boardFootprint, buildExit, buildFloorTile, buildObstacle, buildRim, buildUnderlay } from './parts/board';
+import { boardFootprint, buildExit, buildFloorTile, buildObstacle, buildRim, buildTurnTile, buildUnderlay } from './parts/board';
 import { CONFIG } from '../config';
 import { DIR_DX, DIR_DY, type Color, type GameState, type RobotEvent } from '../engine/types';
 import type { Level } from '../levels/parse';
-import { headingAngle, nearestAngle, squashScale, turnAngle, type HeadingStyle } from './heading';
+import { QUARTER, headingAngle, nearestAngle, squashScale, turnAngle, type HeadingStyle } from './heading';
 import { fuse, type Kit } from './kit';
 import { buildPartsRobot, buildRobot, type RobotView } from './robot';
+import { tileBeats } from './stepPlan';
 
 /** Which models the board is drawn with. */
 export interface BoardStyle {
@@ -41,6 +42,15 @@ interface Tween {
   duration: number;
   update: (k: number) => void;
   done: () => void;
+}
+/** A turn tile on the board: the disc that turns with a robot and the light that flashes when it does. */
+interface TurnTileView {
+  readonly disc: THREE.Object3D;
+  readonly glow: THREE.Mesh | null;
+  /** Shown angle of the disc around y; it keeps the quarter turns it has made. */
+  angle: number;
+  /** True once this tile has turned a robot since the level was loaded. */
+  used: boolean;
 }
 interface Particle {
   mesh: THREE.Mesh;
@@ -91,6 +101,12 @@ export class BoardView {
   /** Patch of light around the parts exit; it breathes slowly. */
   private exitGlow: THREE.Mesh | null = null;
   private level: Level | null = null;
+  /** The level's turn tiles by cell index (row-major). */
+  private turnTiles = new Map<number, TurnTileView>();
+  /** The cell each robot is shown on, by robot id; -1 once collected. Lets an undo see which tile a robot steps back off. */
+  private shownCell = new Map<number, number>();
+  /** Seconds into the turn tiles' opening cue, or null when it is not playing. */
+  private cueTime: number | null = null;
   private sun: THREE.DirectionalLight;
   private time = 0;
   private last = 0;
@@ -200,6 +216,8 @@ export class BoardView {
     this.exitPad = null;
     this.exitRing = null;
     this.exitGlow = null;
+    this.turnTiles.clear();
+    this.shownCell.clear();
     this.floorY = this.modular ? PARTS.floorTile.height : 0.06;
     if (this.modular) this.buildPartsBoard(level);
     else this.buildPlainBoard(level);
@@ -214,6 +232,30 @@ export class BoardView {
     }
     this.sync(level.start, false);
     this.fitCamera();
+    // The cue: every turn tile shows once what it does, before the player has touched anything.
+    this.cueTime = this.turnTiles.size ? 0 : null;
+  }
+
+  /**
+   * The turn tiles' opening cue, `seconds` in: after a short wait every disc makes one quarter
+   * turn clockwise while its light flashes. With reduced motion the disc stays and only the
+   * light shows. Ends the cue (the discs keep their quarter turn) once the time is up.
+   */
+  private playCue(seconds: number): void {
+    const a = CONFIG.anim;
+    const k = Math.min(1, Math.max(0, (seconds - a.tileCueDelay) / a.tileCueTime));
+    for (const tile of this.turnTiles.values()) {
+      if (!this.reduced) tile.disc.rotation.y = tile.angle - QUARTER * easeInOut(k);
+      this.flash(tile, k);
+    }
+    if (k < 1) return;
+    if (!this.reduced) for (const tile of this.turnTiles.values()) tile.angle -= QUARTER;
+    this.cueTime = null;
+  }
+
+  /** Finish the opening cue at once, so a step or an undo starts from settled tiles. */
+  private endCue(): void {
+    if (this.cueTime !== null) this.playCue(Infinity);
   }
 
   /**
@@ -235,6 +277,22 @@ export class BoardView {
           this.exitPad = pad;
           this.exitGlow = (pad.userData.glow as THREE.Mesh | undefined) ?? null;
           this.boardGroup.add(pad);
+          continue;
+        }
+        if (level.board.turnTiles?.[y * width + x]) {
+          const tile = buildTurnTile((x + y) % 2 === 1, false);
+          tile.position.set(cx, 0, cz);
+          // The disc turns and the light flashes, so they stay out of the fused board.
+          const disc = tile.userData.disc as THREE.Object3D;
+          const glow = tile.userData.glow as THREE.Mesh;
+          for (const moving of [disc, glow]) {
+            tile.remove(moving);
+            moving.position.x += cx;
+            moving.position.z += cz;
+            this.boardGroup.add(moving);
+          }
+          this.turnTiles.set(y * width + x, { disc, glow, angle: 0, used: false });
+          fixed.add(tile);
           continue;
         }
         const tile = buildFloorTile((x + y) % 2 === 1, false);
@@ -281,6 +339,14 @@ export class BoardView {
         tile.position.set(this.cellX(x), 0.035, this.cellZ(y));
         tile.receiveShadow = true;
         this.boardGroup.add(tile);
+        if (level.board.turnTiles?.[y * width + x]) {
+          // The built-in board borrows the part's disc, so a turn tile is never an unmarked cell.
+          const part = buildTurnTile(false, false);
+          const disc = part.userData.disc as THREE.Object3D;
+          disc.position.set(this.cellX(x), 0.036, this.cellZ(y));
+          this.boardGroup.add(disc);
+          this.turnTiles.set(y * width + x, { disc, glow: null, angle: 0, used: false });
+        }
         if (walls[y * width + x]) {
           const wall = new THREE.Mesh(wallGeo, wallMat);
           wall.position.set(this.cellX(x), 0.26, this.cellZ(y));
@@ -409,9 +475,16 @@ export class BoardView {
     cam.updateProjectionMatrix();
   }
 
-  /** Show a state exactly. With `animate`, robots glide there (used by undo). */
+  /**
+   * Show a state exactly. With `animate`, robots glide there (used by undo). A robot that steps
+   * back off a turn tile is first turned back by the tile, a quarter against the clock, and then
+   * glides home: the tile's beat played backwards.
+   */
   sync(state: GameState, animate: boolean): void {
     this.skip();
+    this.endCue();
+    const width = this.level?.board.width ?? 1;
+    const a = CONFIG.anim;
     for (const r of state.robots) {
       const view = this.robots.get(r.id);
       if (!view) continue;
@@ -420,6 +493,9 @@ export class BoardView {
       // Nearest equivalent heading, so an undo turns back the short way.
       const ta = nearestAngle(view.angle, headingAngle(r.dir));
       const ts = r.collected ? 0 : 1;
+      const cell = r.collected ? -1 : r.y * width + r.x;
+      const before = this.shownCell.get(r.id);
+      this.shownCell.set(r.id, cell);
       if (!animate) {
         this.pose(view, tx, tz, ta, ts);
         continue;
@@ -428,11 +504,35 @@ export class BoardView {
       const fz = view.root.position.z;
       const fa = view.angle;
       const fs = view.visibleScale;
-      this.addTween(CONFIG.anim.undoTime, (k) => {
+      const tile = before !== undefined && before !== cell ? this.turnTiles.get(before) : undefined;
+      if (tile?.used && ta - fa > QUARTER / 2) {
+        const mid = fa + QUARTER;
+        const discFrom = tile.angle;
+        const back = a.tileTurnTime * a.tileUndoShare;
+        const total = back + a.undoTime;
+        this.addTween(total, (k) => {
+          const first = Math.min(1, (k * total) / back);
+          const second = Math.max(0, (k * total - back) / a.undoTime);
+          const turn = easeOut(first);
+          const e = easeOut(second);
+          tile.angle = discFrom + QUARTER * turn;
+          tile.disc.rotation.y = tile.angle;
+          this.flash(tile, first);
+          this.pose(view, fx + (tx - fx) * e, fz + (tz - fz) * e, fa + (mid - fa) * turn + (ta - mid) * e, fs + (ts - fs) * e);
+        });
+        continue;
+      }
+      this.addTween(a.undoTime, (k) => {
         const e = easeOut(k);
         this.pose(view, fx + (tx - fx) * e, fz + (tz - fz) * e, fa + (ta - fa) * e, fs + (ts - fs) * e);
       });
     }
+  }
+
+  /** The turn tile's light at point `k` (0 to 1) of a turn: up and down again. */
+  private flash(tile: TurnTileView, k: number): void {
+    if (!tile.glow) return;
+    (tile.glow.material as THREE.MeshBasicMaterial).opacity = Math.sin(Math.PI * Math.min(1, Math.max(0, k))) * PARTS.turnTile.glow.peak;
   }
 
   private pose(view: RobotView, x: number, z: number, angle: number, scale: number): void {
@@ -473,6 +573,8 @@ export class BoardView {
     const a = CONFIG.anim;
     const speed = queueSpeed * this.speedScale;
     const lively = this.reduced ? 0 : 1;
+    const width = this.level?.board.width ?? 1;
+    for (const e of events) this.shownCell.set(e.id, e.outcome === 'exited' ? -1 : e.toY * width + e.toX);
     const turning = events.filter((e) => e.turned);
     if (turning.length) {
       await Promise.all(
@@ -533,12 +635,38 @@ export class BoardView {
         });
       }),
     );
+    // Turn tiles: every robot that arrived on one has finished its step and stands still. After
+    // a short pause the tile turns it a quarter clockwise, disc and robot together, with a flash
+    // of the tile's light: a beat of its own, so it reads as the board's doing and not the command's.
+    const beats = tileBeats(events);
+    if (!beats.length) return;
+    this.endCue();
+    await this.addTween(a.tileTurnPause / speed, () => undefined);
+    await Promise.all(
+      beats.map((beat) => {
+        const view = this.robots.get(beat.id)!;
+        const tile = this.turnTiles.get(beat.y * width + beat.x);
+        const from = view.angle;
+        const discFrom = tile?.angle ?? 0;
+        if (tile) tile.used = true;
+        return this.addTween(a.tileTurnTime / speed, (k) => {
+          const e = this.reduced ? easeOut(k) : easeOutBack(k);
+          view.angle = turnAngle(from, e);
+          view.aim(view.angle);
+          if (!tile) return;
+          tile.angle = discFrom - QUARTER * e;
+          tile.disc.rotation.y = tile.angle;
+          this.flash(tile, k);
+        });
+      }),
+    );
   }
 
   /**
    * Draw a hint on the board: for every robot what the hinted command will do to it. A robot the
    * command turns gets a quarter arc from its old heading to its new one; a robot that will step
-   * gets a ghost arrow to its target cell; a robot that will be blocked gets a bump mark at the
+   * gets a ghost arrow to its target cell, and a second quarter arc round that cell when it is a turn
+   * tile that will turn it on arrival; a robot that will be blocked gets a bump mark at the
    * edge it runs into. `events` are the engine's own for that command (see `previewStep`); null
    * or an empty list clears the picture. The marks pulse softly unless motion is reduced.
    */
@@ -564,13 +692,16 @@ export class BoardView {
         const end = b.bar + b.thick;
         shapes.push([at(b.from, -b.shaft), at(b.bar, -b.shaft), at(b.bar, -b.half), at(end, -b.half), at(end, b.half), at(b.bar, b.half), at(b.bar, b.shaft), at(b.from, b.shaft)]);
       }
-      if (e.turned) {
-        // Clockwise from the old heading to the new one, as the robot itself will turn.
+      /**
+       * A quarter arc with an arrowhead, clockwise as the robot itself will turn, ending on
+       * heading `after`; its centre lies `ahead` cells along the robot's way.
+       */
+      const quarterArc = (after: number, ahead: number): THREE.Vector2[] => {
         const t = HINT.turn;
         const rad = Math.PI / 180;
-        const to = e.dir * 90 - t.endGap;
-        const from = e.dir * 90 - 90 + t.startGap;
-        const ring = (radius: number, degrees: number): THREE.Vector2 => new THREE.Vector2(Math.sin(degrees * rad) * radius * p, -Math.cos(degrees * rad) * radius * p);
+        const to = after * 90 - t.endGap;
+        const from = after * 90 - 90 + t.startGap;
+        const ring = (radius: number, degrees: number): THREE.Vector2 => new THREE.Vector2((dx * ahead + Math.sin(degrees * rad) * radius) * p, (dz * ahead - Math.cos(degrees * rad) * radius) * p);
         const outer: THREE.Vector2[] = [];
         const inner: THREE.Vector2[] = [];
         for (let i = 0; i <= 10; i++) {
@@ -578,8 +709,12 @@ export class BoardView {
           outer.push(ring(t.radius + t.width / 2, d));
           inner.unshift(ring(t.radius - t.width / 2, d));
         }
-        shapes.push([...outer, ring(t.radius + t.headWidth / 2, to), ring(t.radius, to + t.head), ring(t.radius - t.headWidth / 2, to), ...inner]);
-      }
+        return [...outer, ring(t.radius + t.headWidth / 2, to), ring(t.radius, to + t.head), ring(t.radius - t.headWidth / 2, to), ...inner];
+      };
+      // The command's own turn: round the robot, from its old heading to its new one.
+      if (e.turned) shapes.push(quarterArc(e.dir, 0));
+      // A turn tile's turn: round the cell the robot steps onto, from the way it came to the way it will face.
+      if (e.tileTurned) shapes.push(quarterArc(e.dir + 1, 1));
       const group = new THREE.Group();
       group.position.set(cx, this.floorY + HINT.lift, cz);
       const flat = (tone: string): THREE.MeshBasicMaterial => new THREE.MeshBasicMaterial({ color: tone, transparent: true, opacity: HINT.opacity, depthTest: false, depthWrite: false, side: THREE.DoubleSide });
@@ -678,6 +813,10 @@ export class BoardView {
         else this.tweens.push(t);
       }
       for (const t of finished) t.done();
+    }
+    if (this.cueTime !== null) {
+      this.cueTime += dt;
+      this.playCue(this.cueTime);
     }
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];

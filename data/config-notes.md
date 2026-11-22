@@ -4,6 +4,9 @@
 |---|---|
 | `colors` | Brand palette (red, blue, yellow, green, orange, purple) and board colours |
 | `anim.turnTime`, `moveTime`, `exitTime`, `undoTime` | Animation lengths in seconds |
+| `anim.tileTurnPause`, `tileTurnTime` | The turn tile's beat, in seconds: how long a robot that arrived on a turn tile stands still before the tile turns it, and how long that quarter turn takes. Both are added to the step, so keep them short |
+| `anim.tileUndoShare` | Share of `tileTurnTime` the tile takes to turn a robot back when a step onto it is undone |
+| `anim.tileCueDelay`, `tileCueTime` | The turn tiles' opening cue when a level is shown: seconds before it starts, and how long each disc takes to make its one quarter turn with a flash of light. Reduced motion shows only the light |
 | `anim.bumpDistance` | How far, in cells, a blocked robot lunges before springing back |
 | `anim.hopHeight` | Hop height, in cells, while stepping |
 | `anim.queueSpeedup` | Extra playback speed per queued command, so fast tapping never waits |
@@ -38,7 +41,7 @@
 
 `data/levels.json`: `par` is the solver's shortest solution and `witness` is one command list that wins; both are checked by the tests. Cell codes: `..` floor, `##` wall, `EX` exit, `@@` turn tile, `r^ b> yv r<` robots.
 
-`data/levels-upcoming.json`: levels in the same format that are certified by the tests but not loaded by the game (page 3, waiting for the turn tile to be drawn). Move them into `data/levels.json` to ship them.
+`data/parts.json` `turnTile`: the turn tile, in cells. `disc` is the turntable's radius, `discHeight` and `discRound` its thickness and edge rounding, `ringOuter` the outer radius of the collar around it, `lift` the gap that keeps flat marks above the surface under them. `arrow` is the built design: `count` arrows on a circle of `radius`, each `width` wide and `span` degrees long including a head of `head` degrees and `headWidth`, the first starting at `start` degrees clockwise from north. `hook` is the comparison design (one long arrow). `glow` is the ring of light that flashes during a turn (`inner`, `outer` radius, `peak` opacity). `fieldView` is the parts page's in-field picture: camera tilt and the cell sizes shown. Colours: `colors.kit.turn*` in `data/config.json`.
 
 - `board.<style>.spareAbove` — share of the spare stage height that goes above the board: 0 = against the HUD, 0.5 = centred, 1 = against the controls. Visual fidelity step 1 (2026-11-21).
 - `board.grid` — the modular board in world units (blueprint v1): `tile` 1.0, `gap` between tiles 0.055, `rim` width 0.16, `rimHeight`, `underlay` thickness, `cornerRadius`; `wallFill` and `robotFill` are the share of a tile an obstacle (0.88–0.93) and a robot (0.82–0.88) fill; `wallHeight` scales the kit obstacle's height.
