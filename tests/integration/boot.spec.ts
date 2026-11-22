@@ -499,3 +499,73 @@ test('test lab: "unlock all" and "Level screen: Grid" show the old grid as a tes
   await expect(page.locator('.tf-levels-tile')).toHaveCount(0);
   await expect(page.locator('#steps .tf-levels-step.is-current')).toHaveText(/4/);
 });
+
+// Page 3: the turn tile. A robot that arrives on it is turned a quarter clockwise by the board.
+const TURNTABLE = at('turntable');
+
+test('level 41 teaches the turn tile: only FORWARD is needed, the tile turns the robot, and the level is won', async ({ page }) => {
+  await solvedUpTo(page, TURNTABLE);
+  const errors = await open(page);
+  await expect(page.locator('#pathWhere')).toHaveText(`Level ${TURNTABLE + 1} of ${levels.length}`);
+  await expect(page.locator('#continue')).toHaveText(`Play level ${TURNTABLE + 1}`);
+  await page.click(`#node-${TURNTABLE + 1}`);
+  await expect(page.locator('#levelName')).toHaveText('Turntable');
+  expect(await snap(page)).toMatchObject({ screen: 'level', level: TURNTABLE, status: 'playing', movesLeft: budget(TURNTABLE), certified: true });
+  // One red robot facing east, two cells before the tile.
+  expect((await snap(page)).robots).toEqual([{ id: 0, x: 0, y: 0, dir: 1, collected: false }]);
+  await press(page, 'forward');
+  expect((await snap(page)).robots[0]).toMatchObject({ x: 1, y: 0, dir: 1 });
+  // It steps onto the tile and the tile turns it to face south: no colour button was pressed.
+  await press(page, 'forward');
+  expect((await snap(page)).robots[0]).toMatchObject({ x: 2, y: 0, dir: 2 });
+  // Undo takes the step and the tile's turn back together; doing it again turns it again.
+  await page.click('#undo');
+  expect((await snap(page)).robots[0]).toMatchObject({ x: 1, y: 0, dir: 1 });
+  await press(page, 'forward');
+  expect((await snap(page)).robots[0]).toMatchObject({ x: 2, y: 0, dir: 2 });
+  for (let i = 0; i < 3; i++) await press(page, 'forward');
+  expect(await snap(page)).toMatchObject({ status: 'won', collected: 1 });
+  await expect(page.locator('#card .tf-end-card')).toBeVisible({ timeout: 30000 });
+  await page.click('#end-next');
+  expect(await snap(page)).toMatchObject({ screen: 'level', level: TURNTABLE + 1, status: 'playing' });
+  expect(errors).toEqual([]);
+});
+
+test('on a turn-tile level the hint shows the tile\'s extra turn, and following the hint wins', async ({ page }) => {
+  await solvedUpTo(page, TURNTABLE, { freeHelp: true });
+  await open(page);
+  await page.click(`#node-${TURNTABLE + 1}`);
+  await press(page, 'forward');
+  await page.click('#scan');
+  await page.click('#scan');
+  await expect(page.locator('.cmd.nudge')).toHaveCount(1);
+  // The picture is the engine's own next step: onto the tile, and turned there.
+  expect((await snap(page)).hintPicture).toEqual([{ id: 0, turned: false, outcome: 'moved', toX: 2, toY: 0, tileTurned: true }]);
+  await page.dispatchEvent('.cmd.nudge', 'pointerdown');
+  for (let i = 0; i < budget(TURNTABLE) && (await snap(page)).status === 'playing'; i++) {
+    await page.click('#scan');
+    await page.click('#scan');
+    await page.dispatchEvent('.cmd.nudge', 'pointerdown');
+  }
+  expect(await snap(page)).toMatchObject({ status: 'won' });
+});
+
+test('on a turn-tile level, out of moves one step from home: extra moves are offered and really win', async ({ page }) => {
+  await solvedUpTo(page, TURNTABLE);
+  await open(page);
+  await page.click(`#node-${TURNTABLE + 1}`);
+  // Four reds walk the robot round the corner and back to the top row, one cell on; then the
+  // tile turns it and the budget ends one step above the exit.
+  const line = ['red', 'red', 'red', 'red', 'forward', 'forward', 'forward'];
+  expect(line.length).toBe(budget(TURNTABLE));
+  for (const command of line) await press(page, command);
+  expect(await snap(page)).toMatchObject({ status: 'lost' });
+  expect((await snap(page)).robots[0]).toMatchObject({ x: 2, y: 2, dir: 2 });
+  await expect(page.locator('#end-offer')).toHaveAttribute('aria-label', `+${config.extraMoves} moves, ${config.coins.extraMovesCost} coins`, { timeout: 15000 });
+  await page.click('#end-offer');
+  expect(await snap(page)).toMatchObject({ status: 'playing', movesLeft: config.extraMoves });
+  await press(page, 'forward');
+  expect((await snap(page)).status).toBe('won');
+  // A helped win pays the base amount only, on a tile level as on any other.
+  expect((await snap(page)).coins).toBe(config.coins.start - config.coins.extraMovesCost + config.coins.win);
+});

@@ -123,9 +123,9 @@ function once(key: string, build: () => THREE.BufferGeometry): THREE.BufferGeome
 }
 
 /** The tile body: a darker side, a rounded bevel that brightens towards the top, and a bright flat top. */
-function tileGeometry(alt: boolean): THREE.BufferGeometry {
+function tileGeometry(alt: boolean, topTone?: string): THREE.BufferGeometry {
   const t = P.floorTile;
-  const top = tone(alt ? K.tileMid : K.tileLight);
+  const top = tone(topTone ?? (alt ? K.tileMid : K.tileLight));
   const edge = tone(K.tileEdge);
   const rings: Ring[] = [
     { inset: 0, y: 0, out: 1, up: 0, color: tone(K.tileShade) },
@@ -224,7 +224,8 @@ function turnGlowTexture(): THREE.DataTexture {
  * 7. Turn tile: a floor tile with a turntable let into it. A robot that arrives on it is turned a
  * quarter clockwise, whatever its colour, so the tile wears none of the robot colours: a white
  * round disc with two dark arrows chasing each other clockwise, in a periwinkle collar that
- * reaches almost to the tile's edge and so stays visible around a robot standing on it.
+ * reaches almost to the tile's edge and so stays visible around a robot standing on it. The tile's own
+ * top is tinted periwinkle too, so its corners tell it from a plain tile when the middle is covered.
  *
  * The body and collar never move. The disc is the child named `turn-disc`, also at
  * `userData.disc`: the game turns it around y together with the robot. `userData.glow` is a flat
@@ -236,6 +237,9 @@ export function buildTurnTile(alt = false, pegs = true, design: TurnTileDesign =
   const t = P.turnTile;
   const top = P.floorTile.height;
   const tile = buildFloorTile(alt, pegs);
+  // The whole top is tinted towards the frame's periwinkle, so the cell still reads as special
+  // where a robot on it, or one standing in front of it, covers the disc.
+  (tile.children[0] as THREE.Mesh).geometry = once(alt ? 'turnTileAlt' : 'turnTile', () => tileGeometry(alt, alt ? K.turnTileAlt : K.turnTile));
 
   // Collar: a flat band just above the tile top, darker at its outer edge so it reads as a groove.
   const collar = once('turnCollar', () => {
