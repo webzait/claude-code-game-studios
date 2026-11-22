@@ -298,6 +298,11 @@ kiezen van grote levels is de zoekruimte tot de eerste winst onder ongeveer 550.
 volledige meting van een level (alle standen binnen het budget) zit niet in de tests maar in
 `npm run measure`, dat anderhalve minuut duurt en zijn uitkomsten bewaart.
 
+De Playwright-tests tegen het gebouwde spel zijn ook bijgewerkt en groen (10 van 10). Eén daarvan speelt alle
+40 levels op volgorde uit met hun getuige-oplossing; die duurt nu bijna 10 minuten in een browser zonder
+grafische kaart (was ruim 2 minuten met 10 levels). De andere negen samen 3 minuten. Die tests noemen levels
+nu bij `id` in plaats van bij plek, zodat een andere volgorde ze niet meer breekt.
+
 *Grand Parade* is het enige level waarvan de volledige meting is afgekapt (bij 3 miljoen standen; het
 rapport zet er ⚠ bij). Zijn lengte en oplossing zijn wél volledig bewezen; alleen de aandelen "dood" en
 "fatale zet" zijn daar ondergrenzen.

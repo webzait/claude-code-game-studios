@@ -15,6 +15,27 @@ const levels: LevelData[] = JSON.parse(readFileSync('data/levels.json', 'utf8'))
 const config = JSON.parse(readFileSync('data/config.json', 'utf8'));
 const build = pathToFileURL(resolve('dist-single/index.html')).href;
 const budget = (index: number): number => levels[index].par + config.moveSlack;
+/** Position of a level in play order; the checks below name levels by id, so reordering never breaks them. */
+const at = (id: string): number => {
+  const index = levels.findIndex((l) => l.id === id);
+  if (index < 0) throw new Error(`no level "${id}"`);
+  return index;
+};
+const ARROW = at('follow-the-arrow');
+const TWO_COLOURS = at('one-color-turns');
+const QUEUE = at('queue-up');
+const tilesOnPage = Math.min(levels.length, config.levelsPerPage);
+
+/** Start with every level before `index` already solved at par, so that level is open like for a real player. */
+async function solvedUpTo(page: Page, index: number): Promise<void> {
+  const best = Object.fromEntries(levels.slice(0, index).map((l) => [l.id, l.par]));
+  await page.addInitScript(
+    ([save]) => {
+      if (!localStorage.getItem('turnflock.save')) localStorage.setItem('turnflock.save', save);
+    },
+    [JSON.stringify({ version: 4, best, coins: config.coins.start, paid: {}, settings: {}, lab: {} })],
+  );
+}
 
 /** Opens the build and collects every page error and console error. */
 async function open(page: Page): Promise<string[]> {
@@ -47,7 +68,7 @@ async function playWitness(page: Page, index: number): Promise<void> {
 test('boots to the level selection, and level 1 opens with a drawn board and no errors @boot', async ({ page }) => {
   const errors = await open(page);
   expect((await snap(page)).screen).toBe('map');
-  await expect(page.locator('.tf-levels-tile')).toHaveCount(levels.length);
+  await expect(page.locator('.tf-levels-tile')).toHaveCount(tilesOnPage);
   await expect(page.locator('#continue')).toHaveText('Play level 1');
   // The asset kit's 3D models really loaded; the game is not quietly on its built-in shapes.
   await expect.poll(async () => (await snap(page)).kitReady, { timeout: 20000 }).toBe(true);
@@ -89,7 +110,7 @@ test('Levels, Level, Win, Next: no dead ends, and progress survives a reload', a
 });
 
 test('every level can be played to a win in order, ending back at the level selection', async ({ page }) => {
-  test.setTimeout(240_000); // ten levels of real animation
+  test.setTimeout(levels.length * 30_000); // every level with its real animation
   const errors = await open(page);
   await page.click('#node-1');
   for (let index = 0; index < levels.length; index++) {
@@ -100,7 +121,8 @@ test('every level can be played to a win in order, ending back at the level sele
     await page.click(index === levels.length - 1 ? '#end-levels' : '#end-next');
   }
   expect((await snap(page)).screen).toBe('map');
-  await expect(page.locator('.tf-levels-tile.s3')).toHaveCount(levels.length);
+  // The selection shows one page at a time; every tile on it has three stars.
+  await expect(page.locator('.tf-levels-tile.s3')).toHaveCount(tilesOnPage);
   await expect(page.locator('#continue')).toHaveText('Play again');
   expect(errors).toEqual([]);
 });
@@ -133,13 +155,14 @@ test('out of moves in a hopeless position: free Retry, and no extra moves offere
 });
 
 test('out of moves two steps from home: extra moves are offered and really win', async ({ page }) => {
+  await solvedUpTo(page, ARROW);
   await open(page);
-  await page.click('#node-1');
-  // Level 1's witness is three forwards, red, three forwards. Spend the spare
+  await page.click(`#node-${ARROW + 1}`);
+  // Follow the Arrow's witness is three forwards, red, three forwards. Spend the spare
   // moves standing at the wall, so the budget ends two steps short of the exit.
-  const spare = budget(0) - levels[0].par + 2;
-  const line = [...Array(3 + spare).fill('forward'), 'red', ...Array(budget(0) - 4 - spare).fill('forward')];
-  expect(line.length).toBe(budget(0));
+  const spare = budget(ARROW) - levels[ARROW].par + 2;
+  const line = [...Array(3 + spare).fill('forward'), 'red', ...Array(budget(ARROW) - 4 - spare).fill('forward')];
+  expect(line.length).toBe(budget(ARROW));
   for (const command of line) await press(page, command);
   expect((await snap(page)).status).toBe('lost');
   // The price is on the button before it is tapped; Undo and Retry stay beside it.
@@ -157,8 +180,9 @@ test('out of moves two steps from home: extra moves are offered and really win',
 });
 
 test('Hint: the status is free, the next move costs coins, and without coins it is refused', async ({ page }) => {
+  await solvedUpTo(page, ARROW);
   await open(page);
-  await page.click('#node-1');
+  await page.click(`#node-${ARROW + 1}`);
   await press(page, 'red'); // leave the witness so the solver has to search
   await page.click('#undo');
   await press(page, 'forward');
@@ -209,16 +233,16 @@ test('settings: test lab switches change the next level, settings survive a relo
   await page.click('[data-key=moveSlack] [data-value="3"]');
   await page.click('[data-key=unlockAll] [role=switch]');
   await closeLab(page);
-  await page.click('#node-2');
-  expect((await snap(page)).movesLeft).toBe(levels[1].par + 3);
+  await page.click(`#node-${TWO_COLOURS + 1}`);
+  expect((await snap(page)).movesLeft).toBe(levels[TWO_COLOURS].par + 3);
   await expect(page.locator('.cmd[data-cmd=yellow]')).toBeVisible();
   await expect(page.locator('.cmd[data-cmd=blue]')).toBeHidden();
-  await playWitness(page, 1).catch(() => undefined);
+  await playWitness(page, TWO_COLOURS).catch(() => undefined);
   await page.click('#levelBack');
   await openLab(page);
   await page.click('[data-key=exitRule] [data-value=single]');
   await closeLab(page);
-  await page.click('#node-5');
+  await page.click(`#node-${QUEUE + 1}`);
   await expect(page.locator('#hint')).toContainText('Test rule', { timeout: 20000 });
   expect((await snap(page)).budget).toBe(9 + 3); // single-file par for Queue Up is 9
   await page.click('#levelBack');

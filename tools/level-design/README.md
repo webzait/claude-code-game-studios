@@ -39,3 +39,9 @@ described in `data/config-notes.md`.
 A generated board is a proposal. The generator rejects what is unsolvable, trivial (one repeated command, or winnable
 in almost any order), too loose (too many shortest solutions), beyond its search limit, or missing the idea's own
 mark (for example no robot ever waiting behind another in a queue level). Whether a board is *good* is for a person to say.
+
+## Seeing the levels
+
+`npm run build:single && node tools/level-design/screenshots.mjs [level numbers…]` opens the built game at phone
+size, screenshots both pages of the level selection and the chosen levels, plays each with its stored witness and
+fails if one is not won. Pictures go to `production/qa/evidence/levels/`.
