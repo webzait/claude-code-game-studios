@@ -4,7 +4,7 @@ import { CONFIG } from '../config';
 import type { Color } from '../engine/types';
 import parts from '../../data/parts.json';
 import hintIcon from '../../assets/turnflock/ui/hint.webp';
-import { boardPixels, buildExit, buildFloorTile, buildObstacle, buildRim, buildRimCorner, buildRimEdge, buildUnderlay, rimLayout } from '../render/parts/board';
+import { boardPixels, buildExit, buildFloorTile, buildObstacle, buildRim, buildRimCorner, buildRimEdge, buildTurnTile, buildUnderlay, rimLayout, type TurnTileDesign } from '../render/parts/board';
 import { buildFlockbot } from '../render/parts/flockbot';
 import '../ui/tf-buttons.css';
 import '../ui/tf-coins.css';
@@ -207,6 +207,59 @@ card('Groene uitgang (doel)', 'exit', buildExit(), 'Tegelhoog groen vak (robots 
   small.appendChild(tiny);
   small.insertAdjacentHTML('beforeend', `<figcaption>Hetzelfde op ware grootte bij een vak van ${view.cellPx} px</figcaption>`);
   holder.append(large, small);
+}
+// The turn tile: the built design, then both designs in a field as the game camera sees them
+// (30° from straight down), next to a plain tile, the exit, an obstacle and a robot, and once
+// with a robot standing on the tile, at the two cell sizes of a phone.
+card('Draaitegel', 'turn-tile', buildTurnTile(), 'Vloertegel met een ingelaten draaischijf: witte schijf, twee donkere pijlen die elkaar met de klok mee achtervolgen, periwinkle kraag tot bijna aan de tegelrand. Geen robotkleur. De schijf draait met de robot mee; de lichtring flitst alleen tijdens het draaien.');
+{
+  const view = parts.turnTile.fieldView;
+  const pitch = parts.floorTile.size + CONFIG.board.grid.gap;
+  const holder = document.querySelector('#turn-tile .views')!;
+  const designs: [TurnTileDesign, string][] = [['pair', 'Ontwerp A (gebouwd): twee pijlen op een witte schijf'], ['hook', 'Ontwerp B: één lange pijl op een paarse schijf']];
+  for (const [design, label] of designs) {
+    for (const occupied of [false, true]) {
+      const field = new THREE.Group();
+      for (let x = -1; x <= 1; x++) for (let z = -1; z <= 1; z++) {
+        const tile = x === 0 && z === 0 ? buildTurnTile(false, false, design) : x === 1 && z === -1 ? buildExit() : buildFloorTile((x + z) % 2 !== 0, false);
+        tile.position.set(x * pitch, 0, z * pitch);
+        field.add(tile);
+      }
+      const block = buildObstacle();
+      block.position.set(-pitch, parts.floorTile.height, -pitch);
+      field.add(block);
+      const bots: [number, number, Color, number][] = occupied ? [[0, 0, 'yellow', 2]] : [[-1, 0, 'red', 1], [1, 1, 'blue', 0]];
+      for (const [x, z, color, heading] of bots) {
+        const bot = buildFlockbot(color);
+        bot.root.scale.setScalar(CONFIG.board.grid.robotFill);
+        bot.root.rotation.y = Math.PI - (heading * Math.PI) / 2;
+        bot.root.position.set(x * pitch, parts.floorTile.height, z * pitch);
+        field.add(bot.root);
+      }
+      field.rotation.x = THREE.MathUtils.degToRad(view.tilt);
+      const reach = 1.5 * pitch;
+      const shot = snapshot(field, 'top', reach, new THREE.Vector3(0, parts.floorTile.height, 0), -1);
+      const figure = document.createElement('figure');
+      figure.className = 'main';
+      figure.id = `turn-tile-${design}${occupied ? '-occupied' : ''}`;
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:16px;align-items:center;justify-content:center;flex-wrap:wrap';
+      for (const cellPx of view.cellPx) {
+        const tiny = document.createElement('canvas');
+        // The picture spans 2 × reach × 1.12 cells; one cell is `cellPx` CSS pixels (drawn at 3× for sharp phones).
+        const cssSize = Math.round(2 * reach * 1.12 * cellPx);
+        tiny.width = tiny.height = cssSize * 3;
+        tiny.style.width = tiny.style.height = `${cssSize}px`;
+        const pen = tiny.getContext('2d')!;
+        pen.imageSmoothingQuality = 'high';
+        pen.drawImage(shot, 0, 0, tiny.width, tiny.height);
+        row.appendChild(tiny);
+      }
+      figure.appendChild(row);
+      figure.insertAdjacentHTML('beforeend', `<figcaption>${label}${occupied ? ', met een robot erop' : ''} · spelcamera · vak van ${view.cellPx.join(' en ')} px</figcaption>`);
+      holder.appendChild(figure);
+    }
+  }
 }
 card('Vloertegel', 'floor', buildFloorTile(), 'Eén herhaalbare tegel: heldere bovenkant, zichtbare afgeronde rand, iets donkerdere zijkant, vier pennen aan de onderkant.');
 card('Vloertegel (tweede tint)', 'floor-alt', buildFloorTile(true), 'Dezelfde tegel in de tweede, subtiel afwijkende tint voor het dambordpatroon.', ['main', 'top']);
