@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { CONFIG } from '../../config';
+import type { Color } from '../../engine/types';
 import parts from '../../../data/parts.json';
+import { shapePlate } from './flockbot';
 import { profiledBlock, roundedFrame, roundedRect, slabOf, type ProfileRing } from './shapes';
 
 const K = CONFIG.colors.kit;
@@ -408,15 +410,31 @@ function roundedSquareDistance(x: number, y: number, half: number, r: number): n
   return Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - r;
 }
 
-let exitGlowMap: THREE.DataTexture | null = null;
-/** Soft light around the pad: brightest at its edge, fading to nothing `glowReach` further out. Made once. */
-function exitGlowTexture(): THREE.DataTexture {
-  if (exitGlowMap) return exitGlowMap;
+/** The four tones an exit pad is drawn in. */
+interface ExitTones {
+  exit: string;
+  exitTop: string;
+  exitShadow: string;
+  exitGlow: string;
+}
+
+/** Tones of an exit: the green of the exit for everyone, or a robot colour's own tones for an exit that takes only that colour. */
+function exitTones(color?: Color): ExitTones {
+  if (!color) return K;
+  const c = CONFIG.colors.robots[color];
+  return { exit: c.main, exitTop: c.top, exitShadow: c.deep, exitGlow: new THREE.Color(c.top).lerp(new THREE.Color('#FFFFFF'), 0.45).getStyle() };
+}
+
+const exitGlowMaps = new Map<string, THREE.DataTexture>();
+/** Soft light around the pad: brightest at its edge, fading to nothing `glowReach` further out. Made once per colour. */
+function exitGlowTexture(X: ExitTones, key: string): THREE.DataTexture {
+  const known = exitGlowMaps.get(key);
+  if (known) return known;
   const e = P.exit;
   const n = 128;
   const span = e.size + 2 * e.glowReach;
-  const near = new THREE.Color(K.exitGlow);
-  const far = new THREE.Color(K.exitTop);
+  const near = new THREE.Color(X.exitGlow);
+  const far = new THREE.Color(X.exitTop);
   const mixed = new THREE.Color();
   const data = new Uint8Array(n * n * 4);
   for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
@@ -426,12 +444,37 @@ function exitGlowTexture(): THREE.DataTexture {
     mixed.copy(near).lerp(far, out);
     data.set([mixed.r * 255, mixed.g * 255, mixed.b * 255, 255 * (1 - out) ** e.glowFalloff], (j * n + i) * 4);
   }
-  exitGlowMap = new THREE.DataTexture(data, n, n, THREE.RGBAFormat);
-  exitGlowMap.colorSpace = THREE.SRGBColorSpace;
-  exitGlowMap.magFilter = THREE.LinearFilter;
-  exitGlowMap.minFilter = THREE.LinearFilter;
-  exitGlowMap.needsUpdate = true;
-  return exitGlowMap;
+  const map = new THREE.DataTexture(data, n, n, THREE.RGBAFormat);
+  map.colorSpace = THREE.SRGBColorSpace;
+  map.magFilter = THREE.LinearFilter;
+  map.minFilter = THREE.LinearFilter;
+  map.needsUpdate = true;
+  exitGlowMaps.set(key, map);
+  return map;
+}
+
+const colourExitMats = new Map<Color, { base: THREE.MeshPhysicalMaterial; face: THREE.MeshPhysicalMaterial; mark: THREE.MeshPhysicalMaterial }>();
+/** Wall and face materials of an exit in a robot colour: the green ones, re-toned. Made once per colour. */
+function colourExitMaterials(color: Color, X: ExitTones): { base: THREE.MeshPhysicalMaterial; face: THREE.MeshPhysicalMaterial; mark: THREE.MeshPhysicalMaterial } {
+  let m = colourExitMats.get(color);
+  if (!m) {
+    const base = mats.exitBase.clone();
+    base.emissive.set(X.exit);
+    const face = mats.exitFace.clone();
+    face.color.set(X.exitTop);
+    face.emissive.set(X.exitTop);
+    // White does not read on the light yellow face: there the tick and the shape take the colour's darkest tone,
+    // as the glyph on the yellow command button does.
+    let mark = mats.check;
+    if (color === 'yellow') {
+      mark = mats.check.clone();
+      mark.color.set(X.exitShadow);
+      mark.emissive.set(X.exitShadow);
+    }
+    m = { base, face, mark };
+    colourExitMats.set(color, m);
+  }
+  return m;
 }
 
 /**
@@ -445,8 +488,13 @@ function exitGlowTexture(): THREE.DataTexture {
  * `material.opacity` between `glowPulse.low` and `glowPulse.high` and its
  * x/z scale up to `glowPulse.scale`, one cycle per `glowPulse.seconds`. The
  * glow is light, not body, and does not count towards the pad's measured size.
+ *
+ * With `color` the pad is an exit for that robot colour only: the same pad in that colour's tones.
+ * It also carries the colour's shape as the child at `userData.shape` (hidden until asked for), and
+ * its tick at `userData.check`, so the "Colour shapes" setting can show the shape in place of the tick.
  */
-export function buildExit(): THREE.Group {
+export function buildExit(color?: Color): THREE.Group {
+  const X = exitTones(color);
   const e = P.exit;
   const pad = new THREE.Group();
   const top = e.height + e.bezelHeight;
@@ -463,38 +511,48 @@ export function buildExit(): THREE.Group {
     tones.push(color);
   };
   const arcSteps = 6;
-  const crest = tone(K.exit, K.exitShadow, e.crestShade).getStyle();
-  point(e.bevel, 0, new THREE.Color(K.exitShadow));
-  point(0, e.bevel, new THREE.Color(K.exitShadow));
+  const crest = tone(X.exit, X.exitShadow, e.crestShade).getStyle();
+  point(e.bevel, 0, new THREE.Color(X.exitShadow));
+  point(0, e.bevel, new THREE.Color(X.exitShadow));
   for (let k = 0; k <= arcSteps; k++) {
     const t = (k / arcSteps) * (Math.PI / 2);
     // The shoulder catches the light: a bright line all round, as on the styled reference.
-    point(e.crestOuter * (1 - Math.cos(t)), top - e.crestOuter * (1 - Math.sin(t)), tone(K.exitGlow, crest, Math.abs(k / arcSteps - e.rimLight) / Math.max(e.rimLight, 1 - e.rimLight)));
+    point(e.crestOuter * (1 - Math.cos(t)), top - e.crestOuter * (1 - Math.sin(t)), tone(X.exitGlow, crest, Math.abs(k / arcSteps - e.rimLight) / Math.max(e.rimLight, 1 - e.rimLight)));
   }
   for (let k = 0; k <= arcSteps; k++) {
     const t = (k / arcSteps) * (Math.PI / 2);
-    point(e.bezelWidth - e.crestInner * (1 - Math.sin(t)), top - e.crestInner * (1 - Math.cos(t)), tone(crest, K.exitShadow, k / arcSteps));
+    point(e.bezelWidth - e.crestInner * (1 - Math.sin(t)), top - e.crestInner * (1 - Math.cos(t)), tone(crest, X.exitShadow, k / arcSteps));
   }
-  point(e.bezelWidth, e.height - 0.01, new THREE.Color(K.exitShadow));
+  point(e.bezelWidth, e.height - 0.01, new THREE.Color(X.exitShadow));
   const wallShape = roundedFrame(e.size, e.radius, profile);
   const colors = new Float32Array(wallShape.getAttribute('position').count * 3);
   for (let i = 0; i < colors.length / 3; i++) tones[i % tones.length].toArray(colors, i * 3);
   wallShape.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  const wall = new THREE.Mesh(wallShape, mats.exitBase);
+  const painted = color ? colourExitMaterials(color, X) : { base: mats.exitBase, face: mats.exitFace, mark: mats.check };
+  const wall = new THREE.Mesh(wallShape, painted.base);
 
-  const face = new THREE.Mesh(slabOf(roundedRect(inner + 0.01, inner + 0.01, innerRadius), e.height), mats.exitFace);
-  const check = new THREE.Mesh(slabOf(checkShape(e.check, e.checkWidth), e.checkDepth, e.checkBevel), mats.check);
+  const face = new THREE.Mesh(slabOf(roundedRect(inner + 0.01, inner + 0.01, innerRadius), e.height), painted.face);
+  const check = new THREE.Mesh(slabOf(checkShape(e.check, e.checkWidth), e.checkDepth, e.checkBevel), painted.mark);
   check.position.y = e.height;
   pad.add(wall, face, check);
   shadowed(pad);
   check.castShadow = false;
+  pad.userData.check = check;
+  if (color) {
+    // The colour's shape, for players who tell the colours apart by shape: shown in place of the tick.
+    const plate = new THREE.Mesh(shapePlate(color, inner * 0.62, e.checkDepth, 0), painted.mark);
+    plate.position.y = e.height;
+    plate.visible = false;
+    pad.add(plate);
+    pad.userData.shape = plate;
+  }
 
   const span = e.size + 2 * e.glowReach;
   const light = new THREE.PlaneGeometry(span, span);
   light.rotateX(-Math.PI / 2);
   // Keep the light out of the pad's bounding box: see the doc comment.
   light.boundingBox = new THREE.Box3(new THREE.Vector3(-e.size / 2, 0, -e.size / 2), new THREE.Vector3(e.size / 2, 0, e.size / 2));
-  const glow = new THREE.Mesh(light, new THREE.MeshBasicMaterial({ map: exitGlowTexture(), transparent: true, opacity: e.glowPulse.high, depthWrite: false, toneMapped: false }));
+  const glow = new THREE.Mesh(light, new THREE.MeshBasicMaterial({ map: exitGlowTexture(X, color ?? 'all'), transparent: true, opacity: e.glowPulse.high, depthWrite: false, toneMapped: false }));
   glow.name = 'exit-glow';
   glow.position.y = e.height + e.glowLift;
   glow.renderOrder = 1;
