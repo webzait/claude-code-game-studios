@@ -28,6 +28,7 @@ import { SolverClient } from './solver/client';
 import type { CertifyResult } from './solver/requests';
 import { CoinCounters, coinInfo, type RewardView } from './ui/coins';
 import { el, Hud } from './ui/hud';
+import { setupLogo } from './ui/logo';
 import { renderLevels, type MapNode } from './ui/screens';
 import { labChangedCount, labScreen, playerScreen } from './ui/settingsView';
 
@@ -154,6 +155,7 @@ class Game {
       img.src = art[img.dataset.art ?? ''] ?? '';
     }
     this.applySettings();
+    setupLogo(el('map'), CONFIG.logo, { reducedMotion: this.reduced });
     this.show('map');
     // The 3D kit loads in the background; a level already on show is redrawn with it.
     loadKit()

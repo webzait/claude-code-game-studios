@@ -144,6 +144,21 @@
     }
   },
   "levelsPerPage": 20,
+  "logo": {
+    "levels": {
+      "layout": "band",
+      "bandMinHeight": 50,
+      "bandMaxHeight": 124,
+      "bandMaxHeightWide": 150,
+      "tileComfort": 60,
+      "rowMaxHeight": 56
+    },
+    "intro": {
+      "enabled": false,
+      "seconds": 0.7,
+      "scale": 1.35
+    }
+  },
   "coins": {
     "start": 30,
     "win": 10,
