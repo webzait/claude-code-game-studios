@@ -36,6 +36,8 @@
       "exitShadow": "#1FB241",
       "exitGlow": "#A8FFAE",
       "check": "#F9FFFF",
+      "turnTile": "#C3D0F7",
+      "turnTileAlt": "#BAC8F3",
       "turnDisc": "#FFFFFF",
       "turnDiscEdge": "#C9D5E9",
       "turnRing": "#8FA7E6",

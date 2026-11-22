@@ -9,7 +9,7 @@ import './ui/tf-shop.css';
 import { Sfx } from './audio';
 import { CONFIG } from './config';
 import { step } from './engine/engine';
-import type { Color, Command, RobotEvent } from './engine/types';
+import type { Color, Command, Robot, RobotEvent } from './engine/types';
 import { previewStep, witnessNext, type RescueResult, type ScanResult } from './game/assist';
 import { extraMovesPrice, hintPrice, payout, rewardFor, settlePaid, undoQuote, type UndoQuote } from './game/coins';
 import { applyLab, levelScreenView, rulesFor, usesCertifiedRules, type LabSettings } from './game/lab';
@@ -53,7 +53,9 @@ export interface Snapshot {
   replaying: boolean;
   hint: string;
   /** The hint picture on the board: what the hinted command will do to each robot. Empty when no hint is shown. */
-  hintPicture: Pick<RobotEvent, 'id' | 'turned' | 'outcome' | 'toX' | 'toY'>[];
+  hintPicture: Pick<RobotEvent, 'id' | 'turned' | 'outcome' | 'toX' | 'toY' | 'tileTurned'>[];
+  /** Where every robot is and which way it faces (0 = north, clockwise), in the logical state. */
+  robots: Pick<Robot, 'id' | 'x' | 'y' | 'dir' | 'collected'>[];
   certified: boolean;
   best: Record<string, number>;
   coins: number;
@@ -929,7 +931,8 @@ class Game {
       commands: [...this.session.commands],
       replaying: this.replaying,
       hint: this.hint,
-      hintPicture: this.hintPicture.map(({ id, turned, outcome, toX, toY }) => ({ id, turned, outcome, toX, toY })),
+      hintPicture: this.hintPicture.map(({ id, turned, outcome, toX, toY, tileTurned }) => ({ id, turned, outcome, toX, toY, tileTurned })),
+      robots: this.session.state.robots.map(({ id, x, y, dir, collected }) => ({ id, x, y, dir, collected })),
       certified: this.certified,
       best: { ...this.save.best },
       coins: this.save.coins,

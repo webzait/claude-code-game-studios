@@ -665,7 +665,8 @@ export class BoardView {
   /**
    * Draw a hint on the board: for every robot what the hinted command will do to it. A robot the
    * command turns gets a quarter arc from its old heading to its new one; a robot that will step
-   * gets a ghost arrow to its target cell; a robot that will be blocked gets a bump mark at the
+   * gets a ghost arrow to its target cell, and a second quarter arc round that cell when it is a turn
+   * tile that will turn it on arrival; a robot that will be blocked gets a bump mark at the
    * edge it runs into. `events` are the engine's own for that command (see `previewStep`); null
    * or an empty list clears the picture. The marks pulse softly unless motion is reduced.
    */
@@ -691,13 +692,16 @@ export class BoardView {
         const end = b.bar + b.thick;
         shapes.push([at(b.from, -b.shaft), at(b.bar, -b.shaft), at(b.bar, -b.half), at(end, -b.half), at(end, b.half), at(b.bar, b.half), at(b.bar, b.shaft), at(b.from, b.shaft)]);
       }
-      if (e.turned) {
-        // Clockwise from the old heading to the new one, as the robot itself will turn.
+      /**
+       * A quarter arc with an arrowhead, clockwise as the robot itself will turn, ending on
+       * heading `after`; its centre lies `ahead` cells along the robot's way.
+       */
+      const quarterArc = (after: number, ahead: number): THREE.Vector2[] => {
         const t = HINT.turn;
         const rad = Math.PI / 180;
-        const to = e.dir * 90 - t.endGap;
-        const from = e.dir * 90 - 90 + t.startGap;
-        const ring = (radius: number, degrees: number): THREE.Vector2 => new THREE.Vector2(Math.sin(degrees * rad) * radius * p, -Math.cos(degrees * rad) * radius * p);
+        const to = after * 90 - t.endGap;
+        const from = after * 90 - 90 + t.startGap;
+        const ring = (radius: number, degrees: number): THREE.Vector2 => new THREE.Vector2((dx * ahead + Math.sin(degrees * rad) * radius) * p, (dz * ahead - Math.cos(degrees * rad) * radius) * p);
         const outer: THREE.Vector2[] = [];
         const inner: THREE.Vector2[] = [];
         for (let i = 0; i <= 10; i++) {
@@ -705,8 +709,12 @@ export class BoardView {
           outer.push(ring(t.radius + t.width / 2, d));
           inner.unshift(ring(t.radius - t.width / 2, d));
         }
-        shapes.push([...outer, ring(t.radius + t.headWidth / 2, to), ring(t.radius, to + t.head), ring(t.radius - t.headWidth / 2, to), ...inner]);
-      }
+        return [...outer, ring(t.radius + t.headWidth / 2, to), ring(t.radius, to + t.head), ring(t.radius - t.headWidth / 2, to), ...inner];
+      };
+      // The command's own turn: round the robot, from its old heading to its new one.
+      if (e.turned) shapes.push(quarterArc(e.dir, 0));
+      // A turn tile's turn: round the cell the robot steps onto, from the way it came to the way it will face.
+      if (e.tileTurned) shapes.push(quarterArc(e.dir + 1, 1));
       const group = new THREE.Group();
       group.position.set(cx, this.floorY + HINT.lift, cz);
       const flat = (tone: string): THREE.MeshBasicMaterial => new THREE.MeshBasicMaterial({ color: tone, transparent: true, opacity: HINT.opacity, depthTest: false, depthWrite: false, side: THREE.DoubleSide });

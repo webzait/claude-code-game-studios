@@ -4,9 +4,6 @@
 > wijzig een level of de catalogus en draai het script opnieuw. Wat de kolommen betekenen staat onderaan;
 > hoe de score is opgebouwd en geijkt staat in `design/level-structure.md`.
 
-> Level 41–60 staan in `data/levels-upcoming.json`: bewezen en gemeten, maar nog niet in het spel,
-> omdat de draaitegel nog niet getekend wordt.
-
 60 levels · zetbudget = kortste oplossing + 2 · alle getallen komen uit de solver-regels.
 
 ## Pagina 1 (level 1–20)
@@ -163,7 +160,7 @@
 | 39 | Detour (`detour`) | Alleen rechtsom: links is drie keer rechts, en je loopt terwijl je draait | Adempauze: vier robots, twee keer ROOD, en blauw hoeft alleen te lopen. | gegenereerd, ongewijzigd gekozen | zoekruimte 1.94 · draaien 0.5 · robots 0.56 · smal 0.96 · onvergeeflijk 0.42 · tegendraads 0.38 |
 | 40 | Grand Parade (`grand-parade`) | Het grootste bord (8×8) | Pronkstuk van pagina 2: tien robots op een leeg 8×8-bord lopen in optocht naar de hoek. | gegenereerd en opgeschoond | zoekruimte 3.5 · draaien 0.75 · robots 0.93 · smal 1 · onvergeeflijk 0.63 · tegendraads 0.6 |
 
-## Pagina 3 (level 41–60) — in voorbereiding, nog niet in het spel
+## Pagina 3 (level 41–60)
 
 ### Moeilijkheidscurve
 

@@ -44,12 +44,12 @@ Each level has a move budget of the shortest solution plus two. Running out ends
 - [x] Hint (two steps) and +3 extra moves, offered only when proven to be enough
 - [x] Test lab: exit rule, yellow early, spare moves, speed, board framing, unlock all
 - [x] Level selection with a Continue button and pages of 20
-- [x] Level selection as a path (finding B2): only the current level and the next `levelsAhead` (5) locked levels are shown, completed levels are not; progress as "Level N of 40" and the star total. The paged grid remains as a test view (test lab: "Level screen: Grid" or "Unlock all levels"). A completed level with fewer than three stars can be played again from "Improve your stars", opened by the star total; a level with three stars is not shown until every level is completed, when "Choose a level" opens all of them to play again one by one
+- [x] Level selection as a path (finding B2): only the current level and the next `levelsAhead` (5) locked levels are shown, completed levels are not; progress as "Level N of 60" and the star total. The paged grid remains as a test view (test lab: "Level screen: Grid" or "Unlock all levels"). A completed level can be played again only through Replay right after the win
 - [x] Robots always face the player with large eyes; the head arrow and pupils show the heading
 - [x] Forty levels on two pages of 20, each page an arc; the first five teach the rules one at a time (`design/level-structure.md`)
 - [x] Level design tools: measure every level, generate candidates per idea, report (`tools/level-design/`, `design/level-report.md`)
-- [x] Turn tile in the engine (a tile that turns whoever steps onto it), agreed 2026-11-22; not drawn yet
-- [ ] Page 3: twenty turn-tile levels, certified in `data/levels-upcoming.json`, waiting for the tile to be drawn
+- [x] Turn tile (a tile that turns whoever steps onto it), agreed 2026-11-22: in the engine, drawn as a board part, and animated as a beat of its own after the step
+- [x] Page 3: twenty turn-tile levels, levels 41 to 60, in the game; sixty levels in all
 - [x] Coins: earned per win by its stars (10, 20, 30), spent on Undo (5), the next-move hint (20) and extra moves (40); amounts reasoned in `design/economy.md`; no real shop, no ads
 - [x] Test shop (2026-11-22): pretend coin purchases behind a `PurchaseProvider` interface, "Get coins" links at the cannot-afford moments, a test ledger and switches in the test lab. Nothing is charged and nothing leaves the device; what a real shop needs and the economy note are in `design/shop.md`
 

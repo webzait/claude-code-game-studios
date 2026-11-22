@@ -2,11 +2,11 @@
 
 Dit document legt vast hoe levels worden gemeten, geordend, gemaakt en bewezen, wat pagina 1 en 2 bevatten,
 wat pagina 3 kan worden, en welk voorstel er ligt voor nieuwe levelelementen. De getallen per level staan in
-`design/level-report.md` (gegenereerd, niet met de hand bijhouden). Stand: 22 november 2026: 40 levels in het
-spel, en pagina 3 (20 levels met de draaitegel) bewezen maar nog niet in het spel.
+`design/level-report.md` (gegenereerd, niet met de hand bijhouden). Stand: 22 november 2026: 60 levels in het
+spel; pagina 3 (20 levels met de draaitegel) is getekend, geanimeerd, bewezen en in het lopende spel uitgespeeld.
 
-De draaitegel is op 22 november 2026 met jouw akkoord aan de engine toegevoegd (hoofdstuk 7); verder zijn de
-kernmechaniek, de schermen en het uiterlijk niet aangeraakt.
+De draaitegel is op 22 november 2026 met jouw akkoord aan de engine toegevoegd en daarna getekend en
+geanimeerd (hoofdstuk 7); verder zijn de kernmechaniek, de schermen en het uiterlijk niet aangeraakt.
 Er is geen verhaal, kaart of wereld; levels staan in gewone pagina's van 20.
 
 ## 1. De moeilijkheidsmaat
@@ -215,12 +215,13 @@ pagina 2, niet bij pagina 1). Er is geen level uit de reeks gehaald. Voortgang s
 dus een bestaande save houdt zijn sterren; wel kan een speler nu "gaten" zien: een opgelost level 9 naast een
 nog gesloten level 8. De ontgrendelregel (het vorige level opgelost) is niet aangepast. Zie beslissing 5.
 
-### Pagina 3 (level 41–60): de draaitegel — bewezen, nog niet in het spel
+### Pagina 3 (level 41–60): de draaitegel — in het spel
 
-De 20 levels staan in `data/levels-upcoming.json`, niet in `data/levels.json`. Het spel laadt ze dus niet.
-Reden: de tegel wordt nog niet getekend (dat is werk in `src/render/`, waar een andere sessie bezig is), en een
-level met een onzichtbare tegel is voor een speler kapot. Ze zijn wel op precies dezelfde manier bewezen als
-de 40 andere (`tests/unit/levels-upcoming.test.ts`).
+De 20 levels staan sinds 22 november 2026 in `data/levels.json`, met dezelfde id's en in dezelfde volgorde als
+ze in `data/levels-upcoming.json` stonden (dat bestand is weg). Ze zijn op precies dezelfde manier bewezen als
+de 40 andere (`tests/unit/levels.test.ts`: de opgeslagen oplossing wint, `par` is de echte kortste oplossing,
+en een tweede, onafhankelijke zoektocht komt op dezelfde lengte). Geen level is gewijzigd, vervangen of
+geschrapt bij het in het spel brengen.
 
 | # | Level | Idee | Bord | Tegels | Score | Herkomst |
 |--:|---|---|:-:|--:|--:|---|
@@ -256,8 +257,19 @@ Eerlijk hierover:
 - Het pronkstuk (6,7) is niet het moeilijkste level van de pagina, en lager dan de richtscore van 8.
   De zoektocht naar een zwaarder 8×8-bord met tien of meer robots liep steeds tegen de zoeklimiet aan; een
   level dat de tests niet in een paar seconden kunnen bewijzen wilde ik niet opnemen.
-- **Niemand heeft deze 20 levels gezien of gespeeld**, ook ik niet: zonder tekenwerk bestaan ze alleen als
-  bewezen data. Of de tegel leest zoals bedoeld, weten we pas als hij getekend is.
+- **Gezien en gespeeld, maar alleen door de maker.** Alle 20 zijn met hun opgeslagen oplossing in het lopende
+  spel gewonnen (de browsertest "every level can be played to a win in order" en een aparte doorloop met
+  schermafbeeldingen in `production/qa/evidence/turn-tile/`), en acht zijn daarnaast met eigen, afwijkende
+  commando's gespeeld (42, 43, 44, 45, 47, 48, 54, 58). Wat dat opleverde:
+  - Het zetbudget is net als op pagina 1 en 2 de kortste oplossing plus 2. Eén verkeerde zet is daardoor
+    meestal fataal, vaak al de eerste (level 41: ROOD als eerste zet; level 42: VOORUIT als eerste zet). Dat is
+    dezelfde strengheid als op de eerste twee pagina's, geen nieuwe; herstellen gaat met Undo of de gratis
+    Restart, en de hint zegt hoeveel zetten terug. Een speler ziet een verloren stand niet aan het bord.
+  - *Mind the Tile* (44): de tegel ligt niet op de route van de oplossing, maar is wel een echte val: wie
+    BLAUW één zet te vroeg indrukt, stuurt een blauwe robot over rij 2 de tegel op en raakt hem kwijt.
+  - *Conga Line* (59) is met 3,6 bewust een adempauze voor het slotlevel, geen vergissing in de volgorde.
+  - Geen van de 20 bleek op het scherm saai, verwarrend of oneerlijk genoeg om te vervangen. Dat is het oordeel
+    van één maker die de oplossingen kende; een echte speler heeft ze niet gezien.
 
 ## 5. Hoe een level wordt gemaakt en bewezen
 
@@ -370,7 +382,8 @@ regels die de generator als zeef gebruikt, wordt daar zet voor zet met de echte 
 ## 7. Nieuwe levelelementen
 
 **Stand 22 november 2026.** Van de zeven kandidaten hieronder is er één gebouwd: **A, de draaitegel**, in de
-engine, de levelparser, de zeef, de generator en de meting. Wat er precies in zit:
+engine, de levelparser, de zeef, de generator en de meting, en sinds dezelfde dag ook getekend en geanimeerd.
+Wat er precies in zit:
 
 - Celcode `@@` in een level. Een robot kan er niet op beginnen.
 - De regel, als zevende stap van `step`: een robot die deze zet op de tegel *aankomt*, draait daar een
@@ -382,12 +395,34 @@ engine, de levelparser, de zeef, de generator en de meting. Wat er precies in zi
 - Een bord zonder tegels gedraagt zich exact als voorheen: de 40 bestaande levels en al hun tests zijn
   onveranderd groen.
 
-**Nog te doen voordat pagina 3 in het spel kan** (bewust niet gedaan, want `src/render/`):
-1. De tegel tekenen uit `board.turnTiles`, met een vorm die niet op de pijl van een robot lijkt.
-2. In de stapanimatie de extra kwartslag tonen wanneer `tileTurned` waar is.
-3. De 20 levels van `data/levels-upcoming.json` naar `data/levels.json` verplaatsen en hun notities in
-   `design/levels-catalog.json` van `upcoming` naar `levels`. De tests draaien dan vanzelf mee.
-4. Schermafbeeldingen maken en de 20 levels in het echte spel uitspelen (`tools/level-design/screenshots.mjs`).
+**Hoe de tegel eruitziet en beweegt** (`buildTurnTile` in `src/render/parts/board.ts`, maten in
+`data/parts.json` onder `turnTile`, kleuren `colors.kit.turn*` en tijden `anim.tile*` in `data/config.json`):
+
+- Een gewone vloertegel met een ingelaten ronde draaischijf: witte schijf, twee donkere pijlen die elkaar met
+  de klok mee achtervolgen, en een periwinkle kraag (de kleur van de bordrand) tot bijna aan de tegelrand.
+  Geen rood, blauw, geel of groen: de tegel hoort bij het bord, niet bij een robotkleur. Rond in plaats van
+  vierkant, twee pijlen in plaats van één haak, donker op wit in plaats van wit op kleur: zo lijkt hij niet op
+  een commandoknop, niet op de richtingsdriehoek van een robot en niet op het vinkje van de uitgang.
+- Een robot die erop staat bedekt de pijlen; de kraag blijft eromheen zichtbaar, en zodra de robot wegstapt
+  zijn de pijlen terug.
+- De animatie: de robot maakt eerst zijn stap af, staat een ogenblik stil (`tileTurnPause`, 0,07 s) en wordt
+  dan samen met de schijf een kwartslag met de klok mee gedraaid (`tileTurnTime`, 0,22 s) terwijl een lichtring
+  rond de schijf opflitst. De robot hupt daarbij niet, anders dan bij een kleurdraai: het bord doet het. Undo
+  speelt hetzelfde achteruit (eerst terugdraaien op de tegel, dan terugglijden). Met "minder beweging" draait
+  de robot zonder doorschieten.
+- De aanwijzing: bij het openen van een level maakt elke draaischijf één keer een kwartslag met een lichtflits,
+  nog voor de speler iets heeft aangeraakt. Meer uitleg is er niet; er staat nergens tekst.
+- De hint tekent de volgende zet met de eigen stap van de engine en laat nu ook de extra draai zien: een tweede
+  kwartboog rond het vakje van de tegel.
+- De twee getekende ontwerpen (A: twee pijlen op wit, gebouwd; B: één lange pijl op een paarse schijf) staan
+  naast elkaar op de onderdelenpagina (`npm run build:parts`, kaart "Draaitegel") op 53 en 42 px. B is
+  afgevallen omdat hij op die grootte als een ronde knop leest en zijn paars bij rood-groen-kleurenblindheid
+  naar het blauw van de blauwe robot trekt.
+
+De koppeling tussen engine en beeld is een klein stuk zuivere code (`src/render/stepPlan.ts`): elk
+`tileTurned`-verslag geeft precies één draai-tel op het vakje waar de robot aankwam. De unittest
+`tests/unit/turn-tile.test.ts` speelt daarmee de oplossing van elk tegel-level na en controleert dat de getoonde
+richting van elke robot na elke zet gelijk is aan die van de engine.
 
 De rest van dit hoofdstuk is het oorspronkelijke voorstel, ongewijzigd, als verantwoording van de keuze.
 B tot en met G zijn niet gebouwd.
@@ -626,8 +661,8 @@ omdat ze op `step` leunen.
 | # | Vraag | Besluit | Stand |
 |--:|---|---|---|
 | 1 | De sleutelfout in de engine repareren | Ja | Gedaan, zie hoofdstuk 5 |
-| 2 | Nieuwe elementen | Draaitegel (pagina 3), uitgang per kleur (pagina 4), drukplaat met poort (pagina 5); eenrichtingstegel als reserve | Draaitegel gebouwd in engine en gereedschap; tekenwerk nog niet. De andere twee niet begonnen |
-| 3 | Pagina 3 | Variant A, met de draaitegel | 20 levels bewezen in `data/levels-upcoming.json`; nog niet in het spel |
+| 2 | Nieuwe elementen | Draaitegel (pagina 3), uitgang per kleur (pagina 4), drukplaat met poort (pagina 5); eenrichtingstegel als reserve | Draaitegel gebouwd, getekend en geanimeerd. De andere twee niet begonnen |
+| 3 | Pagina 3 | Variant A, met de draaitegel | Gedaan: 20 levels in `data/levels.json`, het spel heeft er 60 |
 | 4 | Volgorde van pagina 1 en 2 | Akkoord: *Follow the Arrow* op plek 3, *Two Lanes* en *Patience* op pagina 2 | Gedaan |
 | 5 | Oude saves met een opgelost level achter een gesloten level | Zo laten | Geen wijziging |
 | 6 | De 23 ongewijzigd gekozen levels | Zo laten | Geen wijziging |
@@ -641,6 +676,9 @@ Op 22 november 2026 volgde een tweede akkoord: de draaitegel bouwen in engine, s
 levels van pagina 3 maken, en het tekenwerk laten liggen tot de andere sessie in `src/render/` klaar is.
 Zie hoofdstuk 4 en 7.
 
+Op 22 november 2026 volgde het derde akkoord: de tegel tekenen en animeren en pagina 3 in het spel brengen.
+Dat is gedaan; zie hoofdstuk 4 en 7 en de schermafbeeldingen in `production/qa/evidence/turn-tile/`.
+
 ## 9. Niet gecontroleerd
 
 - **Of echte spelers de volgorde goed vinden.** De score is geijkt op tien levels en op de volgorde van de
@@ -653,5 +691,12 @@ Zie hoofdstuk 4 en 7.
   kaart op 390×844; 7×7 en 8×8 zijn daar leesbaar, maar niet op een telefoon in de hand beoordeeld.
 - **De volledige meting van Grand Parade** (afgekapt bij 3 miljoen standen).
 - **De voorbeeldborden van de nieuwe elementen** B tot en met G zijn met de hand doorgerekend, niet door een solver.
-- **Pagina 3 is door niemand gezien of gespeeld**: de draaitegel wordt nog niet getekend.
+- **Of echte spelers de draaitegel begrijpen.** Level 41 leert hem zonder tekst (de schijf draait bij het
+  openen één keer voor, en de tegel draait de robot als hij erop stapt), maar dat is alleen door de maker
+  beoordeeld. Niemand anders heeft pagina 3 gezien of gespeeld.
+- **De tegel op een echt toestel.** Beoordeeld op schermafbeeldingen van 390×844 uit een browser zonder
+  grafische kaart, in gewone kleuren, met "Colour shapes" aan en in een nagebootste rood-groen-kleurenblindheid;
+  niet op een telefoon in de hand en niet door iemand die kleurenblind is.
+- **Het tempo van de draai** (0,07 s stilstaan, 0,22 s draaien) is op beeldreeksen beoordeeld, niet op gevoel
+  bij het spelen op een toestel.
 - **De herhaalbaarheid van de generatorrondes** met de huidige code is niet opnieuw gedraaid.
