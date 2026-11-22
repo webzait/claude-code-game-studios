@@ -70,7 +70,8 @@ export interface WinCard {
   readonly last: boolean;
   readonly reward: RewardView;
   readonly next: () => void;
-  readonly replay: () => void;
+  /** Start the same level again, to improve the result. */
+  readonly retry: () => void;
   readonly levels: () => void;
 }
 
@@ -117,7 +118,7 @@ export function winMarkup(w: WinCard, flecks: boolean): string {
     <h2 class="tf-end-title tf-end-line" id="end-title">${winLine(w)}</h2>
     <div class="tf-end-coins" id="end-result">${rewardPlate(w.reward.earned)}</div>
     <div class="tf-end-actions">${actions}</div>
-    <div class="tf-end-more">${link('replay', 'Replay', 'replay')}${w.last ? '' : link('levels', 'Levels', 'levels')}</div>`;
+    <div class="tf-end-more">${link('retry', 'Retry', 'retry')}${w.last ? '' : link('levels', 'Levels', 'levels')}</div>`;
 }
 
 function lostBody(l: LostCard): string {
@@ -153,7 +154,7 @@ export function renderEndCard(host: HTMLElement, card: EndCard, animate: boolean
   };
   if (card.kind === 'win') {
     on('next', card.next);
-    on('replay', card.replay);
+    on('retry', card.retry);
     on('levels', card.levels);
   } else if (card.kind === 'lost') {
     on('offer', card.offer?.take);

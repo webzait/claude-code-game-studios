@@ -107,7 +107,7 @@ test('Levels, Level, Win, Next: no dead ends, and progress survives a reload', a
   await expect(page.locator('#card .tf-coin-total')).toHaveCount(1);
   await expect(page.locator('#card .tf-coin-sum')).toHaveText(`+${perfectWin}`);
   await expect(page.locator('#card .tf-coin-line, #card .tf-coin-balance')).toHaveCount(0);
-  await expect(page.locator('#end-replay')).toHaveText('Replay');
+  await expect(page.locator('#end-retry')).toHaveText('Retry');
   await expect(page.locator('#end-levels')).toHaveText('Levels');
   // The coins fly to the counter, which ends on the saved balance (B6); Next never waits for them.
   await expect(page.locator('#levelCoins .tf-coin-amount')).toHaveText(String(config.coins.start + perfectWin), { timeout: 15000 });
@@ -168,6 +168,13 @@ test('the win coins: Next on the first frame ends the count at once, and a repla
   await expect(page.locator('#card .tf-coin-total')).toHaveCount(0);
   expect((await snap(page)).coins).toBe(config.coins.start + perfect);
   await expect(page.locator('#levelCoins .tf-coin-amount')).toHaveText(String(config.coins.start + perfect));
+  // Retry on the pop-up starts the same level again at once, to improve the result; nothing is lost or paid twice.
+  await page.click('#end-retry');
+  expect(await snap(page)).toMatchObject({ screen: 'level', level: 0, status: 'playing', movesLeft: budget(0), collected: 0 });
+  await expect(page.locator('#card')).toBeHidden();
+  await playWitness(page, 0);
+  await expect(page.locator('#end-result')).toHaveText('Best reward already paid', { timeout: 15000 });
+  expect(await snap(page)).toMatchObject({ coins: config.coins.start + perfect, best: { [levels[0].id]: levels[0].par } });
   // Leaving through Levels works from the pop-up too.
   await page.click('#end-levels');
   expect((await snap(page)).screen).toBe('map');
