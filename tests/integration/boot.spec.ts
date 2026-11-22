@@ -181,8 +181,12 @@ async function withCoins(page: Page, coins: number): Promise<void> {
 
 test('the win coins: Next on the first frame ends the count at once, and a replayed level shows no made-up reward', async ({ page }) => {
   const errors = await open(page);
+  // The grid test view, because the path no longer shows a level that is solved (finding B2) and this check plays one twice.
+  await page.evaluate((coins) => localStorage.setItem('turnflock.save', JSON.stringify({ version: 5, best: {}, coins, paid: {}, settings: {}, lab: { unlockAll: true } })), config.coins.start);
+  await page.reload();
+  await expect.poll(() => page.evaluate(() => typeof window.turnflock?.snapshot)).toBe('function');
   const perfect = config.coins.win + config.moveSlack * config.coins.perSpareMove + config.coins.perfect;
-  await page.click('#node-1');
+  await page.locator('.tf-levels-tile').first().click();
   await playWitness(page, 0);
   // The balance is saved before anything is shown; the counter still holds the old amount until the pop-up's coins arrive.
   await expect.poll(async () => (await snap(page)).coins, { timeout: 15000 }).toBe(config.coins.start + perfect);
@@ -193,7 +197,7 @@ test('the win coins: Next on the first frame ends the count at once, and a repla
   // The same level again pays nothing: no coin plate, a plain line, and the counter does not move.
   await page.click('#levelBack');
   await expect(page.locator('#mapCoins .tf-coin-amount')).toHaveText(String(config.coins.start + perfect));
-  await page.click('#node-1');
+  await page.locator('.tf-levels-tile').first().click();
   await playWitness(page, 0);
   await expect(page.locator('#end-result')).toHaveText('Best reward already paid', { timeout: 15000 });
   await expect(page.locator('#card .tf-coin-total')).toHaveCount(0);

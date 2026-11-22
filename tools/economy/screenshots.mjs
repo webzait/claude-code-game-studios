@@ -3,7 +3,8 @@
 // Usage: npm run build:single && node tools/economy/screenshots.mjs
 // Pictures go to production/qa/evidence/economy/. Fails if an amount on screen is not the one in data/config.json.
 import { chromium } from 'playwright';
-import { mkdirSync, readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -14,7 +15,10 @@ const c = config.coins;
 const build = pathToFileURL(resolve('dist-single/index.html')).href;
 mkdirSync(OUT, { recursive: true });
 
-const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader-webgl', '--enable-unsafe-swiftshader'] });
+// The same browser the Playwright checks use (playwright.config.ts): the one page-shot.sh finds.
+const which = existsSync('.claude/scripts/page-shot.sh') ? spawnSync('bash', ['.claude/scripts/page-shot.sh', '--which'], { encoding: 'utf8' }).stdout.trim() : '';
+const executablePath = process.env.PAGE_SHOT_BROWSER || which || undefined;
+const browser = await chromium.launch({ executablePath, args: ['--use-gl=angle', '--use-angle=swiftshader-webgl', '--enable-unsafe-swiftshader'] });
 const failures = [];
 const check = (what, actual, expected) => {
   const ok = String(actual).trim() === String(expected);
