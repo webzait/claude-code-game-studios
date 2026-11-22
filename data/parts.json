@@ -216,23 +216,21 @@
   },
   "buttons": {
     "pressFraction": 0.8,
-    "utility": {
-      "width": 120,
-      "height": 48,
-      "depth": 16,
-      "radius": 22
+    "family": {
+      "depth": 0.2,
+      "radius": 0.25
+    },
+    "tools": {
+      "height": 37,
+      "gap": 10,
+      "tray": true,
+      "labels": false
     },
     "action": {
       "width": 96,
       "height": 96,
-      "depth": 20,
+      "depth": 19,
       "radius": 24
-    },
-    "hint": {
-      "width": 120,
-      "height": 48,
-      "depth": 16,
-      "radius": 22
     },
     "phone": {
       "stripWidth": 390,
@@ -302,26 +300,14 @@
       "radius": 14
     },
     "price": {
-      "height": 26,
-      "icon": 20,
-      "font": 15
+      "height": 24,
+      "font": 15,
+      "over": 9
     },
     "priceSmall": {
-      "height": 22,
-      "icon": 17,
-      "font": 13
-    },
-    "hint": {
-      "width": 156,
-      "height": 48,
-      "depth": 16,
-      "radius": 22
-    },
-    "hintCompact": {
-      "width": 96,
-      "height": 40,
-      "depth": 8,
-      "radius": 15
+      "height": 18,
+      "font": 12.5,
+      "over": 8
     },
     "offer": {
       "height": 52,

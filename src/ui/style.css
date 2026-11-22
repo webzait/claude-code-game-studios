@@ -104,24 +104,22 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
   .tf-status-label { letter-spacing: .07em; }
   .tf-status-cell.level .tf-status-label { font-size: 7.5px; }
   .tf-status-cell.level .tf-status-num { font-size: 18px; }
-  .tools .tf-coin-bulb { --icon: 20px; }
-  .tools .tf-coin-buy.compact .tf-face { gap: 3px; }
 }
 .tf-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .hint-line.warn { color: #b3541e; }
 .stage { flex: 1; min-height: 0; position: relative; margin: 8px -14px 0; }
 #board { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.controls { display: flex; flex-direction: column; gap: 10px; padding-bottom: 2px; }
-/* Undo, Restart, Replay (its picture only) and Hint. */
-.tools { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) 46px minmax(0, 1fr); gap: clamp(6px, 2vw, 10px); }
-.tools .tf-btn { --w: 100%; --h: clamp(38px, 5.2dvh, 44px); --d: 12px; --r: 20px; --press-fraction: .8; }
-.tools .tf-label { --fs: clamp(13px, 4vw, 16px); }
-.tools .tf-utility .tf-face { gap: clamp(3px, 1.2vw, 6px); }
-.tools .tf-utility svg { --icon: clamp(16px, 5vw, 20px); }
-/* The coin on a price tag keeps the tag's own size here; the row is too narrow for it to stand proud. */
-.tools .tf-coin-price .tf-coin-ico { width: var(--s); height: var(--s); }
+.controls { display: flex; flex-direction: column; gap: 7px; padding-bottom: 2px; }
+/* The bottom area is one family on one grid (finding B9): the tools tray and the command row share the columns and the
+   gap, and every block here has the same build: depth a fifth of its face, corners a quarter of it. */
+.controls .tf-btn { --d: calc(var(--h) * var(--tf-depth, .2)); --r: calc(var(--h) * var(--tf-round, .25)); --press-fraction: .8; }
+@media (max-height: 620px) {
+  .controls { gap: 4.5px; }
+  .controls .tf-tools { --tag-over: 6px; padding-top: 3px; }
+  .controls .tf-tools .tf-btn { --icon: calc(var(--h) * .56); }
+}
 /* Four action buttons share the width; each stays square until the screen gets too short for that. */
-.commands .tf-btn { --w: 100%; --h: clamp(52px, min((min(100vw, 560px) - 58px) / 4, 10.4dvh), 96px); --d: calc(var(--h) * .2); --r: calc(var(--h) * .25); --press-fraction: .8; }
+.commands .tf-btn { --w: 100%; --h: clamp(52px, min((min(100vw, 560px) - 58px) / 4, 10.4dvh), 96px); }
 .commands { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 10px; justify-items: center; }
 .cmd[hidden] { display: none; }
 

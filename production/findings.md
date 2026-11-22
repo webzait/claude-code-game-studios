@@ -23,12 +23,6 @@ hier, is in de data instelbaar en kan door de eigenaar worden omgedraaid.
 | B2 | Levelselectie — `claude/turnflock-level-path` | Alleen het huidige level en de volgende vijf zijn te zien (`levelsAhead`); gehaalde levels verdwijnen. Opnieuw spelen van een gehaald level kan alleen nog via "Replay" direct na de winst. |
 | B5, B6 | Pop-up — `claude/turnflock-win-popup` | B5: sterren, één regel met het resultaat, één bedrag aan verdiende munten en één hoofdknop; de uitsplitsing en het saldo vervallen, Replay en Levels worden kleine knoppen. B6: de munten vliegen van de pop-up naar de teller, die meetelt. |
 
-### 2026-11-22, later
-
-| Nr | Bevinding (woorden van de eigenaar) | Raakt | Opgepakt |
-|---|---|---|---|
-| B9 | Knoppen onderin allemaal in dezelfde stijl, zodat ze bij elkaar horen. Eenduidige manier van prijs aangeven als dat van toepassing is. Voorbeeld van de eigenaar: `design/reference/turnflock/source/buttons-price-reference.jpg` | Onderste rijen van het puzzelscherm (Undo, Restart, Replay, Hint en de commandoknoppen), prijslabels | Sessie knoppenrij — `claude/turnflock-bottom-buttons` |
-
 ## Afgehandeld
 
 ### 2026-11-22 — puzzelscherm (branch `claude/turnflock-puzzle-screen`)
@@ -78,3 +72,7 @@ Gezien bij B8, niet aangepast (valt buiten de bevinding): in de simulatie van ro
 | Nr | Bevinding (woorden van de eigenaar) | Afgehandeld | Commit | Wat er nu in het spel zit |
 |---|---|---|---|---|
 | — | "Zorg dat er eerst een testwinkel is om mee te testen" | 2026-11-22 | `77ac142`, `f67f009` (branch `claude/turnflock-test-shop`) | De plusknop opent een testwinkel met drie muntpakketten (100, 250 en 700 munten; voorbeeldprijzen €0,99, €1,99 en €4,99 uit `shop.packs`). Een aankoop is gespeeld: bevestigingsstap, korte verwerking, munten erbij met de bestaande telleranimatie, en een bonregel. Overal staat "Test shop" en dat er niets wordt afgerekend; er is geen betaalprovider en er verlaat niets het toestel. Bij te weinig munten voor Hint, Undo of "+3 moves" staat een stille link "Get coins" naast de gratis uitweg. Testlab: winkel aan/uit (standaard aan, omdat deze build voor het testen is), uitkomst van de aankoop (slaagt, geannuleerd, mislukt) en een kasboek met totalen (gekocht en verdiend apart), saldo instellen en wissen. Het kopen zit achter `PurchaseProvider`; wat een echte winkel nodig heeft en de economienotitie staan in `design/shop.md`. Screenshots: `production/qa/evidence/test-shop/`. |
+
+### 2026-11-22 — knoppen onderin (branch `claude/turnflock-bottom-buttons`)
+
+| B9 | Knoppen onderin allemaal in dezelfde stijl, zodat ze bij elkaar horen. Eenduidige manier van prijs aangeven als dat van toepassing is. Voorbeeld: `design/reference/turnflock/source/buttons-price-reference.jpg` | 2026-11-22 | `d710e3b` (branch `claude/turnflock-bottom-buttons`) | Undo, Restart en Hint zijn drie gelijke witte blokken (zelfde maat, diepte, hoek, pictogramdikte) in één bak boven de opdrachtknoppen, met dezelfde buitenranden en tussenruimte. Replay staat op verzoek van de eigenaar niet meer op het puzzelscherm (hij zit in de pop-up na een gehaald level). Alleen een pictogram; de naam is er voor schermlezers. Restart heeft een eigen pictogram (terug naar het begin), zodat hij niet meer op een draaiknop lijkt. Een prijs staat overal op hetzelfde kaartje: de munt over het linkereind van een crème plaatje met het bedrag, midden over de onderrand van de knop. Vier vaste toestanden: betaalbaar, te weinig munten (rood, knop dof maar tikbaar), gratis (groen woord), al gebruikt (grijs met vinkje; de Hint-lamp brandt zolang de hint op het bord staat). Hetzelfde kaartje staat op "+3 moves" en op Undo in de pop-up "Out of moves". Opdrachtknoppen en gereedschap delen één bouwregel (diepte 0,2 en hoek 0,25 van de vlakhoogte). Het bord verliest geen hoogte. Omkeerbaar in `data/parts.json` → `buttons.tools`: `labels` (namen in de knop) en `tray` (bak). Prijzen, aanbiedingen en regels zijn niet veranderd. Bewijs: `production/qa/evidence/findings-bottom-buttons/`. |

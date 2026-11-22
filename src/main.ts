@@ -8,7 +8,6 @@ import './ui/tf-scene.css';
 import './ui/tf-shop.css';
 import { Sfx } from './audio';
 import { CONFIG } from './config';
-import { step } from './engine/engine';
 import type { Color, Command, Robot, RobotEvent } from './engine/types';
 import { previewStep, witnessNext, type RescueResult, type ScanResult } from './game/assist';
 import { extraMovesPrice, hintPrice, payout, rewardFor, settlePaid, undoQuote, type UndoQuote } from './game/coins';
@@ -174,7 +173,6 @@ class Game {
         command: (c) => this.command(c),
         undo: () => this.undo(),
         restart: () => this.restart(),
-        replay: () => void this.replay(),
         scan: () => void this.scan(),
         back: () => this.show('map'),
         getCoins: (opener) => this.tap(() => this.openCoins(opener)),
@@ -574,7 +572,6 @@ class Game {
       total: this.session.total,
       movesLeft: this.session.movesLeft,
       canUndo: this.session.commands.length > 0 && !this.replaying && !this.busy,
-      canReplay: this.session.commands.length > 0 && !this.replaying && !this.busy,
       canScan: status !== 'won' && !this.replaying && !this.busy,
       inputLocked: this.replaying || this.busy || status !== 'playing',
       colorsInLevel: colors,
@@ -887,35 +884,6 @@ class Game {
       this.point = toStart ? 'restart' : 'undo';
       this.setHint(toStart ? 'No win from here. Restart to try again.' : `No win from here. Undo ${result.undo} or Restart.`, true);
     } else this.setHint('Could not check this one in time.', true);
-  }
-
-  /** Play the commands so far again from the start; the session is untouched. */
-  private async replay(): Promise<void> {
-    if (this.replaying || this.busy || this.session.commands.length === 0) return;
-    const generation = ++this.generation;
-    this.pending = 0;
-    this.replaying = true;
-    this.hud.hideCard();
-    this.refresh();
-    const level = this.session.level;
-    let state = level.start;
-    this.view.sync(state, true);
-    await wait(0.45);
-    for (const command of this.session.commands) {
-      if (generation !== this.generation) return;
-      const result = step(level.board, state, command, this.session.rules);
-      state = result.state;
-      this.hud.flash(command);
-      await this.view.play(result.events, 1);
-      await wait(CONFIG.anim.replayGap);
-    }
-    if (generation !== this.generation) return;
-    this.view.sync(this.session.state, false);
-    this.replaying = false;
-    this.refresh();
-    const status = this.session.status;
-    if (status === 'won') this.showWin(this.session.commands.length, starsFor(this.session.commands.length, this.par, this.usedBackup));
-    else if (status === 'lost') void this.onLost();
   }
 
   /** Read-only snapshot for automated checks. */
