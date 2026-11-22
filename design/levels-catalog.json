@@ -17,7 +17,9 @@
     "crowd": "Veel robots: één commando, veel gevolgen",
     "big": "Het grootste bord (8×8)",
     "turn-tile": "Een draaitegel draait wie erop stapt: het bord doet het draaien",
-    "tile-to-avoid": "Een draaitegel in de weg: wie erop stapt, loopt verkeerd"
+    "tile-to-avoid": "Een draaitegel in de weg: wie erop stapt, loopt verkeerd",
+    "colour-exit": "Elke kleur heeft een eigen uitgang",
+    "wrong-door": "Een uitgang van een andere kleur is gewone vloer: je loopt eroverheen of staat er in de weg"
   },
   "origins": {
     "hand": "met de hand gemaakt",
@@ -325,9 +327,108 @@
       "idea": "big",
       "origin": "tidied",
       "about": "Pronkstuk van pagina 3: tien robots in drie kleuren op een leeg 8×8-bord; de ene tegel in de onderste rij draait er vier."
+    },
+    "own-door": {
+      "idea": "colour-exit",
+      "origin": "hand",
+      "about": "Alleen VOORUIT: rood en blauw lopen elk naar hun eigen uitgang."
+    },
+    "just-passing": {
+      "idea": "wrong-door",
+      "origin": "generated",
+      "about": "Een robot stapt op de uitgang van de andere kleur en wordt niet opgenomen: voor hem is het gewone vloer."
+    },
+    "swap-sides": {
+      "idea": "colour-exit",
+      "origin": "hand",
+      "about": "Elke robot staat onder de verkeerde uitgang; ze moeten kruisen, en elke draai van de één is een stap van de ander."
+    },
+    "doorstop": {
+      "idea": "wrong-door",
+      "origin": "generated",
+      "about": "Een robot staat even op andermans uitgang, en wie achter hem staat moet wachten."
+    },
+    "three-doors": {
+      "idea": "three-colours",
+      "origin": "generated",
+      "about": "Drie kleuren, drie uitgangen in drie hoeken; elke kleur draait één keer."
+    },
+    "ricochet": {
+      "idea": "turn-tile",
+      "origin": "generated",
+      "about": "Uitgangen per kleur met een draaitegel erbij: het bord draait een blauwe robot richting zijn uitgang."
+    },
+    "side-by-side": {
+      "idea": "colour-exit",
+      "origin": "generated",
+      "about": "Twee uitgangen in de bovenrand: iedereen loopt omhoog en alleen blauw hoeft één keer te draaien."
+    },
+    "top-and-bottom": {
+      "idea": "board-shape",
+      "origin": "generated",
+      "about": "Het lange 4×7-bord met de rode uitgang boven en de blauwe onder."
+    },
+    "after-the-red": {
+      "idea": "queue",
+      "origin": "generated",
+      "about": "Twee blauwe robots staan in de rij achter een rode, vlak voor hun eigen uitgang."
+    },
+    "stacked-doors": {
+      "idea": "exit-sides",
+      "origin": "generated",
+      "about": "Twee uitgangen boven elkaar, binnen in het bord; de robots komen er van drie kanten in."
+    },
+    "twin-gates": {
+      "idea": "wrong-door",
+      "origin": "generated",
+      "about": "Twee uitgangen naast elkaar midden op het bord; twee keer loopt een robot over de verkeerde."
+    },
+    "four-corners": {
+      "idea": "tight",
+      "origin": "generated",
+      "about": "Vier robots op 4×4 met de uitgangen in twee hoeken; vier draaien."
+    },
+    "colour-sort": {
+      "idea": "three-colours",
+      "origin": "generated",
+      "about": "Zes robots in drie kleuren, elk naar een eigen hoek."
+    },
+    "half-and-half": {
+      "idea": "colour-exit",
+      "origin": "generated",
+      "about": "Drie blauwe naar rechtsboven, drie rode naar linksonder, met maar twee draaien."
+    },
+    "three-lanes": {
+      "idea": "three-colours",
+      "origin": "tidied",
+      "about": "Zes robots in drie kleuren en drie uitgangen; blauw draait twee keer, rood twee keer achter elkaar."
+    },
+    "wide-sort": {
+      "idea": "board-shape",
+      "origin": "tidied",
+      "about": "Het 7×7-bord met acht robots en drie uitgangen in drie hoeken."
+    },
+    "sorting-office": {
+      "idea": "conflict",
+      "origin": "generated",
+      "about": "Vijf robots en drie uitgangen; robots die hetzelfde vakje willen, wachten op elkaar."
+    },
+    "long-sort": {
+      "idea": "board-shape",
+      "origin": "tidied",
+      "about": "Piek van pagina 4: het brede 8×6-bord, acht robots, drie keer ROOD achter elkaar."
+    },
+    "home-stretch": {
+      "idea": "colour-exit",
+      "origin": "generated",
+      "about": "Adempauze: zes robots, twee uitgangen, één keer ROOD."
+    },
+    "grand-sort": {
+      "idea": "big",
+      "origin": "generated",
+      "about": "Pronkstuk van pagina 4: tien robots in drie kleuren op een leeg 8×8-bord, elk naar zijn eigen hoek."
     }
   },
   "retired": {},
-  "upcoming": {
-  }
+  "upcoming": {}
 }

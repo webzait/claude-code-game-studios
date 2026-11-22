@@ -4,6 +4,7 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import PARTS from '../../data/parts.json';
 import { boardFootprint, buildExit, buildFloorTile, buildObstacle, buildRim, buildTurnTile, buildUnderlay } from './parts/board';
 import { CONFIG } from '../config';
+import { exitsOf } from '../engine/engine';
 import { DIR_DX, DIR_DY, type Color, type GameState, type RobotEvent } from '../engine/types';
 import type { Level } from '../levels/parse';
 import { QUARTER, headingAngle, nearestAngle, squashScale, turnAngle, type HeadingStyle } from './heading';
@@ -96,10 +97,11 @@ export class BoardView {
   private robots = new Map<number, RobotView>();
   private tweens: Tween[] = [];
   private particles: Particle[] = [];
-  private exitPad: THREE.Group | null = null;
-  private exitRing: THREE.Mesh | null = null;
-  /** Patch of light around the parts exit; it breathes slowly. */
-  private exitGlow: THREE.Mesh | null = null;
+  /** One pad per exit, by cell. */
+  private exitPads = new Map<number, THREE.Group>();
+  private exitRings: THREE.Mesh[] = [];
+  /** Patches of light around the parts exits; they breathe slowly. */
+  private exitGlows: THREE.Mesh[] = [];
   private level: Level | null = null;
   /** The level's turn tiles by cell index (row-major). */
   private turnTiles = new Map<number, TurnTileView>();
@@ -185,6 +187,18 @@ export class BoardView {
   setColourShapes(on: boolean): void {
     this.colourShapes = on;
     for (const view of this.robots.values()) view.showShape(on);
+    this.showExitShapes();
+  }
+
+  /** On an exit for one colour: the colour's shape in place of the tick while "Colour shapes" is on. */
+  private showExitShapes(): void {
+    for (const pad of this.exitPads.values()) {
+      const shape = pad.userData.shape as THREE.Object3D | undefined;
+      const check = pad.userData.check as THREE.Object3D | undefined;
+      if (!shape || !check) continue;
+      shape.visible = this.colourShapes;
+      check.visible = !this.colourShapes;
+    }
   }
 
   /** The level on show, if any. */
@@ -213,14 +227,15 @@ export class BoardView {
     this.robots.clear();
     for (const p of this.particles) this.scene.remove(p.mesh);
     this.particles = [];
-    this.exitPad = null;
-    this.exitRing = null;
-    this.exitGlow = null;
+    this.exitPads.clear();
+    this.exitRings = [];
+    this.exitGlows = [];
     this.turnTiles.clear();
     this.shownCell.clear();
     this.floorY = this.modular ? PARTS.floorTile.height : 0.06;
     if (this.modular) this.buildPartsBoard(level);
     else this.buildPlainBoard(level);
+    this.showExitShapes();
 
     for (const r of level.start.robots) {
       const heading = this.style.heading ?? 'faceUp';
@@ -263,7 +278,8 @@ export class BoardView {
    * cell and four corners), a floor tile per cell, and an obstacle or the exit where the level has one.
    */
   private buildPartsBoard(level: Level): void {
-    const { width, height, walls, exitX, exitY } = level.board;
+    const { width, height, walls } = level.board;
+    const exitAt = new Map(exitsOf(level.board).map((e) => [e.y * width + e.x, e] as const));
     // Everything that never moves goes into one group and is fused into a few meshes.
     const fixed = new THREE.Group();
     fixed.add(buildUnderlay(width, height, GRID.gap), buildRim(width, height, GRID.gap));
@@ -271,11 +287,13 @@ export class BoardView {
       for (let x = 0; x < width; x++) {
         const cx = this.cellX(x);
         const cz = this.cellZ(y);
-        if (x === exitX && y === exitY) {
-          const pad = buildExit();
+        const exit = exitAt.get(y * width + x);
+        if (exit) {
+          const pad = buildExit(exit.color ?? undefined);
           pad.position.set(cx, 0, cz);
-          this.exitPad = pad;
-          this.exitGlow = (pad.userData.glow as THREE.Mesh | undefined) ?? null;
+          this.exitPads.set(y * width + x, pad);
+          const glow = pad.userData.glow as THREE.Mesh | undefined;
+          if (glow) this.exitGlows.push(glow);
           this.boardGroup.add(pad);
           continue;
         }
@@ -310,7 +328,7 @@ export class BoardView {
 
   /** Board from built-in shapes, used when the kit is switched off or failed to load. */
   private buildPlainBoard(level: Level): void {
-    const { width, height, walls, exitX, exitY } = level.board;
+    const { width, height, walls } = level.board;
     const c = CONFIG.colors;
     const mat = (color: string, roughness = 0.8): THREE.MeshStandardMaterial =>
       new THREE.MeshStandardMaterial({ color, roughness });
@@ -362,12 +380,14 @@ export class BoardView {
       }
     }
 
-    // Exit: green pad with a white tick and a slow pulse ring.
+    // Exits: a pad with a white tick and a slow pulse ring; green for everyone, or in a robot's colour.
+    for (const exit of exitsOf(level.board)) {
+    const tint = exit.color ? c[exit.color] : c.green;
     const pad = new THREE.Group();
-    pad.position.set(this.cellX(exitX), 0.04, this.cellZ(exitY));
+    pad.position.set(this.cellX(exit.x), 0.04, this.cellZ(exit.y));
     const padMesh = new THREE.Mesh(
       new RoundedBoxGeometry(0.88, 0.14, 0.88, 4, 0.07),
-      new THREE.MeshPhysicalMaterial({ color: c.green, roughness: 0.4, clearcoat: 0.4, clearcoatRoughness: 0.5, emissive: c.green, emissiveIntensity: 0.25 }),
+      new THREE.MeshPhysicalMaterial({ color: tint, roughness: 0.4, clearcoat: 0.4, clearcoatRoughness: 0.5, emissive: tint, emissiveIntensity: 0.25 }),
     );
     padMesh.position.y = 0.04;
     padMesh.receiveShadow = true;
@@ -386,14 +406,15 @@ export class BoardView {
     tickMesh.position.y = 0.1;
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(0.4, 0.47, 40),
-      new THREE.MeshBasicMaterial({ color: c.green, transparent: true, opacity: 0.5, depthWrite: false }),
+      new THREE.MeshBasicMaterial({ color: tint, transparent: true, opacity: 0.5, depthWrite: false }),
     );
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = 0.12;
     pad.add(padMesh, tickMesh, ring);
-    this.exitPad = pad;
-    this.exitRing = ring;
+    this.exitPads.set(exit.y * width + exit.x, pad);
+    this.exitRings.push(ring);
     this.boardGroup.add(pad);
+    }
   }
 
   /** Match the canvas size and frame the whole board. */
@@ -611,7 +632,7 @@ export class BoardView {
           // Collected: pop, spin and sink into the pad while confetti flies.
           return walk.then(() => {
             this.burst(tx, tz, view.color);
-            this.pulseExit();
+            this.pulseExit(e.toY * width + e.toX);
             void this.addTween(a.exitTime / speed, (k) => {
               const s = k < 0.25 ? 1 + k * 0.9 : 1.225 * (1 - easeInOut((k - 0.25) / 0.75));
               view.visibleScale = Math.max(s, 0);
@@ -766,9 +787,13 @@ export class BoardView {
     this.hintGroup.clear();
   }
 
-  private pulseExit(): void {
-    const pad = this.exitPad;
-    if (!pad) return;
+  /** Pop the pad on one cell, or every pad when no cell is given. */
+  private pulseExit(cell?: number): void {
+    const pads = cell === undefined ? [...this.exitPads.values()] : [this.exitPads.get(cell)].filter((p): p is THREE.Group => p !== undefined);
+    for (const pad of pads) this.pulsePad(pad);
+  }
+
+  private pulsePad(pad: THREE.Group): void {
     void this.addTween(0.32, (k) => {
       const s = 1 + Math.sin(Math.PI * k) * 0.16;
       pad.scale.set(s, 1 + Math.sin(Math.PI * k) * 0.8, s);
@@ -792,8 +817,10 @@ export class BoardView {
   /** Celebration when the last robot is in. */
   celebrate(): void {
     if (!this.level) return;
-    const { exitX, exitY } = this.level.board;
-    for (const color of ['red', 'blue', 'yellow'] as const) this.burst(this.cellX(exitX), this.cellZ(exitY), color);
+    // Confetti at every exit: in the exit's own colour, or in all three at the exit for everyone.
+    for (const exit of exitsOf(this.level.board)) {
+      for (const color of exit.color ? [exit.color] : (['red', 'blue', 'yellow'] as const)) this.burst(this.cellX(exit.x), this.cellZ(exit.y), color);
+    }
     this.pulseExit();
   }
 
@@ -852,17 +879,17 @@ export class BoardView {
         for (const material of mark.materials) material.opacity = HINT.opacity * (1 - HINT.pulse.fade * swing);
       }
     }
-    if (this.exitRing) {
+    for (const ring of this.exitRings) {
       const beat = (this.time * 0.7) % 1;
-      this.exitRing.scale.setScalar(0.9 + beat * 0.55);
-      (this.exitRing.material as THREE.MeshBasicMaterial).opacity = 0.55 * (1 - beat);
+      ring.scale.setScalar(0.9 + beat * 0.55);
+      (ring.material as THREE.MeshBasicMaterial).opacity = 0.55 * (1 - beat);
     }
-    if (this.exitGlow) {
+    for (const glow of this.exitGlows) {
       const pulse = PARTS.exit.glowPulse;
       const swing = this.reduced ? 1 : 0.5 + 0.5 * Math.sin((this.time / pulse.seconds) * Math.PI * 2);
-      (this.exitGlow.material as THREE.MeshBasicMaterial).opacity = pulse.low + (pulse.high - pulse.low) * swing;
+      (glow.material as THREE.MeshBasicMaterial).opacity = pulse.low + (pulse.high - pulse.low) * swing;
       const grow = 1 + (pulse.scale - 1) * swing;
-      this.exitGlow.scale.set(grow, 1, grow);
+      glow.scale.set(grow, 1, grow);
     }
     this.renderer.render(this.scene, this.camera);
     requestAnimationFrame((t) => this.frame(t));

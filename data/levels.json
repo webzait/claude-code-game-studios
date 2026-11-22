@@ -797,5 +797,271 @@
       "rv .. .. y> b> .. .. ..",
       "EX .. r< .. @@ .. .. .."
     ]
+  },
+  {
+    "id": "own-door",
+    "name": "Own Door",
+    "par": 3,
+    "witness": ["forward","forward","forward"],
+    "grid": [
+      "r> .. .. ER",
+      ".. .. .. ..",
+      ".. .. .. ..",
+      "b> .. .. EB"
+    ]
+  },
+  {
+    "id": "just-passing",
+    "name": "Just Passing",
+    "par": 5,
+    "witness": ["blue","forward","blue","forward","forward"],
+    "grid": [
+      "r> .. b^ r> ER",
+      ".. .. .. .. ..",
+      ".. .. .. .. ..",
+      ".. .. .. .. EB"
+    ]
+  },
+  {
+    "id": "swap-sides",
+    "name": "Swap Sides",
+    "par": 7,
+    "witness": ["red","red","red","blue","forward","red","forward"],
+    "grid": [
+      "ER .. .. EB",
+      ".. .. .. ..",
+      "b^ .. .. r^"
+    ]
+  },
+  {
+    "id": "doorstop",
+    "name": "Doorstop",
+    "par": 7,
+    "witness": ["forward","forward","red","red","forward","forward","forward"],
+    "grid": [
+      ".. .. .. .. ..",
+      ".. .. .. .. ..",
+      ".. rv .. .. bv",
+      ".. .. .. .. r>",
+      "ER .. .. b> EB"
+    ]
+  },
+  {
+    "id": "three-doors",
+    "name": "Three Doors",
+    "par": 6,
+    "witness": ["forward","forward","red","yellow","blue","forward"],
+    "grid": [
+      "EB .. r> .. EY",
+      ".. .. .. .. ..",
+      ".. y^ .. .. b<",
+      ".. .. .. .. ..",
+      ".. .. .. .. ER"
+    ]
+  },
+  {
+    "id": "ricochet",
+    "name": "Ricochet",
+    "par": 7,
+    "witness": ["blue","forward","forward","blue","forward","forward","forward"],
+    "grid": [
+      ".. .. .. b< EB",
+      ".. .. .. .. ..",
+      "@@ bv .. .. ..",
+      ".. .. .. .. rv",
+      ".. .. r> .. ER"
+    ]
+  },
+  {
+    "id": "side-by-side",
+    "name": "Side by Side",
+    "par": 8,
+    "witness": ["forward","forward","forward","forward","blue","forward","forward","forward"],
+    "grid": [
+      "b^ ER .. .. EB ..",
+      ".. r^ .. .. .. ..",
+      ".. .. .. .. .. ..",
+      ".. .. .. .. .. ..",
+      ".. r^ .. .. b^ .."
+    ]
+  },
+  {
+    "id": "top-and-bottom",
+    "name": "Top and Bottom",
+    "par": 8,
+    "witness": ["blue","forward","forward","blue","forward","blue","forward","forward"],
+    "grid": [
+      "ER .. .. r<",
+      ".. .. .. ..",
+      ".. .. .. ..",
+      "r^ .. b> ..",
+      ".. .. .. ..",
+      ".. .. .. ..",
+      "EB b^ .. .."
+    ]
+  },
+  {
+    "id": "after-the-red",
+    "name": "After the Red",
+    "par": 8,
+    "witness": ["forward","forward","forward","red","red","forward","forward","forward"],
+    "grid": [
+      "ER .. .. r< .. ..",
+      ".. .. .. r< .. ..",
+      ".. .. .. .. .. ..",
+      ".. .. .. .. .. ..",
+      "EB rv b< b< .. .."
+    ]
+  },
+  {
+    "id": "stacked-doors",
+    "name": "Stacked Doors",
+    "par": 7,
+    "witness": ["forward","forward","red","blue","red","red","forward"],
+    "grid": [
+      "r< bv .. .. .. ..",
+      ".. EB .. .. .. ..",
+      ".. ER .. .. .. ..",
+      ".. .. .. .. .. ..",
+      "b^ .. .. r< .. ..",
+      ".. .. .. .. .. .."
+    ]
+  },
+  {
+    "id": "twin-gates",
+    "name": "Twin Gates",
+    "par": 9,
+    "witness": ["forward","forward","forward","red","blue","red","forward","blue","forward"],
+    "grid": [
+      ".. .. .. .. .. ..",
+      "r> .. EB ER .. ..",
+      ".. .. .. .. .. ..",
+      ".. .. .. .. .. r<",
+      "b< .. .. .. b< b<",
+      ".. .. .. .. .. .."
+    ]
+  },
+  {
+    "id": "four-corners",
+    "name": "Four Corners",
+    "par": 7,
+    "witness": ["red","forward","forward","blue","blue","red","forward"],
+    "grid": [
+      "ER b< .. EB",
+      ".. .. .. ..",
+      "r< .. rv ..",
+      ".. .. .. b^"
+    ]
+  },
+  {
+    "id": "colour-sort",
+    "name": "Colour Sort",
+    "par": 8,
+    "witness": ["blue","forward","forward","yellow","red","blue","forward","forward"],
+    "grid": [
+      "EB .. .. bv .. ..",
+      ".. .. .. y> .. yv",
+      ".. .. .. .. .. ..",
+      ".. .. .. .. rv bv",
+      "ER .. .. .. r< EY"
+    ]
+  },
+  {
+    "id": "half-and-half",
+    "name": "Half and Half",
+    "par": 6,
+    "witness": ["forward","blue","forward","red","forward","forward"],
+    "grid": [
+      ".. .. b^ b^ .. EB",
+      "b^ .. .. rv .. ..",
+      ".. .. .. .. .. ..",
+      ".. rv .. .. .. ..",
+      "ER .. rv .. .. .."
+    ]
+  },
+  {
+    "id": "three-lanes",
+    "name": "Three Lanes",
+    "par": 9,
+    "witness": ["blue","forward","forward","red","red","blue","forward","forward","forward"],
+    "grid": [
+      "ER y> y> .. .. EY",
+      ".. .. .. .. .. ..",
+      "b^ .. .. .. .. ..",
+      "r^ .. .. .. .. ..",
+      ".. b^ .. .. .. ..",
+      ".. rv .. .. .. EB"
+    ]
+  },
+  {
+    "id": "wide-sort",
+    "name": "Wide Sort",
+    "par": 9,
+    "witness": ["forward","yellow","red","forward","red","forward","forward","forward","forward"],
+    "grid": [
+      ".. .. .. .. .. y> EY",
+      ".. y^ .. .. .. .. ..",
+      ".. .. .. .. .. .. bv",
+      ".. .. .. .. .. .. ..",
+      ".. .. .. .. .. .. ..",
+      ".. .. rv r> .. .. ..",
+      "ER .. r< b> b> .. EB"
+    ]
+  },
+  {
+    "id": "sorting-office",
+    "name": "Sorting Office",
+    "par": 8,
+    "witness": ["forward","forward","forward","red","blue","blue","yellow","forward"],
+    "grid": [
+      "EB .. .. .. b< EY",
+      ".. .. .. .. .. ..",
+      "bv .. .. .. .. ..",
+      ".. .. .. y^ .. r>",
+      "r^ .. .. .. .. ER"
+    ]
+  },
+  {
+    "id": "long-sort",
+    "name": "Long Sort",
+    "par": 9,
+    "witness": ["red","red","red","forward","red","forward","forward","forward","forward"],
+    "grid": [
+      "bv .. .. .. .. r> .. ER",
+      ".. .. .. .. .. .. r< ..",
+      ".. .. .. r> .. .. .. ..",
+      ".. .. .. ## .. .. .. yv",
+      ".. .. .. .. .. .. .. ..",
+      "EB .. b< .. b< .. y> EY"
+    ]
+  },
+  {
+    "id": "home-stretch",
+    "name": "Home Stretch",
+    "par": 7,
+    "witness": ["forward","forward","red","forward","forward","forward","forward"],
+    "grid": [
+      "EB .. .. b< .. b<",
+      ".. .. .. .. .. ..",
+      ".. .. .. .. .. rv",
+      "b^ .. rv .. .. ..",
+      "ER .. .. .. rv .."
+    ]
+  },
+  {
+    "id": "grand-sort",
+    "name": "Grand Sort",
+    "par": 9,
+    "witness": ["forward","forward","forward","forward","red","red","forward","blue","forward"],
+    "grid": [
+      ".. .. .. r> .. r> .. ER",
+      ".. .. .. .. .. .. .. r<",
+      "yv .. .. .. .. .. .. r^",
+      ".. .. .. .. .. .. .. ..",
+      ".. .. .. .. .. .. .. ..",
+      "b> .. .. .. .. .. .. bv",
+      ".. b> .. .. .. .. .. ..",
+      "EY .. .. .. .. y< b> EB"
+    ]
   }
 ]

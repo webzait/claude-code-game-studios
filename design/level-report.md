@@ -4,7 +4,7 @@
 > wijzig een level of de catalogus en draai het script opnieuw. Wat de kolommen betekenen staat onderaan;
 > hoe de score is opgebouwd en geijkt staat in `design/level-structure.md`.
 
-60 levels · zetbudget = kortste oplossing + 2 · alle getallen komen uit de solver-regels.
+80 levels · zetbudget = kortste oplossing + 2 · alle getallen komen uit de solver-regels.
 
 ## Pagina 1 (level 1–20)
 
@@ -236,6 +236,83 @@
 | 58 | Whirl (`whirl`) | Een draaitegel draait wie erop stapt: het bord doet het draaien | Piek van pagina 3: acht robots op 7×7, twee tegels en zes draaien. | gegenereerd en opgeschoond | zoekruimte 3.19 · draaien 1.5 · robots 0.84 · smal 1 · onvergeeflijk 0.69 · tegendraads 1.33 |
 | 59 | Conga Line (`conga-line`) | Wie tegen de rand loopt, wacht: achterblijvers halen in | Adempauze: zes rode robots, één keer ROOD, en de tegel in de hoek draait er drie naar de uitgang. | gegenereerd, ongewijzigd gekozen | zoekruimte 0.99 · draaien 0.25 · robots 0.72 · smal 0.86 · onvergeeflijk 0.4 · tegendraads 0.43 |
 | 60 | Grand Finale (`grand-finale`) | Het grootste bord (8×8) | Pronkstuk van pagina 3: tien robots in drie kleuren op een leeg 8×8-bord; de ene tegel in de onderste rij draait er vier. | gegenereerd en opgeschoond | zoekruimte 3.25 · draaien 0.75 · robots 0.93 · smal 1 · onvergeeflijk 0.63 · tegendraads 0.17 |
+
+## Pagina 4 (level 61–80)
+
+### Moeilijkheidscurve
+
+```text
+ 61 ███·················  1.5  Own Door
+ 62 ██████··············  3.2  Just Passing
+ 63 █████████···········  4.5  Swap Sides
+ 64 █████████···········  4.6  Doorstop
+ 65 ██████████··········  4.8  Three Doors
+ 66 ██████████··········  4.9  Ricochet
+ 67 ██████████··········  4.9  Side by Side
+ 68 ███████████·········  5.7  Top and Bottom
+ 69 ██████████··········  4.9  After the Red
+ 70 ███████████·········  5.4  Stacked Doors
+ 71 █████████████·······  6.3  Twin Gates
+ 72 ███████████·········  5.4  Four Corners
+ 73 █████████████·······  6.6  Colour Sort
+ 74 ██████████··········  4.9  Half and Half
+ 75 ██████████████······  7.0  Three Lanes
+ 76 ██████████████······  6.8  Wide Sort
+ 77 ██████████████······  7.0  Sorting Office
+ 78 ██████████████······  7.1  Long Sort
+ 79 █████████···········  4.6  Home Stretch
+ 80 ███████████████·····  7.4  Grand Sort
+```
+
+### Getallen
+
+| # | Level | Bord | Robots | Kleuren | Tegels | Kortste | Aantal kortste | Draaien | Zoekruimte | Binnen budget | Dood | Fatale zet | Gedwongen | Weg van uitgang | Botsen | Volgorde vrij | Score |
+|--:|---|:-:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|:-:|--:|--:|--:|--:|
+| 61 | Own Door | 4×4 | 2 | 2 | 0 | 3 | 1 | 0 | 36 | 119 | 98% | 67% | 3/3 (3) | 0 | 0 | 100% | **1.5** |
+| 62 | Just Passing | 5×4 | 3 | 2 | 0 | 5 | 1 | 2 | 186 | 714 | 99% | 48% | 5/5 (3) | 0 | 0 | 10% | **3.2** |
+| 63 | Swap Sides | 4×3 | 2 | 2 | 0 | 7 | 2 | 5 | 285 | 412 | 86% | 48% | 6/7 (2) | 0 | 3 | 2% | **4.5** |
+| 64 | Doorstop | 5×5 | 4 | 2 | 0 | 7 | 1 | 2 | 1260 | 5574 | 100% | 58% | 7/7 (3) | 0 | 2 | 5% | **4.6** |
+| 65 | Three Doors | 5×5 | 3 | 3 | 0 | 6 | 1 | 3 | 2585 | 15844 | 100% | 57% | 6/6 (3) | 0 | 1 | 1% | **4.8** |
+| 66 | Ricochet | 5×5 | 4 | 2 | 1 | 7 | 1 | 2 | 1098 | 5361 | 100% | 53% | 7/7 (5) | 1 | 3 | 5% | **4.9** |
+| 67 | Side by Side | 6×5 | 4 | 2 | 0 | 8 | 1 | 1 | 4013 | 15169 | 99% | 56% | 8/8 (3) | 0 | 4 | 13% | **4.9** |
+| 68 | Top and Bottom | 4×7 | 4 | 2 | 0 | 8 | 1 | 3 | 3454 | 16273 | 100% | 56% | 8/8 (4) | 2 | 3 | 2% | **5.7** |
+| 69 | After the Red | 6×5 | 5 | 2 | 0 | 8 | 1 | 2 | 2519 | 11816 | 100% | 51% | 8/8 (3) | 0 | 3 | 4% | **4.9** |
+| 70 | Stacked Doors | 6×6 | 4 | 2 | 0 | 7 | 1 | 4 | 1803 | 9251 | 100% | 44% | 7/7 (2) | 0 | 4 | 1% | **5.4** |
+| 71 | Twin Gates | 6×6 | 5 | 2 | 0 | 9 | 1 | 4 | 11090 | 51378 | 100% | 56% | 9/9 (4) | 1 | 4 | 0% | **6.3** |
+| 72 | Four Corners | 4×4 | 4 | 2 | 0 | 7 | 1 | 4 | 787 | 2729 | 98% | 47% | 7/7 (3) | 1 | 4 | 1% | **5.4** |
+| 73 | Colour Sort | 6×5 | 6 | 3 | 0 | 8 | 1 | 4 | 52778 | 480150 | 100% | 58% | 8/8 (5) | 0 | 3 | 0% | **6.6** |
+| 74 | Half and Half | 6×5 | 6 | 2 | 0 | 6 | 1 | 2 | 862 | 4923 | 100% | 54% | 6/6 (4) | 0 | 3 | 3% | **4.9** |
+| 75 | Three Lanes | 6×6 | 6 | 3 | 0 | 9 | 2 | 4 | 120077 | 1035763 | 100% | 63% | 8/9 (3) | 0 | 4 | 0% | **7.0** |
+| 76 | Wide Sort | 7×7 | 8 | 3 | 0 | 9 | 2 | 3 | 160222 | 1617539 | 100% | 56% | 8/9 (3) | 2 | 2 | 1% | **6.8** |
+| 77 | Sorting Office | 6×5 | 5 | 3 | 0 | 8 | 1 | 4 | 17646 | 98156 | 100% | 58% | 8/8 (1) | 1 | 6 | 0% | **7.0** |
+| 78 | Long Sort | 8×6 | 8 | 3 | 0 | 9 | 1 | 4 | 113638 | 1175890 | 100% | 58% | 9/9 (6) | 2 | 2 | 1% | **7.1** |
+| 79 | Home Stretch | 6×5 | 6 | 2 | 0 | 7 | 1 | 1 | 2159 | 12549 | 100% | 56% | 7/7 (6) | 0 | 2 | 14% | **4.6** |
+| 80 | Grand Sort | 8×8 | 10 | 3 | 0 | 9 | 1 | 3 | 263456 ⚠ | 3000003 | 100% | 58% | 9/9 (4) | 4 | 1 | 0% | **7.4** |
+
+### Idee per level
+
+| # | Level (`id`) | Idee | In één zin | Herkomst | Opbouw van de score |
+|--:|---|---|---|---|---|
+| 61 | Own Door (`own-door`) | Elke kleur heeft een eigen uitgang | Alleen VOORUIT: rood en blauw lopen elk naar hun eigen uitgang. | met de hand gemaakt | zoekruimte 0.47 · robots 0.28 · onvergeeflijk 0.73 |
+| 62 | Just Passing (`just-passing`) | Een uitgang van een andere kleur is gewone vloer: je loopt eroverheen of staat er in de weg | Een robot stapt op de uitgang van de andere kleur en wordt niet opgenomen: voor hem is het gewone vloer. | gegenereerd, ongewijzigd gekozen | zoekruimte 0.99 · draaien 0.5 · robots 0.44 · smal 0.9 · onvergeeflijk 0.36 |
+| 63 | Swap Sides (`swap-sides`) | Elke kleur heeft een eigen uitgang | Elke robot staat onder de verkeerde uitgang; ze moeten kruisen, en elke draai van de één is een stap van de ander. | met de hand gemaakt | zoekruimte 1.13 · draaien 1.25 · robots 0.28 · smal 0.84 · onvergeeflijk 0.36 · tegendraads 0.64 |
+| 64 | Doorstop (`doorstop`) | Een uitgang van een andere kleur is gewone vloer: je loopt eroverheen of staat er in de weg | Een robot staat even op andermans uitgang, en wie achter hem staat moet wachten. | gegenereerd, ongewijzigd gekozen | zoekruimte 1.6 · draaien 0.5 · robots 0.56 · smal 0.95 · onvergeeflijk 0.57 · tegendraads 0.43 |
+| 65 | Three Doors (`three-doors`) | Drie kleuren uit elkaar houden | Drie kleuren, drie uitgangen in drie hoeken; elke kleur draait één keer. | gegenereerd, ongewijzigd gekozen | zoekruimte 1.82 · draaien 0.75 · robots 0.44 · smal 0.99 · onvergeeflijk 0.53 · tegendraads 0.25 |
+| 66 | Ricochet (`ricochet`) | Een draaitegel draait wie erop stapt: het bord doet het draaien | Uitgangen per kleur met een draaitegel erbij: het bord draait een blauwe robot richting zijn uitgang. | gegenereerd, ongewijzigd gekozen | zoekruimte 1.55 · draaien 0.5 · robots 0.56 · smal 0.95 · onvergeeflijk 0.47 · tegendraads 0.86 |
+| 67 | Side by Side (`side-by-side`) | Elke kleur heeft een eigen uitgang | Twee uitgangen in de bovenrand: iedereen loopt omhoog en alleen blauw hoeft één keer te draaien. | gegenereerd, ongewijzigd gekozen | zoekruimte 1.96 · draaien 0.25 · robots 0.56 · smal 0.88 · onvergeeflijk 0.52 · tegendraads 0.75 |
+| 68 | Top and Bottom (`top-and-bottom`) | Andere bordvormen: lang, breed, smal | Het lange 4×7-bord met de rode uitgang boven en de blauwe onder. | gegenereerd, ongewijzigd gekozen | zoekruimte 1.91 · draaien 0.75 · robots 0.56 · smal 0.98 · onvergeeflijk 0.51 · tegendraads 0.94 |
+| 69 | After the Red (`after-the-red`) | In de rij: wachten op de robot voor je | Twee blauwe robots staan in de rij achter een rode, vlak voor hun eigen uitgang. | gegenereerd, ongewijzigd gekozen | zoekruimte 1.82 · draaien 0.5 · robots 0.65 · smal 0.96 · onvergeeflijk 0.42 · tegendraads 0.56 |
+| 70 | Stacked Doors (`stacked-doors`) | De uitgang in via verschillende kanten | Twee uitgangen boven elkaar, binnen in het bord; de robots komen er van drie kanten in. | gegenereerd, ongewijzigd gekozen | zoekruimte 1.71 · draaien 1 · robots 0.56 · smal 0.99 · onvergeeflijk 0.28 · tegendraads 0.86 |
+| 71 | Twin Gates (`twin-gates`) | Een uitgang van een andere kleur is gewone vloer: je loopt eroverheen of staat er in de weg | Twee uitgangen naast elkaar midden op het bord; twee keer loopt een robot over de verkeerde. | gegenereerd, ongewijzigd gekozen | zoekruimte 2.28 · draaien 1 · robots 0.65 · smal 1 · onvergeeflijk 0.51 · tegendraads 0.83 |
+| 72 | Four Corners (`four-corners`) | Klein bord: geen ruimte om om elkaar heen te lopen | Vier robots op 4×4 met de uitgangen in twee hoeken; vier draaien. | gegenereerd, ongewijzigd gekozen | zoekruimte 1.45 · draaien 1 · robots 0.56 · smal 0.99 · onvergeeflijk 0.34 · tegendraads 1.07 |
+| 73 | Colour Sort (`colour-sort`) | Drie kleuren uit elkaar houden | Zes robots in drie kleuren, elk naar een eigen hoek. | gegenereerd, ongewijzigd gekozen | zoekruimte 2.78 · draaien 1 · robots 0.72 · smal 1 · onvergeeflijk 0.56 · tegendraads 0.56 |
+| 74 | Half and Half (`half-and-half`) | Elke kleur heeft een eigen uitgang | Drie blauwe naar rechtsboven, drie rode naar linksonder, met maar twee draaien. | gegenereerd, ongewijzigd gekozen | zoekruimte 1.48 · draaien 0.5 · robots 0.72 · smal 0.97 · onvergeeflijk 0.48 · tegendraads 0.75 |
+| 75 | Three Lanes (`three-lanes`) | Drie kleuren uit elkaar houden | Zes robots in drie kleuren en drie uitgangen; blauw draait twee keer, rood twee keer achter elkaar. | gegenereerd en opgeschoond | zoekruimte 3.03 · draaien 1 · robots 0.72 · smal 0.89 · onvergeeflijk 0.67 · tegendraads 0.67 |
+| 76 | Wide Sort (`wide-sort`) | Andere bordvormen: lang, breed, smal | Het 7×7-bord met acht robots en drie uitgangen in drie hoeken. | gegenereerd en opgeschoond | zoekruimte 3.13 · draaien 0.75 · robots 0.84 · smal 0.88 · onvergeeflijk 0.51 · tegendraads 0.67 |
+| 77 | Sorting Office (`sorting-office`) | Twee robots die hetzelfde vakje willen, blijven allebei staan | Vijf robots en drie uitgangen; robots die hetzelfde vakje willen, wachten op elkaar. | gegenereerd, ongewijzigd gekozen | zoekruimte 2.43 · draaien 1 · robots 0.65 · smal 1 · onvergeeflijk 0.56 · tegendraads 1.31 |
+| 78 | Long Sort (`long-sort`) | Andere bordvormen: lang, breed, smal | Piek van pagina 4: het brede 8×6-bord, acht robots, drie keer ROOD achter elkaar. | gegenereerd en opgeschoond | zoekruimte 3.02 · draaien 1 · robots 0.84 · smal 0.99 · onvergeeflijk 0.56 · tegendraads 0.67 |
+| 79 | Home Stretch (`home-stretch`) | Elke kleur heeft een eigen uitgang | Adempauze: zes robots, twee uitgangen, één keer ROOD. | gegenereerd, ongewijzigd gekozen | zoekruimte 1.77 · draaien 0.25 · robots 0.72 · smal 0.86 · onvergeeflijk 0.53 · tegendraads 0.43 |
+| 80 | Grand Sort (`grand-sort`) | Het grootste bord (8×8) | Pronkstuk van pagina 4: tien robots in drie kleuren op een leeg 8×8-bord, elk naar zijn eigen hoek. | gegenereerd, ongewijzigd gekozen | zoekruimte 3.28 · draaien 0.75 · robots 0.93 · smal 1 · onvergeeflijk 0.57 · tegendraads 0.83 |
 
 ## Wat de kolommen betekenen
 

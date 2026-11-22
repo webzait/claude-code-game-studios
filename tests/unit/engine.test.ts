@@ -214,3 +214,61 @@ describe('turn tile', () => {
     expect(first(board(['r> .. EX']), 'forward').events[0].tileTurned).toBe(false);
   });
 });
+
+describe('exit for one colour', () => {
+  it('collects only robots of its colour; to the others it is plain floor', () => {
+    const level = board(['r> ER .. b< EB']);
+    // Red steps into its exit and is collected; blue steps onto plain floor next to it.
+    const one = first(level, 'forward');
+    expect(one.state.robots.map(at)).toEqual(['collected', '2,0,3']);
+    expect(one.events.map((e) => e.outcome)).toEqual(['exited', 'moved']);
+    // Blue walks across the red exit without being collected, and stands on it.
+    const two = step(level.board, one.state, 'forward').state;
+    expect(at(two.robots[1])).toBe('1,0,3');
+    expect(isWon(two)).toBe(false);
+  });
+
+  it('wins only when every robot has left through an exit that takes it', () => {
+    const level = board(['ER r< b> EB']);
+    expect(isWon(run(level, ['forward']))).toBe(true);
+    expect(solve(level.board, level.start, 6).solution).toEqual(['forward']);
+  });
+
+  it('lets several robots of its colour enter together, but not a robot of another colour with them', () => {
+    const level = board(['r> ER r<', '.. b^ ..', '.. EB ..']);
+    // Two reds enter at once. Blue wants the same cell but is not taken there: for blue it is floor
+    // that others are stepping onto, so blue waits.
+    const { state, events } = first(level, 'forward');
+    expect(state.robots.map(at)).toEqual(['collected', 'collected', '1,1,0']);
+    expect(events[2].outcome).toBe('blocked-conflict');
+  });
+
+  it('is blocked for its own colour while a robot of another colour stands on it', () => {
+    const level = board(['r> .. ER b<', '.. .. .. EB']);
+    // Blue steps onto the red exit first; red arrives behind it and has to wait until blue has moved on.
+    const one = run(level, ['forward']);
+    expect(one.robots.map(at)).toEqual(['1,0,1', '2,0,3']);
+    const two = step(level.board, one, 'forward');
+    // Face to face: neither can pass the other. Red cannot enter its own exit while blue is on it.
+    expect(two.state.robots.map(at)).toEqual(['1,0,1', '2,0,3']);
+    expect(isWon(two.state)).toBe(false);
+  });
+
+  it('two robots of the wrong colour block each other on it as on any floor', () => {
+    const level = board(['b> ER b<', '.. EB ..']);
+    const { state, events } = first(level, 'forward');
+    expect(state.robots.map(at)).toEqual(['0,0,1', '2,0,3']);
+    expect(events.every((e) => e.outcome === 'blocked-conflict')).toBe(true);
+  });
+
+  it('refuses a level in which a colour has no exit', () => {
+    expect(() => board(['r> ER b<'])).toThrow(/no exit takes the blue robots/);
+  });
+
+  it('leaves a board with the one plain exit exactly as it was', () => {
+    const plain = board(['r> .. EX']).board;
+    expect(plain.exits).toBeUndefined();
+    expect([plain.exitX, plain.exitY]).toEqual([2, 0]);
+    expect(board(['r> EX EB b<']).board.exits).toHaveLength(2);
+  });
+});

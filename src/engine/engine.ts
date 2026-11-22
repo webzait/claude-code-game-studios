@@ -2,6 +2,8 @@ import {
   DIR_DX,
   DIR_DY,
   type Board,
+  type Color,
+  type Exit,
   type Command,
   type Dir,
   type GameState,
@@ -20,6 +22,17 @@ export const DEFAULT_RULES: Rules = CONFIG.rules;
 export function isSolid(board: Board, x: number, y: number): boolean {
   if (x < 0 || y < 0 || x >= board.width || y >= board.height) return true;
   return board.walls[y * board.width + x];
+}
+
+/** The exits of a board as a list, whether it has the one plain exit or several. */
+export function exitsOf(board: Board): readonly Exit[] {
+  return board.exits ?? [{ x: board.exitX, y: board.exitY, color: null }];
+}
+
+/** True when the cell holds an exit that takes a robot of this colour. */
+export function exitTakes(board: Board, x: number, y: number, color: Color): boolean {
+  for (const e of exitsOf(board)) if (e.x === x && e.y === y && (e.color === null || e.color === color)) return true;
+  return false;
 }
 
 /** True when every robot has been collected. */
@@ -54,7 +67,14 @@ export function step(
 ): StepResult {
   const n = state.robots.length;
   const cells = board.width * board.height;
-  const exitCell = board.exitY * board.width + board.exitX;
+  // Per robot: the cells where it would be collected (an exit of its colour, or one for everyone).
+  const exits = exitsOf(board);
+  const takes = (i: number, cell: number): boolean => {
+    for (const e of exits) {
+      if (e.y * board.width + e.x === cell && (e.color === null || e.color === state.robots[i].color)) return true;
+    }
+    return false;
+  };
 
   // 1. Turn.
   const dirs: Dir[] = new Array(n);
@@ -83,13 +103,14 @@ export function step(
     else target[i] = ty * board.width + tx;
   }
 
-  // 3. Same-target conflicts (the exit is exempt when it accepts many).
+  // 3. Same-target conflicts (robots entering an exit that takes them are exempt when it accepts many).
   const claims = new Int32Array(cells);
   for (let i = 0; i < n; i++) if (target[i] >= 0) claims[target[i]]++;
   for (let i = 0; i < n; i++) {
     const t = target[i];
     if (t < 0 || claims[t] < 2) continue;
-    if (t === exitCell && rules.exitAcceptsMany) continue;
+    // Robots the exit takes do not get in each other's way; one it does not take is on plain floor there.
+    if (rules.exitAcceptsMany && takes(i, t)) continue;
     outcome[i] = 'blocked-conflict';
   }
 
@@ -148,7 +169,7 @@ export function step(
     if (outcome[i] === null) {
       x = target[i] % board.width;
       y = (target[i] - x) / board.width;
-      collected = target[i] === exitCell;
+      collected = takes(i, target[i]);
       result = collected ? 'exited' : 'moved';
     } else {
       result = outcome[i] as Outcome;

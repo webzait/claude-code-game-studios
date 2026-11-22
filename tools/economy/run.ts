@@ -70,11 +70,11 @@ function main(): void {
   const scores = scoresFromReport(readFileSync('design/level-report.md', 'utf8'));
   const shipped = read<{ id: string; name: string; par: number }[]>('data/levels.json');
   const upcoming = existsSync('data/levels-upcoming.json') ? read<{ id: string; name: string; par: number }[]>('data/levels-upcoming.json') : [];
-  // Two ranges, as design/economy.md reasons with: the first two pages, and every level there is.
-  // Page 3 used to sit in data/levels-upcoming.json; since the turn tile is drawn it is in data/levels.json.
+  // Two ranges, as design/economy.md reasons with: the first two pages, and the first three.
+  // Pages added later (page 4, the exit per colour) are not in these tables until that document is revisited.
   const all = [...shipped, ...upcoming];
   const ranges = [withScores(all.slice(0, 2 * PAGE), scores)];
-  if (all.length > 2 * PAGE) ranges.push(withScores(all, scores));
+  if (all.length > 2 * PAGE) ranges.push(withScores(all.slice(0, 3 * PAGE), scores));
   mkdirSync(OUT, { recursive: true });
 
   const note = `> Gegenereerd door \`npm run economy\` (${runs} runs per speler, vaste seed ${SEED}). Niet met de hand aanpassen.\n> De spelers zijn aannames (\`tools/economy/players.json\`), de bedragen staan in \`tools/economy/sets.json\`. Scenario's, geen voorspellingen.\n> "Eerste keer tekort": het level waarop voor het eerst een gewenste hulp niet te betalen is; mediaan, tussen haakjes het 10e en 90e percentiel, en het deel van de runs waarin het gebeurt.\n> "Moet bijleggen": munten die de speler van buiten moet toevoegen om alles te kopen wat hij wil.`;

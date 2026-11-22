@@ -7,6 +7,7 @@ Everything here uses the game's own rules (`src/engine/engine.ts`); nothing in t
 | `npm run solve` | Shortest solution of every level, or of the boards in a JSON file (`{ "name": ["row", …] }`). |
 | `npm run measure` | Measures every level and writes `design/level-report.md`. `-- --print` shows one line per level. |
 | `npm run generate -- <idea> [key=value …]` | Proposes candidate boards for one idea. Without arguments: lists the ideas. |
+| `npm run certify -- boards.json [out.json]` | Turns chosen boards into level entries: `par` and `witness` from the solver, checked by the independent search, with the measured numbers. |
 | `tsx tools/level-design/compose.ts spec.json` | The older aid: robots for a hand-drawn board and a given command list. |
 
 ## Files
@@ -38,6 +39,9 @@ described in `data/config-notes.md`.
 
 Turn tiles: a recipe's `tiles` (a number or range) places them, `require.tileTurns=2..` asks that the solution really uses them,
 and the tidy step removes tiles, like walls, that change nothing.
+
+Exits per colour: `colourExits=true` gives every colour in play its own exit (`ER`, `EB`, `EY`) in place of the one exit for everyone;
+`require.wrongDoor=1..` asks that a robot steps onto an exit that is not its own.
 
 A generated board is a proposal. The generator rejects what is unsolvable, trivial (one repeated command, or winnable
 in almost any order), too loose (too many shortest solutions), beyond its search limit, or missing the idea's own
