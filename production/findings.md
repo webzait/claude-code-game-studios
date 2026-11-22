@@ -29,6 +29,17 @@ hier, is in de data instelbaar en kan door de eigenaar worden omgedraaid.
 | B2 | Levelselectie — `claude/turnflock-level-path` | Alleen het huidige level en de volgende vijf zijn te zien (`levelsAhead`); gehaalde levels verdwijnen. Opnieuw spelen van een gehaald level kan alleen nog via "Replay" direct na de winst. |
 | B5, B6 | Pop-up — `claude/turnflock-win-popup` | B5: sterren, één regel met het resultaat, één bedrag aan verdiende munten en één hoofdknop; de uitsplitsing en het saldo vervallen, Replay en Levels worden kleine knoppen. B6: de munten vliegen van de pop-up naar de teller, die meetelt. |
 
+### 2026-11-22, gevonden bij het sluiten van de sessies
+
+De sessie van het instellingenscherm had als laatste stap de keuzes van de eigenaar in het ontwerp
+verwerkt (commit `16f584d` op `claude/turnflock-part-settings` in de oude repo). Dat ontwerp is
+nieuwer dan wat in het spel zit.
+
+| Nr | Bevinding | Raakt | Opgepakt |
+|---|---|---|---|
+| B7 | Trillen en "grotere tekst" zijn door de eigenaar geschrapt, maar Trillen zit nog in het spel | Instellingenscherm, `src/haptics.ts`, opslag | Sessie instellingen — `claude/turnflock-settings-choices` |
+| B8 | "Colour shapes" (een vorm per kleur, als hulp bij kleurenblindheid) is door de eigenaar gekozen, maar zit nog niet in het spel | Instellingenscherm, robots, commandoknoppen | Sessie instellingen — `claude/turnflock-settings-choices` |
+
 ## Afgehandeld
 
 Nog niets.
