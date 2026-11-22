@@ -36,6 +36,8 @@ hier, is in de data instelbaar en kan door de eigenaar worden omgedraaid.
 | B4 | Undo kost munten. "Hier kunnen we geld verdienen." | Undo kost 5 munten per stap (`coins.undoCost`), geen gratis Undo's (`coins.freeUndosPerLevel` 0). De prijs staat op de Undo-knop en op de Undo in de "Out of moves"-pop-up (zelfde prijs). Te weinig munten: de knop blijft tikbaar, de tik wordt geweigerd met "Undo costs 5 coins. Restart is free." en Restart krijgt een ring. Restart blijft gratis. De testlab-schakelaar "Free help" maakt ook Undo gratis. Er is geen winkel, geen reclame en geen aankoop toegevoegd. | `f80f856` |
 | B1 | Hinttekst aanpassen / visualiseren | Een onthulde hint is een tekening op het bord: een kwartboog om elke robot die draait, een pijl van elke robot naar het vakje waar hij heen stapt, en een stootmarkering waar een robot wordt tegengehouden. De ring om de opdrachtknop blijft. De tekst is een paar woorden geworden. Prijs en twee stappen (eerst gratis status, dan betaalde zet) zijn ongewijzigd. | `48c8d1a` |
 
+**B3, verfijnd op 2026-11-22 (`bac9422`, branch `claude/turnflock-top-bar`).** Level en moves zijn nu één voorwerp naar de compositie van `design/reference/b3-top-bar-reference.jpg`: een rond blauw medaillon met het level over het linkereind van een witte balk, en in die balk MOVES boven een verzonken vakje met het aantal. "Robots thuis" blijft het lipje onder de balk. Bewijs: `B3-unified-*.png`.
+
 Keuzes die de eigenaar kan omdraaien, en de muntenberekening voor Undo, staan in het verslag van de
 sessie. Bewijs (voor en na, op 320, 390 en 430 px): `production/qa/evidence/findings-puzzle-screen/`.
 
