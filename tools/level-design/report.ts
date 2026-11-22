@@ -26,6 +26,8 @@ export interface Catalog {
   /** Origin key -> Dutch name. */
   origins: Record<string, string>;
   levels: Record<string, { idea: string; origin: string; about: string }>;
+  /** Notes for levels that are certified but not in the game yet (data/levels-upcoming.json). */
+  upcoming?: Record<string, { idea: string; origin: string; about: string }>;
   /** Ids no longer in the sequence, with the reason. */
   retired?: Record<string, string>;
 }
@@ -55,7 +57,7 @@ const pct = (v: number): string => `${Math.round(v * 100)}%`;
 const bar = (score: number): string => '█'.repeat(Math.round(score * 2)).padEnd(20, '·');
 
 /** The report as Markdown. */
-export function renderReport(levels: readonly LevelRow[], metrics: readonly Metrics[], catalog: Catalog): string {
+export function renderReport(levels: readonly LevelRow[], metrics: readonly Metrics[], catalog: Catalog, shipped = levels.length): string {
   const perPage = CONFIG.levelsPerPage;
   const out: string[] = [];
   out.push('# Levelrapport TURNFLOCK', '');
@@ -65,11 +67,18 @@ export function renderReport(levels: readonly LevelRow[], metrics: readonly Metr
     '> hoe de score is opgebouwd en geijkt staat in `design/level-structure.md`.',
     '',
   );
+  if (shipped < levels.length) {
+    out.push(
+      `> Level ${shipped + 1}–${levels.length} staan in \`data/levels-upcoming.json\`: bewezen en gemeten, maar nog niet in het spel,`,
+      '> omdat de draaitegel nog niet getekend wordt.',
+      '',
+    );
+  }
   out.push(`${levels.length} levels · zetbudget = kortste oplossing + ${CONFIG.moveSlack} · alle getallen komen uit de solver-regels.`, '');
   for (let page = 0; page * perPage < levels.length; page++) {
     const from = page * perPage;
     const rows = levels.slice(from, from + perPage);
-    out.push(`## Pagina ${page + 1} (level ${from + 1}–${from + rows.length})`, '');
+    out.push(`## Pagina ${page + 1} (level ${from + 1}–${from + rows.length})${from >= shipped ? ' — in voorbereiding, nog niet in het spel' : ''}`, '');
     out.push('### Moeilijkheidscurve', '', '```text');
     rows.forEach((def, i) => {
       const m = metrics[from + i];
@@ -77,12 +86,12 @@ export function renderReport(levels: readonly LevelRow[], metrics: readonly Metr
     });
     out.push('```', '');
     out.push('### Getallen', '');
-    out.push('| # | Level | Bord | Robots | Kleuren | Kortste | Aantal kortste | Draaien | Zoekruimte | Binnen budget | Dood | Fatale zet | Gedwongen | Weg van uitgang | Botsen | Volgorde vrij | Score |');
-    out.push('|--:|---|:-:|--:|--:|--:|--:|--:|--:|--:|--:|--:|:-:|--:|--:|--:|--:|');
+    out.push('| # | Level | Bord | Robots | Kleuren | Tegels | Kortste | Aantal kortste | Draaien | Zoekruimte | Binnen budget | Dood | Fatale zet | Gedwongen | Weg van uitgang | Botsen | Volgorde vrij | Score |');
+    out.push('|--:|---|:-:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|:-:|--:|--:|--:|--:|');
     rows.forEach((def, i) => {
       const m = metrics[from + i];
       out.push(
-        `| ${from + i + 1} | ${def.name} | ${m.width}×${m.height} | ${m.robots} | ${m.colours} | ${m.par} | ${m.optimalSolutions} | ${m.turns} | ` +
+        `| ${from + i + 1} | ${def.name} | ${m.width}×${m.height} | ${m.robots} | ${m.colours} | ${m.tiles ?? 0} | ${m.par} | ${m.optimalSolutions} | ${m.turns} | ` +
           `${m.searchStates}${m.capped ? ' ⚠' : ''} | ${m.states} | ${pct(m.deadShare)} | ${pct(m.fatalShare)} | ${m.forcedPar}/${m.par} (${m.forcedBudget}) | ` +
           `${m.awaySteps} | ${m.bumpSteps} | ${pct(m.orderFreedom)} | **${m.score.toFixed(1)}** |`,
       );
@@ -92,7 +101,7 @@ export function renderReport(levels: readonly LevelRow[], metrics: readonly Metr
     out.push('|--:|---|---|---|---|---|');
     rows.forEach((def, i) => {
       const m = metrics[from + i];
-      const note = catalog.levels[def.id];
+      const note = catalog.levels[def.id] ?? catalog.upcoming?.[def.id];
       const parts = Object.entries(m.scoreParts)
         .filter(([, v]) => v > 0)
         .map(([k, v]) => `${PART_NL[k] ?? k} ${v}`)
@@ -111,6 +120,7 @@ export function renderReport(levels: readonly LevelRow[], metrics: readonly Metr
   }
   out.push('## Wat de kolommen betekenen', '');
   out.push(
+    '- **Tegels**: draaitegels op het bord.',
     '- **Kortste**: lengte van de kortste oplossing (`par`). **Aantal kortste**: hoeveel verschillende commandoreeksen van die lengte winnen.',
     '- **Draaien**: kleurcommando\'s in de oplossing; de rest is VOORUIT.',
     '- **Zoekruimte**: posities die een breedte-eerst-zoektocht bezoekt tot de eerste winst. **Binnen budget**: alle posities die binnen het zetbudget bereikbaar zijn.',
@@ -135,11 +145,13 @@ const PART_NL: Record<string, string> = {
 };
 
 function main(): void {
-  const levels = JSON.parse(readFileSync('data/levels.json', 'utf8')) as LevelRow[];
+  const shipped = JSON.parse(readFileSync('data/levels.json', 'utf8')) as LevelRow[];
+  const upcoming = existsSync('data/levels-upcoming.json') ? (JSON.parse(readFileSync('data/levels-upcoming.json', 'utf8')) as LevelRow[]) : [];
+  const levels = [...shipped, ...upcoming];
   const catalog = JSON.parse(readFileSync('design/levels-catalog.json', 'utf8')) as Catalog;
   const print = process.argv.includes('--print');
   const metrics = measureAll(levels, print ? console.log : () => {});
-  writeFileSync('design/level-report.md', renderReport(levels, metrics, catalog));
+  writeFileSync('design/level-report.md', renderReport(levels, metrics, catalog, shipped.length));
   console.log(`design/level-report.md written: ${levels.length} levels`);
 }
 

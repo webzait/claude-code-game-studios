@@ -15,7 +15,9 @@
     "board-shape": "Andere bordvormen: lang, breed, smal",
     "together": "Meerdere robots tegelijk de uitgang in",
     "crowd": "Veel robots: één commando, veel gevolgen",
-    "big": "Het grootste bord (8×8)"
+    "big": "Het grootste bord (8×8)",
+    "turn-tile": "Een draaitegel draait wie erop stapt: het bord doet het draaien",
+    "tile-to-avoid": "Een draaitegel in de weg: wie erop stapt, loopt verkeerd"
   },
   "origins": {
     "hand": "met de hand gemaakt",
@@ -225,5 +227,107 @@
       "about": "Pronkstuk van pagina 2: tien robots op een leeg 8×8-bord lopen in optocht naar de hoek."
     }
   },
-  "retired": {}
+  "retired": {},
+  "upcoming": {
+    "turntable": {
+      "idea": "turn-tile",
+      "origin": "hand",
+      "about": "Alleen VOORUIT: de tegel draait de robot naar de uitgang, zonder kleurknop."
+    },
+    "corner-piece": {
+      "idea": "turn-tile",
+      "origin": "generated",
+      "about": "Eén keer ROOD stuurt beide robots omlaag; de tegel in de onderste rij draait er één naar de uitgang."
+    },
+    "two-for-one": {
+      "idea": "turn-tile",
+      "origin": "generated",
+      "about": "Twee rode robots lopen na elkaar over dezelfde tegel en worden allebei gedraaid; blauw heeft zijn eigen knop nodig."
+    },
+    "mind-the-tile": {
+      "idea": "tile-to-avoid",
+      "origin": "generated",
+      "about": "De tegel ligt vlak bij de uitgang, maar de oplossing raakt hem niet aan."
+    },
+    "bank-shot": {
+      "idea": "turn-tile",
+      "origin": "generated",
+      "about": "Tegel en muur samen: twee robots worden door de tegel gedraaid, en een muur houdt er één even tegen."
+    },
+    "merge-lane": {
+      "idea": "queue",
+      "origin": "generated",
+      "about": "Vijf robots in de rij bij de uitgang; één wordt onderweg door de tegel gedraaid."
+    },
+    "standoff": {
+      "idea": "conflict",
+      "origin": "generated",
+      "about": "Twee blauwe robots willen hetzelfde vakje en wachten; de tegel aan de linkerrand brengt er één terug in de goede richting."
+    },
+    "switchback": {
+      "idea": "board-shape",
+      "origin": "generated",
+      "about": "Het lange 4×7-bord met twee tegels: blauw wordt twee keer door het bord gedraaid."
+    },
+    "three-way": {
+      "idea": "three-colours",
+      "origin": "generated",
+      "about": "Samen omhoog lopen, dan elke kleur één keer; één robot neemt de tegel."
+    },
+    "open-floor": {
+      "idea": "crowd",
+      "origin": "tidied",
+      "about": "Zonder tegel: zeven robots op een leeg 7×7-bord, met twee robots die tegenover elkaar staan en niet kunnen ruilen."
+    },
+    "carousel": {
+      "idea": "same-colour",
+      "origin": "generated",
+      "about": "Vier rode robots en twee tegels onder elkaar: het bord draait zes keer, de speler maar twee keer."
+    },
+    "spiral-in": {
+      "idea": "exit-sides",
+      "origin": "generated",
+      "about": "Uitgang in het bord, van vier kanten binnen; de tegel stuurt twee robots de hoek om."
+    },
+    "long-table": {
+      "idea": "board-shape",
+      "origin": "tidied",
+      "about": "Zonder tegel: het brede 8×6-bord met zeven robots in drie kleuren; vier draaien vroeg, daarna lopen."
+    },
+    "pinball": {
+      "idea": "tight",
+      "origin": "generated",
+      "about": "Vier robots en één tegel op 4×4; blauw draait drie keer."
+    },
+    "crowded-corner": {
+      "idea": "crowd",
+      "origin": "tidied",
+      "about": "Acht robots in de hoek bij de uitgang en twee tegels die samen vier keer een robot draaien."
+    },
+    "tricolour": {
+      "idea": "three-colours",
+      "origin": "generated",
+      "about": "Zes robots in drie kleuren en twee tegels; geel draait vier keer."
+    },
+    "cliff-walk": {
+      "idea": "big",
+      "origin": "tidied",
+      "about": "Het 8×8-bord: zeven robots langs de rechterrand, en één tegel naast de uitgang."
+    },
+    "whirl": {
+      "idea": "turn-tile",
+      "origin": "tidied",
+      "about": "Piek van pagina 3: acht robots op 7×7, twee tegels en zes draaien."
+    },
+    "conga-line": {
+      "idea": "wait-at-wall",
+      "origin": "generated",
+      "about": "Adempauze: zes rode robots, één keer ROOD, en de tegel in de hoek draait er drie naar de uitgang."
+    },
+    "grand-finale": {
+      "idea": "big",
+      "origin": "tidied",
+      "about": "Pronkstuk van pagina 3: tien robots in drie kleuren op een leeg 8×8-bord; de ene tegel in de onderste rij draait er vier."
+    }
+  }
 }
