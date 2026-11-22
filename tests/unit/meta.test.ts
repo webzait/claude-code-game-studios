@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { CONFIG } from '../../src/config';
-import { extraMovesPrice, hintPrice, payout, rewardFor, undoPrice, undoQuote } from '../../src/game/coins';
+import { extraMovesPrice, hintPrice, NO_HELP, payout, rewardFor, settlePaid, undoPrice, undoQuote, type CoinRules } from '../../src/game/coins';
 import { applyLab, DEFAULT_LAB, levelScreenView, rulesFor, usesCertifiedRules, type LabSettings } from '../../src/game/lab';
 import { isUnlocked, mainAction, resumeIndex, solvedCount, starsFor, starsOfBest } from '../../src/game/progress';
-import { defaultSave, LEGACY_KEY, loadSave, migrate, resetProgress, SAVE_KEY, SAVE_VERSION, writeSave, type KeyValueStore } from '../../src/game/save';
+import { defaultSave, ECONOMY_VERSION, LEGACY_KEY, loadSave, migrate, resetProgress, SAVE_KEY, SAVE_VERSION, writeSave, type KeyValueStore } from '../../src/game/save';
 import { Session } from '../../src/game/session';
 import { LEVELS } from '../../src/levels/index';
 import { solve } from '../../src/solver/bfs';
@@ -53,15 +53,43 @@ describe('stars', () => {
 
 describe('coins', () => {
   const c = CONFIG.coins;
-  it('a perfect win pays base, every spare move and the perfect bonus', () => {
-    const r = rewardFor(7, 7, 9, false);
-    expect(r).toEqual({ base: c.win, spareMoves: 2 * c.perSpareMove, perfect: c.perfect, total: c.win + 2 * c.perSpareMove + c.perfect });
+  // Par 7 and a budget of 9: 7 moves is three stars, 8 or 9 two, and a win with extra moves one.
+  it('the reward follows the stars: 10, 20 and 30 coins for one, two and three stars', () => {
+    expect(rewardFor(7, 7, 9, NO_HELP)).toMatchObject({ stars: 3, total: 30 });
+    expect(rewardFor(8, 7, 9, NO_HELP)).toMatchObject({ stars: 2, total: 20 });
+    expect(rewardFor(9, 7, 9, NO_HELP)).toMatchObject({ stars: 2, total: 20 });
+    expect(rewardFor(10, 7, 9, { hint: false, extraMoves: true })).toMatchObject({ stars: 1, total: 10 });
   });
-  it('a win on the last move pays the base amount only', () => {
-    expect(rewardFor(9, 7, 9, false).total).toBe(c.win);
+  it('the amounts are the config: base, the two-star bonus and the three-star bonus', () => {
+    expect(rewardFor(7, 7, 9, NO_HELP)).toEqual({ stars: 3, base: c.win, starBonus: c.perfect, spareMoves: 2 * c.perSpareMove, total: c.win + c.perfect + 2 * c.perSpareMove });
+    expect(rewardFor(9, 7, 9, NO_HELP)).toEqual({ stars: 2, base: c.win, starBonus: c.twoStars, spareMoves: 0, total: c.win + c.twoStars });
   });
-  it('a win with paid help pays the base amount only', () => {
-    expect(rewardFor(7, 7, 9, true).total).toBe(c.win);
+  it('a win with extra moves is a one-star win and pays the base amount, however few moves it took', () => {
+    expect(rewardFor(7, 7, 9, { hint: false, extraMoves: true })).toMatchObject({ stars: 1, total: c.win });
+  });
+  it('a win with a paid hint pays by its stars', () => {
+    expect(c.hintedWinPays).toBe('stars');
+    expect(rewardFor(7, 7, 9, { hint: true, extraMoves: false }).total).toBe(rewardFor(7, 7, 9, NO_HELP).total);
+  });
+  it('a hint never earns more than it costs: it can lift a win by one star step at most', () => {
+    expect(c.hintCost).toBeGreaterThanOrEqual(rewardFor(7, 7, 9, NO_HELP).total - rewardFor(9, 7, 9, NO_HELP).total);
+  });
+  it('other amounts run through the same formula: the first economy paid 26, 13 and 10', () => {
+    const first: CoinRules = { ...c, win: 10, twoStars: 0, perfect: 10, perSpareMove: 3, hintedWinPays: 'base' };
+    expect(rewardFor(7, 7, 9, NO_HELP, first).total).toBe(26);
+    expect(rewardFor(8, 7, 9, NO_HELP, first).total).toBe(13);
+    expect(rewardFor(9, 7, 9, NO_HELP, first).total).toBe(10);
+    expect(rewardFor(7, 7, 9, { hint: true, extraMoves: false }, first).total).toBe(10);
+    expect(hintPrice(false, { ...c, hintCost: 15 })).toBe(15);
+    expect(extraMovesPrice(false, { ...c, extraMovesCost: 35 })).toBe(35);
+    expect(undoPrice(false, 1, { ...c, undoCost: 10, freeUndosPerLevel: 1 })).toBe(10);
+    expect(undoQuote(9, false, 0, { ...c, undoCost: 10, freeUndosPerLevel: 0 })).toEqual({ cost: 10, state: 'short' });
+  });
+  it('the prices stand in one scale with the rewards: Undo below a hint, a hint below the extra moves, the start buys one of each', () => {
+    expect(c.undoCost).toBeLessThan(c.hintCost);
+    expect(c.hintCost).toBeLessThan(c.extraMovesCost);
+    expect(c.start).toBeGreaterThanOrEqual(c.undoCost + c.hintCost);
+    for (const amount of [c.start, c.win, c.twoStars, c.perfect, c.hintCost, c.extraMovesCost, c.undoCost]) expect(amount % 5).toBe(0);
   });
   it('a level pays its best reward once; a replay pays only the improvement', () => {
     expect(payout(20, undefined)).toBe(20);
@@ -75,7 +103,7 @@ describe('coins', () => {
     expect(extraMovesPrice(true)).toBe(0);
   });
   it('one perfect level pays for at least one hint, and extra moves cost more than a hint', () => {
-    expect(rewardFor(7, 7, 9, false).total).toBeGreaterThanOrEqual(c.hintCost);
+    expect(rewardFor(7, 7, 9, NO_HELP).total).toBeGreaterThanOrEqual(c.hintCost);
     expect(c.extraMovesCost).toBeGreaterThan(c.hintCost);
   });
 });
@@ -204,6 +232,49 @@ describe('save', () => {
     expect(reset.paid).toEqual({});
     expect(reset.settings.mute).toBe(true);
     expect(reset.lab.yellowEarly).toBe(true);
+  });
+});
+
+describe('a save from before the reward followed the stars (design/economy.md)', () => {
+  const levels = [
+    { id: 'a', par: 7 },
+    { id: 'b', par: 7 },
+    { id: 'c', par: 7 },
+    { id: 'd', par: 7 },
+    { id: 'e', par: 7 },
+  ];
+  const c = CONFIG.coins;
+  const three = c.win + c.perfect + CONFIG.moveSlack * c.perSpareMove;
+  const two = c.win + c.twoStars;
+
+  it('an older save is marked as the first economy and keeps its coins and paid amounts; a new one is current', () => {
+    const old = migrate({ version: 5, best: { [ids[0]]: 7 }, coins: 73, paid: { [ids[0]]: 26 }, settings: {}, lab: {} }, ids);
+    expect(old).toMatchObject({ economy: 1, coins: 73, paid: { [ids[0]]: 26 } });
+    expect(defaultSave().economy).toBe(ECONOMY_VERSION);
+    expect(migrate({ ...defaultSave() }, ids).economy).toBe(ECONOMY_VERSION);
+    expect(resetProgress(old).economy).toBe(ECONOMY_VERSION);
+  });
+
+  it('a paid level counts as paid for the result it has, so the same result pays no leftover', () => {
+    // a: three stars paid 26; b: two stars paid 13; c: three stars with a hint, paid 10; d: with extra moves, paid 10.
+    const paid = settlePaid({ a: 26, b: 13, c: 10, d: 10 }, { a: 7, b: 8, c: 7, d: 11 }, levels);
+    expect(paid).toEqual({ a: Math.max(26, three), b: Math.max(13, two), c: Math.max(10, three), d: c.win });
+    expect(payout(rewardFor(7, 7, 9, NO_HELP).total, paid.a)).toBe(0);
+    expect(payout(rewardFor(8, 7, 9, NO_HELP).total, paid.b)).toBe(0);
+  });
+
+  it('a better result pays the step between today\'s amounts', () => {
+    const paid = settlePaid({ b: 13 }, { b: 8 }, levels);
+    expect(payout(rewardFor(7, 7, 9, NO_HELP).total, paid.b)).toBe(three - two);
+  });
+
+  it('never lowers what a level paid, and leaves unpaid and unsolved levels alone', () => {
+    const paid = settlePaid({ a: 500, e: 10 }, { a: 7, b: 7 }, levels);
+    expect(paid).toEqual({ a: 500, e: 10 });
+  });
+
+  it('a win carried over from the first prototype (no move count) is a one-star win', () => {
+    expect(settlePaid({ a: 10 }, { a: 0 }, levels)).toEqual({ a: c.win });
   });
 });
 

@@ -6,6 +6,11 @@ import { PURCHASE_OUTCOMES, type PurchaseOutcome } from './shop';
 
 /** Current save format. Raise it and extend `migrate` when the shape changes. */
 export const SAVE_VERSION = 6;
+/**
+ * Which amounts the `paid` map is in. 1: base, spare moves and perfect bonus (until 2026-11-22). 2: the reward
+ * follows the stars (design/economy.md). Kept apart from `SAVE_VERSION` because the save's shape does not change.
+ */
+export const ECONOMY_VERSION = 2;
 /** Storage key of the current format. */
 export const SAVE_KEY = 'turnflock.save';
 /** Storage key of the first prototype's format (version 1). */
@@ -20,6 +25,8 @@ export interface SaveData {
   coins: number;
   /** Coins each level has already paid out, by level id. */
   paid: Record<string, number>;
+  /** The amounts `paid` is in (`ECONOMY_VERSION`); an older number is settled once when the game starts. */
+  economy: number;
   settings: {
     mute: boolean;
     /** null follows the device's reduced-motion preference. */
@@ -41,7 +48,7 @@ export interface KeyValueStore {
 
 /** A fresh save. */
 export function defaultSave(): SaveData {
-  return { version: SAVE_VERSION, best: {}, coins: CONFIG.coins.start, paid: {}, settings: { mute: false, reduceMotion: null, colourShapes: false }, lab: { ...DEFAULT_LAB }, ledger: emptyLedger() };
+  return { version: SAVE_VERSION, best: {}, coins: CONFIG.coins.start, paid: {}, economy: ECONOMY_VERSION, settings: { mute: false, reduceMotion: null, colourShapes: false }, lab: { ...DEFAULT_LAB }, ledger: emptyLedger() };
 }
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -74,6 +81,8 @@ export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
       if (levelIds.includes(id) && typeof moves === 'number' && moves >= 0) save.best[id] = moves;
     }
   }
+  // A save from before the reward followed the stars carries no marker: its paid amounts are the first economy's.
+  save.economy = raw.economy === ECONOMY_VERSION ? ECONOMY_VERSION : 1;
   if (withCoins) {
     if (typeof raw.coins === 'number' && raw.coins >= 0) save.coins = Math.floor(raw.coins);
     if (isRecord(raw.paid)) {
@@ -132,5 +141,5 @@ export function writeSave(store: KeyValueStore, data: SaveData): boolean {
 
 /** Forget progress and coins. Settings, lab switches and the test ledger are kept. */
 export function resetProgress(data: SaveData): SaveData {
-  return { ...data, best: {}, coins: CONFIG.coins.start, paid: {} };
+  return { ...data, best: {}, coins: CONFIG.coins.start, paid: {}, economy: ECONOMY_VERSION };
 }

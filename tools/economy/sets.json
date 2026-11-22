@@ -1,0 +1,32 @@
+[
+  {
+    "id": "current",
+    "name": "Huidig (tot 22 november 2026)",
+    "about": "10 per winst, 3 per zet over, 10 voor de kortste oplossing; een winst met hint of extra zetten betaalt alleen de 10.",
+    "coins": { "start": 30, "win": 10, "twoStars": 0, "perfect": 10, "perSpareMove": 3, "hintedWinPays": "base", "hintCost": 10, "extraMovesCost": 25, "undoCost": 5, "freeUndosPerLevel": 0 }
+  },
+  {
+    "id": "generous",
+    "name": "A. Ruim",
+    "about": "10 munten per ster; de eerste twee Undo's van een level zijn gratis; +3 moves kost 20.",
+    "coins": { "start": 100, "win": 10, "twoStars": 10, "perfect": 20, "perSpareMove": 0, "hintedWinPays": "stars", "hintCost": 10, "extraMovesCost": 20, "undoCost": 5, "freeUndosPerLevel": 2 }
+  },
+  {
+    "id": "recommended",
+    "name": "B. Aanbevolen",
+    "about": "10 munten per ster; Undo 5 (een halve ster), hint 20 (twee sterren), +3 moves 40 (vier sterren). Een winst met hint betaalt gewoon naar sterren.",
+    "coins": { "start": 50, "win": 10, "twoStars": 10, "perfect": 20, "perSpareMove": 0, "hintedWinPays": "stars", "hintCost": 20, "extraMovesCost": 40, "undoCost": 5, "freeUndosPerLevel": 0 }
+  },
+  {
+    "id": "recommended-free-undo",
+    "name": "B+. Aanbevolen met 1 gratis Undo per level",
+    "about": "Als B, maar de eerste Undo van elk level kost niets (een misgetikte zet is gratis terug te nemen).",
+    "coins": { "start": 50, "win": 10, "twoStars": 10, "perfect": 20, "perSpareMove": 0, "hintedWinPays": "stars", "hintCost": 20, "extraMovesCost": 40, "undoCost": 5, "freeUndosPerLevel": 1 }
+  },
+  {
+    "id": "scarce",
+    "name": "C. Krap",
+    "about": "10 munten per ster, maar alle hulp kost het dubbele en een winst met hint betaalt alleen de 10.",
+    "coins": { "start": 30, "win": 10, "twoStars": 10, "perfect": 20, "perSpareMove": 0, "hintedWinPays": "base", "hintCost": 20, "extraMovesCost": 50, "undoCost": 10, "freeUndosPerLevel": 0 }
+  }
+]

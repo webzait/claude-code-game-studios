@@ -11,9 +11,11 @@
 | `camera.marginX`, `marginY` | Space kept free left/right and above/below the board inside the play zone, in CSS pixels (blueprint: 12 and 18) |
 | `camera.fov` | Vertical opening angle of the game camera in degrees. Larger = stronger depth effect (near edge of the board larger than the far edge); small values approach a flat, parallel view |
 | `board.roomy`, `board.classic` | The two board framings of the test lab: camera tilt from straight down (degrees), frame width in cells, and whether the board sits against the top |
-| `coins.start` | Coins a new player begins with |
-| `coins.win`, `perSpareMove`, `perfect` | Reward for a win: base, per unused move, and bonus for the shortest solution |
-| `coins.hintCost`, `extraMovesCost` | Price of revealing the next move, and of the extra moves when out of moves |
+| `coins.start` | Coins a new player begins with (50: one Undo, one hint and a little over, so each help can be tried once). All coin amounts are reasoned in `design/economy.md`; `npm run economy` shows what a change does |
+| `coins.win`, `twoStars`, `perfect` | Reward for a win, following the stars: every win pays `win` (10, a one-star win), two stars add `twoStars` (10, so 20) and three stars add `perfect` (20, so 30). A level pays its best reward once; a better replay pays the difference |
+| `coins.perSpareMove` | Extra coins per unused move of the budget. 0: the reward follows the stars alone. (3, with `twoStars` 0 and `perfect` 10, was the first economy: 10, 13 and 26) |
+| `coins.hintedWinPays` | `stars`: a win that used a paid hint pays like any win. `base`: it pays `win` only (the first economy). A win with extra moves is always a one-star win |
+| `coins.hintCost`, `extraMovesCost` | Price of revealing the next move (20), and of the extra moves when out of moves (40). Keep `hintCost` at or above the step between two star rewards, so a hint can never earn more than it costs (unit-tested) |
 | `coins.undoCost` | Price of one Undo: taking back one command. Paid per step undone, on the Undo button and on the Undo of the out-of-moves pop-up alike. 0 makes Undo free again (the rule before finding B4) |
 | `coins.freeUndosPerLevel` | Undos that cost nothing in each attempt at a level; the count starts again at a Restart or when the level is opened. 0 = every Undo is paid. Restart is always free, whatever these two say |
 | `shop.packs` | The coin packs of the **test shop** (`design/shop.md`): `id`, plain `name`, `coins` and `examplePriceCents` (an example price in euro cents; nothing is ever charged in this build). Three or four, listed cheapest first; a bigger pack must hold more coins and never be worse value per coin (unit-tested). Sizes follow the economy note in `design/shop.md` |

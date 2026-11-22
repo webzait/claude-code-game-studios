@@ -11,12 +11,12 @@ import { CONFIG } from './config';
 import { step } from './engine/engine';
 import type { Color, Command, RobotEvent } from './engine/types';
 import { previewStep, witnessNext, type RescueResult, type ScanResult } from './game/assist';
-import { extraMovesPrice, hintPrice, payout, rewardFor, undoQuote, type UndoQuote } from './game/coins';
+import { extraMovesPrice, hintPrice, payout, rewardFor, settlePaid, undoQuote, type UndoQuote } from './game/coins';
 import { applyLab, levelScreenView, rulesFor, usesCertifiedRules, type LabSettings } from './game/lab';
 import { emptyLedger, record, type LedgerEntry } from './game/ledger';
 import { MemorySink, type MetricsEvent } from './game/metrics';
 import { isUnlocked, mainAction, starsFor, starsOfBest } from './game/progress';
-import { loadSave, resetProgress, writeSave, type KeyValueStore, type SaveData } from './game/save';
+import { ECONOMY_VERSION, loadSave, resetProgress, writeSave, type KeyValueStore, type SaveData } from './game/save';
 import { Session } from './game/session';
 import { configuredPacks, plusOpens, receiptLine, SimulatedProvider, walletAfter, type CoinPack, type PurchaseProvider } from './game/shop';
 import { LEVELS, TEST_BOARDS, type GameLevel } from './levels/index';
@@ -78,6 +78,12 @@ const wait = (seconds: number): Promise<void> => new Promise((r) => window.setTi
 const COMMAND_LABEL: Record<Command, string> = { red: 'Red turns, then all step', blue: 'Blue turns, then all step', yellow: 'Yellow turns, then all step', forward: 'All step forward' };
 const LEVEL_IDS = LEVELS.map((l) => l.id);
 
+/** A save whose levels were paid under earlier amounts, brought to today's once (`settlePaid`). Coins are untouched. */
+function settled(save: SaveData): SaveData {
+  if (save.economy === ECONOMY_VERSION) return save;
+  return { ...save, paid: settlePaid(save.paid, save.best, LEVELS), economy: ECONOMY_VERSION };
+}
+
 /** `localStorage`, or a throwaway store when the browser blocks it. */
 function storage(): KeyValueStore {
   try {
@@ -91,7 +97,7 @@ function storage(): KeyValueStore {
 /** Glue between screens, session (logic), board view (3D), solver and save. */
 class Game {
   private store = storage();
-  private save: SaveData = loadSave(this.store, LEVEL_IDS);
+  private save: SaveData = settled(loadSave(this.store, LEVEL_IDS));
   private metrics = new MemorySink();
   private sfx = new Sfx(() => this.save.settings.mute);
   private solver = new SolverClient();
@@ -633,7 +639,7 @@ class Game {
     const stars = starsFor(moves, this.par, this.usedBackup);
     const previous = this.save.best[id];
     if (previous === undefined || previous === 0 || moves < previous) this.save.best[id] = moves;
-    const reward = rewardFor(moves, this.par, this.session.budget, this.usedBackup || this.usedHint);
+    const reward = rewardFor(moves, this.par, this.session.budget, { hint: this.usedHint, extraMoves: this.usedBackup });
     const earned = payout(reward.total, this.save.paid[id]);
     this.save.paid[id] = Math.max(this.save.paid[id] ?? 0, reward.total);
     this.save.coins += earned;
