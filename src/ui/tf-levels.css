@@ -14,6 +14,45 @@
 /* Header: one row. Title, coins (placeholder), progress, settings. */
 .tf-levels-head { flex: none; display: flex; align-items: center; gap: 7px; padding: 12px var(--tl-pad) 12px; }
 .tf-levels-title { flex: 1; min-width: 0; margin: 0; font-size: clamp(14px, 5cqw, 25px); font-weight: 900; letter-spacing: .03em; line-height: 1; color: #fff; white-space: nowrap; text-shadow: 0 2px 0 #1e66c7, 0 4px 5px rgba(22, 77, 154, .3); }
+/* The logo is the screen's heading (an image with the name as its text). Its box is reserved by the
+   height below and its 768:360 shape, so nothing moves when the picture arrives; it never takes a tap.
+   Two layouts, chosen by a class on the screen (data/config.json, logo.levels.layout):
+   tf-logo-row  = the logo takes the old title's place in the one row, as wide as the row leaves it;
+   tf-logo-band = the logo sits centred in a band of its own above the row. It gets the height the
+                  screen has left once every tile is "comfortable" (--tl-logo-comfort), between a
+                  minimum and a maximum; the tiles then share what remains. */
+.tf-levels-phone > * { --tl-logo-h: clamp(var(--tl-logo-min, 50px), calc(100cqh - var(--tl-chrome) + var(--tl-logo-give) - var(--tl-rows) * (var(--tl-logo-comfort, 60px) + var(--tl-gap) + var(--tl-d))), var(--tl-logo-cap)); --tl-logo-cap: var(--tl-logo-max, 124px); --tl-logo-give: 50px; --tl-logo-gap: 8px; }
+.tf-levels-brand { flex: 1; min-width: 0; margin: 0; display: flex; align-items: center; line-height: 0; pointer-events: none; }
+.tf-levels-logo { display: block; flex: none; width: auto; height: auto; max-width: 100%; aspect-ratio: 768 / 360; object-fit: contain; pointer-events: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
+/* Row: the logo is as wide as the row leaves it, up to a maximum height. A screen too low for the band uses this as well. */
+.tf-levels-logo { width: min(100%, var(--tl-logo-row-max, 56px) * 768 / 360); }
+/* On a short screen the row logo is no higher than the buttons beside it, so the row stays as low as it was. */
+@container tl (max-height: 620px) { .tf-levels-logo { width: min(100%, min(var(--tl-logo-row-max, 56px), 46px) * 768 / 360); } }
+/* Band: only where the screen is high enough for a full page of tiles under it. */
+@container tl (min-height: 562px) {
+  .tf-logo-band .tf-levels-head { flex-wrap: wrap; row-gap: var(--tl-logo-gap); }
+  .tf-logo-band .tf-levels-brand { flex: 0 0 100%; justify-content: center; }
+  .tf-logo-band .tf-levels-logo { width: auto; height: var(--tl-logo-h); }
+  .tf-logo-band .tf-levels-brand + * { margin-right: auto; }
+  .tf-levels-a.tf-logo-band .tf-levels-grid { --tl-tile-h: clamp(56px, calc((100cqh - var(--tl-chrome) + var(--tl-logo-give) - var(--tl-logo-h) - var(--tl-logo-gap)) / var(--tl-rows) - var(--tl-gap) - var(--tl-d)), var(--tl-tile-max, 92px)); }
+}
+/* Band on a wide screen: there is room beside the logo, so it stays centred with the coins to its left and progress and settings to its right, all on one line. */
+@container tl (min-width: 600px) and (min-height: 562px) {
+  .tf-logo-band .tf-levels-head { flex-wrap: nowrap; }
+  .tf-logo-band .tf-levels-brand { flex: 1; }
+  .tf-logo-band .tf-levels-brand + * { order: -1; margin-right: 0; }
+}
+/* Band on a short screen: every pixel counts, so the band sits closer to the row and the edges. */
+@container tl (min-height: 562px) and (max-height: 620px) {
+  .tf-logo-band > * { --tl-logo-gap: 4px; --tl-head-top: 6px; }
+  .tf-logo-band .tf-levels-head { padding-top: var(--tl-head-top); padding-bottom: 6px; }
+}
+/* Optional opening moment (logo.intro in the config): the logo starts large over the harbour and settles
+   into its place while the rest fades in. Nothing is covered or disabled, so no tap waits for it. */
+@keyframes tf-logo-settle { from { transform: translateY(calc(34cqh - 50%)) scale(var(--tl-logo-intro-scale, 1.35)); } 45% { transform: translateY(calc(34cqh - 50%)) scale(var(--tl-logo-intro-scale, 1.35)); } }
+@keyframes tf-logo-reveal { from { opacity: 0; } 45% { opacity: 0; } }
+.tf-logo-intro .tf-levels-logo { animation: tf-logo-settle var(--tl-logo-intro, .7s) cubic-bezier(.3, 0, .2, 1) both; position: relative; z-index: 2; }
+.tf-logo-intro .tf-levels-head > :not(.tf-levels-brand), .tf-logo-intro .tf-levels-body, .tf-logo-intro .tf-levels-dock { animation: tf-logo-reveal var(--tl-logo-intro, .7s) ease-out both; }
 .tf-levels-pill { flex: none; height: 42px; padding: 0 10px; border-radius: 15px; background: linear-gradient(180deg, #fff, #f1f4fd); box-shadow: inset 0 0 0 1.5px rgba(36, 49, 79, .1), 0 3px 0 rgba(30, 80, 160, .34); display: inline-flex; align-items: center; gap: 5px; font-weight: 800; font-size: 15px; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .tf-levels-coin { width: 19px; height: 19px; flex: none; border-radius: 50%; background: radial-gradient(circle at 36% 30%, #fff2b8 0, #f6c542 55%, #e9b223 100%); box-shadow: inset 0 0 0 2px #d39c0d; }
 .tf-levels-progress { flex-direction: column; justify-content: center; align-items: flex-start; gap: 3px; font-size: 13px; }
@@ -70,7 +109,7 @@
 /* Container queries cannot restyle the container itself, so these set the measures on its children. */
 /* Wide screens (tablet): five columns of four in the paged grid, more air. */
 @container tl (min-width: 600px) {
-  .tf-levels-phone > * { --tl-pad: 28px; --tl-gap: 12px; }
+  .tf-levels-phone > * { --tl-pad: 28px; --tl-gap: 12px; --tl-logo-cap: var(--tl-logo-max-wide, 150px); }
   .tf-levels-a > * { --tl-cols: 5; --tl-rows: 4; --tl-tile-max: 108px; --tl-num: 34px; }
   .tf-levels-pill { font-size: 16px; }
 }
@@ -92,6 +131,7 @@
   .tf-levels-a .tf-levels-stars, .tf-levels-a .tf-levels-mark { width: 46px; height: 17px; }
 }
 @media (prefers-reduced-motion: reduce) {
+  .tf-logo-intro .tf-levels-logo, .tf-logo-intro .tf-levels-head > *, .tf-logo-intro .tf-levels-body, .tf-logo-intro .tf-levels-dock { animation: none; }
   .tf-levels-tile { transition: none; }
   .tf-levels-tile.is-next::after { animation: none; }
 }
@@ -100,4 +140,5 @@
 .tf-levels-tile.s3 .tf-levels-stars { background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 19'><polygon points='9.0,4.0 10.9,8.0 15.3,8.6 12.0,11.6 12.9,15.9 9.0,13.8 5.1,15.9 6.0,11.6 2.7,8.6 7.1,8.0' fill='%23F6C542' stroke='%23D9A413' stroke-width='1.7' stroke-linejoin='round'/><polygon points='26.0,2.0 27.9,6.0 32.3,6.6 29.0,9.6 29.9,13.9 26.0,11.8 22.1,13.9 23.0,9.6 19.7,6.6 24.1,6.0' fill='%23F6C542' stroke='%23D9A413' stroke-width='1.7' stroke-linejoin='round'/><polygon points='43.0,4.0 44.9,8.0 49.3,8.6 46.0,11.6 46.9,15.9 43.0,13.8 39.1,15.9 40.0,11.6 36.7,8.6 41.1,8.0' fill='%23F6C542' stroke='%23D9A413' stroke-width='1.7' stroke-linejoin='round'/></svg>"); }
 .tf-levels-star { display: inline-block; width: 15px; height: 15px; flex: none; background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='1 1 16 16'><polygon points='9.0,3.0 10.9,7.0 15.3,7.6 12.0,10.6 12.9,14.9 9.0,12.8 5.1,14.9 6.0,10.6 2.7,7.6 7.1,7.0' fill='%23F6C542' stroke='%23D9A413' stroke-width='1.7' stroke-linejoin='round'/></svg>") center / contain no-repeat; }
 .reduce-motion .tf-levels-tile { transition: none; }
+.reduce-motion .tf-logo-intro .tf-levels-logo, .reduce-motion .tf-logo-intro .tf-levels-head > *, .reduce-motion .tf-logo-intro .tf-levels-body, .reduce-motion .tf-logo-intro .tf-levels-dock { animation: none; }
 .reduce-motion .tf-levels-tile.is-next::after { animation: none; }

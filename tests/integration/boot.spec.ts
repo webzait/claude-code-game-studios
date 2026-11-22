@@ -70,6 +70,15 @@ test('boots to the level selection, and level 1 opens with a drawn board and no 
   expect((await snap(page)).screen).toBe('map');
   await expect(page.locator('.tf-levels-tile')).toHaveCount(tilesOnPage);
   await expect(page.locator('#continue')).toHaveText('Play level 1');
+  // The logo is the screen's heading: an image named "Turnflock" that has loaded, keeps its shape and never takes a tap.
+  const logo = page.getByRole('heading', { level: 1, name: 'Turnflock' }).getByRole('img', { name: 'Turnflock' });
+  await expect(logo).toBeVisible();
+  const drawn = await logo.evaluate((img: HTMLImageElement) => {
+    const box = img.getBoundingClientRect();
+    return { loaded: img.complete && img.naturalWidth > 0, shape: box.width / box.height, source: img.naturalWidth / img.naturalHeight, tappable: getComputedStyle(img).pointerEvents !== 'none', inside: box.left >= 0 && box.right <= window.innerWidth && box.top >= 0 };
+  });
+  expect(drawn).toMatchObject({ loaded: true, tappable: false, inside: true });
+  expect(Math.abs(drawn.shape - drawn.source)).toBeLessThan(0.02);
   // The asset kit's 3D models really loaded; the game is not quietly on its built-in shapes.
   await expect.poll(async () => (await snap(page)).kitReady, { timeout: 20000 }).toBe(true);
   await expect(page.locator('#node-1')).toBeEnabled();
