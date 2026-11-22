@@ -110,8 +110,20 @@ test('Levels, Level, Win, Next: no dead ends, and progress survives a reload', a
   expect((await snap(page)).status).toBe('won');
   await expect(page.locator('#end-next')).toHaveText('Next', { timeout: 15000 });
   await expect(page.locator('.tf-end-stars')).toHaveAttribute('aria-label', '3 of 3 stars');
+  // The pop-up says one thing: one line, the one amount really earned, one main button; no breakdown, no balance (B5).
+  const perfectWin = config.coins.win + config.moveSlack * config.coins.perSpareMove + config.coins.perfect;
+  await expect(page.locator('#end-title')).toHaveText(`${levels[0].par} moves · the shortest solution`);
+  await expect(page.locator('#card .tf-coin-total')).toHaveCount(1);
+  await expect(page.locator('#card .tf-coin-sum')).toHaveText(`+${perfectWin}`);
+  await expect(page.locator('#card .tf-coin-line, #card .tf-coin-balance')).toHaveCount(0);
+  await expect(page.locator('#end-replay')).toHaveText('Replay');
+  await expect(page.locator('#end-levels')).toHaveText('Levels');
+  // The coins fly to the counter, which ends on the saved balance (B6); Next never waits for them.
+  await expect(page.locator('#levelCoins .tf-coin-amount')).toHaveText(String(config.coins.start + perfectWin), { timeout: 15000 });
+  await expect(page.locator('.tf-coin-fly')).toHaveCount(0);
   await page.click('#end-next');
   await expect(page.locator('#levelName')).toHaveText(levels[1].name);
+  await expect(page.locator('#levelCoins .tf-coin-amount')).toHaveText(String(config.coins.start + perfectWin));
   await page.click('#levelBack');
   // The completed level is gone from the path; the next one is the current step.
   await expect(page.locator('#node-1')).toHaveCount(0);
@@ -166,6 +178,32 @@ async function withCoins(page: Page, coins: number): Promise<void> {
     [JSON.stringify({ version: 4, best: {}, coins, paid: {}, settings: {}, lab: {} })],
   );
 }
+
+test('the win coins: Next on the first frame ends the count at once, and a replayed level shows no made-up reward', async ({ page }) => {
+  const errors = await open(page);
+  const perfect = config.coins.win + config.moveSlack * config.coins.perSpareMove + config.coins.perfect;
+  await page.click('#node-1');
+  await playWitness(page, 0);
+  // The balance is saved before anything is shown; the counter still holds the old amount until the pop-up's coins arrive.
+  await expect.poll(async () => (await snap(page)).coins, { timeout: 15000 }).toBe(config.coins.start + perfect);
+  await page.click('#end-next', { timeout: 15000 });
+  expect((await snap(page)).level).toBe(1);
+  await expect(page.locator('#levelCoins .tf-coin-amount')).toHaveText(String(config.coins.start + perfect));
+  await expect(page.locator('.tf-coin-fly')).toHaveCount(0);
+  // The same level again pays nothing: no coin plate, a plain line, and the counter does not move.
+  await page.click('#levelBack');
+  await expect(page.locator('#mapCoins .tf-coin-amount')).toHaveText(String(config.coins.start + perfect));
+  await page.click('#node-1');
+  await playWitness(page, 0);
+  await expect(page.locator('#end-result')).toHaveText('Best reward already paid', { timeout: 15000 });
+  await expect(page.locator('#card .tf-coin-total')).toHaveCount(0);
+  expect((await snap(page)).coins).toBe(config.coins.start + perfect);
+  await expect(page.locator('#levelCoins .tf-coin-amount')).toHaveText(String(config.coins.start + perfect));
+  // Leaving through Levels works from the pop-up too.
+  await page.click('#end-levels');
+  expect((await snap(page)).screen).toBe('map');
+  expect(errors).toEqual([]);
+});
 
 test('undo and restart take moves back; Undo costs coins per step and Restart is free', async ({ page }) => {
   await open(page);
@@ -229,6 +267,7 @@ test('out of moves in a hopeless position: free Retry, a priced Undo, and no ext
   await expect(page.locator('.tf-end-note')).toContainText('Retry is free');
   await expect(page.locator('#end-offer')).toHaveCount(0);
   await expect(page.locator('.tf-end-note')).toContainText('no offer');
+  await expect(page.locator('.tf-end-note')).toHaveCount(1);
   await page.click('#end-hint');
   await expect(page.locator('#hint')).toContainText('No win from here', { timeout: 15000 });
   await page.click('#restart');
@@ -254,7 +293,8 @@ test('out of moves two steps from home: extra moves are offered and really win',
   expect(await snap(page)).toMatchObject({ status: 'playing', movesLeft: config.extraMoves, coins: config.coins.start - config.coins.extraMovesCost });
   for (let i = 0; i < config.extraMoves && (await snap(page)).status === 'playing'; i++) await press(page, 'forward');
   expect((await snap(page)).status).toBe('won');
-  await expect(page.locator('#end-result')).toContainText('extra moves', { timeout: 15000 });
+  await expect(page.locator('#end-title')).toContainText('extra moves', { timeout: 15000 });
+  await expect(page.locator('#card .tf-coin-sum')).toHaveText(`+${config.coins.win}`);
   await expect(page.locator('.tf-end-stars')).toHaveAttribute('aria-label', '1 of 3 stars');
   // A helped win pays the base amount only.
   expect((await snap(page)).coins).toBe(config.coins.start - config.coins.extraMovesCost + config.coins.win);

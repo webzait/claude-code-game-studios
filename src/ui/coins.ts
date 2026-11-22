@@ -12,6 +12,7 @@ import extraMovesImage from '../../assets/turnflock/ui/extra-moves.webp';
  */
 
 const C = parts.coins;
+const F = C.fly;
 const COINS = CONFIG.coins;
 
 /** An amount as the player reads it: thousands apart with a narrow space, never abbreviated. */
@@ -93,22 +94,22 @@ export interface RewardView {
   readonly helped: boolean;
 }
 
-/** The reward after a win: the amount paid on a gold plate, the sum it comes from, and the new balance. */
-export function rewardBlock(v: RewardView): string {
-  const small = coinIcon(C.reward.lineIcon);
-  if (v.earned <= 0) {
-    return `<div class="tf-coin-reward paid"><p class="tf-coin-paid">${CHECK}Best reward already paid</p><p class="tf-coin-balance">You have ${small}<b>${formatCoins(v.balance)}</b></p></div>`;
-  }
-  const line = (name: string, amount: number): string =>
-    `<div class="tf-coin-line${amount === 0 ? ' none' : ''}"><dt>${name}</dt><dd>${amount === 0 ? '–' : `+${formatCoins(amount)}${small}`}</dd></div>`;
-  const before = v.reward.total - v.earned;
-  const earlier = before > 0 ? `<div class="tf-coin-line spend"><dt>Paid for this level before</dt><dd>−${formatCoins(before)}${small}</dd></div>` : '';
-  return `<div class="tf-coin-reward">
-    <p class="tf-coin-total" aria-label="${v.earned} coins earned" style="--rf:${C.reward.font}px">${coinIcon(C.reward.icon)}<span class="tf-coin-sum" data-to="${v.earned}">+${formatCoins(v.earned)}</span></p>
-    <dl class="tf-coin-lines">${line('Level won', v.reward.base)}${line(v.spare === 1 ? '1 move left over' : `${v.spare} moves left over`, v.reward.spareMoves)}${line('Shortest solution', v.reward.perfect)}${earlier}</dl>
-    ${v.helped ? '<p class="tf-coin-why">A hint or extra moves were used, so only the base reward counts.</p>' : ''}
-    <p class="tf-coin-balance">Now ${small}<b>${formatCoins(v.balance)}</b></p>
-  </div>`;
+/**
+ * The reward on the win pop-up: the one amount really paid out now, on a gold plate. A win that pays nothing (the
+ * level already paid its best reward) gets a plain line instead of a plate, never a made-up amount.
+ */
+export function rewardPlate(earned: number): string {
+  if (earned <= 0) return `<p class="tf-coin-paid">${CHECK}Best reward already paid</p>`;
+  return `<p class="tf-coin-total" aria-label="${earned} coins earned" style="--rf:${C.reward.font}px">${coinIcon(C.reward.icon)}<span class="tf-coin-sum" data-earned="${earned}">+${formatCoins(earned)}</span></p>`;
+}
+
+/**
+ * What the counter reads after each coin of a flight lands, going from `from` to `to` with at most `count` coins.
+ * Never more coins than were earned, always rising, and the last landing is exactly `to`. Empty when nothing was earned.
+ */
+export function landingAmounts(from: number, to: number, count: number): number[] {
+  const coins = Math.max(0, Math.min(Math.floor(count), to - from));
+  return Array.from({ length: coins }, (_, i) => (i === coins - 1 ? to : from + Math.round(((to - from) * (i + 1)) / coins)));
 }
 
 /** The honest stand-in for a shop: what coins are, how they are earned and what they cost. */
@@ -142,12 +143,18 @@ export function countUp(el: HTMLElement, from: number, to: number, ms: number, f
 /**
  * The coin counters of the top bars (one per screen), each with its plus
  * button. They all show the same wallet: earning counts up with a gold rim,
- * and a price the wallet cannot pay is answered with a short shake.
+ * and a price the wallet cannot pay is answered with a short shake. After a
+ * win the coins fly from the pop-up to the counter (finding B6): `hold`, then
+ * `pour`; `settle` ends it at once on the true amount.
  */
 export class CoinCounters {
   private counters: HTMLElement[] = [];
   private shown: number | null = null;
   private timer = 0;
+  /** The true wallet while a win's coins are still on their way; null when the counters simply show it. */
+  private held: number | null = null;
+  private flightTimers: number[] = [];
+  private layer: HTMLElement | null = null;
 
   /**
    * @param hosts Elements that each get a counter and a plus button.
@@ -167,6 +174,10 @@ export class CoinCounters {
 
   /** Show the wallet. A higher amount than the one on show is celebrated on the counters that are visible. */
   set(amount: number): void {
+    if (this.held !== null) {
+      if (amount === this.held) return;
+      this.settle();
+    }
     const before = this.shown;
     if (before === amount) return;
     this.shown = amount;
@@ -183,6 +194,102 @@ export class CoinCounters {
       if (this.reduced()) text.textContent = formatCoins(amount);
       else countUp(text, before, amount, C.countUpMs, formatCoins);
       this.flash(counter, 'earn', C.countUpMs + 500);
+    }
+  }
+
+  /**
+   * The wallet just grew to `amount`, and the counters keep showing the old amount until `pour` brings the coins over.
+   * The saved game already holds `amount`; this only delays showing it.
+   */
+  hold(amount: number): void {
+    if (this.shown === null || amount <= this.shown) return this.set(amount);
+    this.settle();
+    this.held = amount;
+  }
+
+  /**
+   * Fly the held coins from `from` (the coin on the pop-up) to the counter on screen, which counts up and bumps on
+   * each landing. Nothing waits for it. Under reduced motion, or when there is nothing to fly between, the counter
+   * shows the new amount at once with a brief gold rim. Does nothing when no amount is held.
+   * @param onLand Called for every coin that lands (for its sound).
+   */
+  pour(from: HTMLElement | null, onLand: () => void = () => {}): void {
+    if (this.held === null) return;
+    const to = this.held;
+    const counter = this.counters.find((c) => c.offsetParent !== null);
+    const amounts = landingAmounts(this.shown ?? to, to, F.count);
+    if (this.reduced() || !from || !counter || amounts.length === 0) {
+      this.settle();
+      if (counter) this.flash(counter, 'earn', F.highlightMs);
+      return;
+    }
+    const plate = from.closest<HTMLElement>('.tf-coin-total');
+    this.flightTimers.push(
+      window.setTimeout(() => {
+        const target = counter.querySelector<HTMLElement>('.tf-coin-ico')!;
+        const text = counter.querySelector<HTMLElement>('.tf-coin-amount')!;
+        const host = counter.closest<HTMLElement>('#app') ?? document.body;
+        if (!from.isConnected) return this.settle();
+        // Measured once, when the flight starts: nothing is laid out again while the coins are in the air.
+        const layer = document.createElement('div');
+        layer.className = 'tf-coin-flight';
+        layer.setAttribute('aria-hidden', 'true');
+        host.append(layer);
+        this.layer = layer;
+        const base = layer.getBoundingClientRect();
+        const a = from.getBoundingClientRect();
+        const b = target.getBoundingClientRect();
+        const x0 = a.left + a.width / 2 - base.left - F.size / 2;
+        const y0 = a.top + a.height / 2 - base.top - F.size / 2;
+        const dx = b.left + b.width / 2 - (a.left + a.width / 2);
+        const dy = b.top + b.height / 2 - (a.top + a.height / 2);
+        const last = amounts.length - 1;
+        plate?.style.setProperty('--fade', `${last * F.staggerMs + F.flightMs / 2}ms`);
+        plate?.classList.add('sent');
+        amounts.forEach((amount, i) => {
+          // A fixed fan around the pop-up's coin, so the handful reads as several coins and not as one.
+          const angle = i * 2.4;
+          const sx = Math.round(Math.cos(angle) * F.scatter);
+          const sy = Math.round(Math.sin(angle) * F.scatter);
+          const coin = document.createElement('i');
+          coin.className = 'tf-coin-fly';
+          coin.style.cssText = `--s:${F.size}px;--x0:${x0 + sx}px;--y0:${y0 + sy}px;--dx:${dx - sx}px;--dy:${dy - sy}px;--k:${(b.width / F.size).toFixed(3)};--ms:${F.flightMs}ms;--dl:${i * F.staggerMs}ms`;
+          coin.innerHTML = `<img src="${coinImage}" alt="" />`;
+          coin.addEventListener('animationend', (e) => {
+            if (e.target !== coin) return;
+            coin.remove();
+            text.textContent = formatCoins(amount);
+            counter.setAttribute('aria-label', `${amount} coins`);
+            if (i === 0) counter.classList.add('earn');
+            counter.animate?.([{ transform: 'none' }, { transform: 'scale(1.12)' }, { transform: 'none' }], { duration: F.bumpMs, easing: 'ease-out' });
+            onLand();
+            if (i === last) {
+              this.settle();
+              this.flash(counter, 'earn', F.highlightMs);
+            }
+          });
+          layer.append(coin);
+        });
+        // Should the animation never report back (a hidden page, a browser without it), the amount still lands.
+        this.flightTimers.push(window.setTimeout(() => this.settle(), last * F.staggerMs + F.flightMs + 1500));
+      }, F.delayMs),
+    );
+  }
+
+  /** End a hold or a flight at once: every counter shows the true wallet, and no coin is left in the air. */
+  settle(): void {
+    for (const timer of this.flightTimers) window.clearTimeout(timer);
+    this.flightTimers = [];
+    this.layer?.remove();
+    this.layer = null;
+    if (this.held === null) return;
+    const amount = this.held;
+    this.held = null;
+    this.shown = amount;
+    for (const counter of this.counters) {
+      counter.classList.remove('earn');
+      counter.setAttribute('aria-label', `${amount} coins`);
+      counter.querySelector<HTMLElement>('.tf-coin-amount')!.textContent = formatCoins(amount);
     }
   }
 

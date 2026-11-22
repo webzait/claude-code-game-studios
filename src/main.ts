@@ -147,6 +147,7 @@ class Game {
       () => this.screen === 'level',
     );
     this.counters = new CoinCounters([el('mapCoins'), el('levelCoins')], () => this.reduced, (button) => this.tap(() => this.openCoinInfo(button)));
+    this.hud.onCardHidden = () => this.counters.settle();
     el('coinInfoBody').innerHTML = coinInfo('coinInfoTitle');
     el('coinInfoClose').addEventListener('click', () => this.tap(() => this.closeCoinInfo()));
     el('coinInfo').addEventListener('click', (e) => {
@@ -508,6 +509,8 @@ class Game {
     const earned = payout(reward.total, this.save.paid[id]);
     this.save.paid[id] = Math.max(this.save.paid[id] ?? 0, reward.total);
     this.save.coins += earned;
+    // Saved below, before anything moves; the counter only shows it once the pop-up's coins have flown over (B6).
+    if (earned > 0) this.counters.hold(this.save.coins);
     this.lastReward = { reward, spare: Math.max(0, this.session.budget - moves), earned, balance: this.save.coins, helped: this.usedBackup || this.usedHint };
     if (earned > 0) this.track({ type: 'coins_earned', level: id, amount: earned, balance: this.save.coins });
     this.persist();
@@ -526,7 +529,6 @@ class Game {
     this.hud.showCard(
       {
         kind: 'win',
-        level: `Level ${this.levelIndex + 1} · ${this.level.name}`,
         stars,
         moves,
         par: this.par,
@@ -539,6 +541,7 @@ class Game {
       },
       !this.reduced,
     );
+    this.counters.pour(el('cardBody').querySelector<HTMLElement>('.tf-coin-total .tf-coin-ico'), () => this.sfx.play('coin'));
   }
 
   /**
@@ -561,7 +564,6 @@ class Game {
     const offer = rescue.kind === 'rescuable';
     const price = extraMovesPrice(this.save.lab.freeHelp);
     const afford = this.save.coins >= price;
-    const left = this.session.state.robots.filter((r) => !r.collected).map((r) => r.color);
     const hint = (): void => {
       this.hud.hideCard();
       void this.scan();
@@ -569,7 +571,6 @@ class Game {
     this.hud.showCard(
       {
         kind: 'lost',
-        left,
         offer: offer ? { price, state: price === 0 ? 'free' : afford ? 'ok' : 'short', coins: this.save.coins, take: () => this.useBackup() } : undefined,
         note: offer
           ? undefined

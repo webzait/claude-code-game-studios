@@ -50,6 +50,8 @@ export const el = <T extends HTMLElement>(id: string): T => document.getElementB
 export class Hud {
   private buttons = new Map<Command, HTMLButtonElement>();
   private lastCollected = -1;
+  /** Called whenever the pop-up is put away, so whatever it was animating can finish at once. */
+  onCardHidden: (() => void) | null = null;
 
   constructor(handlers: HudHandlers, isLevelOpen: () => boolean) {
     mountHintButton(el<HTMLButtonElement>('scan'));
@@ -145,5 +147,6 @@ export class Hud {
   hideCard(): void {
     el('card').hidden = true;
     el('cardBody').innerHTML = '';
+    this.onCardHidden?.();
   }
 }

@@ -10,8 +10,6 @@ en de commit zodra het in het spel zit.
 
 | Nr | Bevinding (woorden van de eigenaar) | Raakt | Vraag of aandachtspunt |
 |---|---|---|---|
-| B5 | "Level voltooid"-pop-up simpeler | Einde-ronde pop-up (nu: sterren, aantal zetten, uitsplitsing van de munten in drie regels, saldo, drie knoppen) | Wat mag weg: de uitsplitsing per regel, het saldo, de knop Replay? |
-| B6 | Betere animatie van verdiende munten naar de pot | Einde-ronde pop-up en muntenteller | Geen vraag. Hangt samen met B5. |
 
 ### Opgepakt op 2026-11-22
 
@@ -60,3 +58,10 @@ geen manier is om munten te kopen levert de prijs geen geld op; hij maakt alleen
 | B8 | "Colour shapes" (een vorm per kleur, als hulp bij kleurenblindheid) was gekozen maar zat nog niet in het spel | 2026-11-22 | `07f6a8f` op `claude/turnflock-settings-choices` | Spelersinstelling, standaard uit. Aan: het richtingsdriehoekje van elke robot ligt op een plaatje in de vorm van zijn kleur (rood cirkel, blauw vierkant, geel ruit) en de bijbehorende commandoknop draagt dezelfde vorm in de hoek. Werkt direct, ook in een level dat bezig is, en wordt bewaard (save-versie 5). Welke kleur welke vorm krijgt staat in `data/config.json` (`colourShapes`). Bewijs en simulaties van kleurenblindheid: `production/qa/evidence/findings-settings-choices/`. Niet getest op een echte telefoon of door iemand die kleurenblind is. |
 
 Gezien bij B8, niet aangepast (valt buiten de bevinding): in de simulatie van rood-groen-kleurenblindheid krijgt de groene uitgang hetzelfde geel als een gele robot; het vinkje blijft wel zichtbaar. De hint op het bord (B1, andere sessie) moet bij "Colour shapes" aan ook de vorm tonen als ze robots per kleur aanwijst.
+
+### 2026-11-22 — winst-pop-up (branch `claude/turnflock-win-popup`)
+
+| Nr | Bevinding (woorden van de eigenaar) | Afgehandeld | Commit | Wat er nu in het spel zit |
+|---|---|---|---|---|
+| B5 | "Level voltooid"-pop-up simpeler | 2026-11-22 | `1a3aa21` (branch `claude/turnflock-win-popup`) | Winst: sterren, één regel (aantal zetten tegenover de kortste oplossing), één bedrag (wat echt is uitbetaald) en één hoofdknop "Next"; Replay en Levels zijn kleine tekstknoppen. Vervallen: de uitsplitsing in drie regels, de saldoregel, de levelnaam en de kop "All home". Levert een herhaald level niets op, dan staat er geen muntenplaatje maar de regel "Best reward already paid". Geen zetten meer: één titel, één zin, het aanbod als dat bewezen helpt, en de gratis opties. Bewijs: `production/qa/evidence/findings-win-popup/compare-*.png`. |
+| B6 | Betere animatie van verdiende munten naar de pot | 2026-11-22 | `7aa3a83` (branch `claude/turnflock-win-popup`) | Zes munten vliegen in een boog van het bedrag op de pop-up naar de muntenteller, die per landing optelt en een tikje geeft; de teller staat boven de verduistering. Blokkeert nooit: elke knop werkt meteen en beëindigt de vlucht direct op het echte saldo. Bij verminderde beweging vliegt er niets. Instelbaar in `data/parts.json` onder `coins.fly`. Bewijs: `production/qa/evidence/findings-win-popup/coin-flight-strip-*.png`. |
