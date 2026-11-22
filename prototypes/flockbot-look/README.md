@@ -13,6 +13,8 @@ builds its robot from `src/render/parts/flockbot.ts` and `data/parts.json`.
   `npx vite build -c prototypes/flockbot-look/vite.config.ts` (output in `dist/`, copied here).
 - `index.html`, `main.ts` — the design sheet. Run `npx vite` in the repo root and open
   `/prototypes/flockbot-look/index.html`.
+- `render.html`, `render.ts` — the mood render: three bots on board tiles in warm light. Run `npx vite`
+  and open `/prototypes/flockbot-look/render.html` (`?w=2400&h=1500` sets the size).
 - `flockbot.mesh` in the data file sets how finely the body is meshed (`around` the outline, `up` each
   half). The study uses 384 by 112, about five times the game part's 176 by 56, for smooth highlights
   and a clean visor edge up close; the game would not need that at 42 to 53 px cells.

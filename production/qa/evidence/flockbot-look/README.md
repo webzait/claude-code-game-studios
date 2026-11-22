@@ -10,6 +10,7 @@ unchanged, and the design lives in `prototypes/flockbot-look/`.
 |---|---|
 | `design-sheet.png` | The 3D design on its own: three-quarter view, front, side, back, top, the game camera's angle, and blue and yellow. Rendered from `prototypes/flockbot-look/index.html` in headless Chromium with software WebGL, at pixel ratio 2, with the game's light settings |
 | `design-hero-2080px.png` | The three-quarter view alone, 2080 px square |
+| `mood-render-2400px.png` | Mood render from `prototypes/flockbot-look/render.html`: the three colours on board tiles, warm key light, cool rim light, 2400 by 1500 px. Its lighting is its own, not the game's |
 | `viewer-phone.png`, `viewer-desktop.png` | The turntable (`prototypes/flockbot-look/flockbot-3d.html`) opened from disk at phone size, and at desktop size after choosing blue and dragging |
 | `before-game-53px@2x.png`, `before-large.png` | The robot as it is in the game (unchanged) |
 | `sketch-v1.png` … `sketch-v3.png`, `sketch.png` (v4), `sketch.html`, `v3-crop.png` | The four flat sketches shown to the owner |
