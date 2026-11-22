@@ -54,7 +54,12 @@
       "soften": 0.16,
       "raise": 0.018,
       "sink": 0.03,
-      "notchEdge": 0.022
+      "notchEdge": 0.022,
+      "shape": {
+        "size": 0.66,
+        "raise": 0.014,
+        "triangle": 0.38
+      }
     },
     "material": {
       "roughness": 0.3,
@@ -267,6 +272,11 @@
       "height": 26,
       "icon": 20,
       "font": 15
+    },
+    "priceSmall": {
+      "height": 22,
+      "icon": 17,
+      "font": 13
     },
     "hint": {
       "width": 156,

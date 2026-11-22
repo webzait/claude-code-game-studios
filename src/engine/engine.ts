@@ -42,7 +42,9 @@ export function collectedCount(state: GameState): number {
  *  3. walls block; two robots wanting the same cell block each other;
  *  4. a robot may enter an occupied cell only if its occupant really leaves;
  *  5. swaps and closed cycles do not move;
- *  6. robots that enter the exit are collected.
+ *  6. robots that enter the exit are collected;
+ *  7. a robot that arrived on a turn tile turns 90 degrees clockwise there. One that was already
+ *     standing on the tile and stayed (blocked) does not turn again.
  */
 export function step(
   board: Board,
@@ -151,7 +153,9 @@ export function step(
     } else {
       result = outcome[i] as Outcome;
     }
-    robots[i] = { id: r.id, color: r.color, x, y, dir: dirs[i], collected };
+    // 7. Turn tile: only on arrival.
+    const tileTurned = result === 'moved' && board.turnTiles?.[y * board.width + x] === true;
+    robots[i] = { id: r.id, color: r.color, x, y, dir: tileTurned ? (((dirs[i] + 1) % 4) as Dir) : dirs[i], collected };
     events.push({
       id: r.id,
       turned: turned[i],
@@ -161,19 +165,18 @@ export function step(
       toY: y,
       dir: dirs[i],
       outcome: result,
+      tileTurned,
     });
   }
   return { state: { robots, movesUsed: state.movesUsed + 1 }, events };
 }
 
-/** Character for a collected robot in a state key: below 48, so no cell-and-heading code can equal it. */
-const COLLECTED_KEY = '!';
-
 /** Compact, order-stable key for a state (ignores move count). Used by the solver. */
 export function stateKey(state: GameState, width: number): string {
   let key = '';
   for (const r of state.robots) {
-    key += r.collected ? COLLECTED_KEY : String.fromCharCode(48 + (r.y * width + r.x) * 4 + r.dir);
+    // A robot on the board is 48 or higher, so "!" (33) can only ever mean "collected".
+    key += r.collected ? '!' : String.fromCharCode(48 + (r.y * width + r.x) * 4 + r.dir);
   }
   return key;
 }

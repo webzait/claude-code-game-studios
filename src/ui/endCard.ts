@@ -1,5 +1,6 @@
 import { CONFIG } from '../config';
-import { formatCoins, offerButton, rewardPlate, type PriceState, type RewardView } from './coins';
+import PARTS from '../../data/parts.json';
+import { formatCoins, offerButton, priceTag, rewardPlate, spokenPrice, type PriceState, type RewardView } from './coins';
 
 /**
  * The end-of-round pop-up: a sheet resting near the bottom edge, as designed
@@ -88,6 +89,8 @@ export interface LostCard {
   /** Why there is no offer: the card's one sentence. */
   readonly note?: string;
   readonly undo: () => void;
+  /** What that Undo costs; its tag is set on the button. */
+  readonly undoPrice: { readonly cost: number; readonly state: Exclude<PriceState, 'used'> };
   readonly retry: () => void;
   /** Ask for a hint from here; offered when there is no paid offer. */
   readonly hint?: () => void;
@@ -132,13 +135,18 @@ function lostBody(l: LostCard): string {
   let why = l.note ?? '';
   if (l.offer) {
     const o = l.offer;
-    why = o.state === 'short' ? `You have ${formatCoins(o.coins)} coins: ${formatCoins(o.price - o.coins)} short. Undo and Retry are free.` : `Checked: ${CONFIG.extraMoves} more moves are enough from here.`;
+    why = o.state === 'short' ? `You have ${formatCoins(o.coins)} coins: ${formatCoins(o.price - o.coins)} short. Retry is free.` : `Checked: ${CONFIG.extraMoves} more moves are enough from here.`;
     offer = offerButton('end-offer', o.price, o.state);
   }
+  // Undo keeps its look; its price is the small coin badge on its bottom edge, as on the Undo button of the puzzle screen.
+  const u = l.undoPrice;
+  const undo = utility('undo', 'Undo', 'undo', `tf-end-mid tf-paid${u.state === 'short' ? ' short' : ''}`)
+    .replace('<button ', `<button aria-label="${spokenPrice('Undo', u.cost, u.state)}" `)
+    .replace('</span></span></button>', `</span></span><span class="tf-coin-badge">${priceTag(u.cost, u.state, PARTS.coins.priceSmall)}</span></button>`);
   return `<div class="tf-end-head"><h2 class="tf-end-title" id="end-title">Out of moves</h2></div>
     <p class="tf-end-note" id="end-result">${why}</p>
     ${offer}
-    <div class="tf-end-actions lead">${utility('undo', 'Undo', 'undo', 'tf-end-mid')}${button('retry', 'tf-end-main tf-end-mid', 'Retry', 'retry')}</div>
+    <div class="tf-end-actions lead">${undo}${button('retry', 'tf-end-main tf-end-mid', 'Retry', 'retry')}</div>
     ${l.hint ? `<div class="tf-end-more">${link('hint', 'Hint', 'hint')}</div>` : ''}`;
 }
 

@@ -22,7 +22,7 @@ TURNFLOCK, an original, colourful hybrid-casual puzzle game for iOS and Android.
 Level 1 shows three red robots and only two buttons; Forward pulses softly. The robots walk up and wait at the wall; Red turns them all toward the exit and they file in. Level 2 adds blue, and the first press shows that everyone moves when one colour turns.
 
 ## Challenge
-Each level has a move budget of the shortest solution plus two. Running out ends the attempt; Undo and Try again are free. Level 4 needs the right order of three colours; level 5 has 12 robots and one shortest solution.
+Each level has a move budget of the shortest solution plus two. Running out ends the attempt; Try again (Restart) is always free. Undo costs coins: 5 per step taken back (`coins.undoCost`), with the price on the button, also on the Undo of the out-of-moves pop-up; `coins.freeUndosPerLevel` (0) can give free ones per attempt. A player who cannot pay is told so and pointed at Restart. Changed on 2026-11-22 on the owner's instruction (finding B4); before that Undo was always free. Coins are only earned by playing: there is no shop, no advertising and nothing to buy. Level 4 needs the right order of three colours; level 5 has 12 robots and one shortest solution.
 
 ## Core loop
 - Read the board: who is waiting at a wall, who is drifting away.
@@ -36,7 +36,7 @@ Each level has a move budget of the shortest solution plus two. Running out ends
 - [x] Deterministic grid engine (turn, simultaneous move, walls, conflicts, queues, no swaps or cycles, exit)
 - [x] BFS solver on the same rules
 - [x] Five levels with verified par and budget
-- [x] Undo, Restart, Replay
+- [x] Undo (costs coins since finding B4), Restart (free), Replay
 - [x] 3D diorama with turn, step, bump and exit animations
 - [x] Mobile portrait HUD: level, collected, moves left, four command buttons, Next level
 - [x] Ten levels, each with a stored witness solution
@@ -44,10 +44,13 @@ Each level has a move budget of the shortest solution plus two. Running out ends
 - [x] Hint (two steps) and +3 extra moves, offered only when proven to be enough
 - [x] Test lab: exit rule, yellow early, spare moves, speed, board framing, unlock all
 - [x] Level selection with a Continue button and pages of 20
+- [x] Level selection as a path (finding B2): only the current level and the next `levelsAhead` (5) locked levels are shown, completed levels are not; progress as "Level N of 40" and the star total. The paged grid remains as a test view (test lab: "Level screen: Grid" or "Unlock all levels"). A completed level can be played again only through Replay right after the win
 - [x] Robots always face the player with large eyes; the head arrow and pupils show the heading
 - [x] Forty levels on two pages of 20, each page an arc; the first five teach the rules one at a time (`design/level-structure.md`)
 - [x] Level design tools: measure every level, generate candidates per idea, report (`tools/level-design/`, `design/level-report.md`)
-- [x] Coins: earned per win (base, spare moves, perfect bonus), spent on the next-move hint and on extra moves; no shop, no ads
+- [x] Turn tile in the engine (a tile that turns whoever steps onto it), agreed 2026-11-22; not drawn yet
+- [ ] Page 3: twenty turn-tile levels, certified in `data/levels-upcoming.json`, waiting for the tile to be drawn
+- [x] Coins: earned per win by its stars (10, 20, 30), spent on Undo (5), the next-move hint (20) and extra moves (40); amounts reasoned in `design/economy.md`; no shop, no ads
 
 ## Keep
 -

@@ -33,6 +33,11 @@ export interface Board {
   readonly walls: readonly boolean[];
   readonly exitX: number;
   readonly exitY: number;
+  /**
+   * Row-major turn-tile flags, length width * height; absent on a board without turn tiles.
+   * A robot that steps onto a turn tile turns 90 degrees clockwise there, whatever its colour.
+   */
+  readonly turnTiles?: readonly boolean[];
 }
 
 /** Rule switches. Kept as data so variants can be tried without touching the engine. */
@@ -64,8 +69,11 @@ export interface RobotEvent {
   readonly fromY: number;
   readonly toX: number;
   readonly toY: number;
+  /** Heading during the step (after a colour turn, before any turn tile). */
   readonly dir: Dir;
   readonly outcome: Outcome;
+  /** True when the robot arrived on a turn tile this step and was turned once more; its heading is then `dir` + 1. */
+  readonly tileTurned: boolean;
 }
 
 /** Result of applying one command. */

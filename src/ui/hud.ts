@@ -1,6 +1,6 @@
 import { CONFIG } from '../config';
 import { COMMANDS, type Color, type Command } from '../engine/types';
-import { mountHintButton, setHintPrice, type PriceState } from './coins';
+import { mountHintButton, mountUndoButton, setPrice, type PriceState } from './coins';
 import { END_DEFS, renderEndCard, type EndCard } from './endCard';
 
 /** What the level HUD needs to draw one frame of status. */
@@ -25,6 +25,12 @@ export interface HudModel {
   hintCost: number;
   /** Whether that price can be paid, is waived, or the move is already revealed. */
   hintState: PriceState;
+  /** Price of the next Undo, shown on the Undo button before it is tapped. */
+  undoCost: number;
+  /** Whether that price can be paid or is waived. A `short` Undo stays tappable; the tap is answered in words. */
+  undoState: Exclude<PriceState, 'used'>;
+  /** A tools button to point the player at (the ring the command buttons use), or null. */
+  point: 'undo' | 'restart' | 'scan' | null;
 }
 
 /** Callbacks from the level HUD to the game. */
@@ -49,6 +55,7 @@ export class Hud {
 
   constructor(handlers: HudHandlers, isLevelOpen: () => boolean) {
     mountHintButton(el<HTMLButtonElement>('scan'));
+    mountUndoButton(el<HTMLButtonElement>('undo'));
     el('card').insertAdjacentHTML('afterbegin', END_DEFS);
     for (const button of Array.from(document.querySelectorAll<HTMLButtonElement>('.cmd'))) {
       const command = button.dataset.cmd as Command;
@@ -78,7 +85,8 @@ export class Hud {
 
   /** Redraw status and button states. */
   update(m: HudModel): void {
-    el('levelNo').textContent = m.levelLabel ?? `LEVEL ${m.levelNumber}`;
+    el('levelWord').textContent = m.levelLabel ?? 'LEVEL';
+    el('levelNo').textContent = m.levelLabel ? '–' : String(m.levelNumber);
     el('levelName').textContent = m.levelName;
     el('collected').textContent = `${m.collected}/${m.total}`;
     el('moves').textContent = String(Math.max(m.movesLeft, 0));
@@ -96,12 +104,15 @@ export class Hud {
       button.disabled = m.inputLocked;
       button.classList.toggle('nudge', m.nudge === command && !m.inputLocked);
     }
-    el<HTMLButtonElement>('undo').disabled = !m.canUndo;
+    const undo = el<HTMLButtonElement>('undo');
+    setPrice(undo, 'Undo', m.undoCost, m.undoState);
+    undo.disabled = !m.canUndo;
     el<HTMLButtonElement>('restart').disabled = !m.canUndo;
     el<HTMLButtonElement>('replay').disabled = !m.canReplay;
     const scan = el<HTMLButtonElement>('scan');
-    setHintPrice(scan, m.hintCost, m.hintState);
+    setPrice(scan, 'Hint', m.hintCost, m.hintState);
     scan.disabled = !m.canScan || m.hintState === 'used';
+    for (const id of ['undo', 'restart', 'scan'] as const) el(id).classList.toggle('nudge', m.point === id && !el<HTMLButtonElement>(id).disabled);
     const hint = el('hint');
     hint.textContent = m.hint;
     hint.classList.toggle('warn', m.hintWarn);

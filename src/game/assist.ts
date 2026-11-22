@@ -1,4 +1,5 @@
-import type { Board, Command, GameState, Rules } from '../engine/types';
+import { step } from '../engine/engine';
+import type { Board, Command, GameState, RobotEvent, Rules } from '../engine/types';
 import { solve } from '../solver/bfs';
 
 /** Answer to "would extra moves save this position?". */
@@ -54,4 +55,13 @@ export function witnessNext(witness: readonly Command[], commands: readonly Comm
   if (commands.length >= witness.length) return null;
   for (let i = 0; i < commands.length; i++) if (commands[i] !== witness[i]) return null;
   return witness[commands.length];
+}
+
+/**
+ * What `command` would do from `state`, robot by robot: who turns, who steps
+ * where, who is blocked. It is the engine's own `step` run on the state (which
+ * is never changed), so a hint drawn from it cannot disagree with the move.
+ */
+export function previewStep(board: Board, state: GameState, command: Command, rules: Rules): readonly RobotEvent[] {
+  return step(board, state, command, rules).events;
 }

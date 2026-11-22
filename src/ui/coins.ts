@@ -34,11 +34,11 @@ const sizeVars = (s: { width?: number; height: number; depth: number; radius: nu
 export type PriceState = 'ok' | 'short' | 'free' | 'used';
 
 /** The price tag that sits on a button: coin and number, or the word that replaces them. */
-export function priceTag(cost: number, state: PriceState): string {
-  const style = `style="--ph:${C.price.height}px;--pf:${C.price.font}px"`;
+export function priceTag(cost: number, state: PriceState, size: { height: number; icon: number; font: number } = C.price): string {
+  const style = `style="--ph:${size.height}px;--pf:${size.font}px"`;
   if (state === 'free') return `<span class="tf-coin-price free" ${style}>Free</span>`;
   if (state === 'used') return `<span class="tf-coin-price used" ${style}>${CHECK}<span class="tf-coin-word">Used</span></span>`;
-  return `<span class="tf-coin-price${state === 'short' ? ' short' : ''}" ${style}>${coinIcon(C.price.icon)}<span>${formatCoins(cost)}</span></span>`;
+  return `<span class="tf-coin-price${state === 'short' ? ' short' : ''}" ${style}>${coinIcon(size.icon)}<span>${formatCoins(cost)}</span></span>`;
 }
 
 /** What a screen reader says for a priced button. */
@@ -48,24 +48,30 @@ export function spokenPrice(name: string, cost: number, state: PriceState): stri
   return `${name}, ${cost} coins${state === 'short' ? ', you do not have enough coins' : ''}`;
 }
 
-/** Turn the Hint button of the top bar into the compact priced button; `setHintPrice` fills in the tag. */
+/** Give the Undo button its price: the button stays as it is, and a small coin badge that `setPrice` fills in sits on its bottom edge. */
+export function mountUndoButton(button: HTMLButtonElement): void {
+  button.classList.add('tf-paid');
+  button.insertAdjacentHTML('beforeend', '<span class="tf-coin-slot tf-coin-badge"></span>');
+}
+
+/** Turn the Hint button of the tools row into the compact priced button, sized by that row; `setPrice` fills in the tag. */
 export function mountHintButton(button: HTMLButtonElement): void {
   button.className = 'tf-btn tf-coin-buy hint compact';
-  button.style.cssText = sizeVars(C.hintCompact);
   button.innerHTML = `<span class="tf-clip"><span class="tf-face">${BULB}<span class="tf-coin-slot"></span></span></span>`;
 }
 
 /**
- * Show the price on the Hint button. A button that is too expensive stays a working button (its first tap, the status, is
- * free, and the counter answers a price it cannot pay); a used one is switched off by the caller.
+ * Show the price on a priced button of the tools row (Hint, Undo). A button that is too expensive stays a working button
+ * (the game answers the tap in words and the counter shakes); a used one is switched off by the caller.
+ * @param name What the button is called aloud, for example "Hint".
  */
-export function setHintPrice(button: HTMLButtonElement, cost: number, state: PriceState): void {
+export function setPrice(button: HTMLButtonElement, name: string, cost: number, state: PriceState): void {
   const key = `${cost}|${state}`;
   if (button.dataset.price === key) return;
   button.dataset.price = key;
-  button.querySelector('.tf-coin-slot')!.innerHTML = priceTag(cost, state);
+  button.querySelector('.tf-coin-slot')!.innerHTML = priceTag(cost, state, C.priceSmall);
   button.classList.toggle('short', state === 'short');
-  button.setAttribute('aria-label', spokenPrice('Hint', cost, state));
+  button.setAttribute('aria-label', spokenPrice(name, cost, state));
 }
 
 /** The "+N moves" offer: one wide button with its price on it. Too expensive stays tappable, so the counter can answer. */
@@ -84,7 +90,7 @@ export interface RewardView {
   readonly earned: number;
   /** The wallet after the payout. */
   readonly balance: number;
-  /** A paid hint or extra moves were used, so only the base amount counts. */
+  /** Paid help was used and only the base amount was paid for it. */
   readonly helped: boolean;
 }
 
@@ -113,12 +119,14 @@ export function coinInfo(titleId: string): string {
   return `<h4 id="${titleId}">${coinIcon(24)}Coins</h4>
     <dl class="tf-coin-lines">
       ${line('Level won', `+${COINS.win}`)}
-      ${line('Each move left over', `+${COINS.perSpareMove}`)}
-      ${line('Shortest solution', `+${COINS.perfect}`)}
+      ${line('Two stars', `+${COINS.win + COINS.twoStars}`)}
+      ${line('Three stars', `+${COINS.win + COINS.perfect}`)}
+      ${COINS.perSpareMove > 0 ? line('Each move left over', `+${COINS.perSpareMove}`) : ''}
       ${line('Hint: the next move', String(COINS.hintCost), true)}
       ${line(`+${CONFIG.extraMoves} moves`, String(COINS.extraMovesCost), true)}
+      ${COINS.undoCost > 0 ? line('Undo: one step back', String(COINS.undoCost), true) : ''}
     </dl>
-    <p>Undo and Restart are always free. You earn coins by playing; there is nothing to buy.</p>`;
+    <p>${COINS.undoCost > 0 ? 'Restart is always free' : 'Undo and Restart are always free'}. You earn coins by playing; there is nothing to buy.</p>`;
 }
 
 /** Count the text of `el` from `from` to `to`, written through `format`. */

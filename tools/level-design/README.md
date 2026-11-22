@@ -36,6 +36,9 @@ described in `data/config-notes.md`.
 4. `npm run test:unit` certifies it (the witness wins, `par` is the true shortest solution, two independent searches agree);
    `npm run measure` rewrites the report.
 
+Turn tiles: a recipe's `tiles` (a number or range) places them, `require.tileTurns=2..` asks that the solution really uses them,
+and the tidy step removes tiles, like walls, that change nothing.
+
 A generated board is a proposal. The generator rejects what is unsolvable, trivial (one repeated command, or winnable
 in almost any order), too loose (too many shortest solutions), beyond its search limit, or missing the idea's own
 mark (for example no robot ever waiting behind another in a queue level). Whether a board is *good* is for a person to say.

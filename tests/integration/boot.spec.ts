@@ -25,15 +25,17 @@ const ARROW = at('follow-the-arrow');
 const TWO_COLOURS = at('one-color-turns');
 const QUEUE = at('queue-up');
 const tilesOnPage = Math.min(levels.length, config.levelsPerPage);
+/** The path shows the current level and this many locked ones after it. */
+const ahead = Math.min(levels.length - 1, config.levelsAhead);
 
 /** Start with every level before `index` already solved at par, so that level is open like for a real player. */
-async function solvedUpTo(page: Page, index: number): Promise<void> {
+async function solvedUpTo(page: Page, index: number, lab: Record<string, unknown> = {}): Promise<void> {
   const best = Object.fromEntries(levels.slice(0, index).map((l) => [l.id, l.par]));
   await page.addInitScript(
     ([save]) => {
       if (!localStorage.getItem('turnflock.save')) localStorage.setItem('turnflock.save', save);
     },
-    [JSON.stringify({ version: 4, best, coins: config.coins.start, paid: {}, settings: {}, lab: {} })],
+    [JSON.stringify({ version: 4, best, coins: config.coins.start, paid: {}, settings: {}, lab })],
   );
 }
 
@@ -68,7 +70,10 @@ async function playWitness(page: Page, index: number): Promise<void> {
 test('boots to the level selection, and level 1 opens with a drawn board and no errors @boot', async ({ page }) => {
   const errors = await open(page);
   expect((await snap(page)).screen).toBe('map');
-  await expect(page.locator('.tf-levels-tile')).toHaveCount(tilesOnPage);
+  // The path: the current level and the next few, no grid of every level.
+  await expect(page.locator('#steps .tf-levels-step')).toHaveCount(1 + ahead);
+  await expect(page.locator('.tf-levels-tile')).toHaveCount(0);
+  await expect(page.locator('#pathWhere')).toHaveText(`Level 1 of ${levels.length}`);
   await expect(page.locator('#continue')).toHaveText('Play level 1');
   // The logo is the screen's heading: an image named "Turnflock" that has loaded, keeps its shape and never takes a tap.
   const logo = page.getByRole('heading', { level: 1, name: 'Turnflock' }).getByRole('img', { name: 'Turnflock' });
@@ -82,7 +87,11 @@ test('boots to the level selection, and level 1 opens with a drawn board and no 
   // The asset kit's 3D models really loaded; the game is not quietly on its built-in shapes.
   await expect.poll(async () => (await snap(page)).kitReady, { timeout: 20000 }).toBe(true);
   await expect(page.locator('#node-1')).toBeEnabled();
-  await expect(page.locator('#node-2')).toBeDisabled();
+  await expect(page.getByRole('button', { name: `Play level 1, ${levels[0].name}` })).toHaveAttribute('aria-current', 'step');
+  // A locked step is not a control: it is text that says it is locked.
+  await expect(page.locator('#node-2')).toHaveClass(/is-locked/);
+  await expect(page.locator('#node-2')).toContainText('Level 2, locked');
+  await expect(page.locator('#steps button')).toHaveCount(1);
   await page.click('#node-1');
   expect(await snap(page)).toMatchObject({ screen: 'level', level: 0, status: 'playing', movesLeft: budget(0), collected: 0 });
   await expect(page.locator('#levelName')).toHaveText(levels[0].name);
@@ -116,16 +125,18 @@ test('Levels, Level, Win, Next: no dead ends, and progress survives a reload', a
   await expect(page.locator('#levelName')).toHaveText(levels[1].name);
   await expect(page.locator('#levelCoins .tf-coin-amount')).toHaveText(String(config.coins.start + perfectWin));
   await page.click('#levelBack');
-  await expect(page.locator('#node-1')).toHaveClass(/\bs3\b/);
-  await expect(page.locator('#node-2')).toHaveClass(/is-next/);
+  // The completed level is gone from the path; the next one is the current step.
+  await expect(page.locator('#node-1')).toHaveCount(0);
+  await expect(page.locator('#node-2')).toHaveClass(/is-current/);
   await expect(page.locator('#node-2')).toBeEnabled();
-  await expect(page.locator('#node-3')).toBeDisabled();
+  await expect(page.locator('#node-3')).toHaveClass(/is-locked/);
   await page.reload();
   await expect.poll(() => page.evaluate(() => typeof window.turnflock?.snapshot)).toBe('function');
   const perfect = config.coins.win + config.moveSlack * config.coins.perSpareMove + config.coins.perfect;
   expect(await snap(page)).toMatchObject({ best: { [levels[0].id]: levels[0].par }, coins: config.coins.start + perfect });
   await expect(page.locator('#mapCoins .tf-coin-amount')).toHaveText(String(config.coins.start + perfect));
-  await expect(page.locator('#mapProgress')).toHaveAttribute('aria-label', `1 of ${levels.length} levels, 3 of ${levels.length * 3} stars`);
+  await expect(page.locator('#pathWhere')).toHaveText(`Level 2 of ${levels.length}`);
+  await expect(page.locator('#mapProgress')).toHaveAttribute('aria-label', `3 of ${levels.length * 3} stars`);
   await expect(page.locator('#continue')).toHaveText('Play level 2');
   expect(errors).toEqual([]);
 });
@@ -142,16 +153,40 @@ test('every level can be played to a win in order, ending back at the level sele
     await page.click(index === levels.length - 1 ? '#end-levels' : '#end-next');
   }
   expect((await snap(page)).screen).toBe('map');
-  // The selection shows one page at a time; every tile on it has three stars.
+  // Nothing is left to play: the screen shows the completed state with every star, and no path.
+  await expect(page.locator('#doneView')).toBeVisible();
+  await expect(page.locator('#doneView')).toContainText('All levels completed');
+  await expect(page.locator('#doneText')).toHaveText(`${levels.length * 3} of ${levels.length * 3} stars`);
+  await expect(page.locator('#steps .tf-levels-step.is-current')).toHaveCount(0);
+  await expect(page.locator('#continue')).toBeHidden();
+  // The grid test view still shows every level: one page at a time, every tile with three stars.
+  await openLab(page);
+  await page.click('[data-key=levelScreen] [data-value=grid]');
+  await closeLab(page);
   await expect(page.locator('.tf-levels-tile.s3')).toHaveCount(tilesOnPage);
   await expect(page.locator('#continue')).toHaveText('Play again');
   expect(errors).toEqual([]);
 });
 
+const undoCost: number = config.coins.undoCost;
+/** Start a fresh player with a given wallet. */
+async function withCoins(page: Page, coins: number): Promise<void> {
+  await page.addInitScript(
+    ([save]) => {
+      if (!localStorage.getItem('turnflock.save')) localStorage.setItem('turnflock.save', save);
+    },
+    [JSON.stringify({ version: 4, best: {}, coins, paid: {}, settings: {}, lab: {} })],
+  );
+}
+
 test('the win coins: Next on the first frame ends the count at once, and a replayed level shows no made-up reward', async ({ page }) => {
   const errors = await open(page);
+  // The grid test view, because the path no longer shows a level that is solved (finding B2) and this check plays one twice.
+  await page.evaluate((coins) => localStorage.setItem('turnflock.save', JSON.stringify({ version: 5, best: {}, coins, paid: {}, settings: {}, lab: { unlockAll: true } })), config.coins.start);
+  await page.reload();
+  await expect.poll(() => page.evaluate(() => typeof window.turnflock?.snapshot)).toBe('function');
   const perfect = config.coins.win + config.moveSlack * config.coins.perSpareMove + config.coins.perfect;
-  await page.click('#node-1');
+  await page.locator('.tf-levels-tile').first().click();
   await playWitness(page, 0);
   // The balance is saved before anything is shown; the counter still holds the old amount until the pop-up's coins arrive.
   await expect.poll(async () => (await snap(page)).coins, { timeout: 15000 }).toBe(config.coins.start + perfect);
@@ -162,7 +197,7 @@ test('the win coins: Next on the first frame ends the count at once, and a repla
   // The same level again pays nothing: no coin plate, a plain line, and the counter does not move.
   await page.click('#levelBack');
   await expect(page.locator('#mapCoins .tf-coin-amount')).toHaveText(String(config.coins.start + perfect));
-  await page.click('#node-1');
+  await page.locator('.tf-levels-tile').first().click();
   await playWitness(page, 0);
   await expect(page.locator('#end-result')).toHaveText('Best reward already paid', { timeout: 15000 });
   await expect(page.locator('#card .tf-coin-total')).toHaveCount(0);
@@ -181,30 +216,88 @@ test('the win coins: Next on the first frame ends the count at once, and a repla
   expect(errors).toEqual([]);
 });
 
-test('undo and restart take moves back', async ({ page }) => {
+test('a save from the first economy keeps its coins: a level paid 26 for three stars pays no leftover when won again', async ({ page }) => {
+  const errors = await open(page);
+  // Put in place once and loaded with a reload (see the colour shapes check for why not an init script).
+  await page.evaluate(
+    ([id, par]) => localStorage.setItem('turnflock.save', JSON.stringify({ version: 5, best: { [id]: par }, coins: 73, paid: { [id]: 26 }, settings: {}, lab: { unlockAll: true } })),
+    [levels[0].id, levels[0].par] as const,
+  );
+  await page.reload();
+  await expect.poll(() => page.evaluate(() => typeof window.turnflock?.snapshot)).toBe('function');
+  expect((await snap(page)).coins).toBe(73);
+  await page.locator('.tf-levels-tile').first().click();
+  await playWitness(page, 0);
+  await expect(page.locator('#end-result')).toHaveText('Best reward already paid', { timeout: 15000 });
+  expect((await snap(page)).coins).toBe(73);
+  expect(errors).toEqual([]);
+});
+
+test('undo and restart take moves back; Undo costs coins per step and Restart is free', async ({ page }) => {
   await open(page);
   await page.click('#node-1');
   await press(page, 'forward');
   await press(page, 'red');
+  // The price is on the Undo button before it is tapped.
+  await expect(page.locator('#undo')).toHaveAttribute('aria-label', `Undo, ${undoCost} coins`);
+  await expect(page.locator('#undo .tf-coin-price')).toHaveText(String(undoCost));
   await page.click('#undo');
-  expect((await snap(page)).commands).toEqual(['forward']);
+  expect(await snap(page)).toMatchObject({ commands: ['forward'], coins: config.coins.start - undoCost });
+  await page.click('#undo');
+  expect(await snap(page)).toMatchObject({ commands: [], coins: config.coins.start - 2 * undoCost });
+  await expect(page.locator('#levelCoins .tf-coin-amount')).toHaveText(String(config.coins.start - 2 * undoCost));
+  const spent = (await snap(page)).events.filter((e) => e.type === 'coins_spent');
+  expect(spent).toHaveLength(2);
+  expect(spent[0]).toMatchObject({ on: 'undo', amount: undoCost });
+  await press(page, 'forward');
   await page.click('#restart');
-  expect((await snap(page)).movesLeft).toBe(budget(0));
+  expect(await snap(page)).toMatchObject({ movesLeft: budget(0), coins: config.coins.start - 2 * undoCost });
 });
 
-test('out of moves in a hopeless position: free Retry, and no extra moves offered', async ({ page }) => {
+test('Undo without enough coins is refused in a few words that point at Restart, which still works', async ({ page }) => {
+  await withCoins(page, undoCost - 1);
+  await open(page);
+  await page.click('#node-1');
+  await press(page, 'forward');
+  await expect(page.locator('#undo')).toHaveAttribute('aria-label', `Undo, ${undoCost} coins, you do not have enough coins`);
+  await expect(page.locator('#undo')).toBeEnabled();
+  await page.click('#undo');
+  expect(await snap(page)).toMatchObject({ commands: ['forward'], coins: undoCost - 1 });
+  await expect(page.locator('#hint')).toContainText('Restart is free');
+  await expect(page.locator('#restart')).toHaveClass(/nudge/);
+  await page.click('#restart');
+  expect(await snap(page)).toMatchObject({ commands: [], movesLeft: budget(0), coins: undoCost - 1 });
+});
+
+test('with free help switched on in the test lab, Undo is free', async ({ page }) => {
+  await withCoins(page, 0);
+  await open(page);
+  await openLab(page);
+  await page.click('[data-key=freeHelp] [role=switch]');
+  await closeLab(page);
+  await page.click('#node-1');
+  await press(page, 'forward');
+  await expect(page.locator('#undo')).toHaveAttribute('aria-label', 'Undo, free');
+  await page.click('#undo');
+  expect(await snap(page)).toMatchObject({ commands: [], coins: 0 });
+});
+
+test('out of moves in a hopeless position: free Retry, a priced Undo, and no extra moves offered', async ({ page }) => {
   await open(page);
   await page.click('#node-1');
   for (let i = 0; i < budget(0); i++) await press(page, 'red');
   expect((await snap(page)).status).toBe('lost');
   await expect(page.locator('#end-title')).toHaveText('Out of moves', { timeout: 15000 });
   await expect(page.locator('#end-retry')).toHaveText('Retry');
-  await expect(page.locator('#end-undo')).toHaveText('Undo');
+  // The pop-up's Undo costs what the Undo button costs, and says so before the tap.
+  await expect(page.locator('#end-undo')).toHaveAttribute('aria-label', `Undo, ${undoCost} coins`);
+  await expect(page.locator('#end-undo')).toContainText('Undo');
+  await expect(page.locator('.tf-end-note')).toContainText('Retry is free');
   await expect(page.locator('#end-offer')).toHaveCount(0);
   await expect(page.locator('.tf-end-note')).toContainText('no offer');
   await expect(page.locator('.tf-end-note')).toHaveCount(1);
   await page.click('#end-hint');
-  await expect(page.locator('#hint')).toContainText('Undo', { timeout: 15000 });
+  await expect(page.locator('#hint')).toContainText('No win from here', { timeout: 15000 });
   await page.click('#restart');
   expect((await snap(page)).movesLeft).toBe(budget(0));
 });
@@ -231,40 +324,48 @@ test('out of moves two steps from home: extra moves are offered and really win',
   await expect(page.locator('#end-title')).toContainText('extra moves', { timeout: 15000 });
   await expect(page.locator('#card .tf-coin-sum')).toHaveText(`+${config.coins.win}`);
   await expect(page.locator('.tf-end-stars')).toHaveAttribute('aria-label', '1 of 3 stars');
-  // A helped win pays the base amount only.
+  // A win with extra moves is a one-star win: it pays the base amount only.
   expect((await snap(page)).coins).toBe(config.coins.start - config.coins.extraMovesCost + config.coins.win);
 });
 
-test('Hint: the status is free, the next move costs coins, and without coins it is refused', async ({ page }) => {
+test('Hint: the status is free, the next move costs coins and is drawn on the board, and without coins it is refused', async ({ page }) => {
   await solvedUpTo(page, ARROW);
   await open(page);
   await page.click(`#node-${ARROW + 1}`);
   await press(page, 'red'); // leave the witness so the solver has to search
   await page.click('#undo');
+  const wallet = config.coins.start - undoCost; // that Undo was paid for
   await press(page, 'forward');
   // The price is on the Hint button before it is tapped.
   await expect(page.locator('#scan')).toHaveAttribute('aria-label', `Hint, ${config.coins.hintCost} coins`);
   await page.click('#scan');
-  await expect(page.locator('#hint')).toContainText('Solvable from here', { timeout: 30000 });
-  expect((await snap(page)).coins).toBe(config.coins.start);
+  await expect(page.locator('#hint')).toContainText('You can still win', { timeout: 30000 });
+  // The Hint button is ringed for the second tap; nothing is drawn or paid yet.
+  await expect(page.locator('#scan')).toHaveClass(/nudge/);
+  expect(await snap(page)).toMatchObject({ coins: wallet, hintPicture: [] });
   await page.click('#scan');
-  await expect(page.locator('#hint')).toContainText('Next:');
   await expect(page.locator('.cmd.nudge')).toHaveCount(1);
-  expect((await snap(page)).coins).toBe(config.coins.start - config.coins.hintCost);
+  // The hint is a picture on the board: one mark per robot still on it, and only a few words under it.
+  const shown = await snap(page);
+  expect(shown.coins).toBe(wallet - config.coins.hintCost);
+  expect(shown.hintPicture).toHaveLength(shown.total - shown.collected);
+  expect(shown.hint.length).toBeLessThan(30);
+  // Following the hint clears the picture.
+  await page.dispatchEvent('.cmd.nudge', 'pointerdown');
+  expect((await snap(page)).hintPicture).toEqual([]);
   // Spend the rest, one revealed move at a time, until the wallet cannot pay.
-  const affordable = Math.floor(config.coins.start / config.coins.hintCost);
+  const affordable = Math.floor(wallet / config.coins.hintCost);
   for (let i = 1; i < affordable; i++) {
-    await page.dispatchEvent('.cmd.nudge', 'pointerdown');
     await page.click('#scan');
     await page.click('#scan');
     await expect(page.locator('.cmd.nudge')).toHaveCount(1);
+    await page.dispatchEvent('.cmd.nudge', 'pointerdown');
   }
-  await page.dispatchEvent('.cmd.nudge', 'pointerdown');
   await page.click('#scan');
   await page.click('#scan');
-  await expect(page.locator('#hint')).toContainText('costs');
+  await expect(page.locator('#hint')).toContainText('Not enough coins');
   await expect(page.locator('.cmd.nudge')).toHaveCount(0);
-  expect((await snap(page)).coins).toBe(config.coins.start - affordable * config.coins.hintCost);
+  expect(await snap(page)).toMatchObject({ coins: wallet - affordable * config.coins.hintCost, hintPicture: [] });
 });
 
 test('with free help switched on in the test lab, following the hint wins the level', async ({ page }) => {
@@ -323,11 +424,106 @@ test('settings: test lab switches change the next level, settings survive a relo
   expect((await snap(page)).lab.unlockAll).toBe(true);
 });
 
+test('settings: colour shapes is off at first, shows each colour\'s shape on its button at once and is kept; Vibration is gone', async ({ page }) => {
+  const errors = await open(page);
+  // A save from before: version 4, still holding the vibration setting the game no longer has. It is
+  // put in place once and loaded with a reload: an init script would run again on the later reload,
+  // where it sometimes finds the storage of a page opened from disk still empty and overwrites the save.
+  await page.evaluate(() => localStorage.setItem('turnflock.save', JSON.stringify({ version: 4, best: {}, coins: 73, paid: {}, settings: { vibration: false }, lab: { unlockAll: true } })));
+  await page.reload();
+  await expect.poll(() => page.evaluate(() => typeof window.turnflock?.snapshot)).toBe('function');
+  expect((await snap(page)).coins).toBe(73);
+  await page.click('#toSettings');
+  await expect(page.locator('#settings')).not.toContainText('Vibration');
+  await expect(page.locator('#settings')).not.toContainText('Larger text');
+  const shapes = page.locator('[data-key=colourShapes] [role=switch]');
+  await expect(shapes).toHaveAttribute('aria-checked', 'false');
+  await expect(page.locator('[data-key=colourShapes] .tf-set-shapes')).toHaveAttribute('aria-label', `Red ${config.colourShapes.red}, blue ${config.colourShapes.blue}, yellow ${config.colourShapes.yellow}`);
+  await expect(page.locator('html')).not.toHaveClass(/colour-shapes/);
+  await shapes.click();
+  await expect(page.locator('html')).toHaveClass(/colour-shapes/);
+  await page.click('#settings .tf-set-top button');
+  await page.click(`#node-${TWO_COLOURS + 1}`);
+  for (const colour of ['red', 'blue'] as const) {
+    const badge = page.locator(`.cmd[data-cmd=${colour}] .tf-cmd-shape`);
+    await expect(badge).toBeVisible();
+    await expect(badge).toHaveAttribute('data-shape', config.colourShapes[colour]);
+  }
+  await expect(page.locator('.cmd[data-cmd=forward] .tf-cmd-shape')).toHaveCount(0);
+  // Saved in the current format, without the dropped vibration value.
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('turnflock.save')!).settings)).toEqual({ mute: false, reduceMotion: null, colourShapes: true });
+  // Kept over a reload, and switched off again without one.
+  await page.click('#levelBack');
+  await page.reload();
+  await expect.poll(() => page.evaluate(() => typeof window.turnflock?.snapshot)).toBe('function');
+  await expect(page.locator('html')).toHaveClass(/colour-shapes/);
+  await page.click('#toSettings');
+  await expect(shapes).toHaveAttribute('aria-checked', 'true');
+  await shapes.click();
+  await expect(page.locator('html')).not.toHaveClass(/colour-shapes/);
+  expect(errors).toEqual([]);
+});
+
 test('the plus button explains coins and sells nothing', async ({ page }) => {
   await open(page);
   await page.click('#mapCoins button');
   await expect(page.locator('#coinInfo')).toBeVisible();
-  await expect(page.locator('#coinInfo')).toContainText('Undo and Restart are always free');
+  await expect(page.locator('#coinInfo')).toContainText('Restart is always free');
   await page.click('#coinInfoClose');
   await expect(page.locator('#coinInfo')).toBeHidden();
+});
+
+test('level selection: mid-way it shows the current level and the next few, near the end the path ends in a finish', async ({ page }) => {
+  await solvedUpTo(page, 11);
+  await open(page);
+  await expect(page.locator('#pathWhere')).toHaveText(`Level 12 of ${levels.length}`);
+  await expect(page.locator('#steps .tf-levels-step.is-current')).toHaveText(/12/);
+  await expect(page.locator('#steps .tf-levels-step.is-locked')).toHaveCount(ahead);
+  await expect(page.locator('#node-11')).toHaveCount(0);
+  await expect(page.locator(`#node-${12 + ahead}`)).toHaveClass(/is-locked/);
+  await expect(page.locator(`#node-${13 + ahead}`)).toHaveCount(0);
+  // The current level is a real target: at least 44 by 44 CSS pixels, and Enter on it opens the level.
+  const box = await page.locator('#node-12').boundingBox();
+  expect(box && box.width >= 44 && box.height >= 44).toBe(true);
+  await page.locator('#node-12').focus();
+  await page.keyboard.press('Enter');
+  expect(await snap(page)).toMatchObject({ screen: 'level', level: 11 });
+});
+
+test('level selection: on the last level only the finish is ahead', async ({ page }) => {
+  await solvedUpTo(page, levels.length - 1);
+  await open(page);
+  await expect(page.locator('#steps .tf-levels-step.is-current')).toHaveText(new RegExp(String(levels.length)));
+  await expect(page.locator('#steps .tf-levels-step.is-locked')).toHaveCount(0);
+  await expect(page.locator('#steps .tf-levels-step.is-finish')).toContainText('End of the levels');
+  await expect(page.locator('#continue')).toHaveText(`Play level ${levels.length}`);
+});
+
+test('test lab: "unlock all" and "Level screen: Grid" show the old grid as a test view; Path brings the path back', async ({ page }) => {
+  await solvedUpTo(page, 3);
+  await open(page);
+  await openLab(page);
+  await page.click('[data-key=unlockAll] [role=switch]');
+  await closeLab(page);
+  await expect(page.locator('.tf-levels-tile')).toHaveCount(tilesOnPage);
+  await expect(page.locator('#gridNote')).toContainText('Test view');
+  await expect(page.locator('#pathView')).toBeHidden();
+  await expect(page.locator(`#node-${tilesOnPage}`)).toBeEnabled();
+  await expect(page.locator('#mapProgress')).toHaveAttribute('aria-label', `3 of ${levels.length} levels, 9 of ${levels.length * 3} stars`);
+  // A completed level can be opened here.
+  await page.click('#node-1');
+  expect(await snap(page)).toMatchObject({ screen: 'level', level: 0 });
+  await page.click('#levelBack');
+  await openLab(page);
+  await page.click('[data-key=unlockAll] [role=switch]');
+  await page.click('[data-key=levelScreen] [data-value=grid]');
+  await closeLab(page);
+  // The grid without "unlock all": levels stay locked in order.
+  await expect(page.locator('#node-5')).toBeDisabled();
+  await expect(page.locator('#gridNote')).toContainText('Test view');
+  await openLab(page);
+  await page.click('[data-key=levelScreen] [data-value=path]');
+  await closeLab(page);
+  await expect(page.locator('.tf-levels-tile')).toHaveCount(0);
+  await expect(page.locator('#steps .tf-levels-step.is-current')).toHaveText(/4/);
 });

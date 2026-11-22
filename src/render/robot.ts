@@ -4,7 +4,7 @@ import { CONFIG } from '../config';
 import type { Color } from '../engine/types';
 import { bodyYaw, travelAxis, type HeadingStyle } from './heading';
 import { fuse } from './kit';
-import { buildFlockbot } from './parts/flockbot';
+import { buildFlockbot, shapePlate } from './parts/flockbot';
 import PARTS from '../../data/parts.json';
 
 /** A robot mesh plus the animated values the board view tweens. */
@@ -18,6 +18,8 @@ export interface RobotView {
   readonly lids: THREE.Mesh[];
   /** Show a heading, in radians: turns the whole robot, or only its symbol in the `symbol` style. */
   readonly aim: (angle: number) => void;
+  /** Show or hide the shape of the robot's colour (the "Colour shapes" setting). */
+  readonly showShape: (on: boolean) => void;
   /** Cumulative heading in radians, so turns always animate clockwise. */
   angle: number;
   /** Seconds until the next blink. */
@@ -117,8 +119,19 @@ export function buildRobot(id: number, color: Color, style: HeadingStyle = 'face
   const arrowColor = color === 'yellow' ? '#3A3118' : '#FFFFFF';
   const arrow = new THREE.Mesh(shared.arrow, new THREE.MeshStandardMaterial({ color: arrowColor, roughness: 0.4 }));
   arrow.castShadow = false;
-  cap.add(arrow);
+  // Colour shapes: a plate in the colour's shape under the arrow, and the arrow in the body's colour on it.
+  const marked = new THREE.Group();
+  const S = PARTS.flockbot.symbol;
+  const onPlate = new THREE.Mesh(shared.arrow, new THREE.MeshStandardMaterial({ color: color === 'yellow' ? tint : tint.clone().multiplyScalar(0.8), roughness: 0.5 }));
+  onPlate.scale.setScalar(0.62);
+  marked.add(new THREE.Mesh(shapePlate(color, S.shape.size * 0.6, S.shape.raise, 0.02), new THREE.MeshStandardMaterial({ color: arrowColor, roughness: 0.5 })), onPlate);
+  marked.visible = false;
+  cap.add(arrow, marked);
   body.add(cap);
+  const showShape = (on: boolean): void => {
+    arrow.visible = !on;
+    marked.visible = on;
+  };
 
   // The arrow was drawn pointing away from the face; fixed to the body it points the way the robot faces.
   if (style !== 'symbol') cap.rotation.y = Math.PI;
@@ -133,7 +146,7 @@ export function buildRobot(id: number, color: Color, style: HeadingStyle = 'face
     const dz = -Math.cos(angle);
     for (const pupil of pupils) pupil.position.set(dx * 0.045, -dz * 0.04, 0);
   };
-  return { id, color, root, body: hop, lids, aim, angle: 0, blinkIn: 1 + ((id * 37) % 23) / 6, visibleScale: 1 };
+  return { id, color, root, body: hop, lids, aim, showShape, angle: 0, blinkIn: 1 + ((id * 37) % 23) / 6, visibleScale: 1 };
 }
 
 /** The kit body is 0.89 wide; scaled so the robot fills the configured share of a tile. */
@@ -242,7 +255,8 @@ export function buildKitRobot(id: number, color: Color, template: THREE.Group): 
   const aim = (angle: number): void => {
     cap.rotation.y = angle;
   };
-  return { id, color, root, body, lids: [], aim, angle: 0, blinkIn: 1e9, visibleScale: 1 };
+  // The asset kit's own model is no longer on offer in the game; it carries no colour shape.
+  return { id, color, root, body, lids: [], aim, showShape: () => {}, angle: 0, blinkIn: 1e9, visibleScale: 1 };
 }
 
 /** Corners of the Flockbot part's bounding box in its own space: it stands on y = 0 and faces +z. */
@@ -265,6 +279,9 @@ const PART_CORNERS = [-1, 1].flatMap((x) => [0, 1].flatMap((y) => [-1, 1].map((z
  */
 export function buildPartsRobot(id: number, color: Color, style: HeadingStyle = 'faceUp', viewTilt = 0): RobotView {
   const bot = buildFlockbot(color);
+  // The symbol is kept out of the fused body, so the colour shape on it can be switched while a level is open.
+  bot.root.remove(bot.symbol);
+  const { showShape } = bot;
   const scale = CONFIG.board.grid.robotFill;
   const tilt = CONFIG.robot.lean;
   const root = new THREE.Group();
@@ -280,18 +297,17 @@ export function buildPartsRobot(id: number, color: Color, style: HeadingStyle = 
     body.add(lean);
     if (style === 'symbol') {
       // The symbol turns on its own; everything else is fused into a few meshes.
-      bot.root.remove(bot.symbol);
       const cap = new THREE.Group();
       cap.add(bot.symbol);
       lean.add(fuse(bot.root), cap);
-      return { id, color, root, body, lids: [], aim: (angle) => void (cap.rotation.y = angle), angle: 0, blinkIn: 1e9, visibleScale: 1 };
+      return { id, color, root, body, lids: [], aim: (angle) => void (cap.rotation.y = angle), showShape, angle: 0, blinkIn: 1e9, visibleScale: 1 };
     }
     // The symbol rests pointing to the back of the part; fixed to the body it points the way the robot faces.
     bot.symbol.rotation.y = Math.PI;
     const turn = new THREE.Group();
-    turn.add(fuse(bot.root));
+    turn.add(fuse(bot.root), bot.symbol);
     lean.add(turn);
-    return { id, color, root, body, lids: [], aim: (angle) => void (turn.rotation.y = bodyYaw(angle)), angle: 0, blinkIn: 1e9, visibleScale: 1 };
+    return { id, color, root, body, lids: [], aim: (angle) => void (turn.rotation.y = bodyYaw(angle)), showShape, angle: 0, blinkIn: 1e9, visibleScale: 1 };
   }
 
   const T = CONFIG.robot.faceUp;
@@ -301,7 +317,7 @@ export function buildPartsRobot(id: number, color: Color, style: HeadingStyle = 
   const turn = new THREE.Group();
   lean.rotation.x = -(tilt + T.extraLean + viewTilt * T.followCamera);
   bot.symbol.rotation.y = Math.PI;
-  lean.add(fuse(bot.root));
+  lean.add(fuse(bot.root), bot.symbol);
   turn.add(lean);
   sight.add(turn);
   body.add(sight);
@@ -336,5 +352,5 @@ export function buildPartsRobot(id: number, color: Color, style: HeadingStyle = 
       (-(minV + maxV) / 2 - low * Math.sin(viewTilt)) / Math.cos(viewTilt) + ahead.z * T.forward,
     );
   };
-  return { id, color, root, body, lids: [], aim, angle: 0, blinkIn: 1e9, visibleScale: 1 };
+  return { id, color, root, body, lids: [], aim, showShape, angle: 0, blinkIn: 1e9, visibleScale: 1 };
 }

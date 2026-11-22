@@ -2,9 +2,11 @@
 
 Dit document legt vast hoe levels worden gemeten, geordend, gemaakt en bewezen, wat pagina 1 en 2 bevatten,
 wat pagina 3 kan worden, en welk voorstel er ligt voor nieuwe levelelementen. De getallen per level staan in
-`design/level-report.md` (gegenereerd, niet met de hand bijhouden). Stand: 21 november 2026, 40 levels.
+`design/level-report.md` (gegenereerd, niet met de hand bijhouden). Stand: 22 november 2026: 40 levels in het
+spel, en pagina 3 (20 levels met de draaitegel) bewezen maar nog niet in het spel.
 
-Wat vaststaat en hier niet is aangeraakt: de kernmechaniek, de engine, de solver, de schermen en het uiterlijk.
+De draaitegel is op 22 november 2026 met jouw akkoord aan de engine toegevoegd (hoofdstuk 7); verder zijn de
+kernmechaniek, de schermen en het uiterlijk niet aangeraakt.
 Er is geen verhaal, kaart of wereld; levels staan in gewone pagina's van 20.
 
 ## 1. De moeilijkheidsmaat
@@ -42,8 +44,8 @@ groter dan nul, dan bestaat er geen kortste oplossing zonder zo'n zet.
    welk deel maakt het level onwinbaar. Dat loopt van 41 tot 68 procent en onderscheidt wel.
 2. **Draaien weegt zwaarder dan lopen.** Twee levels met dezelfde lengte voelen heel anders als het ene
    drie keer draait en het andere zeven keer. Het aantal kleurcommando's is daarom een eigen onderdeel van de score.
-3. **De solver heeft een fout** die tijdens het meten boven water kwam. Zie hoofdstuk 5; het raakt de manier
-   waarop levels worden bewezen.
+3. **De solver had een fout** die tijdens het meten boven water kwam (inmiddels gerepareerd). Zie hoofdstuk 5;
+   het raakte de manier waarop levels worden bewezen.
 
 ### De score (0 tot 10)
 
@@ -213,26 +215,49 @@ pagina 2, niet bij pagina 1). Er is geen level uit de reeks gehaald. Voortgang s
 dus een bestaande save houdt zijn sterren; wel kan een speler nu "gaten" zien: een opgelost level 9 naast een
 nog gesloten level 8. De ontgrendelregel (het vorige level opgelost) is niet aangepast. Zie beslissing 5.
 
-### Pagina 3 (level 41–60): plan, nog niet gebouwd
+### Pagina 3 (level 41–60): de draaitegel — bewezen, nog niet in het spel
 
-Pagina 3 hangt af van jouw beslissing over nieuwe elementen (hoofdstuk 7 en 8).
+De 20 levels staan in `data/levels-upcoming.json`, niet in `data/levels.json`. Het spel laadt ze dus niet.
+Reden: de tegel wordt nog niet getekend (dat is werk in `src/render/`, waar een andere sessie bezig is), en een
+level met een onzichtbare tegel is voor een speler kapot. Ze zijn wel op precies dezelfde manier bewezen als
+de 40 andere (`tests/unit/levels-upcoming.test.ts`).
 
-**Variant A: met de draaitegel (aanbevolen).**
+| # | Level | Idee | Bord | Tegels | Score | Herkomst |
+|--:|---|---|:-:|--:|--:|---|
+| 41 | Turntable | `turn-tile` | 4×4 | 1 | 0,7 | hand |
+| 42 | Corner Piece | `turn-tile` | 5×4 | 1 | 2,3 | gegenereerd |
+| 43 | Two for One | `turn-tile` | 5×5 | 1 | 3,1 | gegenereerd |
+| 44 | Mind the Tile | `tile-to-avoid` | 5×5 | 1 | 4,1 | gegenereerd |
+| 45 | Bank Shot | `turn-tile` + muur | 5×5 | 1 | 3,7 | gegenereerd |
+| 46 | Merge Lane | `queue` | 6×5 | 1 | 5,2 | gegenereerd |
+| 47 | Standoff | `conflict` | 5×5 | 1 | 5,2 | gegenereerd |
+| 48 | Switchback | `board-shape` | 4×7 | 2 | 5,1 | gegenereerd |
+| 49 | Three Way | `three-colours` | 6×5 | 1 | 6,0 | gegenereerd |
+| 50 | Open Floor | `crowd` | 7×7 | 0 | 6,8 | gegenereerd, opgeschoond |
+| 51 | Carousel | `same-colour` | 6×5 | 2 | 5,5 | gegenereerd |
+| 52 | Spiral In | `exit-sides` | 6×6 | 1 | 5,6 | gegenereerd |
+| 53 | Long Table | `board-shape` | 8×6 | 0 | 7,0 | gegenereerd, opgeschoond |
+| 54 | Pinball | `tight` | 4×4 | 1 | 5,8 | gegenereerd |
+| 55 | Crowded Corner | `crowd` | 6×6 | 2 | 7,0 | gegenereerd, opgeschoond |
+| 56 | Tricolour | `three-colours` | 6×6 | 2 | 7,4 | gegenereerd |
+| 57 | Cliff Walk | `big` | 8×8 | 1 | 6,9 | gegenereerd, opgeschoond |
+| 58 | Whirl | `turn-tile` | 7×7 | 2 | 8,5 | gegenereerd, opgeschoond |
+| 59 | Conga Line | `wait-at-wall` | 6×5 | 1 | 3,6 | gegenereerd |
+| 60 | Grand Finale | `big` | 8×8 | 1 | 6,7 | gegenereerd, opgeschoond |
 
-| Plek | Inhoud |
-|---|---|
-| 41–45 | De draaitegel leren: tegel draait één robot; tegel draait twee kleuren tegelijk; tegel als "gratis" draai die een kleurdruk uitspaart; tegel die je juist moet vermijden; tegel + muur |
-| 46–54 | Draaitegel gecombineerd met `queue`, `conflict`, `three-colours`, `exit-sides`; daartussen twee levels zonder tegel op 7×7 en 8×6 |
-| 55–58 | Piek: 7×7 en 8×8, drie kleuren, twee tegels |
-| 59 | Adempauze: één kleur, veel robots, één tegel |
-| 60 | Pronkstuk: 8×8, tien tot twaalf robots |
+Level 41 tot 45 leren de tegel, één ding per level: het bord draait voor je (alleen VOORUIT); één kleurdruk
+plus de tegel; twee robots over dezelfde tegel; een tegel die je moet mijden; tegel en muur samen. Level 50 en
+53 hebben geen tegel en laten de grote borden zien. De piek is level 58 (8,5, het hoogste van alle 60).
 
-**Variant B: alleen de huidige regels.** Dan draagt pagina 3 de ideeën die op pagina 1 en 2 nog weinig
-ruimte kregen: grote borden (7×7, 8×6, 8×8) als norm, `crowd` met acht tot twaalf robots, de kring die niet
-beweegt, uitgang midden in een groot bord, en langere oplossingen (11 tot 13 zetten) met weinig draaien.
-De generator kan dit nu al; verwacht wel dat pagina 3 dan meer "hetzelfde, groter" voelt dan pagina 2.
-
-In beide varianten blijft de richtscore van de pagina: begin rond 5, piek rond 8, pronkstuk 8 tot 8,5.
+Eerlijk hierover:
+- Eén level met de hand (41), zes door het gereedschap opgeschoond (overbodige muren en tegels weg), dertien
+  ongewijzigd gekozen.
+- De volledige meting is afgekapt bij 3 miljoen standen voor *Grand Finale*; lengte en oplossing zijn bewezen.
+- Het pronkstuk (6,7) is niet het moeilijkste level van de pagina, en lager dan de richtscore van 8.
+  De zoektocht naar een zwaarder 8×8-bord met tien of meer robots liep steeds tegen de zoeklimiet aan; een
+  level dat de tests niet in een paar seconden kunnen bewijzen wilde ik niet opnemen.
+- **Niemand heeft deze 20 levels gezien of gespeeld**, ook ik niet: zonder tekenwerk bestaan ze alleen als
+  bewezen data. Of de tegel leest zoals bedoeld, weten we pas als hij getekend is.
 
 ## 5. Hoe een level wordt gemaakt en bewezen
 
@@ -307,7 +332,7 @@ nu bij `id` in plaats van bij plek, zodat een andere volgorde ze niet meer breek
 rapport zet er ⚠ bij). Zijn lengte en oplossing zijn wél volledig bewezen; alleen de aandelen "dood" en
 "fatale zet" zijn daar ondergrenzen.
 
-### Gevonden fout in de engine: twee standen met dezelfde sleutel
+### Gevonden en gerepareerde fout in de engine: twee standen met dezelfde sleutel
 
 Tijdens het meten bleek dat `stateKey` in `src/engine/engine.ts` een opgenomen robot schrijft als het teken
 `~` (code 126). Een robot op vakje 19 die naar beneden kijkt, krijgt ook code 126 (48 + 19 × 4 + 2). De
@@ -324,11 +349,11 @@ Gevolgen, alle drie waargenomen:
 Vakje 19 is op een bord van 5 breed (4,3), op 6 breed (1,3), op 4 breed (3,4), op 7 breed (5,2) en op 8
 breed (3,2). De tien bestaande levels zijn nagerekend met de onafhankelijke zoektocht: hun `par` klopt.
 
-**Ik heb dit niet gerepareerd**, zoals afgesproken. Het staat vast in `tests/unit/level-tools.test.ts` als
-twee tests met `it.fails`: ze slagen zolang de fout bestaat en worden rood op de dag dat hij is opgelost
-(dan `.fails` weghalen). De reparatie is één regel (een opgenomen robot een teken geven dat geen vakje kan
-zijn) en verandert geen spelregel. Tot die tijd beschermt de tweede zoektocht in de certificering de levels,
-en wijst de generator borden af waarop de solver zich vergist. Zie beslissing 1.
+**Gerepareerd op 22 november 2026, na jouw akkoord.** Een opgenomen robot krijgt nu een teken dat geen
+vakje kan zijn; er is geen spelregel veranderd. De twee tests die de fout vastlegden zijn vóór de reparatie
+rood gezien en zijn nu gewone regressietests in `tests/unit/level-tools.test.ts`. De `par` van alle 40
+levels is na de reparatie opnieuw bevestigd. De tweede zoektocht in de certificering en de controle in de
+generator blijven staan als vangnet.
 
 ## 6. Het gereedschap
 
@@ -342,10 +367,30 @@ Uitleg en werkwijze: `tools/level-design/README.md`. De metingen zelf zijn getes
 de getallen met de hand zijn na te tellen (`tests/unit/level-tools.test.ts`), en de snelle kopie van de
 regels die de generator als zeef gebruikt, wordt daar zet voor zet met de echte engine vergeleken.
 
-## 7. Voorstel: nieuwe levelelementen (niet gebouwd)
+## 7. Nieuwe levelelementen
 
-Dit hoofdstuk is een voorstel. Er is niets van in de engine, de solver of de leveldata gezet; de
-kernmechaniek is ongewijzigd. Jij beslist (zie hoofdstuk 8).
+**Stand 22 november 2026.** Van de zeven kandidaten hieronder is er één gebouwd: **A, de draaitegel**, in de
+engine, de levelparser, de zeef, de generator en de meting. Wat er precies in zit:
+
+- Celcode `@@` in een level. Een robot kan er niet op beginnen.
+- De regel, als zevende stap van `step`: een robot die deze zet op de tegel *aankomt*, draait daar een
+  kwartslag met de klok mee, welke kleur hij ook heeft. Wie op de tegel staat en geblokkeerd blijft, draait
+  niet opnieuw. Wie geblokkeerd wordt vóór hij de tegel bereikt, draait niet.
+- De draai van de tegel komt bovenop een kleurdraai in dezelfde zet (ROOD en dan de tegel is een halve slag).
+- De toestand is niet groter geworden; de solver is niet gewijzigd.
+- Elk stapverslag heeft een veld `tileTurned`, zodat het tekenwerk de extra draai kan laten zien.
+- Een bord zonder tegels gedraagt zich exact als voorheen: de 40 bestaande levels en al hun tests zijn
+  onveranderd groen.
+
+**Nog te doen voordat pagina 3 in het spel kan** (bewust niet gedaan, want `src/render/`):
+1. De tegel tekenen uit `board.turnTiles`, met een vorm die niet op de pijl van een robot lijkt.
+2. In de stapanimatie de extra kwartslag tonen wanneer `tileTurned` waar is.
+3. De 20 levels van `data/levels-upcoming.json` naar `data/levels.json` verplaatsen en hun notities in
+   `design/levels-catalog.json` van `upcoming` naar `levels`. De tests draaien dan vanzelf mee.
+4. Schermafbeeldingen maken en de 20 levels in het echte spel uitspelen (`tools/level-design/screenshots.mjs`).
+
+De rest van dit hoofdstuk is het oorspronkelijke voorstel, ongewijzigd, als verantwoording van de keuze.
+B tot en met G zijn niet gebouwd.
 
 ### Waar elk element aan moet voldoen
 
@@ -576,23 +621,25 @@ Elk nieuw element krijgt de eerste vijf levels van zijn pagina als leerlevels (�
 level 1–5 nu), en de generator krijgt er een recept bij; de meting en de certificering werken ongewijzigd,
 omdat ze op `step` leunen.
 
-## 8. Beslissingen voor jou
+## 8. Besluiten (eigenaar, 22 november 2026: "akkoord op alles")
 
-1. **De sleutelfout in de engine laten repareren?** Aanbevolen: ja, als aparte kleine taak. Eén regel, geen
-   regelwijziging, en de twee `it.fails`-tests bewijzen dat het werkt. Zonder reparatie blijven hint en
-   redding in zeldzame standen onbetrouwbaar en moet de generator borden blijven weggooien.
-2. **Nieuwe elementen:** akkoord met draaitegel (pagina 3), uitgang per kleur (pagina 4) en drukplaat met
-   poort (pagina 5)? Of een andere keuze uit de tabel, of voorlopig geen?
-3. **Pagina 3:** variant A (met draaitegel) of variant B (alleen huidige regels)?
-4. **De volgorde van pagina 1 en 2:** akkoord dat *Follow the Arrow* van plek 1 naar 3 gaat en dat
-   *Two Lanes* en *Patience* naar pagina 2 verhuizen?
-5. **Bestaande spelers:** door de nieuwe volgorde kan iemand met een oude save opgeloste levels zien achter
-   een nog gesloten level. Laten zo (het spel werkt, er gaat niets verloren), of de ontgrendelregel
-   aanpassen zodat alles tot en met het verste opgeloste level open is? Dat laatste is een wijziging in
-   `src/game/progress.ts` en valt buiten deze taak.
-6. **Handwerk:** de 23 ongewijzigd gekozen levels zo laten, of een ronde waarin elk level met de hand wordt
-   nagelopen op leesbaarheid (robots uitlijnen, borden rustiger maken) en opnieuw wordt bewezen?
-7. **De gewichten van de score:** voorlopig laten, en bijstellen zodra er speeldata is?
+| # | Vraag | Besluit | Stand |
+|--:|---|---|---|
+| 1 | De sleutelfout in de engine repareren | Ja | Gedaan, zie hoofdstuk 5 |
+| 2 | Nieuwe elementen | Draaitegel (pagina 3), uitgang per kleur (pagina 4), drukplaat met poort (pagina 5); eenrichtingstegel als reserve | Draaitegel gebouwd in engine en gereedschap; tekenwerk nog niet. De andere twee niet begonnen |
+| 3 | Pagina 3 | Variant A, met de draaitegel | 20 levels bewezen in `data/levels-upcoming.json`; nog niet in het spel |
+| 4 | Volgorde van pagina 1 en 2 | Akkoord: *Follow the Arrow* op plek 3, *Two Lanes* en *Patience* op pagina 2 | Gedaan |
+| 5 | Oude saves met een opgelost level achter een gesloten level | Zo laten | Geen wijziging |
+| 6 | De 23 ongewijzigd gekozen levels | Zo laten | Geen wijziging |
+| 7 | Gewichten van de score | Laten tot er speeldata is | Geen wijziging |
+
+Bij 5 en 6 lagen er twee mogelijkheden zonder aanbeveling. "Akkoord op alles" is daar gelezen als de eerste
+en kleinste: niets veranderen. Wil je de andere (ontgrendelregel aanpassen, of een handmatige ronde over de
+levels), dan is dat één woord.
+
+Op 22 november 2026 volgde een tweede akkoord: de draaitegel bouwen in engine, solver en generator en de
+levels van pagina 3 maken, en het tekenwerk laten liggen tot de andere sessie in `src/render/` klaar is.
+Zie hoofdstuk 4 en 7.
 
 ## 9. Niet gecontroleerd
 
@@ -605,5 +652,6 @@ omdat ze op `step` leunen.
 - **Leesbaarheid op een echt toestel.** De schermafbeeldingen zijn gemaakt in een browser zonder grafische
   kaart op 390×844; 7×7 en 8×8 zijn daar leesbaar, maar niet op een telefoon in de hand beoordeeld.
 - **De volledige meting van Grand Parade** (afgekapt bij 3 miljoen standen).
-- **De voorbeeldborden van de nieuwe elementen** zijn met de hand doorgerekend, niet door een solver.
+- **De voorbeeldborden van de nieuwe elementen** B tot en met G zijn met de hand doorgerekend, niet door een solver.
+- **Pagina 3 is door niemand gezien of gespeeld**: de draaitegel wordt nog niet getekend.
 - **De herhaalbaarheid van de generatorrondes** met de huidige code is niet opnieuw gedraaid.

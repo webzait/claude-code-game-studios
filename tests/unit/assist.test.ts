@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_RULES, isWon, step } from '../../src/engine/engine';
 import type { Command, GameState } from '../../src/engine/types';
-import { checkRescue, routeScan, witnessNext } from '../../src/game/assist';
+import { checkRescue, previewStep, routeScan, witnessNext } from '../../src/game/assist';
 import { Session } from '../../src/game/session';
 import { LEVELS } from '../../src/levels/index';
 import { board, run } from './helpers';
@@ -88,5 +88,30 @@ describe('witness shortcut', () => {
   it('gives nothing once the player has left it or finished it', () => {
     expect(witnessNext(witness, ['red'])).toBeNull();
     expect(witnessNext(witness, witness)).toBeNull();
+  });
+});
+
+describe('the hint picture (finding B1)', () => {
+  it('previews exactly what the engine then does, for every command at every step of every level witness', () => {
+    for (const level of LEVELS) {
+      const session = new Session(level, { budget: level.par });
+      for (const command of level.witness) {
+        const before = session.state;
+        const preview = previewStep(level.board, before, command, session.rules);
+        // Looking does not move anything.
+        expect(session.state).toBe(before);
+        expect(preview).toEqual(session.apply(command)!.events);
+      }
+    }
+  });
+
+  it('marks who turns, who steps and who is blocked', () => {
+    // Red faces the wall above it; blue walks east.
+    const level = board(['r^ b> .. EX', '.. .. .. ..']);
+    const forward = previewStep(level.board, level.start, 'forward', DEFAULT_RULES);
+    expect(forward.map((e) => [e.turned, e.outcome])).toEqual([[false, 'blocked-wall'], [false, 'moved']]);
+    const red = previewStep(level.board, level.start, 'red', DEFAULT_RULES);
+    expect(red[0]).toMatchObject({ turned: true, dir: 1 });
+    expect(red[1]).toMatchObject({ turned: false, outcome: 'moved', toX: 2 });
   });
 });

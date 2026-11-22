@@ -1,5 +1,5 @@
 import { CONFIG } from '../config';
-import { rewardFor } from '../game/coins';
+import { NO_HELP, rewardFor } from '../game/coins';
 import parts from '../../data/parts.json';
 import coinImage from '../../assets/turnflock/ui/coin.webp';
 import plusImage from '../../assets/turnflock/ui/plus.webp';
@@ -100,7 +100,7 @@ const offer = (state: PriceState, width = '100%'): string =>
 
 /** The reward after a win: the total on a gold plate, the parts it adds up to, and the new balance. */
 function reward(moves: number, par: number, budget: number, balanceBefore: number, alreadyPaid = false): string {
-  const r = rewardFor(moves, par, budget, false);
+  const r = rewardFor(moves, par, budget, NO_HELP);
   const spare = Math.max(0, budget - moves);
   const line = (name: string, amount: number): string =>
     `<div class="tf-coin-line${amount === 0 ? ' none' : ''}"><dt>${name}</dt><dd>${amount === 0 ? '–' : `+${formatCoins(amount)}${coin(C.reward.lineIcon)}`}</dd></div>`;
@@ -109,7 +109,7 @@ function reward(moves: number, par: number, budget: number, balanceBefore: numbe
   }
   return `<div class="tf-coin-reward">
     <p class="tf-coin-total" aria-label="${r.total} munten verdiend" style="--rf:${C.reward.font}px">${coinPhoto(C.reward.icon)}<span>+${formatCoins(r.total)}</span></p>
-    <dl class="tf-coin-lines">${line('Level gehaald', r.base)}${line(spare === 1 ? '1 zet over' : `${spare} zetten over`, r.spareMoves)}${line('Kortste oplossing', r.perfect)}</dl>
+    <dl class="tf-coin-lines">${line('Level gehaald', r.base)}${line(spare === 1 ? '1 zet over' : `${spare} zetten over`, r.spareMoves)}${line(r.stars === 3 ? 'Drie sterren' : 'Twee sterren', r.starBonus)}</dl>
     <p class="tf-coin-balance">Nu ${coin(C.reward.lineIcon)}<b>${formatCoins(balanceBefore + r.total)}</b></p>
   </div>`;
 }
@@ -119,8 +119,8 @@ const info = (): string => `<div class="tf-coin-info" role="dialog" aria-label="
     <h4>${coinPhoto(24)}Munten</h4>
     <dl class="tf-coin-lines">
       <div class="tf-coin-line"><dt>Level gehaald</dt><dd>+${COINS.win}${coin(C.reward.lineIcon)}</dd></div>
-      <div class="tf-coin-line"><dt>Elke zet die je overhoudt</dt><dd>+${COINS.perSpareMove}${coin(C.reward.lineIcon)}</dd></div>
-      <div class="tf-coin-line"><dt>Kortste oplossing</dt><dd>+${COINS.perfect}${coin(C.reward.lineIcon)}</dd></div>
+      <div class="tf-coin-line"><dt>Twee sterren</dt><dd>+${COINS.win + COINS.twoStars}${coin(C.reward.lineIcon)}</dd></div>
+      <div class="tf-coin-line"><dt>Drie sterren</dt><dd>+${COINS.win + COINS.perfect}${coin(C.reward.lineIcon)}</dd></div>
       <div class="tf-coin-line spend"><dt>Hint: de volgende zet</dt><dd>${COINS.hintCost}${coin(C.reward.lineIcon)}</dd></div>
       <div class="tf-coin-line spend"><dt>${offerName}</dt><dd>${COINS.extraMovesCost}${coin(C.reward.lineIcon)}</dd></div>
     </dl>

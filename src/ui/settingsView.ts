@@ -1,6 +1,7 @@
 import { CONFIG } from '../config';
 import { DEFAULT_LAB, usesCertifiedRules, type LabSettings } from '../game/lab';
 import parts from '../../data/parts.json';
+import { SHAPE_COLOURS, shapeOf, shapesInWords, shapeSvg } from './colourShapes';
 import pkg from '../../package.json';
 
 /**
@@ -126,8 +127,19 @@ export function panel(title: string, chip = '', about = ''): { panel: HTMLElemen
 }
 
 export const chip = (kind: string, text: string): string => `<span class="tf-set-chip ${kind}">${text}</span>`;
-export const NEW = chip('new', 'New idea');
 export const TEST = chip('test', 'Testing only');
+/** The preview in the "Colour shapes" row: each robot colour with its shape. */
+export const shapesPreview = (): string =>
+  `<span class="tf-set-shapes" role="img" aria-label="${shapesInWords()}">${SHAPE_COLOURS.map((color) => `<i class="${color}" data-shape="${shapeOf(color)}">${shapeSvg(shapeOf(color))}</i>`).join('')}</span>`;
+
+/** The "Colour shapes" row: its switch, and the preview on a line of its own under the explanation. */
+export function shapesRow(on: boolean, set: (on: boolean) => void): HTMLElement {
+  const r = row('Colour shapes', 'Adds a shape to each colour.');
+  r.row.dataset.key = 'colourShapes';
+  r.row.querySelector('.tf-set-text')!.insertAdjacentHTML('beforeend', shapesPreview());
+  r.row.appendChild(toggle(r.titleId, on, set, r.hintId));
+  return r.row;
+}
 export const ON_OFF = (on: boolean): string => (on ? 'On' : 'Off');
 
 /** The destructive control: a calm button, then an armed step that says exactly what is lost and what is kept. */
@@ -292,10 +304,14 @@ export function labContent(start: Partial<LabSettings>, hooks: LabHooks = {}): {
       { label: 'Classic', value: 'classic' },
     ]),
     flag('decor', 'Backdrop', 'Harbour and bushes behind the game.'),
+    choice('levelScreen', 'Level screen', 'Path: the current level and the next few. Grid: every level on pages, as before.', [
+      { label: 'Path', value: 'path' },
+      { label: 'Grid', value: 'grid' },
+    ]),
   );
 
   const shortcuts = panel('Shortcuts');
-  shortcuts.body.append(flag('freeHelp', 'Free help', 'Hints and extra moves cost no coins.'), flag('unlockAll', 'Unlock all levels', 'Open every level, solved or not.'));
+  shortcuts.body.append(flag('freeHelp', 'Free help', 'Hints, extra moves and Undo cost no coins.'), flag('unlockAll', 'Unlock all levels', 'Open every level, solved or not. Shows the grid of all levels.'));
 
   const sizes = panel('Board size test');
   const sizeRow = row('Open a test board', 'Not a level; nothing is saved.', { stack: true });
@@ -333,14 +349,13 @@ export interface PlayerSettingsModel {
   readonly mute: boolean;
   /** null follows the device. */
   readonly reduceMotion: boolean | null;
-  readonly vibration: boolean;
-  /** False on a device that cannot vibrate: the switch is left out rather than shown doing nothing. */
-  readonly canVibrate: boolean;
+  /** A shape on each robot colour and its button. */
+  readonly colourShapes: boolean;
   /** How many test lab values differ from the certified game. */
   readonly labChanged: number;
   setMute(mute: boolean): void;
   setReduceMotion(value: boolean | null): void;
-  setVibration(on: boolean): void;
+  setColourShapes(on: boolean): void;
   resetProgress(): void;
   back(): void;
   openLab(): void;
@@ -364,13 +379,12 @@ export function playerScreen(m: PlayerSettingsModel): { root: HTMLElement; back:
     return r.row;
   };
   game.body.append(flag('sound', 'Sound', 'Game sounds.', !m.mute, (on) => m.setMute(!on)));
-  if (m.canVibrate) game.body.append(flag('vibration', 'Vibration', 'A short buzz on moves and wins.', m.vibration, (on) => m.setVibration(on)));
   const motion = row('Reduce motion', 'Calmer animations. Auto follows this device.', { stack: true });
   motion.row.dataset.key = 'reduceMotion';
   motion.row.appendChild(
     segmented<boolean | null>(motion.titleId, [{ label: 'Auto', value: null }, { label: 'On', value: true }, { label: 'Off', value: false }], m.reduceMotion, (v) => m.setReduceMotion(v), motion.hintId),
   );
-  game.body.append(motion.row);
+  game.body.append(shapesRow(m.colourShapes, (on) => m.setColourShapes(on)), motion.row);
 
   const progress = panel('Progress');
   progress.body.append(resetControl(false, false, () => m.resetProgress()));
