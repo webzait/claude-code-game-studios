@@ -124,7 +124,9 @@ test('Levels, Level, Win, Next: no dead ends, and progress survives a reload', a
   expect(await snap(page)).toMatchObject({ best: { [levels[0].id]: levels[0].par }, coins: config.coins.start + perfect });
   await expect(page.locator('#mapCoins .tf-coin-amount')).toHaveText(String(config.coins.start + perfect));
   await expect(page.locator('#pathWhere')).toHaveText(`Level 2 of ${levels.length}`);
-  await expect(page.locator('#mapProgress')).toHaveAttribute('aria-label', `3 of ${levels.length * 3} stars`);
+  // Three stars: nothing to improve, so the star total only tells the total.
+  await expect(page.locator('#toImprove')).toHaveAttribute('aria-label', `3 of ${levels.length * 3} stars`);
+  await expect(page.locator('#toImprove')).toBeDisabled();
   await expect(page.locator('#continue')).toHaveText('Play level 2');
   expect(errors).toEqual([]);
 });
@@ -147,6 +149,7 @@ test('every level can be played to a win in order, ending back at the level sele
   await expect(page.locator('#doneText')).toHaveText(`${levels.length * 3} of ${levels.length * 3} stars`);
   await expect(page.locator('#steps .tf-levels-step.is-current')).toHaveCount(0);
   await expect(page.locator('#continue')).toBeHidden();
+  await expect(page.locator('#toImprove')).toBeDisabled();
   // The grid test view still shows every level: one page at a time, every tile with three stars.
   await openLab(page);
   await page.click('[data-key=levelScreen] [data-value=grid]');
@@ -358,4 +361,42 @@ test('test lab: "unlock all" and "Level screen: Grid" show the old grid as a tes
   await closeLab(page);
   await expect(page.locator('.tf-levels-tile')).toHaveCount(0);
   await expect(page.locator('#steps .tf-levels-step.is-current')).toHaveText(/4/);
+});
+
+test('improving stars: the star total opens the completed levels under three stars, and a level that reaches three leaves the list', async ({ page }) => {
+  // Levels 1 to 4 completed: level 2 with one star, level 4 with two, the others with three.
+  const best = Object.fromEntries(levels.slice(0, 4).map((l, i) => [l.id, l.par + (i === 1 ? config.stars.two + 1 : i === 3 ? config.stars.two : 0)]));
+  await page.addInitScript(
+    ([save]) => {
+      if (!localStorage.getItem('turnflock.save')) localStorage.setItem('turnflock.save', save);
+    },
+    [JSON.stringify({ version: 4, best, coins: config.coins.start, paid: {}, settings: {}, lab: {} })],
+  );
+  const errors = await open(page);
+  // The path itself still shows no completed level.
+  await expect(page.locator('#node-2')).toHaveCount(0);
+  await expect(page.locator('#toImprove')).toHaveAttribute('aria-label', `9 of ${levels.length * 3} stars. Improve 2 levels`);
+  const box = await page.locator('#toImprove').boundingBox();
+  expect(box && box.width >= 44 && box.height >= 44).toBe(true);
+  await page.click('#toImprove');
+  await expect(page.locator('#gridNote')).toHaveText('Improve your stars');
+  await expect(page.locator('.tf-levels-tile')).toHaveCount(2);
+  await expect(page.locator('#node-2')).toHaveClass(/\bs1\b/);
+  await expect(page.locator('#node-4')).toHaveClass(/\bs2\b/);
+  await expect(page.locator('#node-1')).toHaveCount(0);
+  // The main action leads back to the path, and the star total opens the list again.
+  await expect(page.locator('#continue')).toHaveText('Back to level 5');
+  await page.click('#continue');
+  await expect(page.locator('#steps .tf-levels-step.is-current')).toHaveText(/5/);
+  await page.click('#toImprove');
+  await page.click('#node-2');
+  expect(await snap(page)).toMatchObject({ screen: 'level', level: 1 });
+  await playWitness(page, 1);
+  await expect(page.locator('.tf-end-stars')).toHaveAttribute('aria-label', '3 of 3 stars', { timeout: 15000 });
+  await page.click('#end-levels');
+  // Back in the list: level 2 has three stars now and is gone; level 4 is still there.
+  await expect(page.locator('.tf-levels-tile')).toHaveCount(1);
+  await expect(page.locator('#node-4')).toBeVisible();
+  await expect(page.locator('#toImprove')).toHaveAttribute('aria-label', `11 of ${levels.length * 3} stars. Improve 1 level`);
+  expect(errors).toEqual([]);
 });

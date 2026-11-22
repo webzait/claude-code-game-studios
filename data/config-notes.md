@@ -14,10 +14,10 @@
 | `coins.start` | Coins a new player begins with |
 | `coins.win`, `perSpareMove`, `perfect` | Reward for a win: base, per unused move, and bonus for the shortest solution |
 | `coins.hintCost`, `extraMovesCost` | Price of revealing the next move, and of the extra moves when out of moves |
-| `levelsPerPage` | Level tiles per page of the grid view of the level selection (test view only: test lab "Level screen: Grid" or "Unlock all levels") |
+| `levelsPerPage` | Level tiles per page of the grid: the player's "Improve your stars" list (completed levels under three stars) and the test view of every level (test lab "Level screen: Grid" or "Unlock all levels") |
 | `levelsAhead` | Locked levels shown after the current one on the level selection (the path). Completed levels are not shown (finding B2) |
 | `levelPath.layout` | Shape of the path: `winding` (the steps sway left and right) or `straight` (one column) |
-| `levelPath.playAgainWhenComplete` | `false`: with every level completed the screen only shows that state. `true`: it also offers a "Play again from level 1" button |
+| `levelPath.playAgainWhenComplete` | `false`: with every level completed and every star earned the screen only shows that state (with stars left to earn it offers "Improve N levels"). `true`: it also offers a "Play again from level 1" button |
 | `stars.three`, `stars.two` | Moves over par that still earn 3 and 2 stars |
 | `lowMoves` | Moves left at which the counter turns into a warning |
 | `rules.exitAcceptsMany` | `true`: several robots may enter the exit in one turn |

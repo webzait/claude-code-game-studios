@@ -29,6 +29,7 @@ import type { CertifyResult } from './solver/requests';
 import { CoinCounters, coinInfo, type RewardView } from './ui/coins';
 import { el, Hud } from './ui/hud';
 import { setupLogo } from './ui/logo';
+import { improvableLevels } from './ui/levelPath';
 import { renderLevels, type MapNode } from './ui/screens';
 import { labChangedCount, labScreen, playerScreen } from './ui/settingsView';
 
@@ -91,6 +92,8 @@ class Game {
   private screen: ScreenName = 'map';
   /** Page of the level selection on show; null opens the page of the current level. */
   private page: number | null = null;
+  /** The level selection shows the completed levels that can still be improved, instead of the path. */
+  private improving = false;
   private levelIndex = 0;
   /** A board-size test board is open instead of a level. */
   private preview = false;
@@ -247,24 +250,48 @@ class Game {
     const pageSize = CONFIG.levelsPerPage;
     // The screen opens on the page of the level the main button points at.
     this.page ??= Math.floor(main.index / pageSize);
-    const view = levelScreenView(this.save.lab);
-    // The path only knows "the level to play now". With everything completed it shows that state, and offers a way on only when the config asks for it.
+    const stars = nodes.map((n) => n.stars);
+    // In their own list none of them is "the" target: every tile there is equally worth a replay.
+    const improvable = improvableLevels(stars).map((index) => ({ ...nodes[index], target: false }));
+    const base = levelScreenView(this.save.lab);
+    // Nothing left to improve, or the test grid is on: the list of levels to improve has no place.
+    if (base === 'grid' || improvable.length === 0) this.improving = false;
+    const view = this.improving ? 'improve' : base;
+    if (view === 'improve') this.page = Math.min(this.page, Math.ceil(improvable.length / pageSize) - 1);
+    const toggleImprove = (): void => {
+      this.improving = !this.improving;
+      this.page = this.improving ? 0 : null;
+      this.drawMap();
+    };
+    // The path only knows "the level to play now". With everything completed it shows that state; what is left is improving, or playing again when the config asks for it.
     const complete = main.kind !== 'play';
-    const again = view === 'path' && complete;
-    const target = again ? 0 : main.index;
-    const playLabel = again ? (CONFIG.levelPath.playAgainWhenComplete ? 'Play again from level 1' : null) : main.kind === 'play' ? `Play level ${main.index + 1}` : main.kind === 'improve' ? `Improve level ${main.index + 1}` : 'Play again';
-    el('continue').onclick = () => this.tap(() => this.startLevel(target));
+    let playLabel: string | null;
+    let action: () => void;
+    if (view === 'improve') {
+      playLabel = complete ? 'Back' : `Back to level ${main.index + 1}`;
+      action = toggleImprove;
+    } else if (view === 'path' && complete) {
+      playLabel = improvable.length > 0 ? `Improve ${improvable.length} level${improvable.length === 1 ? '' : 's'}` : CONFIG.levelPath.playAgainWhenComplete ? 'Play again from level 1' : null;
+      action = improvable.length > 0 ? toggleImprove : () => this.startLevel(0);
+    } else {
+      playLabel = main.kind === 'play' ? `Play level ${main.index + 1}` : main.kind === 'improve' ? `Improve level ${main.index + 1}` : 'Play again';
+      action = () => this.startLevel(main.index);
+    }
+    el('continue').onclick = () => this.tap(action);
     renderLevels({
       view,
       nodes,
+      improvable,
       current: complete ? null : main.index,
       ahead: CONFIG.levelsAhead,
       layout: CONFIG.levelPath.layout,
       page: this.page,
       pageSize,
       playLabel,
-      gridNote: this.save.lab.unlockAll ? 'Test view · all levels unlocked' : 'Test view · grid',
+      playIcon: view === 'improve' ? 'back' : 'play',
+      gridNote: view === 'improve' ? 'Improve your stars' : this.save.lab.unlockAll ? 'Test view · all levels unlocked' : 'Test view · grid',
       onPick: (index) => this.tap(() => this.startLevel(index)),
+      onImprove: () => this.tap(toggleImprove),
       onPage: (page) => {
         this.page = page;
         this.tap(() => this.drawMap());
