@@ -6,7 +6,8 @@ import './ui/tf-end.css';
 import './ui/tf-settings.css';
 import './ui/tf-scene.css';
 import './ui/tf-shop.css';
-import { Sfx } from './audio';
+import { Sfx, type PlayedSound } from './audio';
+import { movePlan, soundSet } from './sound/sets';
 import { CONFIG } from './config';
 import type { Color, Command, Robot, RobotEvent } from './engine/types';
 import { previewStep, witnessNext, type RescueResult, type ScanResult } from './game/assist';
@@ -65,6 +66,10 @@ export interface Snapshot {
   shopOpen: boolean;
   /** The test ledger's lines, oldest first. */
   ledger: LedgerEntry[];
+  /** The latest sounds asked for, oldest first. */
+  sounds: PlayedSound[];
+  /** The loudest sample leaving the game at this moment (0–1). */
+  soundPeak: number;
 }
 
 declare global {
@@ -100,7 +105,7 @@ class Game {
   private store = storage();
   private save: SaveData = settled(loadSave(this.store, LEVEL_IDS));
   private metrics = new MemorySink();
-  private sfx = new Sfx(() => this.save.settings.mute);
+  private sfx = new Sfx(() => this.save.settings.mute, () => this.save.lab.soundSet);
   private solver = new SolverClient();
   private view = new BoardView(el<HTMLCanvasElement>('board'));
   private hud: Hud;
@@ -171,6 +176,7 @@ class Game {
     this.hud = new Hud(
       {
         command: (c) => this.command(c),
+        refused: () => this.sfx.play('deny'),
         undo: () => this.undo(),
         restart: () => this.restart(),
         scan: () => void this.scan(),
@@ -268,7 +274,7 @@ class Game {
         this.hintWarn = false;
         this.point = this.scanResult?.kind === 'on-route' && this.nudge === null ? 'scan' : null;
       }
-    } else this.sfx.play('bump');
+    } else this.sfx.play('deny');
     this.track({ type: 'purchase', pack: pack.id, result: result.status, coins: this.save.coins - before, balance: this.save.coins });
     if (this.screen === 'level') this.refresh();
     else this.counters.set(this.save.coins);
@@ -595,23 +601,19 @@ class Game {
     this.clearScan();
     this.refresh();
     this.track({ type: 'command', level: this.level.id, command });
-    this.playSounds(command, result.events.map((e) => e.outcome));
+    // The button answers at the touch; with a `motion` set the turn and the step sound when the robots make them.
+    const sounds = movePlan(command, result.events.map((e) => e.outcome), result.events.some((e) => e.turned), soundSet(this.save.lab.soundSet).timing);
+    for (const name of sounds.tap) this.sfx.play(name);
     const generation = this.generation;
     this.pending++;
     this.chain = this.chain.then(async () => {
       if (generation !== this.generation) return;
       const speed = 1 + (this.pending - 1) * CONFIG.anim.queueSpeedup;
-      await this.view.play(result.events, speed);
+      await this.view.play(result.events, speed, (beat) => sounds[beat].forEach((name) => this.sfx.play(name)));
       if (generation !== this.generation) return;
       this.pending--;
       if (this.pending === 0) this.settle();
     });
-  }
-
-  private playSounds(command: Command, outcomes: string[]): void {
-    if (outcomes.includes('exited')) this.sfx.play('exit');
-    else if (outcomes.every((o) => o.startsWith('blocked'))) this.sfx.play('bump');
-    else this.sfx.play(command === 'forward' ? 'step' : 'turn');
   }
 
   /** All animations done: show the outcome if the level ended. */
@@ -740,7 +742,7 @@ class Game {
     if (this.save.coins < price) {
       // The offer stays tappable when it is too expensive; the counter answers.
       this.counters.short();
-      this.sfx.play('bump');
+      this.sfx.play('deny');
       return;
     }
     this.save.coins -= price;
@@ -771,7 +773,7 @@ class Game {
     if (offer.state === 'short') {
       // Refused: the counter shakes, a few words say why, and the free way out is ringed.
       this.counters.short();
-      this.sfx.play('bump');
+      this.sfx.play('deny');
       this.track({ type: 'undo', level: this.level.id, price: offer.cost, refused: true });
       this.clearScan();
       this.point = 'restart';
@@ -909,6 +911,8 @@ class Game {
       events: [...this.metrics.events],
       shopOpen: this.shop.isOpen,
       ledger: [...this.save.ledger.entries],
+      sounds: [...this.sfx.played],
+      soundPeak: this.sfx.peak(),
     };
   }
 }

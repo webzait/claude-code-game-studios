@@ -40,6 +40,8 @@ export interface LabSettings {
   shop: boolean;
   /** How a pretend purchase ends: it succeeds, the buyer cancels, or it fails. */
   purchaseOutcome: PurchaseOutcome;
+  /** The sound set in use (`data/sound-sets.json`), so the sets can be compared while playing. */
+  soundSet: string;
 }
 
 /**
@@ -62,6 +64,7 @@ export const DEFAULT_LAB: LabSettings = {
   levelScreen: 'path',
   shop: true,
   purchaseOutcome: 'success',
+  soundSet: CONFIG.audio.set,
 };
 
 /**

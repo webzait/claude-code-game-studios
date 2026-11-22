@@ -1,0 +1,205 @@
+{
+  "classic": {
+    "name": "Classic",
+    "blurb": "The game's first sounds: one short beep per move.",
+    "nl": { "name": "Origineel", "blurb": "De eerste geluiden van het spel: één kort piepje per zet, voor elke knop hetzelfde." },
+    "timing": "tap",
+    "sounds": {
+      "tap": [{ "wave": "triangle", "freq": 520, "length": 0.05, "attack": 0.01 }],
+      "press-red": [],
+      "press-blue": [],
+      "press-yellow": [],
+      "press-forward": [],
+      "turn": [
+        { "wave": "triangle", "freq": 392, "length": 0.07, "attack": 0.01 },
+        { "wave": "triangle", "freq": 494, "at": 0.05, "length": 0.07, "attack": 0.01 }
+      ],
+      "step": [{ "wave": "sine", "freq": 262, "length": 0.06, "attack": 0.01 }],
+      "bump": [{ "wave": "square", "freq": 150, "length": 0.09, "attack": 0.01 }],
+      "deny": "bump",
+      "exit": [
+        { "wave": "triangle", "freq": 659, "length": 0.09, "attack": 0.01 },
+        { "wave": "triangle", "freq": 988, "at": 0.07, "length": 0.14, "attack": 0.01 }
+      ],
+      "win": [
+        { "wave": "triangle", "freq": 523, "length": 0.12, "attack": 0.01 },
+        { "wave": "triangle", "freq": 659, "at": 0.1, "length": 0.12, "attack": 0.01 },
+        { "wave": "triangle", "freq": 784, "at": 0.2, "length": 0.12, "attack": 0.01 },
+        { "wave": "triangle", "freq": 1047, "at": 0.3, "length": 0.3, "attack": 0.01 }
+      ],
+      "fail": [
+        { "wave": "sine", "freq": 330, "length": 0.16, "attack": 0.01 },
+        { "wave": "sine", "freq": 247, "at": 0.14, "length": 0.26, "attack": 0.01 }
+      ],
+      "scan": [
+        { "wave": "sine", "freq": 880, "length": 0.06, "attack": 0.01 },
+        { "wave": "sine", "freq": 1175, "at": 0.07, "length": 0.1, "attack": 0.01 }
+      ],
+      "coin": [
+        { "wave": "triangle", "freq": 1568, "length": 0.04, "attack": 0.01 },
+        { "wave": "triangle", "freq": 2093, "at": 0.035, "length": 0.08, "attack": 0.01 }
+      ]
+    }
+  },
+  "wood": {
+    "name": "Wood",
+    "blurb": "Soft wooden knocks, like tapping a toy block.",
+    "nl": { "name": "Houtblok", "blurb": "Zachte, houten tikjes, alsof je op een speelgoedblokje klopt; elke kleur een eigen hoogte." },
+    "timing": "motion",
+    "sounds": {
+      "tap": [{ "wave": "sine", "freq": 760, "freqEnd": 560, "glide": 0.02, "length": 0.04, "attack": 0.002, "gain": 0.5 }],
+      "press-red": [
+        { "wave": "sine", "freq": 880, "freqEnd": 620, "glide": 0.03, "length": 0.12, "attack": 0.002, "gain": 0.9 },
+        { "wave": "noise", "length": 0.02, "attack": 0.001, "gain": 0.35, "filter": { "type": "bandpass", "freq": 1800, "q": 3 } }
+      ],
+      "press-blue": [
+        { "wave": "sine", "freq": 660, "freqEnd": 470, "glide": 0.03, "length": 0.13, "attack": 0.002, "gain": 0.9 },
+        { "wave": "noise", "length": 0.02, "attack": 0.001, "gain": 0.35, "filter": { "type": "bandpass", "freq": 1400, "q": 3 } }
+      ],
+      "press-yellow": [
+        { "wave": "sine", "freq": 1100, "freqEnd": 780, "glide": 0.03, "length": 0.11, "attack": 0.002, "gain": 0.9 },
+        { "wave": "noise", "length": 0.02, "attack": 0.001, "gain": 0.35, "filter": { "type": "bandpass", "freq": 2200, "q": 3 } }
+      ],
+      "press-forward": [
+        { "wave": "sine", "freq": 440, "freqEnd": 300, "glide": 0.04, "length": 0.15, "attack": 0.002, "gain": 0.9 },
+        { "wave": "sine", "freq": 220, "freqEnd": 150, "glide": 0.04, "length": 0.1, "attack": 0.003, "gain": 0.4 },
+        { "wave": "noise", "length": 0.025, "attack": 0.001, "gain": 0.3, "filter": { "type": "bandpass", "freq": 900, "q": 2 } }
+      ],
+      "turn": [
+        { "wave": "sine", "freq": 1300, "freqEnd": 1000, "length": 0.03, "attack": 0.002, "gain": 0.3 },
+        { "wave": "sine", "freq": 1500, "freqEnd": 1150, "at": 0.06, "length": 0.03, "attack": 0.002, "gain": 0.3 }
+      ],
+      "step": [
+        { "wave": "sine", "freq": 190, "freqEnd": 110, "glide": 0.05, "length": 0.09, "attack": 0.004, "gain": 0.55 },
+        { "wave": "noise", "length": 0.03, "attack": 0.002, "gain": 0.15, "filter": { "type": "lowpass", "freq": 500 } }
+      ],
+      "bump": [
+        { "wave": "sine", "freq": 140, "freqEnd": 80, "glide": 0.06, "length": 0.11, "attack": 0.003, "gain": 0.7 },
+        { "wave": "noise", "length": 0.04, "attack": 0.002, "gain": 0.3, "filter": { "type": "bandpass", "freq": 400, "q": 1 } }
+      ],
+      "deny": [
+        { "wave": "sine", "freq": 300, "freqEnd": 210, "glide": 0.03, "length": 0.06, "attack": 0.002, "gain": 0.7 },
+        { "wave": "sine", "freq": 300, "freqEnd": 210, "glide": 0.03, "at": 0.09, "length": 0.06, "attack": 0.002, "gain": 0.7 }
+      ]
+    }
+  },
+  "bubble": {
+    "name": "Bubble",
+    "blurb": "Bright, playful blips that slide upwards.",
+    "nl": { "name": "Bubbel", "blurb": "Heldere, speelse blipjes die omhoog glijden; de kleuren vormen samen een vrolijk akkoord." },
+    "timing": "motion",
+    "sounds": {
+      "tap": [{ "wave": "sine", "freq": 700, "freqEnd": 900, "length": 0.05, "attack": 0.003, "gain": 0.45 }],
+      "press-red": [
+        { "wave": "sine", "freq": 523, "freqEnd": 784, "glide": 0.05, "length": 0.16, "attack": 0.003, "gain": 0.8 },
+        { "wave": "triangle", "freq": 1046, "length": 0.04, "attack": 0.003, "gain": 0.15 }
+      ],
+      "press-blue": [
+        { "wave": "sine", "freq": 659, "freqEnd": 988, "glide": 0.05, "length": 0.16, "attack": 0.003, "gain": 0.8 },
+        { "wave": "triangle", "freq": 1318, "length": 0.04, "attack": 0.003, "gain": 0.15 }
+      ],
+      "press-yellow": [
+        { "wave": "sine", "freq": 784, "freqEnd": 1175, "glide": 0.05, "length": 0.16, "attack": 0.003, "gain": 0.8 },
+        { "wave": "triangle", "freq": 1568, "length": 0.04, "attack": 0.003, "gain": 0.15 }
+      ],
+      "press-forward": [
+        { "wave": "sine", "freq": 392, "freqEnd": 523, "glide": 0.06, "length": 0.17, "attack": 0.003, "gain": 0.8 },
+        { "wave": "sine", "freq": 196, "freqEnd": 262, "glide": 0.06, "length": 0.14, "attack": 0.004, "gain": 0.4 }
+      ],
+      "turn": [{ "wave": "sine", "freq": 900, "freqEnd": 1500, "length": 0.07, "attack": 0.004, "gain": 0.3 }],
+      "step": [{ "wave": "sine", "freq": 420, "freqEnd": 250, "glide": 0.04, "length": 0.07, "attack": 0.003, "gain": 0.4 }],
+      "bump": [
+        { "wave": "sine", "freq": 260, "freqEnd": 130, "glide": 0.06, "length": 0.1, "attack": 0.003, "gain": 0.6 },
+        { "wave": "triangle", "freq": 130, "length": 0.06, "attack": 0.004, "gain": 0.2 }
+      ],
+      "deny": [
+        { "wave": "sine", "freq": 440, "freqEnd": 370, "length": 0.08, "attack": 0.004, "gain": 0.7 },
+        { "wave": "sine", "freq": 330, "freqEnd": 277, "at": 0.09, "length": 0.11, "attack": 0.004, "gain": 0.7 }
+      ]
+    }
+  },
+  "switch": {
+    "name": "Switch",
+    "blurb": "Dry mechanical clicks, like keys and switches.",
+    "nl": { "name": "Schakelaar", "blurb": "Droge, mechanische klikjes, als toetsen en schakelaars; zonder toonhoogte, dus het past bij elke muziek." },
+    "timing": "motion",
+    "sounds": {
+      "tap": [
+        { "wave": "noise", "length": 0.01, "attack": 0.001, "gain": 0.6, "filter": { "type": "bandpass", "freq": 3000, "q": 2 } },
+        { "wave": "sine", "freq": 220, "freqEnd": 160, "length": 0.03, "attack": 0.002, "gain": 0.3 }
+      ],
+      "press-red": [
+        { "wave": "noise", "length": 0.012, "attack": 0.001, "gain": 0.9, "filter": { "type": "bandpass", "freq": 3200, "q": 2 } },
+        { "wave": "square", "freq": 1600, "length": 0.018, "attack": 0.001, "gain": 0.12, "filter": { "type": "lowpass", "freq": 4000 } },
+        { "wave": "sine", "freq": 240, "freqEnd": 160, "glide": 0.03, "length": 0.06, "attack": 0.002, "gain": 0.5 }
+      ],
+      "press-blue": [
+        { "wave": "noise", "length": 0.012, "attack": 0.001, "gain": 0.9, "filter": { "type": "bandpass", "freq": 2500, "q": 2 } },
+        { "wave": "square", "freq": 1250, "length": 0.018, "attack": 0.001, "gain": 0.12, "filter": { "type": "lowpass", "freq": 4000 } },
+        { "wave": "sine", "freq": 200, "freqEnd": 140, "glide": 0.03, "length": 0.06, "attack": 0.002, "gain": 0.5 }
+      ],
+      "press-yellow": [
+        { "wave": "noise", "length": 0.012, "attack": 0.001, "gain": 0.9, "filter": { "type": "bandpass", "freq": 4000, "q": 2 } },
+        { "wave": "square", "freq": 2000, "length": 0.018, "attack": 0.001, "gain": 0.12, "filter": { "type": "lowpass", "freq": 4000 } },
+        { "wave": "sine", "freq": 280, "freqEnd": 190, "glide": 0.03, "length": 0.06, "attack": 0.002, "gain": 0.5 }
+      ],
+      "press-forward": [
+        { "wave": "noise", "length": 0.012, "attack": 0.001, "gain": 0.8, "filter": { "type": "bandpass", "freq": 1800, "q": 2 } },
+        { "wave": "noise", "at": 0.045, "length": 0.012, "attack": 0.001, "gain": 0.8, "filter": { "type": "bandpass", "freq": 2600, "q": 2 } },
+        { "wave": "sine", "freq": 150, "freqEnd": 90, "glide": 0.04, "length": 0.09, "attack": 0.002, "gain": 0.6 }
+      ],
+      "turn": [
+        { "wave": "noise", "length": 0.008, "attack": 0.001, "gain": 0.35, "filter": { "type": "bandpass", "freq": 5000, "q": 4 } },
+        { "wave": "noise", "at": 0.035, "length": 0.008, "attack": 0.001, "gain": 0.35, "filter": { "type": "bandpass", "freq": 5000, "q": 4 } },
+        { "wave": "noise", "at": 0.07, "length": 0.008, "attack": 0.001, "gain": 0.35, "filter": { "type": "bandpass", "freq": 5000, "q": 4 } }
+      ],
+      "step": [
+        { "wave": "sine", "freq": 120, "freqEnd": 70, "glide": 0.04, "length": 0.07, "attack": 0.003, "gain": 0.5 },
+        { "wave": "noise", "length": 0.02, "attack": 0.001, "gain": 0.2, "filter": { "type": "lowpass", "freq": 800 } }
+      ],
+      "bump": [
+        { "wave": "square", "freq": 90, "length": 0.07, "attack": 0.003, "gain": 0.35, "filter": { "type": "lowpass", "freq": 600 } },
+        { "wave": "noise", "length": 0.03, "attack": 0.001, "gain": 0.4, "filter": { "type": "bandpass", "freq": 700, "q": 1 } }
+      ],
+      "deny": [
+        { "wave": "square", "freq": 110, "length": 0.05, "attack": 0.003, "gain": 0.4, "filter": { "type": "lowpass", "freq": 500 } },
+        { "wave": "square", "freq": 110, "at": 0.08, "length": 0.05, "attack": 0.003, "gain": 0.4, "filter": { "type": "lowpass", "freq": 500 } }
+      ]
+    }
+  },
+  "kalimba": {
+    "name": "Kalimba",
+    "blurb": "Warm plucked notes, like a thumb piano.",
+    "nl": { "name": "Kalimba", "blurb": "Warme, getokkelde nootjes als van een duimpiano; de vier knoppen vormen samen een rustig toonladdertje." },
+    "timing": "motion",
+    "sounds": {
+      "tap": [{ "wave": "sine", "freq": 659, "length": 0.09, "attack": 0.003, "gain": 0.35, "fm": { "ratio": 3, "index": 0.6, "decay": 0.02 } }],
+      "press-red": [
+        { "wave": "sine", "freq": 392, "length": 0.3, "attack": 0.003, "gain": 0.7, "fm": { "ratio": 3, "index": 1.2, "decay": 0.03 } },
+        { "wave": "sine", "freq": 784, "length": 0.08, "attack": 0.003, "gain": 0.12 }
+      ],
+      "press-blue": [
+        { "wave": "sine", "freq": 440, "length": 0.3, "attack": 0.003, "gain": 0.7, "fm": { "ratio": 3, "index": 1.2, "decay": 0.03 } },
+        { "wave": "sine", "freq": 880, "length": 0.08, "attack": 0.003, "gain": 0.12 }
+      ],
+      "press-yellow": [
+        { "wave": "sine", "freq": 523, "length": 0.3, "attack": 0.003, "gain": 0.7, "fm": { "ratio": 3, "index": 1.2, "decay": 0.03 } },
+        { "wave": "sine", "freq": 1046, "length": 0.08, "attack": 0.003, "gain": 0.12 }
+      ],
+      "press-forward": [
+        { "wave": "sine", "freq": 262, "length": 0.32, "attack": 0.003, "gain": 0.75, "fm": { "ratio": 3, "index": 1.2, "decay": 0.03 } },
+        { "wave": "sine", "freq": 524, "length": 0.1, "attack": 0.003, "gain": 0.15 }
+      ],
+      "turn": [{ "wave": "sine", "freq": 1047, "length": 0.08, "attack": 0.003, "gain": 0.2, "fm": { "ratio": 2, "index": 0.5, "decay": 0.02 } }],
+      "step": [{ "wave": "sine", "freq": 196, "length": 0.09, "attack": 0.005, "gain": 0.35 }],
+      "bump": [
+        { "wave": "sine", "freq": 131, "length": 0.12, "attack": 0.004, "gain": 0.5 },
+        { "wave": "noise", "length": 0.03, "attack": 0.002, "gain": 0.15, "filter": { "type": "lowpass", "freq": 400 } }
+      ],
+      "deny": [
+        { "wave": "sine", "freq": 220, "length": 0.07, "attack": 0.003, "gain": 0.6 },
+        { "wave": "sine", "freq": 196, "at": 0.09, "length": 0.09, "attack": 0.003, "gain": 0.6 }
+      ]
+    }
+  }
+}

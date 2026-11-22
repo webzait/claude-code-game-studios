@@ -38,6 +38,8 @@ export interface HudModel {
 /** Callbacks from the level HUD to the game. */
 export interface HudHandlers {
   command(c: Command): void;
+  /** A command button was touched while it cannot be used (the level is over, or a replay or check is running). */
+  refused(): void;
   undo(): void;
   restart(): void;
   scan(): void;
@@ -81,6 +83,7 @@ export class Hud {
       button.addEventListener('pointerdown', (e) => {
         e.preventDefault();
         if (!button.disabled) handlers.command(command);
+        else handlers.refused();
       });
       this.buttons.set(command, button);
     }

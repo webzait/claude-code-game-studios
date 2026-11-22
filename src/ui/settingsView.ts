@@ -3,6 +3,7 @@ import { DEFAULT_LAB, usesCertifiedRules, type LabSettings } from '../game/lab';
 import parts from '../../data/parts.json';
 import { SHAPE_COLOURS, shapeOf, shapesInWords, shapeSvg } from './colourShapes';
 import pkg from '../../package.json';
+import { soundSet, soundSetIds } from '../sound/sets';
 
 /**
  * The settings screens: the player's own settings, and the test lab on a
@@ -325,6 +326,11 @@ export function labContent(start: Partial<LabSettings>, hooks: LabHooks = {}): {
     ]),
   );
 
+  const sound = panel('Sound');
+  sound.body.append(
+    choice('soundSet', 'Button sounds', (v) => soundSet(v).blurb, soundSetIds().map((id) => ({ label: soundSet(id).name, value: id }))),
+  );
+
   const sizes = panel('Board size test');
   const sizeRow = row('Open a test board', 'Not a level; nothing is saved.', { stack: true });
   const sizeButtons = h(`<div class="tf-set-quad" role="group" aria-labelledby="${sizeRow.titleId}"></div>`);
@@ -344,7 +350,7 @@ export function labContent(start: Partial<LabSettings>, hooks: LabHooks = {}): {
     status.focus();
   });
   refresh();
-  return { groups: [rules.panel, look.panel, shortcuts.panel, shop.panel, ...(hooks.panels ?? []), sizes.panel], bar, count, onCount: (fn) => listeners.push(fn) };
+  return { groups: [rules.panel, look.panel, sound.panel, shortcuts.panel, shop.panel, ...(hooks.panels ?? []), sizes.panel], bar, count, onCount: (fn) => listeners.push(fn) };
 }
 
 /** One screen: a fixed top bar with a back button and a title, and a list that scrolls under it. */

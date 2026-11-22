@@ -590,7 +590,7 @@ export class BoardView {
    * Animate one resolved step: turn first, then everyone steps, bumps or exits.
    * The logical state is already final when this is called.
    */
-  async play(events: readonly RobotEvent[], queueSpeed: number): Promise<void> {
+  async play(events: readonly RobotEvent[], queueSpeed: number, onBeat?: (beat: 'turn' | 'step') => void): Promise<void> {
     const a = CONFIG.anim;
     const speed = queueSpeed * this.speedScale;
     const lively = this.reduced ? 0 : 1;
@@ -598,6 +598,7 @@ export class BoardView {
     for (const e of events) this.shownCell.set(e.id, e.outcome === 'exited' ? -1 : e.toY * width + e.toX);
     const turning = events.filter((e) => e.turned);
     if (turning.length) {
+      onBeat?.('turn');
       await Promise.all(
         turning.map((e) => {
           const view = this.robots.get(e.id)!;
@@ -610,6 +611,7 @@ export class BoardView {
         }),
       );
     }
+    onBeat?.('step');
     await Promise.all(
       events.map((e) => {
         const view = this.robots.get(e.id)!;
