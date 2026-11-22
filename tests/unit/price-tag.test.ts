@@ -73,11 +73,11 @@ describe('the one price tag (finding B9)', () => {
 });
 
 describe('the bottom buttons as one family (finding B9)', () => {
-  it('test_parts_family_givesOneDepthAndCornerRuleAndAToolThatIsTallEnoughToTouch', () => {
+  it('test_parts_tools_areLargeEnoughToTouch', () => {
     const { family, tools } = parts.buttons;
     expect(family.depth).toBeGreaterThan(0);
-    expect(family.radius).toBeGreaterThan(0);
     // The footprint (face plus wall) is the touch target: at least 44 CSS px.
     expect(tools.height * (1 + family.depth)).toBeGreaterThanOrEqual(44);
+    expect(tools.width).toBeGreaterThanOrEqual(44);
   });
 });

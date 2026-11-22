@@ -54,14 +54,13 @@ export class Hud {
 
   constructor(handlers: HudHandlers, isLevelOpen: () => boolean) {
     // The bottom area's build (finding B9) comes from data/parts.json: one depth and corner rule for every block,
-    // and whether the tools stand in a tray and show their names.
+    // and the size of a tool and the space between two.
     const family = PARTS.buttons.family;
     const controls = el('tools').parentElement!;
     controls.style.setProperty('--tf-depth', String(family.depth));
     controls.style.setProperty('--tf-round', String(family.radius));
-    el('tools').style.setProperty('--tool-h', `${PARTS.buttons.tools.height}px`);
-    el('tools').classList.toggle('no-tray', !PARTS.buttons.tools.tray);
-    el('tools').classList.toggle('labels', PARTS.buttons.tools.labels);
+    const tools = PARTS.buttons.tools;
+    for (const [name, px] of [['h', tools.height], ['w', tools.width], ['r', tools.radius], ['gap', tools.gap]] as const) el('tools').style.setProperty(`--tool-${name}`, `${px}px`);
     mountPricedButton(el<HTMLButtonElement>('undo'));
     mountPricedButton(el<HTMLButtonElement>('scan'));
     el('card').insertAdjacentHTML('afterbegin', END_DEFS);

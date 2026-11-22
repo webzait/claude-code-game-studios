@@ -189,9 +189,9 @@
     },
     "tools": {
       "height": 37,
-      "gap": 10,
-      "tray": true,
-      "labels": false
+      "width": 62,
+      "radius": 14,
+      "gap": 20
     },
     "action": {
       "width": 96,

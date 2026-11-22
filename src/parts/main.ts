@@ -322,22 +322,22 @@ for (const [cols, rows] of [[5, 5], [6, 6], [8, 8], [4, 7]] as const) {
 
   const TOOLS: ToolName[] = ['Undo', 'Restart', 'Hint'];
   const coins = CONFIG.coins;
-  /** The four tools as the puzzle screen shows them; `state` freezes all four in one state. */
+  /** The tools as the puzzle screen shows them; `state` freezes them all in one state. */
   const tools = (state: State = ''): string[] =>
     TOOLS.map((name) => toolButton(name, { ...(name === 'Undo' ? { cost: coins.undoCost, price: 'ok' as const } : name === 'Hint' ? { cost: coins.hintCost, price: 'ok' as const } : {}), state: state === 'nudge' ? '' : state }));
   const t = b.tools;
   const toolDepth = Math.round(t.height * b.family.depth * 10) / 10;
   const actionRow = (colors: readonly (typeof COLORS)[number][]): string => `<div class="tf-line" style="gap:${p.gap}px">${colors.map((c) => action({ ...p.action, width: (p.stripWidth - 2 * p.padding - (colors.length - 1) * p.gap) / colors.length }, c, c === 'blue' ? 'nudge' : '')).join('')}</div>`;
-  const phone = (id: string, colors: readonly (typeof COLORS)[number][], extra = ''): string => `<div class="tf-phone" id="${id}">
+  const phone = (id: string, colors: readonly (typeof COLORS)[number][]): string => `<div class="tf-phone" id="${id}">
       <div class="tf-board">speelbord</div>
-      <div class="tf-controls tf-family">${toolTray(tools(), extra)}${actionRow(colors)}</div>
+      <div class="tf-controls tf-family">${toolTray(tools())}${actionRow(colors)}</div>
     </div>`;
 
   const el = document.createElement('section');
   el.className = 'card wide';
   el.id = 'buttons';
-  el.innerHTML = `<h2>Knoppen</h2><p class="dims">één familie: diepte = ${b.family.depth} × vlakhoogte, hoek = ${b.family.radius} × vlakhoogte, indrukken ${Math.round(b.pressFraction * 100)}% · gereedschap (Undo, Restart, Hint): drie gelijke blokken, vlak ${t.height} px + ${toolDepth} px diep, in één bak · actie ${b.action.width}×${b.action.height} px, ${b.action.depth} px diep</p>
-  <h3 class="btn-title">Gereedschap · drie gelijke knoppen in één bak</h3>
+  el.innerHTML = `<h2>Knoppen</h2><p class="dims">diepte = ${b.family.depth} × vlakhoogte, indrukken ${Math.round(b.pressFraction * 100)}% · gereedschap (Undo, Restart, Hint): drie gelijke losse blokken van ${t.width}×${t.height} px + ${toolDepth} px diep, hoek ${t.radius} px, ${t.gap} px uit elkaar · actie ${b.action.width}×${b.action.height} px, ${b.action.depth} px diep</p>
+  <h3 class="btn-title">Gereedschap · drie gelijke knoppen, elk op zichzelf</h3>
   <div id="buttons-sheet">${toolTray(tools())}<div class="tf-tools-caption">${TOOLS.map((n) => `<span>${n}</span>`).join('')}</div></div>
   <h3 class="btn-title">Toestanden · gereedschap</h3>
   <div id="buttons-states-utility">
@@ -357,10 +357,7 @@ for (const [cols, rows] of [[5, 5], [6, 6], [8, 8], [4, 7]] as const) {
   <h3 class="btn-title">Telefoon ${p.stripWidth} px · vier opdrachten en twee opdrachten</h3>
   ${phone('buttons-phone', COLORS)}
   ${phone('buttons-phone-two', ['red', 'forward'])}
-  <h3 class="btn-title">Omkeerbare keuzes (data/parts.json → buttons.tools)</h3>
-  ${phone('buttons-phone-labels', COLORS, ' labels')}<div class="tf-tools-caption wide"><span>"labels": true · namen in de knop</span></div>
-  ${phone('buttons-phone-notray', COLORS, ' no-tray')}<div class="tf-tools-caption wide"><span>"tray": false · zonder bak</span></div>
-  <p class="note">Echte HTML-knoppen met CSS: tekst blijft tekst, maten komen uit <code>--w --h --d --r</code>. Elke knop is één gegoten blok met een bovenvlak, een ronde rand en schuine flanken: bij indrukken zakt het hele blok ${Math.round(b.pressFraction * 100)}% van de diepte weg; de voetafdruk en het raakvlak blijven gelijk. De gereedschapsknoppen en de actieknoppen zijn dezelfde bouw op twee maten en staan op hetzelfde raster: de buitenranden van de bak-knoppen liggen gelijk met die van de actieknoppen. Gereedschap toont alleen een pictogram; de naam is er voor schermlezers. Een prijs staat op het ene prijskaartje over de onderrand (zie de muntenkaart); een knop zonder prijs (Restart) heeft geen kaartje en staat toch op dezelfde lijn. Blauw toont in de telefoonstroken de nudge.</p>`;
+  <p class="note">Echte HTML-knoppen met CSS: tekst blijft tekst, maten komen uit <code>--w --h --d --r</code>. Elke knop is één gegoten blok met een bovenvlak, een ronde rand en schuine flanken: bij indrukken zakt het hele blok ${Math.round(b.pressFraction * 100)}% van de diepte weg; de voetafdruk en het raakvlak blijven gelijk. De gereedschapsknoppen hebben een eigen, neutrale stijl: klein, ronder dan de actieknoppen, een licht vlak in een leigrijze rand. Ze staan los van elkaar in het midden, met duidelijke ruimte tot de actieknoppen eronder. Gereedschap toont alleen een pictogram; de naam is er voor schermlezers. Een prijs staat op het ene prijskaartje over de onderrand (zie de muntenkaart); een knop zonder prijs (Restart) heeft geen kaartje en staat toch op dezelfde lijn. Blauw toont in de telefoonstroken de nudge.</p>`;
   document.getElementById('sheet')!.appendChild(el);
 }
 

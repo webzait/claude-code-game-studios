@@ -43,8 +43,9 @@ body { margin: 0; background: #eef3fb; color: var(--ink); font-family: ui-rounde
 .card > div > .tf-tools, #buttons-states-utility > .tf-tools { margin: 0 auto; }
 #buttons-sheet, #buttons-states-utility, #coins-price-hint, #coins-price-compact { padding: 14px 0 10px; background: linear-gradient(180deg, #70c4fb, #5ab6f3); border-radius: 12px; }
 #buttons-states-utility > .tf-tools:not(:first-child) { margin-top: 8px; }
-.tf-tools-caption { width: 362px; margin: 6px auto 0; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 10px; text-align: center; font-size: 11px; font-weight: 700; color: #24314f; }
-.tf-tools-caption.wide { grid-auto-columns: 1fr; }
+.tf-tools-caption { margin: 6px auto 0; display: flex; justify-content: center; gap: 20px; text-align: center; font-size: 11px; font-weight: 700; color: #24314f; }
+.tf-tools-caption > span { width: 62px; }
+.tf-tools-caption.wide > span { width: auto; }
 
 /* Flockbot cards: the bot at the size it has on the board. */
 .bot-small { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 8px; padding: 6px; border-radius: 12px; background: #eef2fb; }

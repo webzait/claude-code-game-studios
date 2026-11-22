@@ -79,7 +79,7 @@ function price(cost: number, state: PriceState, size: { height: number; font: nu
 const slot = (tag: string): string => `<span class="tf-coin-slot">${tag}</span>`;
 
 const path = (d: string, width: number): string => `<path d="${d}" fill="none" stroke="currentColor" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"/>`;
-/** The pictures of the four tools, as in the game (index.html). */
+/** The pictures of the tools, as in the game (index.html). */
 export const TOOL_ICONS = {
   Undo: `<path d="M9.4 4.2 3.6 9.3l5.8 5.1z" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>` + path('M9 9.3h5.4a5.3 5.3 0 0 1 0 10.6H9.6', 3.6),
   Restart: path('M5.6 5.4v13.2', 3.6) + `<path d="M18.6 5.6v12.8L9.8 12z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>`,
@@ -100,10 +100,10 @@ export function toolButton(name: ToolName, view: ToolView = {}): string {
   const spokenName = view.price ? spoken(name, view.cost ?? 0, view.price) : name;
   return `<button type="button" class="${cls}" aria-label="${spokenName}"${used || view.state === 'disabled' ? ' disabled' : ''}><span class="tf-clip"><span class="tf-face"><svg viewBox="0 0 24 24" aria-hidden="true">${TOOL_ICONS[name]}</svg><span class="tf-label">${name}</span></span></span>${view.price ? slot(price(view.cost ?? 0, view.price, C.priceSmall)) : ''}</button>`;
 }
-/** The tray the tools stand in, as wide as the tools row of a 390 px phone unless `width` says otherwise. */
-export function toolTray(buttons: readonly string[], extra = '', width: number = parts.buttons.phone.stripWidth - 2 * parts.buttons.phone.padding): string {
+/** A row of tools as the puzzle screen sets them: each on its own, centred, with the game's gap. */
+export function toolTray(buttons: readonly string[]): string {
   const t = parts.buttons.tools;
-  return `<div class="tf-tools${extra}" style="--tool-h:${t.height}px;--tool-gap:${t.gap}px;width:${width + 12}px">${buttons.join('')}</div>`;
+  return `<div class="tf-tools" style="--tool-h:${t.height}px;--tool-w:${t.width}px;--tool-r:${t.radius}px;--tool-gap:${t.gap}px">${buttons.join('')}</div>`;
 }
 
 /** What a screen reader says for a priced button. */
