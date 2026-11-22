@@ -64,25 +64,25 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 #level .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
 #level .back { width: 42px; height: 43px; }
 /* The object: a round level medallion sitting over the left end of a bar; the bar holds the moves left in a sunken well. */
-.tf-status { --medal: 52px; --lap: 28px; position: relative; flex: none; display: grid; justify-items: center; padding-left: calc(var(--medal) - var(--lap)); }
+.tf-status { --medal: 57px; --lap: 30px; position: relative; flex: none; display: grid; justify-items: center; padding-left: calc(var(--medal) - var(--lap)); }
 .tf-status-plate {
   position: relative; z-index: 1; display: flex; align-items: stretch; height: 43px; padding: 0 8px 0 calc(var(--lap) + 6px); border-radius: 16px;
   background: var(--panel-grad); box-shadow: var(--panel-edge); font-variant-numeric: tabular-nums;
 }
-.tf-status-cell { display: grid; align-content: center; justify-items: center; gap: 2px; }
-.tf-status-label { font-size: 10px; font-weight: 800; letter-spacing: .12em; line-height: 1; color: var(--muted); }
-.tf-status-num { font-size: 21px; font-weight: 900; line-height: 1; transition: color .2s; }
+.tf-status-cell { display: grid; align-content: center; justify-items: center; gap: 3px; padding-top: 1px; }
+.tf-status-label { font-size: 9px; font-weight: 800; letter-spacing: .1em; line-height: 1; color: var(--muted); }
+.tf-status-num { font-size: 17px; font-weight: 900; line-height: 1; transition: color .2s; }
 .tf-status-cell.level {
   position: absolute; z-index: 1; left: calc(var(--lap) - var(--medal)); top: 50%; width: var(--medal); height: var(--medal); margin-top: calc(var(--medal) / -2);
-  gap: 1px; border-radius: 50%; border: 3px solid #fff; color: #fff;
+  gap: 2px; padding-top: 1px; border-radius: 50%; border: 3px solid #fff; color: #fff;
   background: linear-gradient(180deg, #4d9bf7 0%, var(--blue) 55%, #2470d6 100%);
   box-shadow: 0 3px 0 #b9c6e4, 0 7px 12px rgba(24, 46, 110, .28), inset 0 2px 0 rgba(255, 255, 255, .35);
   text-shadow: 0 1.5px 0 rgba(20, 60, 140, .55);
 }
-.tf-status-cell.level .tf-status-label { font-size: 9px; letter-spacing: .08em; color: #fff; }
-.tf-status-cell.level .tf-status-num { font-size: 23px; }
+.tf-status-cell.level .tf-status-label { font-size: 8px; letter-spacing: .08em; color: #fff; }
+.tf-status-cell.level .tf-status-num { font-size: 19px; }
 .tf-status-well {
-  display: grid; place-items: center; min-width: clamp(46px, 15vw, 64px); height: 24px; padding: 0 8px; border-radius: 9px;
+  display: grid; place-items: center; min-width: clamp(46px, 15vw, 64px); height: 21px; padding: 1px 8px 0; border-radius: 9px;
   background: #e3eafa; box-shadow: inset 0 2px 0 #c3cfec, inset 0 -1px 0 #fff; transition: background-color .2s;
 }
 .tf-status-cell.moves.low .tf-status-num { color: var(--red); }
@@ -98,12 +98,12 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 @media (max-width: 359px) {
   #level .top { gap: 5px; }
   #level .back { width: 38px; }
-  .tf-status { --medal: 48px; --lap: 27px; }
+  .tf-status { --medal: 53px; --lap: 29px; }
   .tf-status-plate { padding: 0 6px 0 calc(var(--lap) + 4px); }
   .tf-status-well { min-width: 42px; padding: 0 6px; }
   .tf-status-label { letter-spacing: .07em; }
-  .tf-status-cell.level .tf-status-label { font-size: 8px; }
-  .tf-status-cell.level .tf-status-num { font-size: 21px; }
+  .tf-status-cell.level .tf-status-label { font-size: 7.5px; }
+  .tf-status-cell.level .tf-status-num { font-size: 18px; }
   .tools .tf-coin-bulb { --icon: 20px; }
   .tools .tf-coin-buy.compact .tf-face { gap: 3px; }
 }
