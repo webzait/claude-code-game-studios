@@ -176,6 +176,16 @@
     "undoCost": 5,
     "freeUndosPerLevel": 0
   },
+  "shop": {
+    "processingMs": 900,
+    "ledgerMax": 200,
+    "ledgerShown": 40,
+    "packs": [
+      { "id": "handful", "name": "Handful of coins", "coins": 100, "examplePriceCents": 99 },
+      { "id": "pouch", "name": "Pouch of coins", "coins": 250, "examplePriceCents": 199 },
+      { "id": "chest", "name": "Chest of coins", "coins": 700, "examplePriceCents": 499 }
+    ]
+  },
   "light": {
     "sky": "#FFFFFF",
     "ground": "#7F95D8",

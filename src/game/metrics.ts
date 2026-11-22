@@ -11,6 +11,8 @@ export type MetricsEvent =
   | { type: 'undo'; level: string; price: number; refused: boolean }
   | { type: 'coins_earned'; level: string; amount: number; balance: number }
   | { type: 'coins_spent'; level: string; amount: number; on: 'hint' | 'extra_moves' | 'undo'; balance: number }
+  /** A purchase attempt in the shop. In this build every one is simulated; `coins` is what it added (zero unless it succeeded). */
+  | { type: 'purchase'; pack: string; result: 'success' | 'cancelled' | 'failed'; coins: number; balance: number }
   | { type: 'command'; level: string; command: Command };
 
 /** Where events go. A real analytics service would implement this later. */

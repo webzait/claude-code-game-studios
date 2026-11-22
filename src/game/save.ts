@@ -1,9 +1,11 @@
 import { CONFIG } from '../config';
 import { HEADING_STYLES, type HeadingStyle } from '../render/heading';
 import { DEFAULT_LAB, type LabSettings } from './lab';
+import { emptyLedger, readLedger, type Ledger } from './ledger';
+import { PURCHASE_OUTCOMES, type PurchaseOutcome } from './shop';
 
 /** Current save format. Raise it and extend `migrate` when the shape changes. */
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 /** Storage key of the current format. */
 export const SAVE_KEY = 'turnflock.save';
 /** Storage key of the first prototype's format (version 1). */
@@ -26,6 +28,8 @@ export interface SaveData {
     colourShapes: boolean;
   };
   lab: LabSettings;
+  /** The test ledger: pretend purchases, rewards and spends, with running totals. */
+  ledger: Ledger;
 }
 
 /** The minimal storage the save needs; `localStorage` fits, and tests pass a plain object. */
@@ -37,7 +41,7 @@ export interface KeyValueStore {
 
 /** A fresh save. */
 export function defaultSave(): SaveData {
-  return { version: SAVE_VERSION, best: {}, coins: CONFIG.coins.start, paid: {}, settings: { mute: false, reduceMotion: null, colourShapes: false }, lab: { ...DEFAULT_LAB } };
+  return { version: SAVE_VERSION, best: {}, coins: CONFIG.coins.start, paid: {}, settings: { mute: false, reduceMotion: null, colourShapes: false }, lab: { ...DEFAULT_LAB }, ledger: emptyLedger() };
 }
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -62,7 +66,8 @@ export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
   // Version 2 had no coins: the player keeps progress and starts with the opening balance.
   // Versions 3 and 4 differ only in a vibration setting that the game no longer has: a stored one is ignored.
   // Version 4 had no colour shapes: everything is kept and the shapes start switched off.
-  const withCoins = raw.version === SAVE_VERSION || raw.version === 4 || raw.version === 3;
+  // Version 5 had no test shop and no ledger: everything is kept, the ledger starts empty and the shop switches take their defaults.
+  const withCoins = raw.version === SAVE_VERSION || raw.version === 5 || raw.version === 4 || raw.version === 3;
   if (!withCoins && raw.version !== 2) return save;
   if (isRecord(raw.best)) {
     for (const [id, moves] of Object.entries(raw.best)) {
@@ -98,7 +103,10 @@ export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
     if (lab.boardPieces === 'kit' || lab.boardPieces === 'builtin') save.lab.boardPieces = lab.boardPieces;
     // Saves from before the path existed have no level screen choice: they get the default, the path.
     if (lab.levelScreen === 'path' || lab.levelScreen === 'grid') save.lab.levelScreen = lab.levelScreen;
+    if (typeof lab.shop === 'boolean') save.lab.shop = lab.shop;
+    if (PURCHASE_OUTCOMES.includes(lab.purchaseOutcome as PurchaseOutcome)) save.lab.purchaseOutcome = lab.purchaseOutcome as PurchaseOutcome;
   }
+  if (withCoins) save.ledger = readLedger(raw.ledger, CONFIG.shop.ledgerMax);
   return save;
 }
 
@@ -122,7 +130,7 @@ export function writeSave(store: KeyValueStore, data: SaveData): boolean {
   }
 }
 
-/** Forget progress and coins. Settings and lab switches are kept. */
+/** Forget progress and coins. Settings, lab switches and the test ledger are kept. */
 export function resetProgress(data: SaveData): SaveData {
   return { ...data, best: {}, coins: CONFIG.coins.start, paid: {} };
 }
