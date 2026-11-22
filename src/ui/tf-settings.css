@@ -45,7 +45,6 @@
 
 /* Chips: small labels. Never the only carrier of meaning; each one is text. */
 .tf-set-chip { display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 10px; font-size: 11px; font-weight: 800; letter-spacing: .03em; white-space: nowrap; text-transform: none; }
-.tf-set-chip.new { background: #e9e5ff; color: #4a39c9; }
 .tf-set-chip.test { background: #24314f; color: #fff; }
 .tf-set-chip.changed { background: #ffe9a3; color: #5a4300; box-shadow: inset 0 0 0 1px rgba(122, 91, 0, .3); }
 
@@ -143,10 +142,10 @@
 .tf-set-status { margin: 0; flex: 1 1 110px; display: flex; align-items: center; gap: 6px; font-size: 13.5px; color: #24314f; }
 .tf-set-status svg { flex: none; width: 20px; height: 20px; padding: 3px; border-radius: 50%; color: #fff; background: #17913a; }
 
-/* The colour-shape preview in the colour-blind aid's explanation. */
-.tf-set-shapes { display: inline-flex; gap: 4px; vertical-align: -4px; margin-left: 2px; }
-.tf-set-shapes i { width: 18px; height: 18px; border-radius: 6px; display: grid; place-items: center; }
-.tf-set-shapes svg { width: 12px; height: 12px; fill: #fff; }
+/* The colour-shape preview under the colour-blind aid's explanation: each robot colour with its shape. */
+.tf-set-shapes { display: flex; gap: 6px; margin-top: 6px; }
+.tf-set-shapes i { width: 24px; height: 24px; border-radius: 8px; display: grid; place-items: center; box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .16); }
+.tf-set-shapes svg { width: 16px; height: 16px; fill: #fff; }
 .tf-set-shapes .red { background: #f1454b; }
 .tf-set-shapes .blue { background: #2e84f1; }
 .tf-set-shapes .yellow { background: #f4c62f; }

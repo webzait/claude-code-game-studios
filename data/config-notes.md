@@ -32,7 +32,7 @@
 | `lab.slackOptions`, `lab.speedOptions` | Choices offered in the test lab |
 | `lab.certifyMaxVisited` | Positions examined when re-checking a level under a test rule |
 | `audio.volume` | Loudness of the sound effects |
-| `haptics.move`, `haptics.win` | Vibration patterns in milliseconds (buzz, pause, buzz, …) for a move and for a win; used only when the player's Vibration setting is on and the device can vibrate |
+| `colourShapes.red`, `.blue`, `.yellow` | The shape that goes with each robot colour when the player's "Colour shapes" setting is on: `circle`, `square` or `diamond` (outlines in `src/ui/colourShapes.ts`). Shown on the robots, on the matching command buttons and in the settings preview; each colour needs a shape of its own |
 
 `data/levels.json`: `par` is the solver's shortest solution and `witness` is one command list that wins; both are checked by the tests. Cell codes: `..` floor, `##` wall, `EX` exit, `@@` turn tile, `r^ b> yv r<` robots.
 
@@ -49,6 +49,7 @@
 ## data/parts.json
 
 Dimensions of the standalone game elements, in cell units (1 cell = `unitPx` 56 px on the asset sheet): the Flockbot's modules (shell, face, romp, feet, ears, symbol), floor tile, obstacle, exit, rim and underlay, and the three button sizes in CSS pixels. Shown one by one on the parts sheet (`npm run build:parts` → `dist-parts/parts.html`). The playable game reads the board, robot and button sizes from it, and from `coins` the sizes of the coin counter, plus button, price tags, offer and reward, and the lengths of the count-up (`countUpMs`) and the cannot-afford flash (`shortMs`).
+- `flockbot.symbol.shape` — the "Colour shapes" plate on a robot's top, in cell units: `size` of the box the shape is drawn in, `raise` above the crown, and `triangle`, the size of the heading triangle lying on it (smaller than `symbol.size`, so it stays inside every shape). Tuned on screenshots at 320×568 and 390×844 on the 8×8 board of level 40, the smallest cells in the game (`production/qa/evidence/findings-settings-choices/`, 2026-11-22).
 - `logo` — the owner's logo on the level selection (styles in `src/ui/tf-levels.css`, applied by `src/ui/logo.ts`; files in `assets/turnflock/brand/`, built by `build-logo.py` there). Heights are CSS pixels; the logo is 768:360, so its width is 2.13 times its height. Tuned on screenshots at 320×568, 390×844, 430×932 and 768×1024 (`production/qa/evidence/logo/`, 2026-11-22).
   - `logo.levels.layout` — `band`: the logo centred in a band of its own above the coins, progress and settings (on a screen 600 or wider it shares one line with them, centred). `row`: the logo in the old title's place in the one row. A screen lower than 562 px uses the row either way, because a full page of 20 tiles does not fit under a band there.
   - `logo.levels.bandMinHeight`, `bandMaxHeight`, `bandMaxHeightWide` — smallest and largest logo height in the band, on a phone and on a wide screen. 50 is what a 320×568 phone has room for with 20 tiles (the logo is 107 px wide there and the word reads well); 124 is 265 px wide, two thirds of a 390 screen. The word stops being readable below about 64 px logo width on a 2x or 3x phone screen (below about 80 px on a 1x screen); the smallest the game shows it is 80 px, in the row on a 320-wide screen (`production/qa/evidence/logo/readability.png`).

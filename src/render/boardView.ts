@@ -97,6 +97,7 @@ export class BoardView {
   private particleGeo = new RoundedBoxGeometry(0.09, 0.09, 0.09, 2, 0.02);
   private layout: BoardLayout = CONFIG.board.roomy;
   private style: BoardStyle = { kitRobots: true, kitBoard: true };
+  private colourShapes = false;
   /** Height of the tile surface the robots stand on. */
   private floorY = 0.06;
   private speedScale = 1;
@@ -164,6 +165,12 @@ export class BoardView {
     this.style = style;
   }
 
+  /** The "Colour shapes" setting: show each robot colour's shape on its robots. Takes effect at once. */
+  setColourShapes(on: boolean): void {
+    this.colourShapes = on;
+    for (const view of this.robots.values()) view.showShape(on);
+  }
+
   /** The level on show, if any. */
   get currentLevel(): Level | null {
     return this.level;
@@ -201,6 +208,7 @@ export class BoardView {
       const heading = this.style.heading ?? 'faceUp';
       const viewTilt = (this.layout.tilt * Math.PI) / 180;
       const view = this.style.kitRobots ? buildPartsRobot(r.id, r.color, heading, viewTilt) : buildRobot(r.id, r.color, heading);
+      view.showShape(this.colourShapes);
       this.robots.set(r.id, view);
       this.boardGroup.add(view.root);
     }

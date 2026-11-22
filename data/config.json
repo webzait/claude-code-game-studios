@@ -117,17 +117,10 @@
   "audio": {
     "volume": 0.16
   },
-  "haptics": {
-    "move": [
-      12
-    ],
-    "win": [
-      30,
-      60,
-      30,
-      60,
-      70
-    ]
+  "colourShapes": {
+    "red": "circle",
+    "blue": "square",
+    "yellow": "diamond"
   },
   "board": {
     "roomy": {
