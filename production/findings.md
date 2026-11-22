@@ -23,12 +23,6 @@ hier, is in de data instelbaar en kan door de eigenaar worden omgedraaid.
 | B2 | Levelselectie — `claude/turnflock-level-path` | Alleen het huidige level en de volgende vijf zijn te zien (`levelsAhead`); gehaalde levels verdwijnen. Opnieuw spelen van een gehaald level kan alleen nog via "Replay" direct na de winst. |
 | B5, B6 | Pop-up — `claude/turnflock-win-popup` | B5: sterren, één regel met het resultaat, één bedrag aan verdiende munten en één hoofdknop; de uitsplitsing en het saldo vervallen, Replay en Levels worden kleine knoppen. B6: de munten vliegen van de pop-up naar de teller, die meetelt. |
 
-### 2026-11-22, later
-
-| Nr | Bevinding (woorden van de eigenaar) | Raakt | Opgepakt |
-|---|---|---|---|
-| B9 | Knoppen onderin allemaal in dezelfde stijl, zodat ze bij elkaar horen. Eenduidige manier van prijs aangeven als dat van toepassing is. Voorbeeld van de eigenaar: `design/reference/turnflock/source/buttons-price-reference.jpg` | Onderste rijen van het puzzelscherm (Undo, Restart, Replay, Hint en de commandoknoppen), prijslabels | Sessie knoppenrij — `claude/turnflock-bottom-buttons` |
-
 ## Afgehandeld
 
 ### 2026-11-22 — puzzelscherm (branch `claude/turnflock-puzzle-screen`)
@@ -71,3 +65,9 @@ Gezien bij B8, niet aangepast (valt buiten de bevinding): in de simulatie van ro
 |---|---|---|---|---|
 | B5 | "Level voltooid"-pop-up simpeler | 2026-11-22 | `1a3aa21` (branch `claude/turnflock-win-popup`) | Winst: sterren, één regel (aantal zetten tegenover de kortste oplossing), één bedrag (wat echt is uitbetaald) en één hoofdknop "Next"; Replay en Levels zijn kleine tekstknoppen. Vervallen: de uitsplitsing in drie regels, de saldoregel, de levelnaam en de kop "All home". Levert een herhaald level niets op, dan staat er geen muntenplaatje maar de regel "Best reward already paid". Geen zetten meer: één titel, één zin, het aanbod als dat bewezen helpt, en de gratis opties. Bewijs: `production/qa/evidence/findings-win-popup/compare-*.png`. |
 | B6 | Betere animatie van verdiende munten naar de pot | 2026-11-22 | `7aa3a83` (branch `claude/turnflock-win-popup`) | Zes munten vliegen in een boog van het bedrag op de pop-up naar de muntenteller, die per landing optelt en een tikje geeft; de teller staat boven de verduistering. Blokkeert nooit: elke knop werkt meteen en beëindigt de vlucht direct op het echte saldo. Bij verminderde beweging vliegt er niets. Instelbaar in `data/parts.json` onder `coins.fly`. Bewijs: `production/qa/evidence/findings-win-popup/coin-flight-strip-*.png`. |
+
+### 2026-11-22 — knoppen onderin (branch `claude/turnflock-bottom-buttons`)
+
+| Nr | Bevinding (woorden van de eigenaar) | Afgehandeld | Commit | Wat er nu in het spel zit |
+|---|---|---|---|---|
+| B9 | Knoppen onderin allemaal in dezelfde stijl, zodat ze bij elkaar horen. Eenduidige manier van prijs aangeven als dat van toepassing is. Voorbeeld: `design/reference/turnflock/source/buttons-price-reference.jpg` | 2026-11-22 | `d710e3b` (branch `claude/turnflock-bottom-buttons`) | Undo, Restart, Replay en Hint zijn vier gelijke witte blokken (zelfde maat, diepte, hoek, pictogramdikte) in één bak boven de opdrachtknoppen, op hetzelfde raster van vier kolommen. Alleen een pictogram; de naam is er voor schermlezers. Restart heeft een eigen pictogram (terug naar het begin), zodat hij niet meer op een draaiknop lijkt. Een prijs staat overal op hetzelfde kaartje: de munt over het linkereind van een crème plaatje met het bedrag, midden over de onderrand van de knop. Vier vaste toestanden: betaalbaar, te weinig munten (rood, knop dof maar tikbaar), gratis (groen woord), al gebruikt (grijs met vinkje; de Hint-lamp brandt zolang de hint op het bord staat). Hetzelfde kaartje staat op "+3 moves" en op Undo in de pop-up "Out of moves". Opdrachtknoppen en gereedschap delen één bouwregel (diepte 0,2 en hoek 0,25 van de vlakhoogte). Het bord verliest geen hoogte. Omkeerbaar in `data/parts.json` → `buttons.tools`: `labels` (namen in de knop) en `tray` (bak). Prijzen, aanbiedingen en regels zijn niet veranderd. Bewijs: `production/qa/evidence/findings-bottom-buttons/`. |
