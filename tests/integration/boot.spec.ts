@@ -25,15 +25,17 @@ const ARROW = at('follow-the-arrow');
 const TWO_COLOURS = at('one-color-turns');
 const QUEUE = at('queue-up');
 const tilesOnPage = Math.min(levels.length, config.levelsPerPage);
+/** The path shows the current level and this many locked ones after it. */
+const ahead = Math.min(levels.length - 1, config.levelsAhead);
 
 /** Start with every level before `index` already solved at par, so that level is open like for a real player. */
-async function solvedUpTo(page: Page, index: number): Promise<void> {
+async function solvedUpTo(page: Page, index: number, lab: Record<string, unknown> = {}): Promise<void> {
   const best = Object.fromEntries(levels.slice(0, index).map((l) => [l.id, l.par]));
   await page.addInitScript(
     ([save]) => {
       if (!localStorage.getItem('turnflock.save')) localStorage.setItem('turnflock.save', save);
     },
-    [JSON.stringify({ version: 4, best, coins: config.coins.start, paid: {}, settings: {}, lab: {} })],
+    [JSON.stringify({ version: 4, best, coins: config.coins.start, paid: {}, settings: {}, lab })],
   );
 }
 
@@ -68,7 +70,10 @@ async function playWitness(page: Page, index: number): Promise<void> {
 test('boots to the level selection, and level 1 opens with a drawn board and no errors @boot', async ({ page }) => {
   const errors = await open(page);
   expect((await snap(page)).screen).toBe('map');
-  await expect(page.locator('.tf-levels-tile')).toHaveCount(tilesOnPage);
+  // The path: the current level and the next few, no grid of every level.
+  await expect(page.locator('#steps .tf-levels-step')).toHaveCount(1 + ahead);
+  await expect(page.locator('.tf-levels-tile')).toHaveCount(0);
+  await expect(page.locator('#pathWhere')).toHaveText(`Level 1 of ${levels.length}`);
   await expect(page.locator('#continue')).toHaveText('Play level 1');
   // The logo is the screen's heading: an image named "Turnflock" that has loaded, keeps its shape and never takes a tap.
   const logo = page.getByRole('heading', { level: 1, name: 'Turnflock' }).getByRole('img', { name: 'Turnflock' });
@@ -82,7 +87,11 @@ test('boots to the level selection, and level 1 opens with a drawn board and no 
   // The asset kit's 3D models really loaded; the game is not quietly on its built-in shapes.
   await expect.poll(async () => (await snap(page)).kitReady, { timeout: 20000 }).toBe(true);
   await expect(page.locator('#node-1')).toBeEnabled();
-  await expect(page.locator('#node-2')).toBeDisabled();
+  await expect(page.getByRole('button', { name: `Play level 1, ${levels[0].name}` })).toHaveAttribute('aria-current', 'step');
+  // A locked step is not a control: it is text that says it is locked.
+  await expect(page.locator('#node-2')).toHaveClass(/is-locked/);
+  await expect(page.locator('#node-2')).toContainText('Level 2, locked');
+  await expect(page.locator('#steps button')).toHaveCount(1);
   await page.click('#node-1');
   expect(await snap(page)).toMatchObject({ screen: 'level', level: 0, status: 'playing', movesLeft: budget(0), collected: 0 });
   await expect(page.locator('#levelName')).toHaveText(levels[0].name);
@@ -104,16 +113,18 @@ test('Levels, Level, Win, Next: no dead ends, and progress survives a reload', a
   await page.click('#end-next');
   await expect(page.locator('#levelName')).toHaveText(levels[1].name);
   await page.click('#levelBack');
-  await expect(page.locator('#node-1')).toHaveClass(/\bs3\b/);
-  await expect(page.locator('#node-2')).toHaveClass(/is-next/);
+  // The completed level is gone from the path; the next one is the current step.
+  await expect(page.locator('#node-1')).toHaveCount(0);
+  await expect(page.locator('#node-2')).toHaveClass(/is-current/);
   await expect(page.locator('#node-2')).toBeEnabled();
-  await expect(page.locator('#node-3')).toBeDisabled();
+  await expect(page.locator('#node-3')).toHaveClass(/is-locked/);
   await page.reload();
   await expect.poll(() => page.evaluate(() => typeof window.turnflock?.snapshot)).toBe('function');
   const perfect = config.coins.win + config.moveSlack * config.coins.perSpareMove + config.coins.perfect;
   expect(await snap(page)).toMatchObject({ best: { [levels[0].id]: levels[0].par }, coins: config.coins.start + perfect });
   await expect(page.locator('#mapCoins .tf-coin-amount')).toHaveText(String(config.coins.start + perfect));
-  await expect(page.locator('#mapProgress')).toHaveAttribute('aria-label', `1 of ${levels.length} levels, 3 of ${levels.length * 3} stars`);
+  await expect(page.locator('#pathWhere')).toHaveText(`Level 2 of ${levels.length}`);
+  await expect(page.locator('#mapProgress')).toHaveAttribute('aria-label', `3 of ${levels.length * 3} stars`);
   await expect(page.locator('#continue')).toHaveText('Play level 2');
   expect(errors).toEqual([]);
 });
@@ -130,7 +141,16 @@ test('every level can be played to a win in order, ending back at the level sele
     await page.click(index === levels.length - 1 ? '#end-levels' : '#end-next');
   }
   expect((await snap(page)).screen).toBe('map');
-  // The selection shows one page at a time; every tile on it has three stars.
+  // Nothing is left to play: the screen shows the completed state with every star, and no path.
+  await expect(page.locator('#doneView')).toBeVisible();
+  await expect(page.locator('#doneView')).toContainText('All levels completed');
+  await expect(page.locator('#doneText')).toHaveText(`${levels.length * 3} of ${levels.length * 3} stars`);
+  await expect(page.locator('#steps .tf-levels-step.is-current')).toHaveCount(0);
+  await expect(page.locator('#continue')).toBeHidden();
+  // The grid test view still shows every level: one page at a time, every tile with three stars.
+  await openLab(page);
+  await page.click('[data-key=levelScreen] [data-value=grid]');
+  await closeLab(page);
   await expect(page.locator('.tf-levels-tile.s3')).toHaveCount(tilesOnPage);
   await expect(page.locator('#continue')).toHaveText('Play again');
   expect(errors).toEqual([]);
@@ -343,4 +363,59 @@ test('the plus button explains coins and sells nothing', async ({ page }) => {
   await expect(page.locator('#coinInfo')).toContainText('Restart is always free');
   await page.click('#coinInfoClose');
   await expect(page.locator('#coinInfo')).toBeHidden();
+});
+
+test('level selection: mid-way it shows the current level and the next few, near the end the path ends in a finish', async ({ page }) => {
+  await solvedUpTo(page, 11);
+  await open(page);
+  await expect(page.locator('#pathWhere')).toHaveText(`Level 12 of ${levels.length}`);
+  await expect(page.locator('#steps .tf-levels-step.is-current')).toHaveText(/12/);
+  await expect(page.locator('#steps .tf-levels-step.is-locked')).toHaveCount(ahead);
+  await expect(page.locator('#node-11')).toHaveCount(0);
+  await expect(page.locator(`#node-${12 + ahead}`)).toHaveClass(/is-locked/);
+  await expect(page.locator(`#node-${13 + ahead}`)).toHaveCount(0);
+  // The current level is a real target: at least 44 by 44 CSS pixels, and Enter on it opens the level.
+  const box = await page.locator('#node-12').boundingBox();
+  expect(box && box.width >= 44 && box.height >= 44).toBe(true);
+  await page.locator('#node-12').focus();
+  await page.keyboard.press('Enter');
+  expect(await snap(page)).toMatchObject({ screen: 'level', level: 11 });
+});
+
+test('level selection: on the last level only the finish is ahead', async ({ page }) => {
+  await solvedUpTo(page, levels.length - 1);
+  await open(page);
+  await expect(page.locator('#steps .tf-levels-step.is-current')).toHaveText(new RegExp(String(levels.length)));
+  await expect(page.locator('#steps .tf-levels-step.is-locked')).toHaveCount(0);
+  await expect(page.locator('#steps .tf-levels-step.is-finish')).toContainText('End of the levels');
+  await expect(page.locator('#continue')).toHaveText(`Play level ${levels.length}`);
+});
+
+test('test lab: "unlock all" and "Level screen: Grid" show the old grid as a test view; Path brings the path back', async ({ page }) => {
+  await solvedUpTo(page, 3);
+  await open(page);
+  await openLab(page);
+  await page.click('[data-key=unlockAll] [role=switch]');
+  await closeLab(page);
+  await expect(page.locator('.tf-levels-tile')).toHaveCount(tilesOnPage);
+  await expect(page.locator('#gridNote')).toContainText('Test view');
+  await expect(page.locator('#pathView')).toBeHidden();
+  await expect(page.locator(`#node-${tilesOnPage}`)).toBeEnabled();
+  await expect(page.locator('#mapProgress')).toHaveAttribute('aria-label', `3 of ${levels.length} levels, 9 of ${levels.length * 3} stars`);
+  // A completed level can be opened here.
+  await page.click('#node-1');
+  expect(await snap(page)).toMatchObject({ screen: 'level', level: 0 });
+  await page.click('#levelBack');
+  await openLab(page);
+  await page.click('[data-key=unlockAll] [role=switch]');
+  await page.click('[data-key=levelScreen] [data-value=grid]');
+  await closeLab(page);
+  // The grid without "unlock all": levels stay locked in order.
+  await expect(page.locator('#node-5')).toBeDisabled();
+  await expect(page.locator('#gridNote')).toContainText('Test view');
+  await openLab(page);
+  await page.click('[data-key=levelScreen] [data-value=path]');
+  await closeLab(page);
+  await expect(page.locator('.tf-levels-tile')).toHaveCount(0);
+  await expect(page.locator('#steps .tf-levels-step.is-current')).toHaveText(/4/);
 });

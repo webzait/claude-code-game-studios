@@ -12,7 +12,7 @@ import { step } from './engine/engine';
 import type { Color, Command, RobotEvent } from './engine/types';
 import { previewStep, witnessNext, type RescueResult, type ScanResult } from './game/assist';
 import { extraMovesPrice, hintPrice, payout, rewardFor, undoQuote, type UndoQuote } from './game/coins';
-import { applyLab, rulesFor, usesCertifiedRules, type LabSettings } from './game/lab';
+import { applyLab, levelScreenView, rulesFor, usesCertifiedRules, type LabSettings } from './game/lab';
 import { MemorySink, type MetricsEvent } from './game/metrics';
 import { isUnlocked, mainAction, starsFor, starsOfBest } from './game/progress';
 import { loadSave, resetProgress, writeSave, type KeyValueStore, type SaveData } from './game/save';
@@ -256,12 +256,23 @@ class Game {
     const pageSize = CONFIG.levelsPerPage;
     // The screen opens on the page of the level the main button points at.
     this.page ??= Math.floor(main.index / pageSize);
-    el('continue').onclick = () => this.tap(() => this.startLevel(main.index));
+    const view = levelScreenView(this.save.lab);
+    // The path only knows "the level to play now". With everything completed it shows that state, and offers a way on only when the config asks for it.
+    const complete = main.kind !== 'play';
+    const again = view === 'path' && complete;
+    const target = again ? 0 : main.index;
+    const playLabel = again ? (CONFIG.levelPath.playAgainWhenComplete ? 'Play again from level 1' : null) : main.kind === 'play' ? `Play level ${main.index + 1}` : main.kind === 'improve' ? `Improve level ${main.index + 1}` : 'Play again';
+    el('continue').onclick = () => this.tap(() => this.startLevel(target));
     renderLevels({
+      view,
       nodes,
+      current: complete ? null : main.index,
+      ahead: CONFIG.levelsAhead,
+      layout: CONFIG.levelPath.layout,
       page: this.page,
       pageSize,
-      playLabel: main.kind === 'play' ? `Play level ${main.index + 1}` : main.kind === 'improve' ? `Improve level ${main.index + 1}` : 'Play again',
+      playLabel,
+      gridNote: this.save.lab.unlockAll ? 'Test view · all levels unlocked' : 'Test view · grid',
       onPick: (index) => this.tap(() => this.startLevel(index)),
       onPage: (page) => {
         this.page = page;

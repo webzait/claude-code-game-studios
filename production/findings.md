@@ -10,7 +10,6 @@ en de commit zodra het in het spel zit.
 
 | Nr | Bevinding (woorden van de eigenaar) | Raakt | Vraag of aandachtspunt |
 |---|---|---|---|
-| B2 | Levelselectie: alleen het huidige level plus een aantal toekomstige tonen. "Zijn niet meer te zien." | Levelscherm (nu: raster van 20 per pagina, alle levels zichtbaar) | Lezing: gehaalde levels verdwijnen uit beeld. Te bevestigen: kun je een gehaald level nog opnieuw spelen (voor meer sterren), en zo ja waar? Hoeveel toekomstige levels zijn zichtbaar? |
 | B5 | "Level voltooid"-pop-up simpeler | Einde-ronde pop-up (nu: sterren, aantal zetten, uitsplitsing van de munten in drie regels, saldo, drie knoppen) | Wat mag weg: de uitsplitsing per regel, het saldo, de knop Replay? |
 | B6 | Betere animatie van verdiende munten naar de pot | Einde-ronde pop-up en muntenteller | Geen vraag. Hangt samen met B5. |
 
@@ -55,3 +54,9 @@ sessie. Bewijs (voor en na, op 320, 390 en 430 px): `production/qa/evidence/find
 betaalt zijn beste beloning maar één keer. Bij 5 munten per Undo is dat 2 tot 5 Undo's per level
 als de speler nergens anders munten aan uitgeeft. Voor een zwakkere speler is dat krap. Zolang er
 geen manier is om munten te kopen levert de prijs geen geld op; hij maakt alleen het saldo schaarser.
+
+### 2026-11-22 — levelselectie (branch `claude/turnflock-level-path`)
+
+| Nr | Datum | Commit | Wat er nu in het spel zit |
+|---|---|---|---|
+| B2 | 2026-11-22 | `9aa96d3` (branch `claude/turnflock-level-path`, nog niet samengevoegd) | Het levelscherm toont alleen het huidige level (groot) en de volgende vijf als vergrendelde stappen op een slingerend pad (`levelsAhead`, `levelPath.layout`); gehaalde levels zijn niet meer te zien. Voortgang: "Level 12 of 40" met balk en het sterrentotaal. Alles gehaald: een rustige eindtoestand zonder hoofdknop (`levelPath.playAgainWhenComplete` zet "Play again from level 1" aan). Het oude raster bestaat alleen nog als testweergave (testlab: "Level screen: Grid" of "Unlock all levels"). **Gevolg:** een gehaald level opnieuw spelen kan alleen nog via "Replay" direct na de winst. Open voor de eigenaar: wil je een kleine weg terug (bijvoorbeeld "Played levels" in de instellingen), en wil je "opnieuw vanaf level 1" na het laatste level? Bewijs: `production/qa/evidence/findings-level-path/`. |

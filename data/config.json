@@ -153,6 +153,11 @@
     }
   },
   "levelsPerPage": 20,
+  "levelsAhead": 5,
+  "levelPath": {
+    "layout": "winding",
+    "playAgainWhenComplete": false
+  },
   "logo": {
     "levels": {
       "layout": "band",

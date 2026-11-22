@@ -2,12 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { CONFIG } from '../../src/config';
 import { deviceVibrate, Haptics } from '../../src/haptics';
 import { extraMovesPrice, hintPrice, payout, rewardFor, undoPrice, undoQuote } from '../../src/game/coins';
-import { applyLab, DEFAULT_LAB, rulesFor, usesCertifiedRules, type LabSettings } from '../../src/game/lab';
+import { applyLab, DEFAULT_LAB, levelScreenView, rulesFor, usesCertifiedRules, type LabSettings } from '../../src/game/lab';
 import { isUnlocked, mainAction, resumeIndex, solvedCount, starsFor, starsOfBest } from '../../src/game/progress';
 import { defaultSave, LEGACY_KEY, loadSave, migrate, resetProgress, SAVE_KEY, SAVE_VERSION, writeSave, type KeyValueStore } from '../../src/game/save';
 import { Session } from '../../src/game/session';
 import { LEVELS } from '../../src/levels/index';
 import { solve } from '../../src/solver/bfs';
+import { pathSteps, pathSway } from '../../src/ui/levelPath';
 
 const ids = LEVELS.map((l) => l.id);
 const memory = (initial: Record<string, string> = {}): KeyValueStore & { data: Record<string, string> } => {
@@ -127,6 +128,21 @@ describe('save', () => {
     expect(save.settings).toEqual({ mute: true, reduceMotion: true, vibration: true });
     expect(save.lab.moveSlack).toBe(3);
     expect(save.lab.unlockAll).toBe(true);
+  });
+
+  it('level screen switch: a save from before it gets the path, a stored choice is kept, a damaged one is ignored', () => {
+    expect(DEFAULT_LAB.levelScreen).toBe('path');
+    expect(migrate({ version: SAVE_VERSION, lab: { unlockAll: true } }, ids).lab.levelScreen).toBe('path');
+    expect(migrate({ version: 3, lab: {} }, ids).lab.levelScreen).toBe('path');
+    expect(migrate({ version: SAVE_VERSION, lab: { levelScreen: 'grid' } }, ids).lab.levelScreen).toBe('grid');
+    expect(migrate({ version: SAVE_VERSION, lab: { levelScreen: 'map' } }, ids).lab.levelScreen).toBe('path');
+  });
+
+  it('the level selection is the path, unless a test switch asks for the grid', () => {
+    expect(levelScreenView(DEFAULT_LAB)).toBe('path');
+    expect(levelScreenView({ levelScreen: 'grid', unlockAll: false })).toBe('grid');
+    // "Unlock all" must let a tester open any level, which the path cannot.
+    expect(levelScreenView({ levelScreen: 'path', unlockAll: true })).toBe('grid');
   });
 
   it('keeps a stored vibration choice and ignores a damaged one', () => {
@@ -284,5 +300,28 @@ describe('the price of Undo (finding B4)', () => {
   });
   it('the default price is real: Undo is not free out of the box', () => {
     expect(c.undoCost).toBeGreaterThan(0);
+  });
+});
+
+describe('level path', () => {
+  const TOTAL = 40;
+  it('shows the current level and the configured number of levels after it', () => {
+    expect(pathSteps(TOTAL, 0, CONFIG.levelsAhead)).toEqual({ current: 0, ahead: Array.from({ length: CONFIG.levelsAhead }, (_, i) => i + 1) });
+    expect(pathSteps(TOTAL, 11, 5)).toEqual({ current: 11, ahead: [12, 13, 14, 15, 16] });
+  });
+  it('never shows a completed level or one past the end', () => {
+    expect(pathSteps(TOTAL, 38, 5)).toEqual({ current: 38, ahead: [39] });
+    expect(pathSteps(TOTAL, 39, 5)).toEqual({ current: 39, ahead: [] });
+    expect(pathSteps(TOTAL, 5, 0).ahead).toEqual([]);
+  });
+  it('has no steps when every level is completed', () => {
+    expect(pathSteps(TOTAL, null, 5)).toEqual({ current: null, ahead: [] });
+    expect(pathSteps(TOTAL, TOTAL, 5)).toEqual({ current: null, ahead: [] });
+  });
+  it('keeps the current level in the middle and sways the rest within the screen', () => {
+    expect(pathSway(0)).toBe(0);
+    for (let step = 1; step <= 12; step++) expect(Math.abs(pathSway(step))).toBeLessThanOrEqual(1);
+    expect(pathSway(1)).toBeGreaterThan(0);
+    expect(pathSway(4)).toBeLessThan(0);
   });
 });
