@@ -148,3 +148,7 @@
   .tf-end-small { --h: 40px; --d: 8px; --fs: 16px; }
   .tf-end-actions { gap: 8px; margin-top: 2px; }
 }
+
+/* While the pop-up is up, the puzzle screen's coin counter stands above the dimming (found by its id, wherever the
+   top bar puts it): the win's coins land in it and an offer's price can be read against it. It takes no taps there. */
+#app:has(> #card:not([hidden])) #levelCoins { position: relative; z-index: 6; pointer-events: none; }

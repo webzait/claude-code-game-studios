@@ -109,8 +109,12 @@ test('Levels, Level, Win, Next: no dead ends, and progress survives a reload', a
   await expect(page.locator('#card .tf-coin-line, #card .tf-coin-balance')).toHaveCount(0);
   await expect(page.locator('#end-replay')).toHaveText('Replay');
   await expect(page.locator('#end-levels')).toHaveText('Levels');
+  // The coins fly to the counter, which ends on the saved balance (B6); Next never waits for them.
+  await expect(page.locator('#levelCoins .tf-coin-amount')).toHaveText(String(config.coins.start + perfectWin), { timeout: 15000 });
+  await expect(page.locator('.tf-coin-fly')).toHaveCount(0);
   await page.click('#end-next');
   await expect(page.locator('#levelName')).toHaveText(levels[1].name);
+  await expect(page.locator('#levelCoins .tf-coin-amount')).toHaveText(String(config.coins.start + perfectWin));
   await page.click('#levelBack');
   await expect(page.locator('#node-1')).toHaveClass(/\bs3\b/);
   await expect(page.locator('#node-2')).toHaveClass(/is-next/);
@@ -141,6 +145,32 @@ test('every level can be played to a win in order, ending back at the level sele
   // The selection shows one page at a time; every tile on it has three stars.
   await expect(page.locator('.tf-levels-tile.s3')).toHaveCount(tilesOnPage);
   await expect(page.locator('#continue')).toHaveText('Play again');
+  expect(errors).toEqual([]);
+});
+
+test('the win coins: Next on the first frame ends the count at once, and a replayed level shows no made-up reward', async ({ page }) => {
+  const errors = await open(page);
+  const perfect = config.coins.win + config.moveSlack * config.coins.perSpareMove + config.coins.perfect;
+  await page.click('#node-1');
+  await playWitness(page, 0);
+  // The balance is saved before anything is shown; the counter still holds the old amount until the pop-up's coins arrive.
+  await expect.poll(async () => (await snap(page)).coins, { timeout: 15000 }).toBe(config.coins.start + perfect);
+  await page.click('#end-next', { timeout: 15000 });
+  expect((await snap(page)).level).toBe(1);
+  await expect(page.locator('#levelCoins .tf-coin-amount')).toHaveText(String(config.coins.start + perfect));
+  await expect(page.locator('.tf-coin-fly')).toHaveCount(0);
+  // The same level again pays nothing: no coin plate, a plain line, and the counter does not move.
+  await page.click('#levelBack');
+  await expect(page.locator('#mapCoins .tf-coin-amount')).toHaveText(String(config.coins.start + perfect));
+  await page.click('#node-1');
+  await playWitness(page, 0);
+  await expect(page.locator('#end-result')).toHaveText('Best reward already paid', { timeout: 15000 });
+  await expect(page.locator('#card .tf-coin-total')).toHaveCount(0);
+  expect((await snap(page)).coins).toBe(config.coins.start + perfect);
+  await expect(page.locator('#levelCoins .tf-coin-amount')).toHaveText(String(config.coins.start + perfect));
+  // Leaving through Levels works from the pop-up too.
+  await page.click('#end-levels');
+  expect((await snap(page)).screen).toBe('map');
   expect(errors).toEqual([]);
 });
 

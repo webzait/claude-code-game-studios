@@ -114,3 +114,14 @@ img.tf-coin-ico { filter: drop-shadow(0 1px 0 rgba(138, 94, 4, .6)); }
 .reduce-motion .tf-coin-counter, .reduce-motion .tf-coin-counter.short, .reduce-motion .tf-coin-counter.earn .tf-coin-ico, .reduce-motion .tf-coin-gain { animation: none; transition: none; }
 /* Why a reward is the base amount only. */
 .tf-coin-why { margin: 0; font-size: 12.5px; font-weight: 600; color: #5d6a84; text-align: center; text-wrap: balance; }
+
+/* Coins flying from the win pop-up to the counter (finding B6): a few elements that only change transform and opacity.
+   The outer element carries the sideways move and the picture the rise, each with its own easing, which bends the path into an arc. */
+.tf-coin-flight { position: absolute; inset: 0; z-index: 7; overflow: hidden; pointer-events: none; }
+.tf-coin-fly { position: absolute; left: 0; top: 0; width: var(--s); height: var(--s); will-change: transform; transform: translate(var(--x0), var(--y0)); animation: tf-coin-fly-x var(--ms) cubic-bezier(.5, 0, .85, .6) var(--dl) both; }
+.tf-coin-fly img { display: block; width: 100%; height: 100%; will-change: transform, opacity; filter: none; animation: tf-coin-fly-y var(--ms) cubic-bezier(.3, .35, .5, 1) var(--dl) both, tf-coin-fly-in .1s linear var(--dl) both; }
+@keyframes tf-coin-fly-x { to { transform: translate(calc(var(--x0) + var(--dx)), var(--y0)); } }
+@keyframes tf-coin-fly-y { from { transform: translateY(0) scale(1); } to { transform: translateY(var(--dy)) scale(var(--k)); } }
+@keyframes tf-coin-fly-in { from { opacity: 0; } }
+/* The amount on the pop-up goes pale as its coins leave; it stays readable as the record of what was earned. */
+.tf-coin-total.sent { opacity: .55; transition: opacity var(--fade, .4s) ease-in; }

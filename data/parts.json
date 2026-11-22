@@ -223,6 +223,16 @@
   "coins": {
     "countUpMs": 700,
     "shortMs": 900,
+    "fly": {
+      "count": 6,
+      "size": 34,
+      "delayMs": 900,
+      "flightMs": 640,
+      "staggerMs": 85,
+      "scatter": 10,
+      "bumpMs": 180,
+      "highlightMs": 900
+    },
     "drawnIconBelow": 0,
     "iconSizes": [
       16,

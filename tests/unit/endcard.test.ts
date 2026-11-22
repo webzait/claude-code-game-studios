@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import config from '../../data/config.json';
+import parts from '../../data/parts.json';
 import { payout, rewardFor } from '../../src/game/coins';
-import { formatCoins, rewardPlate, type RewardView } from '../../src/ui/coins';
+import { formatCoins, landingAmounts, rewardPlate, type RewardView } from '../../src/ui/coins';
 import { winLine, winMarkup, type WinCard } from '../../src/ui/endCard';
 
-// Finding B5 (production/findings.md): the win pop-up shows one amount, the one really paid.
+// Findings B5 and B6 (production/findings.md): the win pop-up shows one amount, the one really paid, and the coin
+// flight ends exactly on the true balance.
 
 const PAR = 7;
 const BUDGET = PAR + config.moveSlack;
@@ -93,5 +95,33 @@ describe('win pop-up: the one line', () => {
     expect(winLine({ moves: 9, par: 7, backup: false, last: false })).toBe('<b>9 moves</b> · shortest is 7');
     expect(winLine({ moves: 11, par: 7, backup: true, last: false })).toBe('<b>11 moves</b> · with extra moves');
     expect(winLine({ moves: 10, par: 10, backup: false, last: true })).toBe('<b>10 moves</b> · that was the last level');
+  });
+});
+
+describe('coin flight: what the counter reads on each landing', () => {
+  const COUNT = parts.coins.fly.count;
+
+  it('test_landingAmounts_anyPayout_endsExactlyOnTheBalance', () => {
+    for (const earned of [1, 2, 5, 6, 7, 10, 13, 26, 100, 1001]) {
+      const from = 30;
+      const steps = landingAmounts(from, from + earned, COUNT);
+      expect(steps.at(-1)).toBe(from + earned);
+      expect(steps.length).toBe(Math.min(COUNT, earned));
+      steps.forEach((value, i) => expect(value).toBeGreaterThan(i === 0 ? from : steps[i - 1]));
+    }
+  });
+
+  it('test_landingAmounts_nothingEarned_fliesNothing', () => {
+    expect(landingAmounts(30, 30, COUNT)).toEqual([]);
+    expect(landingAmounts(30, 20, COUNT)).toEqual([]);
+    expect(landingAmounts(30, 56, 0)).toEqual([]);
+  });
+
+  it('test_flightData_isASmallFixedHandful', () => {
+    expect(Number.isInteger(COUNT)).toBe(true);
+    expect(COUNT).toBeGreaterThanOrEqual(3);
+    expect(COUNT).toBeLessThanOrEqual(8);
+    expect(parts.coins.fly.flightMs).toBeGreaterThan(0);
+    expect(parts.coins.fly.staggerMs).toBeGreaterThanOrEqual(0);
   });
 });
