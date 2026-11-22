@@ -15,6 +15,8 @@ export interface Metrics {
   readonly width: number;
   readonly height: number;
   readonly walls: number;
+  /** Turn tiles on the board. */
+  readonly tiles: number;
   readonly robots: number;
   readonly colours: number;
   /** Length of the shortest solution; null when the level cannot be won within the explored budget. */
@@ -53,6 +55,8 @@ export interface Metrics {
   readonly tally: Partial<Record<Outcome, number>>;
   /** Most robots entering the exit in a single move. */
   readonly maxExitsAtOnce: number;
+  /** Times a turn tile turned a robot along the solution. */
+  readonly tileTurns: number;
   /** True when the search stopped at its state limit: the numbers are then lower bounds, not facts. */
   readonly capped: boolean;
   /** Difficulty on a 0–10 scale, and what it is made of. */
@@ -169,16 +173,18 @@ export function replayMeasures(
   level: Level,
   solution: readonly Command[],
   rules?: Rules,
-): { tally: Partial<Record<Outcome, number>>; maxExitsAtOnce: number; exitSides: number; turns: number; commandsUsed: number; walls: number; robots: number; colours: number } {
+): { tally: Partial<Record<Outcome, number>>; maxExitsAtOnce: number; tileTurns: number; exitSides: number; turns: number; commandsUsed: number; walls: number; tiles: number; robots: number; colours: number } {
   const tally: Partial<Record<Outcome, number>> = {};
   const sides = new Set<number>();
   let maxExitsAtOnce = 0;
+  let tileTurns = 0;
   let state = level.start;
   for (const command of solution) {
     const result = step(level.board, state, command, rules);
     let exits = 0;
     for (const e of result.events) {
       tally[e.outcome] = (tally[e.outcome] ?? 0) + 1;
+      if (e.tileTurned) tileTurns++;
       if (e.outcome === 'exited') {
         exits++;
         sides.add(e.dir);
@@ -190,10 +196,12 @@ export function replayMeasures(
   return {
     tally,
     maxExitsAtOnce,
+    tileTurns,
     exitSides: sides.size,
     turns: solution.filter((c) => c !== 'forward').length,
     commandsUsed: new Set(solution).size,
     walls: level.board.walls.filter(Boolean).length,
+    tiles: level.board.turnTiles?.filter(Boolean).length ?? 0,
     robots: level.start.robots.length,
     colours: new Set(level.start.robots.map((r) => r.color)).size,
   };
@@ -240,6 +248,7 @@ export function measure(level: Level, options: MeasureOptions = {}): Metrics {
     width: board.width,
     height: board.height,
     walls: board.walls.filter(Boolean).length,
+    tiles: board.turnTiles?.filter(Boolean).length ?? 0,
     robots: start.robots.length,
     colours,
     budget,
@@ -249,7 +258,7 @@ export function measure(level: Level, options: MeasureOptions = {}): Metrics {
   if (par === null) {
     return {
       ...base, par: null, solution: null, optimalSolutions: 0, searchStates: graph.size, deadShare: 1, fatalShare: 1,
-      forcedPar: 0, forcedBudget: 0, awaySteps: 0, bumpSteps: 0, orderFreedom: 0, turns: 0, exitSides: 0, commandsUsed: 0, tally: {}, maxExitsAtOnce: 0,
+      forcedPar: 0, forcedBudget: 0, awaySteps: 0, bumpSteps: 0, orderFreedom: 0, turns: 0, exitSides: 0, commandsUsed: 0, tally: {}, maxExitsAtOnce: 0, tileTurns: 0,
       score: 0, scoreParts: {},
     };
   }
@@ -321,6 +330,7 @@ export function measure(level: Level, options: MeasureOptions = {}): Metrics {
   let forcedPar = 0;
   let forcedBudget = 0;
   let maxExitsAtOnce = 0;
+  let tileTurns = 0;
   const sides = new Set<number>();
   for (let s = 0; s !== WIN; ) {
     let pick = -1;
@@ -340,6 +350,7 @@ export function measure(level: Level, options: MeasureOptions = {}): Metrics {
     let exits = 0;
     for (const e of step(board, graph.stateOf(s), COMMANDS[pick], options.rules).events) {
       tally[e.outcome] = (tally[e.outcome] ?? 0) + 1;
+      if (e.tileTurned) tileTurns++;
       if (e.outcome === 'exited') {
         exits++;
         sides.add(e.dir);
@@ -368,6 +379,7 @@ export function measure(level: Level, options: MeasureOptions = {}): Metrics {
     commandsUsed: new Set(solution).size,
     tally,
     maxExitsAtOnce,
+    tileTurns,
   };
   const { score, parts } = difficulty(partial);
   return { ...partial, score, scoreParts: parts };

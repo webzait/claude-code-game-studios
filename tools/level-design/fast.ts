@@ -19,6 +19,8 @@ export interface FastLevel {
   readonly exitAcceptsMany: boolean;
   /** `next[cell * 4 + dir]`: the cell in front, or -1 for a wall or the edge. */
   readonly next: Int16Array;
+  /** 1 on a turn tile. */
+  readonly turn: Uint8Array;
   /** Colour of each robot as an index into COMMANDS (0 red, 1 blue, 2 yellow). */
   readonly colour: Uint8Array;
   /** Start: cell per robot, then heading per robot. */
@@ -39,6 +41,8 @@ export function prepare(board: Board, start: GameState, exitAcceptsMany = true):
       next[cell * 4 + d] = ny * board.width + nx;
     }
   }
+  const turn = new Uint8Array(cells);
+  if (board.turnTiles) for (let cell = 0; cell < cells; cell++) turn[cell] = board.turnTiles[cell] ? 1 : 0;
   const n = start.robots.length;
   const state = new Uint8Array(n * 2);
   const colour = new Uint8Array(n);
@@ -47,7 +51,7 @@ export function prepare(board: Board, start: GameState, exitAcceptsMany = true):
     state[n + i] = r.dir;
     colour[i] = COMMANDS.indexOf(r.color);
   });
-  return { width: board.width, cells, exit: board.exitY * board.width + board.exitX, exitAcceptsMany, next, colour, start: state, n };
+  return { width: board.width, cells, exit: board.exitY * board.width + board.exitX, exitAcceptsMany, next, turn, colour, start: state, n };
 }
 
 /** Scratch arrays shared by every step on one level. */
@@ -57,7 +61,7 @@ function scratch(level: FastLevel): { occupant: Int16Array; claims: Uint8Array; 
 
 /**
  * One command: reads `from`, writes `to` (same layout as `FastLevel.start`).
- * `command` is an index into COMMANDS; 3 is FORWARD. Mirrors the six stages of the engine's `step`.
+ * `command` is an index into COMMANDS; 3 is FORWARD. Mirrors the stages of the engine's `step`.
  */
 export function fastStep(level: FastLevel, from: Uint8Array, to: Uint8Array, command: number, s = scratch(level)): void {
   const { n, next, colour, exit } = level;
@@ -123,6 +127,8 @@ export function fastStep(level: FastLevel, from: Uint8Array, to: Uint8Array, com
     occupant[cell] = -1;
     if (target[i] >= 0) claims[target[i]] = 0;
     to[i] = blocked[i] ? cell : target[i] === exit ? GONE : target[i];
+    // Arrived on a turn tile: one more quarter turn.
+    if (!blocked[i] && to[i] !== GONE && level.turn[to[i]]) to[n + i] = (to[n + i] + 1) & 3;
   }
 }
 

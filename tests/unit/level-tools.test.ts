@@ -148,11 +148,11 @@ describe('generator', () => {
 });
 
 describe('sieve (fast.ts) against the real engine', () => {
-  it('moves every robot exactly as the engine does, under both exit rules', () => {
+  it('moves every robot exactly as the engine does, under both exit rules, with and without turn tiles', () => {
     const rnd = seeded(5);
     let compared = 0;
     for (let i = 0; i < 120; i++) {
-      const grid = randomGrid({ teaches: '', size: i % 2 ? '4x4' : '6x5', red: '2..4', blue: '1..3', yellow: '0..3', walls: '0..4', exit: 'any', par: '1..' }, rnd);
+      const grid = randomGrid({ teaches: '', size: i % 2 ? '4x4' : '6x5', red: '2..4', blue: '1..3', yellow: '0..3', walls: '0..4', tiles: i % 3 === 0 ? 0 : '1..3', exit: 'any', par: '1..' }, rnd);
       if (!grid) continue;
       const level = board(grid);
       for (const many of [true, false]) {

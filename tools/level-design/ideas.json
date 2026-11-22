@@ -172,5 +172,32 @@
     "par": "9..13",
     "maxSolutions": 3,
     "cap": 400000
+  },
+  "turn-tile": {
+    "teaches": "A turn tile turns whoever steps onto it: the board does the turning.",
+    "size": "5x5",
+    "red": "1..2",
+    "blue": "1..2",
+    "tiles": 1,
+    "par": "5..8",
+    "planTurns": "1..2",
+    "maxSolutions": 2,
+    "require": {
+      "tileTurns": "1.."
+    }
+  },
+  "tile-to-avoid": {
+    "teaches": "A turn tile in the way: stepping onto it sends a robot the wrong way.",
+    "size": "5x5",
+    "red": "1..2",
+    "blue": "1..2",
+    "tiles": "1..2",
+    "par": "6..9",
+    "planTurns": "2..3",
+    "maxSolutions": 2,
+    "require": {
+      "tileTurns": 0,
+      "tiles": "1.."
+    }
   }
 }

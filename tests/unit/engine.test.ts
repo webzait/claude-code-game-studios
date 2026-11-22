@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isWon, step } from '../../src/engine/engine';
 import { at, board, first, run } from './helpers';
+import { solve } from '../../src/solver/bfs';
 
 describe('turning', () => {
   it('turns only the commanded colour, 90 degrees clockwise, then everyone steps', () => {
@@ -164,5 +165,52 @@ describe('determinism', () => {
 
   it('counts one move per command', () => {
     expect(run(level, [...commands]).movesUsed).toBe(commands.length);
+  });
+});
+
+describe('turn tile', () => {
+  it('turns a robot that steps onto it a quarter clockwise, whatever its colour', () => {
+    const level = board(['r> @@ ..', 'b> @@ EX', '.. .. ..']);
+    const { state, events } = first(level, 'forward');
+    expect(state.robots.map(at)).toEqual(['1,0,2', '1,1,2']);
+    expect(events.map((e) => e.tileTurned)).toEqual([true, true]);
+    // The event keeps the heading the robot moved with; the tile's turn comes on top.
+    expect(events[0]).toMatchObject({ dir: 1, outcome: 'moved', turned: false });
+  });
+
+  it('adds its turn to the colour turn of the same move', () => {
+    const level = board(['.. @@ ..', '.. r< ..', '.. .. EX']);
+    // RED turns the robot north and it steps onto the tile, which turns it east.
+    expect(at(first(level, 'red').state.robots[0])).toBe('1,0,1');
+  });
+
+  it('does not turn a robot again while it stays on the tile', () => {
+    const level = board(['r> @@ ##', '.. .. EX']);
+    // Arrives facing south; the next FORWARD walks off the tile: no second turn, and none for standing still.
+    const afterOne = run(level, ['forward']);
+    expect(at(afterOne.robots[0])).toBe('1,0,2');
+    const blocked = board(['r> @@', '.. ##', '.. EX']);
+    const stuck = run(blocked, ['forward', 'forward', 'forward']);
+    expect(at(stuck.robots[0])).toBe('1,0,2');
+    expect(step(blocked.board, stuck, 'forward').events[0]).toMatchObject({ outcome: 'blocked-wall', tileTurned: false });
+  });
+
+  it('does not turn a robot that was blocked from stepping onto it', () => {
+    const level = board(['r> @@ b<', '.. .. EX']);
+    // Both want the tile: a conflict, nobody moves, nobody turns.
+    const { state, events } = first(level, 'forward');
+    expect(state.robots.map(at)).toEqual(['0,0,1', '2,0,3']);
+    expect(events.every((e) => !e.tileTurned)).toBe(true);
+  });
+
+  it('lets a robot be won without a colour command: the board does the turning', () => {
+    const level = board(['r> .. @@ ..', '.. .. .. ..', '.. .. EX ..']);
+    expect(isWon(run(level, ['forward', 'forward', 'forward', 'forward']))).toBe(true);
+    expect(solve(level.board, level.start, 8).solution).toEqual(['forward', 'forward', 'forward', 'forward']);
+  });
+
+  it('leaves a board without turn tiles exactly as it was', () => {
+    expect(board(['r> .. EX']).board.turnTiles).toBeUndefined();
+    expect(first(board(['r> .. EX']), 'forward').events[0].tileTurned).toBe(false);
   });
 });
