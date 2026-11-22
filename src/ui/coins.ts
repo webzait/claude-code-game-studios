@@ -87,22 +87,13 @@ export interface RewardView {
   readonly helped: boolean;
 }
 
-/** The reward after a win: the amount paid on a gold plate, the sum it comes from, and the new balance. */
-export function rewardBlock(v: RewardView): string {
-  const small = coinIcon(C.reward.lineIcon);
-  if (v.earned <= 0) {
-    return `<div class="tf-coin-reward paid"><p class="tf-coin-paid">${CHECK}Best reward already paid</p><p class="tf-coin-balance">You have ${small}<b>${formatCoins(v.balance)}</b></p></div>`;
-  }
-  const line = (name: string, amount: number): string =>
-    `<div class="tf-coin-line${amount === 0 ? ' none' : ''}"><dt>${name}</dt><dd>${amount === 0 ? '–' : `+${formatCoins(amount)}${small}`}</dd></div>`;
-  const before = v.reward.total - v.earned;
-  const earlier = before > 0 ? `<div class="tf-coin-line spend"><dt>Paid for this level before</dt><dd>−${formatCoins(before)}${small}</dd></div>` : '';
-  return `<div class="tf-coin-reward">
-    <p class="tf-coin-total" aria-label="${v.earned} coins earned" style="--rf:${C.reward.font}px">${coinIcon(C.reward.icon)}<span class="tf-coin-sum" data-to="${v.earned}">+${formatCoins(v.earned)}</span></p>
-    <dl class="tf-coin-lines">${line('Level won', v.reward.base)}${line(v.spare === 1 ? '1 move left over' : `${v.spare} moves left over`, v.reward.spareMoves)}${line('Shortest solution', v.reward.perfect)}${earlier}</dl>
-    ${v.helped ? '<p class="tf-coin-why">A hint or extra moves were used, so only the base reward counts.</p>' : ''}
-    <p class="tf-coin-balance">Now ${small}<b>${formatCoins(v.balance)}</b></p>
-  </div>`;
+/**
+ * The reward on the win pop-up: the one amount really paid out now, on a gold plate. A win that pays nothing (the
+ * level already paid its best reward) gets a plain line instead of a plate, never a made-up amount.
+ */
+export function rewardPlate(earned: number): string {
+  if (earned <= 0) return `<p class="tf-coin-paid">${CHECK}Best reward already paid</p>`;
+  return `<p class="tf-coin-total" aria-label="${earned} coins earned" style="--rf:${C.reward.font}px">${coinIcon(C.reward.icon)}<span class="tf-coin-sum" data-earned="${earned}">+${formatCoins(earned)}</span></p>`;
 }
 
 /** The honest stand-in for a shop: what coins are, how they are earned and what they cost. */

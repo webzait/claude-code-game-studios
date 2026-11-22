@@ -101,6 +101,14 @@ test('Levels, Level, Win, Next: no dead ends, and progress survives a reload', a
   expect((await snap(page)).status).toBe('won');
   await expect(page.locator('#end-next')).toHaveText('Next', { timeout: 15000 });
   await expect(page.locator('.tf-end-stars')).toHaveAttribute('aria-label', '3 of 3 stars');
+  // The pop-up says one thing: one line, the one amount really earned, one main button; no breakdown, no balance (B5).
+  const perfectWin = config.coins.win + config.moveSlack * config.coins.perSpareMove + config.coins.perfect;
+  await expect(page.locator('#end-title')).toHaveText(`${levels[0].par} moves · the shortest solution`);
+  await expect(page.locator('#card .tf-coin-total')).toHaveCount(1);
+  await expect(page.locator('#card .tf-coin-sum')).toHaveText(`+${perfectWin}`);
+  await expect(page.locator('#card .tf-coin-line, #card .tf-coin-balance')).toHaveCount(0);
+  await expect(page.locator('#end-replay')).toHaveText('Replay');
+  await expect(page.locator('#end-levels')).toHaveText('Levels');
   await page.click('#end-next');
   await expect(page.locator('#levelName')).toHaveText(levels[1].name);
   await page.click('#levelBack');
@@ -157,6 +165,7 @@ test('out of moves in a hopeless position: free Retry, and no extra moves offere
   await expect(page.locator('#end-undo')).toHaveText('Undo');
   await expect(page.locator('#end-offer')).toHaveCount(0);
   await expect(page.locator('.tf-end-note')).toContainText('no offer');
+  await expect(page.locator('.tf-end-note')).toHaveCount(1);
   await page.click('#end-hint');
   await expect(page.locator('#hint')).toContainText('Undo', { timeout: 15000 });
   await page.click('#restart');
@@ -182,7 +191,8 @@ test('out of moves two steps from home: extra moves are offered and really win',
   expect(await snap(page)).toMatchObject({ status: 'playing', movesLeft: config.extraMoves, coins: config.coins.start - config.coins.extraMovesCost });
   for (let i = 0; i < config.extraMoves && (await snap(page)).status === 'playing'; i++) await press(page, 'forward');
   expect((await snap(page)).status).toBe('won');
-  await expect(page.locator('#end-result')).toContainText('extra moves', { timeout: 15000 });
+  await expect(page.locator('#end-title')).toContainText('extra moves', { timeout: 15000 });
+  await expect(page.locator('#card .tf-coin-sum')).toHaveText(`+${config.coins.win}`);
   await expect(page.locator('.tf-end-stars')).toHaveAttribute('aria-label', '1 of 3 stars');
   // A helped win pays the base amount only.
   expect((await snap(page)).coins).toBe(config.coins.start - config.coins.extraMovesCost + config.coins.win);

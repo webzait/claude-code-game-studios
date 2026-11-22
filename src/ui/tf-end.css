@@ -26,6 +26,16 @@
 .tf-end-note { max-width: 34ch; font-size: 14.5px; line-height: 1.4; font-weight: 600; color: #5d6a84; text-wrap: pretty; }
 .tf-end-tag { padding: 4px 10px; border-radius: 10px; background: #e6ebf5; font-size: 12px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: #5d6a84; }
 
+/* A win's one line: the move count, set smaller than a title because the stars are the headline. */
+.tf-end-line { font-size: 19px; line-height: 1.25; font-weight: 700; letter-spacing: 0; color: #5d6a84; }
+.tf-end-line b { color: #24314f; font-weight: 900; }
+/* Quiet secondary actions under the main button: icon and label, a full-size tap area, no block. */
+.tf-end-more { display: flex; justify-content: center; gap: 6px; margin: -4px 0 -8px; }
+.tf-end-link { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-width: 96px; min-height: 44px; padding: 0 14px; border: 0; border-radius: 14px; background: none; font-size: 15px; font-weight: 800; color: #5d6a84; }
+.tf-end-link svg { width: 17px; height: 17px; flex: none; }
+.tf-end-link .tf-ink-shadow { display: none; }
+.tf-end-link:active { background: #e9eef8; color: #24314f; }
+
 /* Stars: read after the title, drawn above it, riding the card's top edge. */
 .tf-end-stars { order: -1; position: relative; display: flex; align-items: flex-end; justify-content: center; gap: 2px; margin: -52px 0 -4px; }
 .tf-end-slot { position: relative; width: 58px; height: 58px; }
@@ -123,20 +133,17 @@
 .tf-end-card:focus { outline: none; }
 .tf-end-card:focus-visible { outline: 3px solid #24314f; outline-offset: 3px; }
 .tf-end-coins { width: 100%; }
-.tf-end-card .tf-coin-reward { gap: 6px; }
 .tf-end-card .tf-coin-buy.offer { --w: 100%; }
-.tf-end-play .tf-coin-total { animation: tf-end-pop .3s ease-out 1.15s backwards; }
+.tf-end-play .tf-coin-total { animation: tf-end-pop .3s ease-out .6s backwards; }
 @media (prefers-reduced-motion: reduce) {
   .tf-end-play .tf-coin-total { animation: none; }
 }
 /* Short phones: the reward sum is set tighter so the top of the screen stays in view. */
 @container tf-end (max-height: 640px) {
   .tf-end-card { gap: 6px; }
-  .tf-end-card .tf-coin-reward { gap: 4px; }
   .tf-end-card .tf-coin-total { --rf: 26px; padding: 3px 16px 8px 8px; border-radius: 16px; }
   .tf-end-card .tf-coin-total .tf-coin-ico { --s: 30px; }
-  .tf-end-card .tf-coin-line { padding: 3px 2px; font-size: 13px; }
-  .tf-end-card .tf-coin-balance, .tf-end-card .tf-coin-why { font-size: 12px; }
+  .tf-end-line { font-size: 17px; }
   .tf-end-big { --h: 48px; --d: 10px; --fs: 20px; }
   .tf-end-small { --h: 40px; --d: 8px; --fs: 16px; }
   .tf-end-actions { gap: 8px; margin-top: 2px; }
