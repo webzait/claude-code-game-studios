@@ -50,7 +50,7 @@ Each level has a move budget of the shortest solution plus two. Running out ends
 - [x] Level design tools: measure every level, generate candidates per idea, report (`tools/level-design/`, `design/level-report.md`)
 - [x] Turn tile (a tile that turns whoever steps onto it), agreed 2026-11-22: in the engine, drawn as a board part, and animated as a beat of its own after the step
 - [x] Page 3: twenty turn-tile levels, levels 41 to 60, in the game; sixty levels in all
-- [x] Coins: earned per win (base, spare moves, perfect bonus), spent on the next-move hint and on extra moves; no shop, no ads
+- [x] Coins: earned per win by its stars (10, 20, 30), spent on Undo (5), the next-move hint (20) and extra moves (40); amounts reasoned in `design/economy.md`; no shop, no ads
 
 ## Keep
 -

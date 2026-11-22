@@ -90,7 +90,7 @@ export interface RewardView {
   readonly earned: number;
   /** The wallet after the payout. */
   readonly balance: number;
-  /** A paid hint or extra moves were used, so only the base amount counts. */
+  /** Paid help was used and only the base amount was paid for it. */
   readonly helped: boolean;
 }
 
@@ -119,8 +119,9 @@ export function coinInfo(titleId: string): string {
   return `<h4 id="${titleId}">${coinIcon(24)}Coins</h4>
     <dl class="tf-coin-lines">
       ${line('Level won', `+${COINS.win}`)}
-      ${line('Each move left over', `+${COINS.perSpareMove}`)}
-      ${line('Shortest solution', `+${COINS.perfect}`)}
+      ${line('Two stars', `+${COINS.win + COINS.twoStars}`)}
+      ${line('Three stars', `+${COINS.win + COINS.perfect}`)}
+      ${COINS.perSpareMove > 0 ? line('Each move left over', `+${COINS.perSpareMove}`) : ''}
       ${line('Hint: the next move', String(COINS.hintCost), true)}
       ${line(`+${CONFIG.extraMoves} moves`, String(COINS.extraMovesCost), true)}
       ${COINS.undoCost > 0 ? line('Undo: one step back', String(COINS.undoCost), true) : ''}

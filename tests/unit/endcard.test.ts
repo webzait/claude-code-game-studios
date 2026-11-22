@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import config from '../../data/config.json';
 import parts from '../../data/parts.json';
@@ -11,13 +12,15 @@ import { winLine, winMarkup, type WinCard } from '../../src/ui/endCard';
 const PAR = 7;
 const BUDGET = PAR + config.moveSlack;
 const noop = (): void => {};
+/** What a three-star win pays: the base, the three-star bonus and whatever each unused move adds. */
+const THREE_STARS = config.coins.win + config.coins.perfect + config.moveSlack * config.coins.perSpareMove;
 
 /** The win pop-up for a win in `moves`, on a level that already paid `alreadyPaid`, built the way the game builds it. */
-function winCard(moves: number, alreadyPaid: number | undefined, helped = false, extra: Partial<WinCard> = {}): { card: WinCard; earned: number } {
-  const reward = rewardFor(moves, PAR, BUDGET, helped);
+function winCard(moves: number, alreadyPaid: number | undefined, helped = false /* extra moves were bought */, extra: Partial<WinCard> = {}): { card: WinCard; earned: number } {
+  const reward = rewardFor(moves, PAR, BUDGET, { hint: false, extraMoves: helped });
   const earned = payout(reward.total, alreadyPaid);
   const view: RewardView = { reward, spare: Math.max(0, BUDGET - moves), earned, balance: config.coins.start + earned, helped };
-  return { card: { kind: 'win', stars: 3, moves, par: PAR, backup: false, last: false, reward: view, next: noop, replay: noop, levels: noop, ...extra }, earned };
+  return { card: { kind: 'win', stars: 3, moves, par: PAR, backup: false, last: false, reward: view, next: noop, retry: noop, levels: noop, ...extra }, earned };
 }
 /** Every "+N" a player can read in the markup (tags and attributes left out). */
 const amountsShown = (html: string): string[] => html.replace(/<[^>]*>/g, ' ').match(/\+\d[\d ]*/g)?.map((s) => s.trim()) ?? [];
@@ -27,7 +30,7 @@ describe('win pop-up: the one amount shown is the real payout', () => {
   it('test_winPopup_firstWin_showsExactlyThePayout', () => {
     const { card, earned } = winCard(PAR, undefined);
     const html = winMarkup(card, false);
-    expect(earned).toBe(config.coins.win + config.moveSlack * config.coins.perSpareMove + config.coins.perfect);
+    expect(earned).toBe(THREE_STARS);
     expect(plates(html)).toBe(1);
     expect(amountsShown(html)).toEqual([`+${earned}`]);
     expect(html).toContain(`data-earned="${earned}"`);
@@ -65,21 +68,33 @@ describe('win pop-up: the one amount shown is the real payout', () => {
     expect(amountsShown(winMarkup(card, false))).toEqual([`+${earned}`]);
   });
 
-  it('test_winPopup_noBreakdownNoBalance_oneMainButton', () => {
+  it('test_winPopup_noBreakdownNoBalance_threeSymbolButtons', () => {
     const html = winMarkup(winCard(PAR, undefined).card, false);
     expect(html).not.toContain('tf-coin-line');
     expect(html).not.toContain('tf-coin-balance');
-    expect(html.split('tf-end-big').length - 1).toBe(1);
-    expect(html).toContain('id="end-next"');
-    expect(html).toContain('id="end-replay"');
-    expect(html).toContain('id="end-levels"');
+    // Levels, Retry, Next, in that order, each a named symbol; only Next is green.
+    expect([...html.matchAll(/<button type="button" id="end-(\w+)" class="([^"]*)" aria-label="(\w+)"/g)].map((m) => [m[1], m[3]])).toEqual([['levels', 'Levels'], ['retry', 'Retry'], ['next', 'Next']]);
+    expect(html.split('tf-end-symbol').length - 1).toBe(3);
+    expect(html.split('tf-end-go ').length - 1).toBe(1);
   });
 
-  it('test_winPopup_lastLevel_hasLevelsAsMainAndNoNext', () => {
+  it('test_winPopup_lastLevel_hasLevelsAndRetryAndNoNext', () => {
     const html = winMarkup(winCard(PAR, undefined, false, { last: true }).card, false);
     expect(html).not.toContain('id="end-next"');
     expect(html.split('id="end-levels"').length - 1).toBe(1);
+    expect(html).toContain('id="end-retry"');
     expect(html).toContain('that was the last level');
+  });
+
+  it('test_winPopup_retrySymbol_isTheRestartSymbolOfThePuzzleScreen', () => {
+    // One symbol for "start this level again", on the pop-up and during play (owner, 2026-11-22).
+    const page = readFileSync('index.html', 'utf8');
+    const inGame = page.slice(page.indexOf('id="restart"'), page.indexOf('</button>', page.indexOf('id="restart"')));
+    const html = winMarkup(winCard(PAR, undefined).card, false);
+    const popup = html.slice(html.indexOf('id="end-retry"'), html.indexOf('</button>', html.indexOf('id="end-retry"')));
+    const shapes = (svg: string): string[] => [...svg.matchAll(/ d="([^"]+)"/g)].map((m) => m[1]).sort();
+    expect(shapes(popup).length).toBeGreaterThan(0);
+    expect(shapes(popup)).toEqual(shapes(inGame));
   });
 
   it('test_rewardPlate_zeroOrLess_isNeverAnAmount', () => {
@@ -102,7 +117,7 @@ describe('coin flight: what the counter reads on each landing', () => {
   const COUNT = parts.coins.fly.count;
 
   it('test_landingAmounts_anyPayout_endsExactlyOnTheBalance', () => {
-    for (const earned of [1, 2, 5, 6, 7, 10, 13, 26, 100, 1001]) {
+    for (const earned of [1, 2, 5, 6, 7, 10, 13, 20, 26, 30, 100, 1001]) {
       const from = 30;
       const steps = landingAmounts(from, from + earned, COUNT);
       expect(steps.at(-1)).toBe(from + earned);

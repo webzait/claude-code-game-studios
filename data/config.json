@@ -182,12 +182,14 @@
     }
   },
   "coins": {
-    "start": 30,
+    "start": 50,
     "win": 10,
-    "perSpareMove": 3,
-    "perfect": 10,
-    "hintCost": 10,
-    "extraMovesCost": 25,
+    "twoStars": 10,
+    "perfect": 20,
+    "perSpareMove": 0,
+    "hintedWinPays": "stars",
+    "hintCost": 20,
+    "extraMovesCost": 40,
     "undoCost": 5,
     "freeUndosPerLevel": 0
   },
