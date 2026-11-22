@@ -1,5 +1,6 @@
 import { CONFIG } from '../config';
 import { HEADING_STYLES, type HeadingStyle } from '../render/heading';
+import { CELEBRATION_VARIANTS, type CelebrationVariant } from './celebration';
 import { DEFAULT_LAB, type LabSettings } from './lab';
 import { isMusicVariant } from '../music/tracks';
 import { emptyLedger, readLedger, type Ledger } from './ledger';
@@ -125,6 +126,7 @@ export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
     if (PURCHASE_OUTCOMES.includes(lab.purchaseOutcome as PurchaseOutcome)) save.lab.purchaseOutcome = lab.purchaseOutcome as PurchaseOutcome;
     // A stored set that no longer exists (removed after the owner's choice) falls back to the default set.
     if (isSoundSet(lab.soundSet)) save.lab.soundSet = lab.soundSet;
+    if (CELEBRATION_VARIANTS.includes(lab.celebration as CelebrationVariant)) save.lab.celebration = lab.celebration as CelebrationVariant;
   }
   if (withCoins) save.ledger = readLedger(raw.ledger, CONFIG.shop.ledgerMax);
   return save;

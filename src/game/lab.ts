@@ -3,6 +3,7 @@ import type { Color, Command, Rules } from '../engine/types';
 import type { GameLevel } from '../levels/index';
 import type { HeadingStyle } from '../render/heading';
 import { DEFAULT_VARIANT, type MusicVariant } from '../music/tracks';
+import { defaultVariant, type CelebrationVariant } from './celebration';
 import type { PurchaseOutcome } from './shop';
 
 /**
@@ -45,6 +46,8 @@ export interface LabSettings {
   soundSet: string;
   /** Which background music plays, to compare the variants in the game itself. The default is `music.variant` in the config. */
   music: MusicVariant;
+  /** What plays on the board when a level is won: confetti, a wave of light, or the robots hopping out once more. */
+  celebration: CelebrationVariant;
 }
 
 /**
@@ -69,6 +72,7 @@ export const DEFAULT_LAB: LabSettings = {
   purchaseOutcome: 'success',
   soundSet: CONFIG.audio.set,
   music: DEFAULT_VARIANT,
+  celebration: defaultVariant(),
 };
 
 /**

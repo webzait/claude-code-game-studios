@@ -9,11 +9,11 @@ import type { Recipe } from './synth';
  */
 
 /** Every sound the game can make. */
-export const SOUND_NAMES = ['tap', 'press-red', 'press-blue', 'press-yellow', 'press-forward', 'turn', 'step', 'bump', 'deny', 'exit', 'win', 'fail', 'scan', 'coin'] as const;
+export const SOUND_NAMES = ['tap', 'press-red', 'press-blue', 'press-yellow', 'press-forward', 'turn', 'step', 'bump', 'deny', 'exit', 'win', 'fail', 'scan', 'coin', 'perfect'] as const;
 /** A sound the game can make. */
 export type SoundName = (typeof SOUND_NAMES)[number];
 
-/** The sounds every set must answer for itself; the rest (exit, win, fail, hint, coin) are shared and come from the base set. */
+/** The sounds every set must answer for itself; the rest (exit, win, fail, hint, coin, perfect) are shared and come from the base set. */
 export const BUTTON_SOUNDS: readonly SoundName[] = ['tap', 'press-red', 'press-blue', 'press-yellow', 'press-forward', 'turn', 'step', 'bump', 'deny'];
 
 /**
@@ -63,7 +63,11 @@ export function isSoundSet(id: unknown): id is string {
   return typeof id === 'string' && Object.hasOwn(RAW, id);
 }
 
+/** The three-star win jingle; its notes are tuned in the config (`celebration.sound.perfect`). */
+const PERFECT: Recipe = CONFIG.celebration.sound.perfect.map(([freq, at, length]) => ({ wave: 'triangle', freq, at, length, attack: 0.01 })) as Recipe;
+
 function recipeOf(set: RawSet, name: SoundName, depth = 0): Recipe {
+  if (name === 'perfect' && set.sounds[name] === undefined && RAW[BASE_SET].sounds[name] === undefined) return PERFECT;
   const own = set.sounds[name] ?? RAW[BASE_SET].sounds[name] ?? [];
   // A name instead of a recipe means "the same as that sound" within the set.
   if (typeof own === 'string') return depth < 3 ? recipeOf(set, own as SoundName, depth + 1) : [];

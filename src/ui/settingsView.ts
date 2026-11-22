@@ -1,4 +1,5 @@
 import { CONFIG } from '../config';
+import { CELEBRATION_NAMES, CELEBRATION_VARIANTS, type CelebrationVariant } from '../game/celebration';
 import { DEFAULT_LAB, usesCertifiedRules, type LabSettings } from '../game/lab';
 import { MUSIC_VARIANTS, scoreOf } from '../music/tracks';
 import parts from '../../data/parts.json';
@@ -191,6 +192,13 @@ export function resetControl(armed = false, done = false, onErase: () => void = 
 export const solverNote = (): HTMLElement =>
   h(`<p class="tf-set-note" role="note">${ICON.warn}<span><b>Test rule.</b> Levels are certified for “Many”. Here the solver re-checks each level when it opens; one it cannot prove may have no solution.</span></p>`);
 
+/** What each win celebration does, as the test lab explains it. */
+const CELEBRATION_HINTS: Record<CelebrationVariant, string> = {
+  confetti: 'Paper flecks in the robot colours shoot up from the exit and flutter down.',
+  wave: 'The tiles light up in a ring that runs from the exit across the board.',
+  hop: 'The robots hop out of the exit once more, spin and dive back in.',
+};
+
 const LAB_KEYS = Object.keys(DEFAULT_LAB) as (keyof LabSettings)[];
 
 /** What the test lab does with its values; without hooks it only keeps them (parts sheet). */
@@ -308,6 +316,7 @@ export function labContent(start: Partial<LabSettings>, hooks: LabHooks = {}): {
       { label: 'Classic', value: 'classic' },
     ]),
     flag('decor', 'Backdrop', 'Harbour and bushes behind the game.'),
+    choice('celebration', 'Win celebration', (v) => CELEBRATION_HINTS[v], CELEBRATION_VARIANTS.map((value) => ({ label: CELEBRATION_NAMES[value], value }))),
     choice('levelScreen', 'Level screen', 'Path: the current level and the next few. Grid: every level on pages, as before.', [
       { label: 'Path', value: 'path' },
       { label: 'Grid', value: 'grid' },

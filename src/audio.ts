@@ -31,6 +31,8 @@ export const SOUNDS: Record<string, Note[]> = {
   fail: [[330, 0, 0.16, 'sine'], [247, 0.14, 0.26, 'sine']],
   scan: [[880, 0, 0.06, 'sine'], [1175, 0.07, 0.1, 'sine']],
   coin: [[1568, 0, 0.04, 'triangle'], [2093, 0.035, 0.08, 'triangle']],
+  // The win jingle with a sparkle on top, for a three-star win; its notes are tuned in the config.
+  perfect: CONFIG.celebration.sound.perfect.map(([frequency, start, length]): Note => [frequency, start, length, 'triangle']),
 };
 
 /**

@@ -11,6 +11,8 @@ import { QUARTER, headingAngle, nearestAngle, squashScale, turnAngle, type Headi
 import { fuse, type Kit } from './kit';
 import { buildPartsRobot, buildRobot, type RobotView } from './robot';
 import { tileBeats } from './stepPlan';
+import type { CelebrationPlan } from '../game/celebration';
+import { CelebrationFx } from './celebration';
 
 /** Which models the board is drawn with. */
 export interface BoardStyle {
@@ -97,6 +99,8 @@ export class BoardView {
   private robots = new Map<number, RobotView>();
   private tweens: Tween[] = [];
   private particles: Particle[] = [];
+  /** The win celebration while it plays. */
+  private celebration: CelebrationFx | null = null;
   /** One pad per exit, by cell. */
   private exitPads = new Map<number, THREE.Group>();
   private exitRings: THREE.Mesh[] = [];
@@ -219,6 +223,7 @@ export class BoardView {
 
   /** Build the diorama for a level and show its start state. */
   loadLevel(level: Level): void {
+    this.stopCelebration();
     this.skip();
     this.level = level;
     this.boardGroup.clear();
@@ -502,6 +507,7 @@ export class BoardView {
    * glides home: the tile's beat played backwards.
    */
   sync(state: GameState, animate: boolean): void {
+    this.stopCelebration();
     this.skip();
     this.endCue();
     const width = this.level?.board.width ?? 1;
@@ -816,14 +822,50 @@ export class BoardView {
     }
   }
 
-  /** Celebration when the last robot is in. */
-  celebrate(): void {
+  /**
+   * The celebration when the last robot is in, as `planCelebration` decided it. It plays on the
+   * board and ends by itself; `stopCelebration` ends it early.
+   */
+  celebrate(plan: CelebrationPlan): void {
+    this.stopCelebration();
     if (!this.level) return;
-    // Confetti at every exit: in the exit's own colour, or in all three at the exit for everyone.
-    for (const exit of exitsOf(this.level.board)) {
-      for (const color of exit.color ? [exit.color] : (['red', 'blue', 'yellow'] as const)) this.burst(this.cellX(exit.x), this.cellZ(exit.y), color);
-    }
-    this.pulseExit();
+    const { width, height, walls, exitX, exitY } = this.level.board;
+    this.celebration = new CelebrationFx(
+      {
+        group: this.boardGroup,
+        width,
+        height,
+        walls,
+        exitX,
+        exitY,
+        cellX: (x) => this.cellX(x),
+        cellZ: (y) => this.cellZ(y),
+        pitch: this.pitch,
+        floorY: this.floorY,
+        robots: [...this.robots.values()],
+        settle: CONFIG.anim.exitTime / this.speedScale,
+        pulseExit: () => this.pulseExit(),
+        burst: (x, z, color) => this.burst(x, z, color),
+      },
+      plan,
+    );
+  }
+
+  /** End the celebration at once; the board is left as a won board: empty, the robots in the exit. */
+  stopCelebration(): void {
+    this.celebration?.dispose();
+    this.celebration = null;
+  }
+
+  /** True while the celebration plays. */
+  get celebrating(): boolean {
+    return this.celebration !== null;
+  }
+
+  /** What the last frame cost to draw: draw calls and triangles. For measuring, not for the game. */
+  get drawCost(): { calls: number; triangles: number } {
+    const { calls, triangles } = this.renderer.info.render;
+    return { calls, triangles };
   }
 
   private frame(now: number): void {
@@ -847,6 +889,7 @@ export class BoardView {
       this.cueTime += dt;
       this.playCue(this.cueTime);
     }
+    if (this.celebration && !this.celebration.update(dt)) this.stopCelebration();
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
       p.life -= dt;
