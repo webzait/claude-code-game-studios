@@ -35,6 +35,13 @@ export function exitTakes(board: Board, x: number, y: number, color: Color): boo
   return false;
 }
 
+/** True when the board's gates are open in this state: some robot that is still on the board stands on a plate. */
+export function gatesOpen(board: Board, state: GameState): boolean {
+  if (!board.plates) return false;
+  for (const r of state.robots) if (!r.collected && board.plates[r.y * board.width + r.x]) return true;
+  return false;
+}
+
 /** True when every robot has been collected. */
 export function isWon(state: GameState): boolean {
   return state.robots.every((r) => r.collected);
@@ -52,6 +59,7 @@ export function collectedCount(state: GameState): number {
  * give the same result. Order of resolution:
  *  1. robots of the commanded colour turn 90 degrees clockwise;
  *  2. every robot picks the cell in front of it;
+ *     A closed gate blocks like a wall; gates are open while, before the step, a robot stands on a plate;
  *  3. walls block; two robots wanting the same cell block each other;
  *  4. a robot may enter an occupied cell only if its occupant really leaves;
  *  5. swaps and closed cycles do not move;
@@ -86,6 +94,9 @@ export function step(
     dirs[i] = (turns ? (r.dir + 1) % 4 : r.dir) as Dir;
   }
 
+  // Gates follow the position before the step: open while a robot stands on a plate.
+  const open = gatesOpen(board, state);
+
   // 2. Intentions. target[i] = cell index, or -1 when not trying / walled.
   const occupant = new Int32Array(cells).fill(-1);
   for (let i = 0; i < n; i++) {
@@ -100,6 +111,7 @@ export function step(
     const tx = r.x + DIR_DX[dirs[i]];
     const ty = r.y + DIR_DY[dirs[i]];
     if (isSolid(board, tx, ty)) outcome[i] = 'blocked-wall';
+    else if (!open && board.gates?.[ty * board.width + tx]) outcome[i] = 'blocked-gate';
     else target[i] = ty * board.width + tx;
   }
 
