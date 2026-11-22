@@ -108,6 +108,11 @@
   "audio": {
     "volume": 0.16
   },
+  "colourShapes": {
+    "red": "circle",
+    "blue": "square",
+    "yellow": "diamond"
+  },
   "board": {
     "roomy": {
       "tilt": 30,

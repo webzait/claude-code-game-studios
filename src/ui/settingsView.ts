@@ -1,6 +1,7 @@
 import { CONFIG } from '../config';
 import { DEFAULT_LAB, usesCertifiedRules, type LabSettings } from '../game/lab';
 import parts from '../../data/parts.json';
+import { SHAPE_COLOURS, shapeOf, shapesInWords, shapeSvg } from './colourShapes';
 import pkg from '../../package.json';
 
 /**
@@ -127,6 +128,18 @@ export function panel(title: string, chip = '', about = ''): { panel: HTMLElemen
 
 export const chip = (kind: string, text: string): string => `<span class="tf-set-chip ${kind}">${text}</span>`;
 export const TEST = chip('test', 'Testing only');
+/** The preview in the "Colour shapes" row: each robot colour with its shape. */
+export const shapesPreview = (): string =>
+  `<span class="tf-set-shapes" role="img" aria-label="${shapesInWords()}">${SHAPE_COLOURS.map((color) => `<i class="${color}" data-shape="${shapeOf(color)}">${shapeSvg(shapeOf(color))}</i>`).join('')}</span>`;
+
+/** The "Colour shapes" row: its switch, and the preview on a line of its own under the explanation. */
+export function shapesRow(on: boolean, set: (on: boolean) => void): HTMLElement {
+  const r = row('Colour shapes', 'Adds a shape to each colour.');
+  r.row.dataset.key = 'colourShapes';
+  r.row.querySelector('.tf-set-text')!.insertAdjacentHTML('beforeend', shapesPreview());
+  r.row.appendChild(toggle(r.titleId, on, set, r.hintId));
+  return r.row;
+}
 export const ON_OFF = (on: boolean): string => (on ? 'On' : 'Off');
 
 /** The destructive control: a calm button, then an armed step that says exactly what is lost and what is kept. */
@@ -332,10 +345,13 @@ export interface PlayerSettingsModel {
   readonly mute: boolean;
   /** null follows the device. */
   readonly reduceMotion: boolean | null;
+  /** A shape on each robot colour and its button. */
+  readonly colourShapes: boolean;
   /** How many test lab values differ from the certified game. */
   readonly labChanged: number;
   setMute(mute: boolean): void;
   setReduceMotion(value: boolean | null): void;
+  setColourShapes(on: boolean): void;
   resetProgress(): void;
   back(): void;
   openLab(): void;
@@ -364,7 +380,7 @@ export function playerScreen(m: PlayerSettingsModel): { root: HTMLElement; back:
   motion.row.appendChild(
     segmented<boolean | null>(motion.titleId, [{ label: 'Auto', value: null }, { label: 'On', value: true }, { label: 'Off', value: false }], m.reduceMotion, (v) => m.setReduceMotion(v), motion.hintId),
   );
-  game.body.append(motion.row);
+  game.body.append(shapesRow(m.colourShapes, (on) => m.setColourShapes(on)), motion.row);
 
   const progress = panel('Progress');
   progress.body.append(resetControl(false, false, () => m.resetProgress()));

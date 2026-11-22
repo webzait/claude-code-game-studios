@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { CONFIG } from '../../config';
 import type { Color } from '../../engine/types';
 import parts from '../../../data/parts.json';
+import { SHAPE_OUTLINES, shapeOf } from '../../ui/colourShapes';
 import { roundedBlock, roundedRect } from './shapes';
 
 // The Flockbot of the design study (prototypes/flockbot-look), now the game's robot.
@@ -22,6 +23,11 @@ export interface FlockbotParts {
   readonly feet: THREE.Group;
   /** The symbol on top; turn it around y to show the heading. It points north (-z) at rest. */
   readonly symbol: THREE.Group;
+  /**
+   * The "Colour shapes" setting: with it on, the heading triangle lies on a plate in the shape of the
+   * robot's colour (data: `colourShapes`), so the colour can be read without seeing colour. Off at rest.
+   */
+  readonly showShape: (on: boolean) => void;
 }
 
 // The body: a rounded cube. The ears stick out a little, so the body itself is that much narrower than the cell.
@@ -282,6 +288,28 @@ function triangleSlab(size: number, raise: number): THREE.BufferGeometry {
   return g;
 }
 
+/**
+ * The plate of a colour's shape, lying on the shell under the heading triangle: `size` across the box
+ * the shape is drawn in, its top `raise` above the crown.
+ */
+export function shapePlate(color: Color, size: number, raise: number, sink: number): THREE.BufferGeometry {
+  const outline = SHAPE_OUTLINES[shapeOf(color)];
+  const bevel = Math.min(raise * 0.4, 0.006);
+  const side = outline.side * size - 2 * bevel;
+  const g = new THREE.ExtrudeGeometry(roundedRect(side, side, Math.min(side / 2, Math.max(0.001, outline.corner * size - bevel))), {
+    depth: raise + sink - 2 * bevel,
+    bevelEnabled: true,
+    bevelThickness: bevel,
+    bevelSize: bevel,
+    bevelSegments: 3,
+    curveSegments: 16,
+  });
+  g.rotateX(-Math.PI / 2);
+  g.translate(0, bevel - sink, 0);
+  g.rotateY((outline.turn * Math.PI) / 180);
+  return g;
+}
+
 const eyeBall = new THREE.SphereGeometry(1, 64, 48);
 const eyeBlack = new THREE.MeshPhysicalMaterial({ color: TONES.eye, roughness: 0.08, clearcoat: 1, clearcoatRoughness: 0.04, envMapIntensity: F.material.reflect });
 const eyeGlint = new THREE.MeshBasicMaterial({ color: TONES.eyeWhite });
@@ -423,16 +451,17 @@ export function buildFlockbot(color: Color): FlockbotParts {
   // Symbol: a plain triangle on the shell, turning with the heading. `raised` stands a little proud in
   // white (dark on yellow); `notch` reads as cut into the shell: a dark floor inside a light edge.
   const symbol = new THREE.Group();
+  const plain = new THREE.Group();
   const S = F.symbol;
   if (S.style === 'notch') {
     const edgeMat = new THREE.MeshStandardMaterial({ color: tones.top, roughness: 0.6, envMapIntensity: 0 });
     const floorMat = new THREE.MeshStandardMaterial({ color: tones.deep, roughness: 0.8, envMapIntensity: 0 });
-    symbol.add(new THREE.Mesh(triangleSlab(S.size, S.raise * 0.4), edgeMat));
+    plain.add(new THREE.Mesh(triangleSlab(S.size, S.raise * 0.4), edgeMat));
     const floor = new THREE.Mesh(triangleSlab(S.size - 2 * S.notchEdge, S.raise * 0.4), floorMat);
     floor.position.y = 0.002;
-    symbol.add(floor);
+    plain.add(floor);
   } else {
-    symbol.add(
+    plain.add(
       new THREE.Mesh(
         triangleSlab(S.size, S.raise),
         // The dark triangle is kept matt: a glossy one mirrors the sky and turns grey seen from above.
@@ -442,7 +471,24 @@ export function buildFlockbot(color: Color): FlockbotParts {
       ),
     );
   }
+  // Colour shapes: a plate in the colour's shape, white (dark on yellow) like the plain triangle, and on
+  // it a smaller triangle in the body's colour. The triangle stays the only thing that points.
+  const marked = new THREE.Group();
+  const plateMat =
+    color === 'yellow'
+      ? new THREE.MeshStandardMaterial({ color: F.colors.symbolDark, roughness: 0.75, envMapIntensity: 0 })
+      : new THREE.MeshStandardMaterial({ color: F.colors.symbolLight, roughness: 0.5, emissive: F.colors.symbolLight, emissiveIntensity: 0.25 });
+  const pointerMat = new THREE.MeshStandardMaterial({ color: color === 'yellow' ? tones.main : tones.side, roughness: 0.6, envMapIntensity: 0, emissive: color === 'yellow' ? tones.main : tones.side, emissiveIntensity: 0.3 });
+  const pointer = new THREE.Mesh(triangleSlab(S.shape.triangle, S.raise * 0.6), pointerMat);
+  pointer.position.y = S.shape.raise;
+  marked.add(new THREE.Mesh(shapePlate(color, S.shape.size, S.shape.raise, S.sink), plateMat), pointer);
+  marked.visible = false;
+  symbol.add(plain, marked);
   symbol.position.y = SHELL_TOP + half;
+  const showShape = (on: boolean): void => {
+    plain.visible = !on;
+    marked.visible = on;
+  };
 
   const root = new THREE.Group();
   root.add(feet, romp, shell, face, ears, symbol);
@@ -452,5 +498,5 @@ export function buildFlockbot(color: Color): FlockbotParts {
       node.receiveShadow = true;
     }
   });
-  return { root, shell, face, romp, feet, symbol };
+  return { root, shell, face, romp, feet, symbol, showShape };
 }

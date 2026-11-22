@@ -29,6 +29,7 @@ import { CoinCounters, coinInfo, type RewardView } from './ui/coins';
 import { el, Hud } from './ui/hud';
 import { setupLogo } from './ui/logo';
 import { renderLevels, type MapNode } from './ui/screens';
+import { applyColourShapes } from './ui/colourShapes';
 import { labChangedCount, labScreen, playerScreen } from './ui/settingsView';
 
 type ScreenName = 'map' | 'level' | 'settings' | 'lab';
@@ -208,6 +209,8 @@ class Game {
     this.view.setLayout(CONFIG.board[this.save.lab.board]);
     this.view.setStyle({ kitRobots: this.save.lab.robots === 'kit', kitBoard: this.save.lab.boardPieces === 'kit', heading: this.save.lab.heading });
     document.documentElement.classList.toggle('no-decor', !this.save.lab.decor);
+    applyColourShapes(this.save.settings.colourShapes);
+    this.view.setColourShapes(this.save.settings.colourShapes);
   }
 
   // ---------------------------------------------------------------- screens
@@ -273,6 +276,8 @@ class Game {
       labChanged: labChangedCount(this.save.lab),
       setMute: (mute) => change(() => (this.save.settings.mute = mute)),
       setReduceMotion: (value) => change(() => (this.save.settings.reduceMotion = value)),
+      colourShapes: this.save.settings.colourShapes,
+      setColourShapes: (on) => change(() => (this.save.settings.colourShapes = on)),
       resetProgress: () => change(() => (this.save = resetProgress(this.save))),
       back: () => this.tap(() => this.show('map')),
       openLab: () => this.tap(() => this.show('lab')),

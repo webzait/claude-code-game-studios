@@ -123,7 +123,7 @@ describe('save', () => {
     expect(save.best).toEqual({ [ids[0]]: 7 });
     expect(save.coins).toBe(73);
     expect(save.paid).toEqual({ [ids[0]]: 26 });
-    expect(save.settings).toEqual({ mute: true, reduceMotion: true });
+    expect(save.settings).toEqual({ mute: true, reduceMotion: true, colourShapes: false });
     expect(save.lab.moveSlack).toBe(3);
     expect(save.lab.unlockAll).toBe(true);
   });
@@ -132,8 +132,24 @@ describe('save', () => {
     const save = migrate({ version: 4, best: { [ids[0]]: 7 }, coins: 73, settings: { mute: true, reduceMotion: false, vibration: false }, lab: { unlockAll: true } }, ids);
     expect(save.best).toEqual({ [ids[0]]: 7 });
     expect(save.coins).toBe(73);
-    expect(save.settings).toEqual({ mute: true, reduceMotion: false });
+    expect(save.settings).toEqual({ mute: true, reduceMotion: false, colourShapes: false });
     expect(save.lab.unlockAll).toBe(true);
+  });
+
+  it('migrates version 4 (no colour shapes): everything is kept and the shapes start switched off', () => {
+    const save = migrate({ version: 4, best: { [ids[0]]: 7 }, coins: 73, paid: { [ids[0]]: 26 }, settings: { mute: true, reduceMotion: true }, lab: { moveSlack: 3 } }, ids);
+    expect(save.version).toBe(SAVE_VERSION);
+    expect(save.best).toEqual({ [ids[0]]: 7 });
+    expect(save.coins).toBe(73);
+    expect(save.paid).toEqual({ [ids[0]]: 26 });
+    expect(save.settings).toEqual({ mute: true, reduceMotion: true, colourShapes: false });
+    expect(save.lab.moveSlack).toBe(3);
+    expect(defaultSave().settings.colourShapes).toBe(false);
+  });
+
+  it('keeps a stored colour shapes choice and reads a damaged one as off', () => {
+    expect(migrate({ version: SAVE_VERSION, settings: { colourShapes: true } }, ids).settings.colourShapes).toBe(true);
+    expect(migrate({ version: SAVE_VERSION, settings: { colourShapes: 'yes' } }, ids).settings.colourShapes).toBe(false);
   });
 
   it('damaged, unknown or future data gives a fresh save, never an error', () => {

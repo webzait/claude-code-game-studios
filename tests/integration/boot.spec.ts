@@ -276,6 +276,45 @@ test('settings: test lab switches change the next level, settings survive a relo
   expect((await snap(page)).lab.unlockAll).toBe(true);
 });
 
+test('settings: colour shapes is off at first, shows each colour\'s shape on its button at once and is kept; Vibration is gone', async ({ page }) => {
+  // A save from before: version 4, still holding the vibration setting the game no longer has.
+  await page.addInitScript(
+    ([save]) => {
+      if (!localStorage.getItem('turnflock.save')) localStorage.setItem('turnflock.save', save);
+    },
+    [JSON.stringify({ version: 4, best: {}, coins: 73, paid: {}, settings: { vibration: false }, lab: { unlockAll: true } })],
+  );
+  const errors = await open(page);
+  expect((await snap(page)).coins).toBe(73);
+  await page.click('#toSettings');
+  await expect(page.locator('#settings')).not.toContainText('Vibration');
+  await expect(page.locator('#settings')).not.toContainText('Larger text');
+  const shapes = page.locator('[data-key=colourShapes] [role=switch]');
+  await expect(shapes).toHaveAttribute('aria-checked', 'false');
+  await expect(page.locator('[data-key=colourShapes] .tf-set-shapes')).toHaveAttribute('aria-label', `Red ${config.colourShapes.red}, blue ${config.colourShapes.blue}, yellow ${config.colourShapes.yellow}`);
+  await expect(page.locator('html')).not.toHaveClass(/colour-shapes/);
+  await shapes.click();
+  await expect(page.locator('html')).toHaveClass(/colour-shapes/);
+  await page.click('#settings .tf-set-top button');
+  await page.click(`#node-${TWO_COLOURS + 1}`);
+  for (const colour of ['red', 'blue'] as const) {
+    const badge = page.locator(`.cmd[data-cmd=${colour}] .tf-cmd-shape`);
+    await expect(badge).toBeVisible();
+    await expect(badge).toHaveAttribute('data-shape', config.colourShapes[colour]);
+  }
+  await expect(page.locator('.cmd[data-cmd=forward] .tf-cmd-shape')).toHaveCount(0);
+  // Kept over a reload, and switched off again without one.
+  await page.reload();
+  await expect.poll(() => page.evaluate(() => typeof window.turnflock?.snapshot)).toBe('function');
+  await expect(page.locator('html')).toHaveClass(/colour-shapes/);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('turnflock.save')!).settings)).toEqual({ mute: false, reduceMotion: null, colourShapes: true });
+  await page.click('#toSettings');
+  await expect(shapes).toHaveAttribute('aria-checked', 'true');
+  await shapes.click();
+  await expect(page.locator('html')).not.toHaveClass(/colour-shapes/);
+  expect(errors).toEqual([]);
+});
+
 test('the plus button explains coins and sells nothing', async ({ page }) => {
   await open(page);
   await page.click('#mapCoins button');

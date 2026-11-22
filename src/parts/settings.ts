@@ -1,6 +1,6 @@
 import type { LabSettings } from '../game/lab';
 import pkg from '../../package.json';
-import { h, ICON, labContent, panel, resetControl, row, screenShell, segmented, solverNote, TEST, toggle, uid } from '../ui/settingsView';
+import { h, ICON, labContent, panel, shapesRow, resetControl, row, screenShell, segmented, solverNote, TEST, toggle, uid } from '../ui/settingsView';
 
 /**
  * The settings screen as a standalone mock-up for the parts sheet: player
@@ -33,14 +33,11 @@ interface PlayerSettings {
   shapes: boolean;
 }
 
-/** The colour-blind aid's preview: one shape per robot colour. */
-const SHAPES = `<span class="tf-set-shapes" aria-label="Red circle, blue square, yellow diamond"><i class="red"><svg viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="3.4"/></svg></i><i class="blue"><svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2.8" y="2.8" width="6.4" height="6.4" rx="1"/></svg></i><i class="yellow"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1.8 10.2 6 6 10.2 1.8 6z"/></svg></i></span>`;
-
 /** The player's own settings. */
 function playerPanels(frame: SettingsFrame): HTMLElement[] {
   const player: PlayerSettings = { sound: true, reduceMotion: null, shapes: false };
   const game = panel('Game');
-  const flag = (key: 'sound' | 'shapes', title: string, hint: string): HTMLElement => {
+  const flag = (key: 'sound', title: string, hint: string): HTMLElement => {
     const r = row(title, hint);
     r.row.appendChild(toggle(r.titleId, player[key], (on) => (player[key] = on), r.hintId));
     return r.row;
@@ -49,9 +46,7 @@ function playerPanels(frame: SettingsFrame): HTMLElement[] {
   motion.row.appendChild(
     segmented<boolean | null>(motion.titleId, [{ label: 'Auto', value: null }, { label: 'On', value: true }, { label: 'Off', value: false }], player.reduceMotion, (v) => (player.reduceMotion = v), motion.hintId),
   );
-  const shapes = flag('shapes', 'Colour shapes', 'Adds a shape to each colour.');
-  shapes.querySelector('.tf-set-hint')!.insertAdjacentHTML('beforeend', ` ${SHAPES}`);
-  game.body.append(flag('sound', 'Sound', 'Game sounds.'), shapes, motion.row);
+  game.body.append(flag('sound', 'Sound', 'Game sounds.'), shapesRow(player.shapes, (on) => (player.shapes = on)), motion.row);
 
   const out = [game.panel];
   const progress = panel('Progress');
@@ -190,11 +185,8 @@ export function addSettingsCards(sheet: HTMLElement): void {
     plain.row.appendChild(toggle(plain.titleId, true, noop, plain.hintId));
     const stacked = row('Reduce motion', 'Calmer animations. Auto follows this device.', { stack: true });
     stacked.row.appendChild(segmented(stacked.titleId, [{ label: 'Auto', value: 0 }, { label: 'On', value: 1 }, { label: 'Off', value: 2 }], 0, noop, stacked.hintId));
-    const fresh = row('Colour shapes', 'Adds a shape to each colour.');
-    fresh.row.querySelector('.tf-set-hint')!.insertAdjacentHTML('beforeend', ` ${SHAPES}`);
-    fresh.row.appendChild(toggle(fresh.titleId, false, noop, fresh.hintId));
     const head = panel('Game');
-    head.body.append(plain.row, stacked.row, fresh.row);
+    head.body.append(plain.row, stacked.row, shapesRow(false, noop));
     const rowsBox = h(`<div class="tf-set-demo" id="settings-demo-rows"><h3 class="btn-title">Sectiekop en rijen (titel + één regel uitleg)</h3></div>`);
     rowsBox.appendChild(head.panel);
     stage.appendChild(rowsBox);
