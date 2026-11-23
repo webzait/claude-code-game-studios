@@ -371,10 +371,37 @@ test('the bottom buttons are one set, and every price is the same tag in the sam
   const commands = (await page.locator('#commands').boundingBox())!;
   expect(boxes[0].y + boxes[0].height + hang[0]).toBeLessThanOrEqual(commands.y);
   // The tools stand apart from the command row and are compact: clearly narrower than a command button, centred as a group.
-  expect(commands.y - (boxes[0].y + boxes[0].height)).toBeGreaterThanOrEqual(16);
+  expect(commands.y - (boxes[0].y + boxes[0].height)).toBeGreaterThanOrEqual(24);
   const cmd = (await page.locator('.cmd:not([hidden])').first().boundingBox())!;
   expect(boxes[0].width).toBeLessThan(cmd.width);
   expect(boxes[0].x - commands.x).toBeCloseTo(commands.x + commands.width - (boxes[2].x + boxes[2].width), 0);
+});
+
+test('the helper buttons stay clear of the command row on every phone size (finding B11)', async ({ page }) => {
+  const parts = JSON.parse(readFileSync('data/parts.json', 'utf8'));
+  const clearance: number = parts.buttons.tools.clearance;
+  // WCAG 2.5.8 asks for 24 CSS px between touch targets; the helpers cost coins or wipe the level, so never less.
+  expect(clearance).toBeGreaterThanOrEqual(24);
+  await open(page);
+  await page.click('#node-1');
+  await press(page, 'forward');
+  await expect(page.locator('#undo .tf-coin-price')).toHaveCount(1);
+  for (const [width, height] of [[320, 568], [360, 640], [390, 844], [430, 932]]) {
+    await page.setViewportSize({ width, height });
+    await expect.poll(() => page.evaluate(() => innerHeight)).toBe(height);
+    // One read per size: every measure in a single call, so the slow software-rendered board is not waited on per box.
+    const m = await page.evaluate(() => {
+      const rect = (selector: string) => document.querySelector(selector)!.getBoundingClientRect();
+      const lowest = ['#undo', '#restart', '#scan', '#undo .tf-coin-price', '#scan .tf-coin-price'].map((selector) => rect(selector).bottom);
+      const tops = Array.from(document.querySelectorAll('.cmd:not([hidden])'), (cmd) => cmd.getBoundingClientRect().top);
+      return { gap: Math.min(...tops) - Math.max(...lowest), stageBottom: rect('.stage').bottom, toolsTop: rect('#tools').top, commandsBottom: rect('#commands').bottom };
+    });
+    expect(m.gap, `${width}x${height}`).toBeGreaterThanOrEqual(clearance - 0.5);
+    // The move upwards is taken from the play zone, never from the screen: the command row still ends on screen
+    // and the tools start below the play zone.
+    expect(m.toolsTop, `${width}x${height}`).toBeGreaterThanOrEqual(m.stageBottom - 0.5);
+    expect(m.commandsBottom, `${width}x${height}`).toBeLessThanOrEqual(height);
+  }
 });
 
 test('Hint: the status is free, the next move costs coins and is drawn on the board, and without coins it is refused', async ({ page }) => {
