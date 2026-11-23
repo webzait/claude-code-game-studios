@@ -561,6 +561,63 @@ export function buildExit(color?: Color): THREE.Group {
   return pad;
 }
 
+const PLATE_GATE = CONFIG.colors.purple;
+const plateMats = {
+  ring: glossy(new THREE.Color(PLATE_GATE).lerp(new THREE.Color('#1B1040'), 0.45).getStyle(), 0.4, 0.3),
+  button: new THREE.MeshPhysicalMaterial({ color: PLATE_GATE, roughness: 0.3, clearcoat: 0.5, clearcoatRoughness: 0.3, emissive: PLATE_GATE, emissiveIntensity: 0.25 }),
+  door: new THREE.MeshPhysicalMaterial({ color: PLATE_GATE, roughness: 0.35, clearcoat: 0.45, clearcoatRoughness: 0.3, emissive: PLATE_GATE, emissiveIntensity: 0.12 }),
+  doorMark: new THREE.MeshPhysicalMaterial({ color: '#FFFFFF', roughness: 0.35, clearcoat: 0.4, clearcoatRoughness: 0.3 }),
+};
+
+/**
+ * Pressure plate: a floor tile with a dark ring and a round purple button in it. The button is the child at
+ * `userData.button`, so the game can press it down while a robot stands on the plate. Plate and gate share
+ * the purple: no robot, exit or turn tile uses it, so the two read as a pair.
+ */
+export function buildPlate(alt = false, pegs = true): THREE.Group {
+  const plate = buildFloorTile(alt, pegs);
+  const top = P.floorTile.height;
+  const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.36, 0.03, 40), plateMats.ring);
+  ring.position.y = top + 0.015;
+  const button = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.28, 0.07, 40), plateMats.button);
+  button.position.y = top + 0.05;
+  button.userData.restY = button.position.y;
+  shadowed(ring);
+  shadowed(button);
+  plate.add(ring, button);
+  plate.userData.button = button;
+  return plate;
+}
+
+/**
+ * Gate: a floor tile with a purple barrier standing on it, as wide as an obstacle and a little lower, with
+ * two white bars across its top so it never reads as a wall. The barrier is the child at `userData.door`;
+ * the game sinks it into the floor while the gate is open (see `gateDoorScale`).
+ */
+export function buildGate(alt = false, pegs = true): THREE.Group {
+  const gate = buildFloorTile(alt, pegs);
+  const top = P.floorTile.height;
+  const door = new THREE.Group();
+  const height = 0.42;
+  const body = new THREE.Mesh(slabOf(roundedRect(0.84, 0.84, 0.16), height, 0.03), plateMats.door);
+  door.add(body);
+  for (const z of [-0.17, 0.17]) {
+    const bar = new THREE.Mesh(slabOf(roundedRect(0.56, 0.1, 0.05), 0.025, 0.008), plateMats.doorMark);
+    bar.position.set(0, height, z);
+    door.add(bar);
+  }
+  door.position.y = top;
+  shadowed(door);
+  gate.add(door);
+  gate.userData.door = door;
+  return gate;
+}
+
+/** Height scale of a gate's barrier: full when shut, almost flat (a purple outline on the tile) when open. */
+export function gateDoorScale(open: boolean): number {
+  return open ? 0.07 : 1;
+}
+
 /** One point of the rim's cross-section: `u` outward from the inner face, `v` up from the floor. */
 interface ProfilePoint {
   u: number;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isWon, step } from '../../src/engine/engine';
+import { gatesOpen, isWon, step } from '../../src/engine/engine';
 import { at, board, first, run } from './helpers';
 import { solve } from '../../src/solver/bfs';
 
@@ -270,5 +270,61 @@ describe('exit for one colour', () => {
     expect(plain.exits).toBeUndefined();
     expect([plain.exitX, plain.exitY]).toEqual([2, 0]);
     expect(board(['r> EX EB b<']).board.exits).toHaveLength(2);
+  });
+});
+
+describe('pressure plate and gate', () => {
+  it('keeps the gate shut while nobody stands on a plate', () => {
+    const level = board(['r> GG EX', 'b> .. PP']);
+    const { state, events } = first(level, 'forward');
+    // Red bumps into the closed gate; blue walks on towards the plate.
+    expect(state.robots.map(at)).toEqual(['0,0,1', '1,1,1']);
+    expect(events[0].outcome).toBe('blocked-gate');
+  });
+
+  it('opens the gate from the move after a robot has arrived on the plate', () => {
+    const level = board(['r> GG EX', 'b> .. PP']);
+    // Move 2: blue arrives on the plate. The gate follows the position before the step, so red still bumps.
+    const two = run(level, ['forward', 'forward']);
+    expect(two.robots.map(at)).toEqual(['0,0,1', '2,1,1']);
+    expect(gatesOpen(level.board, two)).toBe(true);
+    // Move 3: blue bumps the edge and stays on the plate; red walks into the gate.
+    const three = step(level.board, two, 'forward').state;
+    expect(three.robots.map(at)).toEqual(['1,0,1', '2,1,1']);
+    // Move 4: red leaves through the exit.
+    expect(at(step(level.board, three, 'forward').state.robots[0])).toBe('collected');
+  });
+
+  it('never traps a robot in a gate: it may stay and may leave when the plate is empty again', () => {
+    const level = board(['r> GG .. EX', 'bv .. .. ..', 'PP .. .. ..', '.. .. .. ..']);
+    // Blue steps onto the plate, then off it again while red steps into the gate.
+    const inGate = run(level, ['forward', 'forward']);
+    expect(inGate.robots.map(at)).toEqual(['1,0,1', '0,3,2']);
+    expect(gatesOpen(level.board, inGate)).toBe(false);
+    // The gate is shut now, and red simply walks out of it.
+    expect(at(step(level.board, inGate, 'forward').state.robots[0])).toBe('2,0,1');
+  });
+
+  it('opens every gate of the board for any plate, and a collected robot holds nothing open', () => {
+    const level = board(['r> GG .. GG EX', 'PP b< .. .. ..']);
+    // Blue steps onto the plate; then red passes the first gate.
+    const state = run(level, ['forward', 'forward', 'forward', 'forward']);
+    expect(state.robots.map(at)).toEqual(['3,0,1', '0,1,3']);
+    expect(gatesOpen(level.board, { ...state, robots: state.robots.map((r) => ({ ...r, collected: true })) })).toBe(false);
+  });
+
+  it('is solved by the solver: red waits at the gate until blue has crossed the plate', () => {
+    const level = board(['r> GG .. ER', 'b> .. PP EB']);
+    // Blue reaches the plate on move 2 and leaves on move 3; red bumps twice and enters the gate on move 3.
+    const solved = solve(level.board, level.start, 10);
+    expect(solved.solution).toEqual(['forward', 'forward', 'forward', 'forward', 'forward']);
+    expect(isWon(run(level, solved.solution!))).toBe(true);
+  });
+
+  it('refuses a level with a gate and no plate, and leaves a board without them as it was', () => {
+    expect(() => board(['r> GG EX'])).toThrow(/a gate but no plate/);
+    const plain = board(['r> .. EX']).board;
+    expect(plain.gates).toBeUndefined();
+    expect(plain.plates).toBeUndefined();
   });
 });

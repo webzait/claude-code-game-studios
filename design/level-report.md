@@ -4,7 +4,7 @@
 > wijzig een level of de catalogus en draai het script opnieuw. Wat de kolommen betekenen staat onderaan;
 > hoe de score is opgebouwd en geijkt staat in `design/level-structure.md`.
 
-80 levels · zetbudget = kortste oplossing + 2 · alle getallen komen uit de solver-regels.
+100 levels · zetbudget = kortste oplossing + 2 · alle getallen komen uit de solver-regels.
 
 ## Pagina 1 (level 1–20)
 
@@ -313,6 +313,83 @@
 | 78 | Long Sort (`long-sort`) | Andere bordvormen: lang, breed, smal | Piek van pagina 4: het brede 8×6-bord, acht robots, drie keer ROOD achter elkaar. | gegenereerd en opgeschoond | zoekruimte 3.02 · draaien 1 · robots 0.84 · smal 0.99 · onvergeeflijk 0.56 · tegendraads 0.67 |
 | 79 | Home Stretch (`home-stretch`) | Elke kleur heeft een eigen uitgang | Adempauze: zes robots, twee uitgangen, één keer ROOD. | gegenereerd, ongewijzigd gekozen | zoekruimte 1.77 · draaien 0.25 · robots 0.72 · smal 0.86 · onvergeeflijk 0.53 · tegendraads 0.43 |
 | 80 | Grand Sort (`grand-sort`) | Het grootste bord (8×8) | Pronkstuk van pagina 4: tien robots in drie kleuren op een leeg 8×8-bord, elk naar zijn eigen hoek. | gegenereerd, ongewijzigd gekozen | zoekruimte 3.28 · draaien 0.75 · robots 0.93 · smal 1 · onvergeeflijk 0.57 · tegendraads 0.83 |
+
+## Pagina 5 (level 81–100)
+
+### Moeilijkheidscurve
+
+```text
+ 81 ████················  2.2  Hold the Door
+ 82 ███████·············  3.5  Doorman
+ 83 ████████············  4.0  Stand Here
+ 84 █████████···········  4.3  Knock First
+ 85 ██████████··········  4.8  Through the Wall
+ 86 ██████████··········  5.0  Back Door
+ 87 ███████████·········  5.5  Side Gate
+ 88 ██████████··········  4.8  Waiting Room
+ 89 ███████████·········  5.4  Long Wait
+ 90 ███████████·········  5.7  Pinch
+ 91 ███████████·········  5.6  Three at the Gate
+ 92 ███████████·········  5.6  Colour Gate
+ 93 ████████████········  5.8  Turnstile
+ 94 ████████████········  6.0  Double Gate
+ 95 ███████████·········  5.7  Sorted Gate
+ 96 █████████████·······  6.4  Wide Gate
+ 97 ████████████········  6.2  Long Gate
+ 98 █████████████·······  6.4  Great Wall
+ 99 █████████···········  4.7  Open Sesame
+100 ███████████████·····  7.3  Grand Gate
+```
+
+### Getallen
+
+| # | Level | Bord | Robots | Kleuren | Tegels | Kortste | Aantal kortste | Draaien | Zoekruimte | Binnen budget | Dood | Fatale zet | Gedwongen | Weg van uitgang | Botsen | Volgorde vrij | Score |
+|--:|---|:-:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|:-:|--:|--:|--:|--:|
+| 81 | Hold the Door | 4×3 | 2 | 2 | 0 | 4 | 1 | 0 | 35 | 75 | 95% | 64% | 4/4 (4) | 0 | 2 | 100% | **2.2** |
+| 82 | Doorman | 5×4 | 2 | 2 | 0 | 5 | 1 | 1 | 119 | 221 | 98% | 64% | 5/5 (5) | 0 | 2 | 20% | **3.5** |
+| 83 | Stand Here | 5×5 | 3 | 2 | 0 | 6 | 1 | 1 | 238 | 564 | 96% | 49% | 6/6 (1) | 0 | 4 | 17% | **4.0** |
+| 84 | Knock First | 5×5 | 4 | 2 | 0 | 6 | 1 | 2 | 350 | 1140 | 98% | 49% | 6/6 (3) | 1 | 2 | 7% | **4.3** |
+| 85 | Through the Wall | 5×5 | 4 | 2 | 0 | 6 | 1 | 2 | 295 | 817 | 98% | 52% | 6/6 (2) | 1 | 4 | 7% | **4.8** |
+| 86 | Back Door | 6×5 | 4 | 2 | 0 | 8 | 1 | 2 | 1636 | 4671 | 100% | 47% | 8/8 (5) | 0 | 5 | 4% | **5.0** |
+| 87 | Side Gate | 6×5 | 4 | 2 | 0 | 9 | 1 | 3 | 2020 | 5684 | 100% | 55% | 9/9 (5) | 3 | 3 | 1% | **5.5** |
+| 88 | Waiting Room | 6×5 | 6 | 2 | 0 | 8 | 1 | 2 | 1159 | 3790 | 100% | 47% | 8/8 (6) | 0 | 4 | 4% | **4.8** |
+| 89 | Long Wait | 4×7 | 4 | 2 | 0 | 8 | 1 | 2 | 1921 | 5077 | 100% | 57% | 8/8 (7) | 2 | 4 | 4% | **5.4** |
+| 90 | Pinch | 4×4 | 4 | 2 | 0 | 8 | 1 | 4 | 636 | 1175 | 98% | 51% | 8/8 (4) | 3 | 4 | 0% | **5.7** |
+| 91 | Three at the Gate | 6×5 | 4 | 3 | 0 | 7 | 1 | 4 | 5170 | 24531 | 100% | 58% | 7/7 (5) | 0 | 2 | 1% | **5.6** |
+| 92 | Colour Gate | 6×6 | 4 | 2 | 0 | 9 | 1 | 2 | 2884 | 7741 | 100% | 54% | 9/9 (4) | 0 | 7 | 1% | **5.6** |
+| 93 | Turnstile | 6×5 | 4 | 2 | 1 | 9 | 1 | 3 | 2419 | 6403 | 100% | 58% | 9/9 (6) | 3 | 4 | 0% | **5.8** |
+| 94 | Double Gate | 6×6 | 6 | 2 | 0 | 10 | 1 | 2 | 11136 | 38134 | 100% | 62% | 10/10 (9) | 0 | 6 | 2% | **6.0** |
+| 95 | Sorted Gate | 6×6 | 6 | 3 | 0 | 8 | 1 | 4 | 8014 | 38469 | 100% | 53% | 8/8 (4) | 1 | 1 | 0% | **5.7** |
+| 96 | Wide Gate | 7×5 | 5 | 3 | 0 | 8 | 1 | 3 | 5996 | 22824 | 100% | 63% | 8/8 (3) | 1 | 6 | 1% | **6.4** |
+| 97 | Long Gate | 8×6 | 6 | 2 | 0 | 9 | 1 | 3 | 5087 | 18218 | 100% | 49% | 9/9 (4) | 3 | 5 | 0% | **6.2** |
+| 98 | Great Wall | 7×7 | 6 | 3 | 0 | 11 | 1 | 3 | 23165 | 55840 | 100% | 61% | 11/11 (5) | 1 | 5 | 1% | **6.4** |
+| 99 | Open Sesame | 6×5 | 5 | 2 | 0 | 8 | 1 | 1 | 2922 | 11597 | 100% | 47% | 8/8 (6) | 0 | 4 | 13% | **4.7** |
+| 100 | Grand Gate | 8×8 | 6 | 2 | 0 | 11 | 1 | 4 | 96685 | 468750 | 100% | 58% | 11/11 (4) | 4 | 4 | 0% | **7.3** |
+
+### Idee per level
+
+| # | Level (`id`) | Idee | In één zin | Herkomst | Opbouw van de score |
+|--:|---|---|---|---|---|
+| 81 | Hold the Door (`hold-the-door`) | Een poort is alleen open zolang er een robot op een drukplaat staat | Alleen VOORUIT: blauw loopt over de plaat, en precies dan kan rood door de poort. | met de hand gemaakt | zoekruimte 0.47 · robots 0.28 · onvergeeflijk 0.67 · tegendraads 0.75 |
+| 82 | Doorman (`doorman`) | Een poort is alleen open zolang er een robot op een drukplaat staat | Rood loopt naar de plaat bij de uitgang; blauw moet eerst draaien om op tijd bij de poort te zijn. | gegenereerd, ongewijzigd gekozen | zoekruimte 0.85 · draaien 0.25 · robots 0.28 · smal 0.8 · onvergeeflijk 0.69 · tegendraads 0.6 |
+| 83 | Stand Here (`stand-here`) | Een poort is alleen open zolang er een robot op een drukplaat staat | Een rode robot blijft tegen de rand op de plaat staan terwijl de andere rode door de poort komt. | gegenereerd, ongewijzigd gekozen | zoekruimte 1.07 · draaien 0.25 · robots 0.44 · smal 0.83 · onvergeeflijk 0.38 · tegendraads 1 |
+| 84 | Knock First (`knock-first`) | Een poort is alleen open zolang er een robot op een drukplaat staat | Blauw botst eerst tegen de dichte poort en komt erdoor zodra rood op de plaat staat. | gegenereerd, ongewijzigd gekozen | zoekruimte 1.19 · draaien 0.5 · robots 0.56 · smal 0.93 · onvergeeflijk 0.38 · tegendraads 0.75 |
+| 85 | Through the Wall (`through-the-wall`) | Een poort is alleen open zolang er een robot op een drukplaat staat | Vier robots om één poort: wie op de plaat staat, laat de robot onder de muur door. | gegenereerd, ongewijzigd gekozen | zoekruimte 1.14 · draaien 0.5 · robots 0.56 · smal 0.93 · onvergeeflijk 0.44 · tegendraads 1.25 |
+| 86 | Back Door (`back-door`) | Een muur of rand zet een robot stil terwijl de rest doorloopt | De poort zit in de hoek van een lange muur; twee blauwe robots lopen over de plaat en rood glipt erdoor. | gegenereerd, ongewijzigd gekozen | zoekruimte 1.68 · draaien 0.5 · robots 0.56 · smal 0.96 · onvergeeflijk 0.33 · tegendraads 0.94 |
+| 87 | Side Gate (`side-gate`) | Alleen rechtsom: links is drie keer rechts, en je loopt terwijl je draait | Blauw staat links van de muur en moet door de poort onderaan, terwijl rood drie keer draait. | gegenereerd, ongewijzigd gekozen | zoekruimte 1.75 · draaien 0.75 · robots 0.56 · smal 0.99 · onvergeeflijk 0.5 · tegendraads 1 |
+| 88 | Waiting Room (`waiting-room`) | In de rij: wachten op de robot voor je | Zes robots; drie gaan achter elkaar door de poort naast de uitgang. | gegenereerd, ongewijzigd gekozen | zoekruimte 1.57 · draaien 0.5 · robots 0.72 · smal 0.96 · onvergeeflijk 0.34 · tegendraads 0.75 |
+| 89 | Long Wait (`long-wait`) | Andere bordvormen: lang, breed, smal | Het lange 4×7-bord met de muur dwars erdoor; rood wacht onder de poort. | gegenereerd, ongewijzigd gekozen | zoekruimte 1.73 · draaien 0.5 · robots 0.56 · smal 0.96 · onvergeeflijk 0.53 · tegendraads 1.13 |
+| 90 | Pinch (`pinch`) | Klein bord: geen ruimte om om elkaar heen te lopen | 4×4 met een muur in het midden: blauw botst vier keer tegen de poort voor hij open is. | gegenereerd, ongewijzigd gekozen | zoekruimte 1.38 · draaien 1 · robots 0.56 · smal 1 · onvergeeflijk 0.42 · tegendraads 1.31 |
+| 91 | Three at the Gate (`three-at-the-gate`) | Drie kleuren uit elkaar houden | Drie kleuren en één poort; rood en geel draaien elk twee keer. | gegenereerd, ongewijzigd gekozen | zoekruimte 2.04 · draaien 1 · robots 0.56 · smal 0.99 · onvergeeflijk 0.55 · tegendraads 0.43 |
+| 92 | Colour Gate (`colour-gate`) | Elke kleur heeft een eigen uitgang | Poort en uitgang per kleur samen: de blauwe uitgang ligt achter de muur. | gegenereerd, ongewijzigd gekozen | zoekruimte 1.86 · draaien 0.5 · robots 0.56 · smal 0.99 · onvergeeflijk 0.48 · tegendraads 1.17 |
+| 93 | Turnstile (`turnstile`) | Een draaitegel draait wie erop stapt: het bord doet het draaien | Plaat, poort en draaitegel naast elkaar; de tegel draait drie robots. | gegenereerd, ongewijzigd gekozen | zoekruimte 1.8 · draaien 0.75 · robots 0.56 · smal 1 · onvergeeflijk 0.55 · tegendraads 1.17 |
+| 94 | Double Gate (`double-gate`) | Een poort is alleen open zolang er een robot op een drukplaat staat | Twee poorten in één muur en één plaat: acht keer botst er een robot tegen een dichte poort. | gegenereerd, ongewijzigd gekozen | zoekruimte 2.28 · draaien 0.5 · robots 0.72 · smal 0.98 · onvergeeflijk 0.64 · tegendraads 0.9 |
+| 95 | Sorted Gate (`sorted-gate`) | Drie kleuren uit elkaar houden | Drie kleuren, drie uitgangen en een poort in de hoek; geel draait drie keer achter elkaar. | gegenereerd, ongewijzigd gekozen | zoekruimte 2.18 · draaien 1 · robots 0.72 · smal 1 · onvergeeflijk 0.46 · tegendraads 0.38 |
+| 96 | Wide Gate (`wide-gate`) | Andere bordvormen: lang, breed, smal | Het brede 7×5-bord: blauw blijft vijf zetten op de plaat staan en drie robots gaan door de poort naast de uitgang. | gegenereerd, ongewijzigd gekozen | zoekruimte 2.09 · draaien 0.75 · robots 0.65 · smal 0.99 · onvergeeflijk 0.66 · tegendraads 1.31 |
+| 97 | Long Gate (`long-gate`) | Andere bordvormen: lang, breed, smal | Het 8×6-bord met de muur dwars erdoor en één rode robot aan de verkeerde kant. | gegenereerd, ongewijzigd gekozen | zoekruimte 2.04 · draaien 0.75 · robots 0.72 · smal 1 · onvergeeflijk 0.39 · tegendraads 1.33 |
+| 98 | Great Wall (`great-wall`) | In de rij: wachten op de robot voor je | Piek van pagina 5: het 7×7-bord, elf zetten, vijf robots in de rij onder de muur en één die erdoor moet. | gegenereerd, ongewijzigd gekozen | zoekruimte 2.52 · draaien 0.75 · robots 0.72 · smal 0.99 · onvergeeflijk 0.61 · tegendraads 0.82 |
+| 99 | Open Sesame (`open-sesame`) | Een poort is alleen open zolang er een robot op een drukplaat staat | Adempauze: zes zetten samen lopen, dan één keer BLAUW. | gegenereerd, ongewijzigd gekozen | zoekruimte 1.86 · draaien 0.25 · robots 0.65 · smal 0.88 · onvergeeflijk 0.34 · tegendraads 0.75 |
+| 100 | Grand Gate (`grand-gate`) | Het grootste bord (8×8) | Pronkstuk van pagina 5: het 8×8-bord met een muur, een poort en een opening; elf zetten. | gegenereerd en opgeschoond | zoekruimte 2.97 · draaien 1 · robots 0.72 · smal 1 · onvergeeflijk 0.55 · tegendraads 1.09 |
 
 ## Wat de kolommen betekenen
 

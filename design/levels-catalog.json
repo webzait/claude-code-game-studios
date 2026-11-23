@@ -19,7 +19,8 @@
     "turn-tile": "Een draaitegel draait wie erop stapt: het bord doet het draaien",
     "tile-to-avoid": "Een draaitegel in de weg: wie erop stapt, loopt verkeerd",
     "colour-exit": "Elke kleur heeft een eigen uitgang",
-    "wrong-door": "Een uitgang van een andere kleur is gewone vloer: je loopt eroverheen of staat er in de weg"
+    "wrong-door": "Een uitgang van een andere kleur is gewone vloer: je loopt eroverheen of staat er in de weg",
+    "plate-gate": "Een poort is alleen open zolang er een robot op een drukplaat staat"
   },
   "origins": {
     "hand": "met de hand gemaakt",
@@ -427,6 +428,106 @@
       "idea": "big",
       "origin": "generated",
       "about": "Pronkstuk van pagina 4: tien robots in drie kleuren op een leeg 8×8-bord, elk naar zijn eigen hoek."
+    },
+    "hold-the-door": {
+      "idea": "plate-gate",
+      "origin": "hand",
+      "about": "Alleen VOORUIT: blauw loopt over de plaat, en precies dan kan rood door de poort."
+    },
+    "doorman": {
+      "idea": "plate-gate",
+      "origin": "generated",
+      "about": "Rood loopt naar de plaat bij de uitgang; blauw moet eerst draaien om op tijd bij de poort te zijn."
+    },
+    "stand-here": {
+      "idea": "plate-gate",
+      "origin": "generated",
+      "about": "Een rode robot blijft tegen de rand op de plaat staan terwijl de andere rode door de poort komt."
+    },
+    "knock-first": {
+      "idea": "plate-gate",
+      "origin": "generated",
+      "about": "Blauw botst eerst tegen de dichte poort en komt erdoor zodra rood op de plaat staat."
+    },
+    "through-the-wall": {
+      "idea": "plate-gate",
+      "origin": "generated",
+      "about": "Vier robots om één poort: wie op de plaat staat, laat de robot onder de muur door."
+    },
+    "back-door": {
+      "idea": "wall-stopper",
+      "origin": "generated",
+      "about": "De poort zit in de hoek van een lange muur; twee blauwe robots lopen over de plaat en rood glipt erdoor."
+    },
+    "side-gate": {
+      "idea": "three-rights",
+      "origin": "generated",
+      "about": "Blauw staat links van de muur en moet door de poort onderaan, terwijl rood drie keer draait."
+    },
+    "waiting-room": {
+      "idea": "queue",
+      "origin": "generated",
+      "about": "Zes robots; drie gaan achter elkaar door de poort naast de uitgang."
+    },
+    "long-wait": {
+      "idea": "board-shape",
+      "origin": "generated",
+      "about": "Het lange 4×7-bord met de muur dwars erdoor; rood wacht onder de poort."
+    },
+    "pinch": {
+      "idea": "tight",
+      "origin": "generated",
+      "about": "4×4 met een muur in het midden: blauw botst vier keer tegen de poort voor hij open is."
+    },
+    "three-at-the-gate": {
+      "idea": "three-colours",
+      "origin": "generated",
+      "about": "Drie kleuren en één poort; rood en geel draaien elk twee keer."
+    },
+    "colour-gate": {
+      "idea": "colour-exit",
+      "origin": "generated",
+      "about": "Poort en uitgang per kleur samen: de blauwe uitgang ligt achter de muur."
+    },
+    "turnstile": {
+      "idea": "turn-tile",
+      "origin": "generated",
+      "about": "Plaat, poort en draaitegel naast elkaar; de tegel draait drie robots."
+    },
+    "double-gate": {
+      "idea": "plate-gate",
+      "origin": "generated",
+      "about": "Twee poorten in één muur en één plaat: acht keer botst er een robot tegen een dichte poort."
+    },
+    "sorted-gate": {
+      "idea": "three-colours",
+      "origin": "generated",
+      "about": "Drie kleuren, drie uitgangen en een poort in de hoek; geel draait drie keer achter elkaar."
+    },
+    "wide-gate": {
+      "idea": "board-shape",
+      "origin": "generated",
+      "about": "Het brede 7×5-bord: blauw blijft vijf zetten op de plaat staan en drie robots gaan door de poort naast de uitgang."
+    },
+    "long-gate": {
+      "idea": "board-shape",
+      "origin": "generated",
+      "about": "Het 8×6-bord met de muur dwars erdoor en één rode robot aan de verkeerde kant."
+    },
+    "great-wall": {
+      "idea": "queue",
+      "origin": "generated",
+      "about": "Piek van pagina 5: het 7×7-bord, elf zetten, vijf robots in de rij onder de muur en één die erdoor moet."
+    },
+    "open-sesame": {
+      "idea": "plate-gate",
+      "origin": "generated",
+      "about": "Adempauze: zes zetten samen lopen, dan één keer BLAUW."
+    },
+    "grand-gate": {
+      "idea": "big",
+      "origin": "tidied",
+      "about": "Pronkstuk van pagina 5: het 8×8-bord met een muur, een poort en een opening; elf zetten."
     }
   },
   "retired": {},

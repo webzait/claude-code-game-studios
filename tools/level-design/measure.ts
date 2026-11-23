@@ -21,6 +21,9 @@ export interface Metrics {
   readonly colourExits: number;
   /** Times, along the solution, a robot stepped onto an exit that does not take its colour. */
   readonly wrongDoor: number;
+  /** Gates on the board, and times along the solution a robot stepped into one. */
+  readonly gates: number;
+  readonly gatePasses: number;
   readonly robots: number;
   readonly colours: number;
   /** Length of the shortest solution; null when the level cannot be won within the explored budget. */
@@ -182,12 +185,13 @@ export function replayMeasures(
   level: Level,
   solution: readonly Command[],
   rules?: Rules,
-): { tally: Partial<Record<Outcome, number>>; maxExitsAtOnce: number; tileTurns: number; wrongDoor: number; exitSides: number; turns: number; commandsUsed: number; walls: number; tiles: number; colourExits: number; robots: number; colours: number } {
+): { tally: Partial<Record<Outcome, number>>; maxExitsAtOnce: number; tileTurns: number; wrongDoor: number; gates: number; gatePasses: number; exitSides: number; turns: number; commandsUsed: number; walls: number; tiles: number; colourExits: number; robots: number; colours: number } {
   const tally: Partial<Record<Outcome, number>> = {};
   const sides = new Set<number>();
   let maxExitsAtOnce = 0;
   let tileTurns = 0;
   let wrongDoor = 0;
+  let gatePasses = 0;
   const doors = new Set(exitsOf(level.board).map((e) => e.y * level.board.width + e.x));
   let state = level.start;
   for (const command of solution) {
@@ -197,6 +201,7 @@ export function replayMeasures(
       tally[e.outcome] = (tally[e.outcome] ?? 0) + 1;
       if (e.tileTurned) tileTurns++;
       if (e.outcome === 'moved' && doors.has(e.toY * level.board.width + e.toX)) wrongDoor++;
+      if (e.outcome === 'moved' && level.board.gates?.[e.toY * level.board.width + e.toX]) gatePasses++;
       if (e.outcome === 'exited') {
         exits++;
         sides.add(e.dir);
@@ -210,6 +215,8 @@ export function replayMeasures(
     maxExitsAtOnce,
     tileTurns,
     wrongDoor,
+    gates: level.board.gates?.filter(Boolean).length ?? 0,
+    gatePasses,
     exitSides: sides.size,
     turns: solution.filter((c) => c !== 'forward').length,
     commandsUsed: new Set(solution).size,
@@ -273,7 +280,7 @@ export function measure(level: Level, options: MeasureOptions = {}): Metrics {
   if (par === null) {
     return {
       ...base, par: null, solution: null, optimalSolutions: 0, searchStates: graph.size, deadShare: 1, fatalShare: 1,
-      forcedPar: 0, forcedBudget: 0, awaySteps: 0, bumpSteps: 0, orderFreedom: 0, turns: 0, exitSides: 0, commandsUsed: 0, tally: {}, maxExitsAtOnce: 0, tileTurns: 0, wrongDoor: 0,
+      forcedPar: 0, forcedBudget: 0, awaySteps: 0, bumpSteps: 0, orderFreedom: 0, turns: 0, exitSides: 0, commandsUsed: 0, tally: {}, maxExitsAtOnce: 0, tileTurns: 0, wrongDoor: 0, gates: board.gates?.filter(Boolean).length ?? 0, gatePasses: 0,
       score: 0, scoreParts: {},
     };
   }
@@ -400,6 +407,8 @@ export function measure(level: Level, options: MeasureOptions = {}): Metrics {
     maxExitsAtOnce,
     tileTurns,
     wrongDoor: replayMeasures(level, solution, options.rules).wrongDoor,
+    gates: board.gates?.filter(Boolean).length ?? 0,
+    gatePasses: replayMeasures(level, solution, options.rules).gatePasses,
   };
   const { score, parts } = difficulty(partial);
   return { ...partial, score, scoreParts: parts };

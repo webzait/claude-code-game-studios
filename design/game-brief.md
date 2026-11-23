@@ -51,7 +51,9 @@ Each level has a move budget of the shortest solution plus two. Running out ends
 - [x] Turn tile (a tile that turns whoever steps onto it), agreed 2026-11-22: in the engine, drawn as a board part, and animated as a beat of its own after the step
 - [x] Page 3: twenty turn-tile levels, levels 41 to 60, in the game
 - [x] Exit per colour (an exit that takes one colour and is plain floor to the others), agreed 2026-11-22: in the engine and drawn in the robot colour
-- [x] Page 4: twenty exit-per-colour levels, levels 61 to 80; eighty levels in all
+- [x] Page 4: twenty exit-per-colour levels, levels 61 to 80
+- [x] Pressure plate and gate (a gate is open while a robot stands on a plate), agreed 2026-11-22: in the engine and drawn as a purple pair
+- [x] Page 5: twenty plate-and-gate levels, levels 81 to 100; one hundred levels in all
 - [x] Coins: earned per win by its stars (10, 20, 30), spent on Undo (5), the next-move hint (20) and extra moves (40); amounts reasoned in `design/economy.md`; no real shop, no ads
 - [x] Test shop (2026-11-22): pretend coin purchases behind a `PurchaseProvider` interface, "Get coins" links at the cannot-afford moments, a test ledger and switches in the test lab. Nothing is charged and nothing leaves the device; what a real shop needs and the economy note are in `design/shop.md`
 

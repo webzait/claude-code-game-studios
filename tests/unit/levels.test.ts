@@ -14,7 +14,9 @@ const PAGE_3 = LEVELS.slice(2 * CONFIG.levelsPerPage, 3 * CONFIG.levelsPerPage);
 /** The levels FORWARD alone wins: the very first, and the first of each page that introduces a new element. */
 /** Page 4: an exit per colour. */
 const PAGE_4 = LEVELS.slice(3 * CONFIG.levelsPerPage, 4 * CONFIG.levelsPerPage);
-const FORWARD_ONLY = ['first-steps', 'turntable', 'own-door'];
+/** Page 5: pressure plate and gate. */
+const PAGE_5 = LEVELS.slice(4 * CONFIG.levelsPerPage, 5 * CONFIG.levelsPerPage);
+const FORWARD_ONLY = ['first-steps', 'turntable', 'own-door', 'hold-the-door'];
 const colours = (id: string): string[] => [...new Set(byId(id).start.robots.map((r) => r.color))].sort();
 
 describe('solver', () => {
@@ -37,8 +39,8 @@ describe('solver', () => {
 });
 
 describe('levels', () => {
-  it('ships four full pages of levels with unique ids and names', () => {
-    expect(LEVELS.length).toBe(4 * CONFIG.levelsPerPage);
+  it('ships five full pages of levels with unique ids and names', () => {
+    expect(LEVELS.length).toBe(5 * CONFIG.levelsPerPage);
     expect(new Set(LEVELS.map((l) => l.id)).size).toBe(LEVELS.length);
     expect(new Set(LEVELS.map((l) => l.name)).size).toBe(LEVELS.length);
   });
@@ -121,6 +123,31 @@ describe('levels', () => {
       expect(doors, level.id).toEqual(colours);
     }
     const sizes = new Set(PAGE_4.map((l) => `${l.board.width}x${l.board.height}`));
+    expect(sizes.has('8x8')).toBe(true);
+    expect(sizes.size).toBeGreaterThanOrEqual(8);
+  });
+
+  it('keeps plates and gates off pages 1 to 4', () => {
+    expect(LEVELS.slice(0, 4 * CONFIG.levelsPerPage).every((l) => l.board.gates === undefined && l.board.plates === undefined)).toBe(true);
+  });
+
+  it('teaches plate and gate in the first five levels of page 5, starting with FORWARD alone', () => {
+    const first = PAGE_5.slice(0, 5);
+    expect(first.every((l) => l.board.gates?.some(Boolean) && l.board.plates?.some(Boolean))).toBe(true);
+    expect(new Set(first[0].witness)).toEqual(new Set(['forward']));
+    expect(first.every((l) => l.par <= 7 && l.start.robots.length <= 4)).toBe(true);
+    // In each of them a robot really walks through a gate.
+    expect(first.every((l) => replayMeasures(l, l.witness).gatePasses > 0)).toBe(true);
+  });
+
+  it('needs its gate in every level of page 5: with the gates held open the level gets shorter or looser', () => {
+    for (const level of PAGE_5) {
+      expect(level.board.gates?.some(Boolean), level.id).toBe(true);
+      const real = fastSolve(prepare(level.board, level.start, CONFIG.rules.exitAcceptsMany), level.par);
+      const open = fastSolve(prepare(level.board, level.start, CONFIG.rules.exitAcceptsMany, true), level.par);
+      expect(open.solution!.length < real.solution!.length || open.optimalCount !== real.optimalCount, level.id).toBe(true);
+    }
+    const sizes = new Set(PAGE_5.map((l) => `${l.board.width}x${l.board.height}`));
     expect(sizes.has('8x8')).toBe(true);
     expect(sizes.size).toBeGreaterThanOrEqual(8);
   });

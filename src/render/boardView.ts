@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import PARTS from '../../data/parts.json';
-import { boardFootprint, buildExit, buildFloorTile, buildObstacle, buildRim, buildTurnTile, buildUnderlay } from './parts/board';
+import { boardFootprint, buildExit, buildFloorTile, buildGate, buildObstacle, buildPlate, buildRim, buildTurnTile, buildUnderlay, gateDoorScale } from './parts/board';
 import { CONFIG } from '../config';
 import { exitsOf } from '../engine/engine';
 import { DIR_DX, DIR_DY, type Color, type GameState, type RobotEvent } from '../engine/types';
@@ -105,6 +105,10 @@ export class BoardView {
   private level: Level | null = null;
   /** The level's turn tiles by cell index (row-major). */
   private turnTiles = new Map<number, TurnTileView>();
+  /** Pressure plates: the button on each plate cell. Gates: the barrier on each gate cell. */
+  private plateButtons = new Map<number, THREE.Object3D>();
+  private gateDoors: THREE.Object3D[] = [];
+  private gatesShownOpen = false;
   /** The cell each robot is shown on, by robot id; -1 once collected. Lets an undo see which tile a robot steps back off. */
   private shownCell = new Map<number, number>();
   /** Seconds into the turn tiles' opening cue, or null when it is not playing. */
@@ -190,6 +194,33 @@ export class BoardView {
     this.showExitShapes();
   }
 
+  /**
+   * Plates and gates as the shown position has them: a button is down while a robot stands on its plate, and
+   * every barrier is sunk into the floor while any plate is held. Called after each step and each sync.
+   */
+  private showGates(animate: boolean): void {
+    if (this.plateButtons.size === 0) return;
+    const held = new Set<number>();
+    for (const cell of this.shownCell.values()) if (this.plateButtons.has(cell)) held.add(cell);
+    for (const [cell, button] of this.plateButtons) {
+      const rest = (button.userData.restY as number | undefined) ?? button.position.y;
+      button.userData.restY = rest;
+      button.position.y = rest - (held.has(cell) ? 0.045 : 0);
+    }
+    const open = held.size > 0;
+    if (open === this.gatesShownOpen && animate) return;
+    const from = gateDoorScale(this.gatesShownOpen);
+    const to = gateDoorScale(open);
+    this.gatesShownOpen = open;
+    if (!animate || this.reduced) {
+      for (const door of this.gateDoors) door.scale.y = to;
+      return;
+    }
+    void this.addTween(0.22, (k) => {
+      for (const door of this.gateDoors) door.scale.y = from + (to - from) * easeInOut(k);
+    });
+  }
+
   /** On an exit for one colour: the colour's shape in place of the tick while "Colour shapes" is on. */
   private showExitShapes(): void {
     for (const pad of this.exitPads.values()) {
@@ -231,6 +262,9 @@ export class BoardView {
     this.exitRings = [];
     this.exitGlows = [];
     this.turnTiles.clear();
+    this.plateButtons.clear();
+    this.gateDoors = [];
+    this.gatesShownOpen = false;
     this.shownCell.clear();
     this.floorY = this.modular ? PARTS.floorTile.height : 0.06;
     if (this.modular) this.buildPartsBoard(level);
@@ -313,6 +347,21 @@ export class BoardView {
           fixed.add(tile);
           continue;
         }
+        if (level.board.plates?.[y * width + x] || level.board.gates?.[y * width + x]) {
+          const isPlate = level.board.plates?.[y * width + x] === true;
+          const piece = isPlate ? buildPlate((x + y) % 2 === 1, false) : buildGate((x + y) % 2 === 1, false);
+          piece.position.set(cx, 0, cz);
+          // The button and the barrier move, so they stay out of the fused board.
+          const moving = (isPlate ? piece.userData.button : piece.userData.door) as THREE.Object3D;
+          piece.remove(moving);
+          moving.position.x += cx;
+          moving.position.z += cz;
+          this.boardGroup.add(moving);
+          if (isPlate) this.plateButtons.set(y * width + x, moving);
+          else this.gateDoors.push(moving);
+          fixed.add(piece);
+          continue;
+        }
         const tile = buildFloorTile((x + y) % 2 === 1, false);
         tile.position.set(cx, 0, cz);
         fixed.add(tile);
@@ -364,6 +413,17 @@ export class BoardView {
           disc.position.set(this.cellX(x), 0.036, this.cellZ(y));
           this.boardGroup.add(disc);
           this.turnTiles.set(y * width + x, { disc, glow: null, angle: 0, used: false });
+        }
+        if (level.board.plates?.[y * width + x] || level.board.gates?.[y * width + x]) {
+          // The built-in board borrows the parts' button and barrier, so a plate or gate is never an unmarked cell.
+          const isPlate = level.board.plates?.[y * width + x] === true;
+          const part = isPlate ? buildPlate(false, false) : buildGate(false, false);
+          const moving = (isPlate ? part.userData.button : part.userData.door) as THREE.Object3D;
+          moving.position.set(this.cellX(x), isPlate ? 0.11 : 0.07, this.cellZ(y));
+          moving.userData.restY = moving.position.y;
+          this.boardGroup.add(moving);
+          if (isPlate) this.plateButtons.set(y * width + x, moving);
+          else this.gateDoors.push(moving);
         }
         if (walls[y * width + x]) {
           const wall = new THREE.Mesh(wallGeo, wallMat);
@@ -548,6 +608,7 @@ export class BoardView {
         this.pose(view, fx + (tx - fx) * e, fz + (tz - fz) * e, fa + (ta - fa) * e, fs + (ts - fs) * e);
       });
     }
+    this.showGates(animate);
   }
 
   /** The turn tile's light at point `k` (0 to 1) of a turn: up and down again. */
@@ -659,6 +720,7 @@ export class BoardView {
     // Turn tiles: every robot that arrived on one has finished its step and stands still. After
     // a short pause the tile turns it a quarter clockwise, disc and robot together, with a flash
     // of the tile's light: a beat of its own, so it reads as the board's doing and not the command's.
+    this.showGates(true);
     const beats = tileBeats(events);
     if (!beats.length) return;
     this.endCue();
