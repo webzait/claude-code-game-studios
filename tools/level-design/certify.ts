@@ -4,7 +4,7 @@
  * prints the measured numbers. With an output file it writes the entries with `par` and `witness`,
  * ready to paste into data/levels.json.
  *
- * Usage: npm run certify -- boards.json [out.json]
+ * Usage: npm run certify -- boards.json [out.json] [--keep-walls]
  *   boards.json: [{ "id": "...", "name": "...", "grid": ["row", ...] }, ...]
  */
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -14,7 +14,9 @@ import { solve } from '../../src/solver/bfs';
 import { fastSolve, prepare } from './fast';
 import { dropIdleWalls, summary } from './generate';
 
-const [boardsFile, outFile] = process.argv.slice(2);
+// --keep-walls: the tidy check leaves walls alone (for boards whose walls form a barrier around a gate).
+const keepWalls = process.argv.includes('--keep-walls');
+const [boardsFile, outFile] = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 if (!boardsFile) {
   console.log('Usage: npm run certify -- boards.json [out.json]');
   process.exit(1);
@@ -32,7 +34,7 @@ for (const def of boards) {
     continue;
   }
   // Measured after a tidy pass, to show whether any wall or turn tile is idle; the board itself is kept as given.
-  const tidy = dropIdleWalls([...def.grid], CONFIG.levelDesign.maxStates);
+  const tidy = dropIdleWalls([...def.grid], CONFIG.levelDesign.maxStates, keepWalls ? ['##'] : []);
   const idle = tidy.grid.join('|') === def.grid.join('|') ? '' : `\n   idle pieces, tidy board: ${tidy.grid.join(' / ')}`;
   console.log(`${def.id}: ${summary(tidy.metrics)}${tidy.metrics.capped ? ' (measurement capped)' : ''}\n   ${solved.solution.join(' ')}${idle}`);
   out.push({ id: def.id, name: def.name, par: solved.solution.length, witness: solved.solution, grid: def.grid });

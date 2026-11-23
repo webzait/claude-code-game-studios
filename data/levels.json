@@ -1063,5 +1063,272 @@
       ".. b> .. .. .. .. .. ..",
       "EY .. .. .. .. y< b> EB"
     ]
+  },
+  {
+    "id": "hold-the-door",
+    "name": "Hold the Door",
+    "par": 4,
+    "witness": ["forward","forward","forward","forward"],
+    "grid": [
+      "b> .. PP EX",
+      "## ## ## GG",
+      ".. .. .. r^"
+    ]
+  },
+  {
+    "id": "doorman",
+    "name": "Doorman",
+    "par": 5,
+    "witness": ["blue","forward","forward","forward","forward"],
+    "grid": [
+      "r> .. .. PP EX",
+      "## ## ## ## GG",
+      ".. .. .. .. ..",
+      ".. .. .. .. b<"
+    ]
+  },
+  {
+    "id": "stand-here",
+    "name": "Stand Here",
+    "par": 6,
+    "witness": ["forward","forward","forward","forward","red","forward"],
+    "grid": [
+      ".. .. .. .. ..",
+      "rv .. .. .. ..",
+      "GG ## ## ## ##",
+      ".. rv .. .. ..",
+      "EX PP .. .. b<"
+    ]
+  },
+  {
+    "id": "knock-first",
+    "name": "Knock First",
+    "par": 6,
+    "witness": ["forward","red","red","forward","forward","forward"],
+    "grid": [
+      "EX b< GG b< ..",
+      ".. rv ## .. ..",
+      ".. PP ## .. ..",
+      ".. .. ## .. ..",
+      "rv .. ## .. .."
+    ]
+  },
+  {
+    "id": "through-the-wall",
+    "name": "Through the Wall",
+    "par": 6,
+    "witness": ["forward","forward","forward","forward","red","red"],
+    "grid": [
+      "EX rv b< .. ..",
+      "b^ PP .. .. ..",
+      "GG ## ## ## ##",
+      "r^ .. .. .. ..",
+      ".. .. .. .. .."
+    ]
+  },
+  {
+    "id": "back-door",
+    "name": "Back Door",
+    "par": 8,
+    "witness": ["forward","forward","forward","forward","forward","red","red","forward"],
+    "grid": [
+      "EX .. PP b< b< ..",
+      ".. .. .. .. .. ..",
+      ".. rv .. .. .. ..",
+      "GG ## ## ## ## ##",
+      "r^ .. .. .. .. .."
+    ]
+  },
+  {
+    "id": "side-gate",
+    "name": "Side Gate",
+    "par": 9,
+    "witness": ["forward","red","forward","red","forward","red","forward","forward","forward"],
+    "grid": [
+      ".. .. ## .. .. ..",
+      ".. .. ## .. .. ..",
+      ".. .. ## r< .. ..",
+      ".. .. ## .. .. PP",
+      "b> .. GG r^ b> EX"
+    ]
+  },
+  {
+    "id": "waiting-room",
+    "name": "Waiting Room",
+    "par": 8,
+    "witness": ["forward","forward","forward","red","red","forward","forward","forward"],
+    "grid": [
+      ".. .. .. .. ## r^",
+      ".. .. .. .. ## bv",
+      ".. .. .. .. ## PP",
+      ".. .. .. .. ## r>",
+      "b> .. b> r> GG EX"
+    ]
+  },
+  {
+    "id": "long-wait",
+    "name": "Long Wait",
+    "par": 8,
+    "witness": ["forward","forward","blue","forward","forward","blue","forward","forward"],
+    "grid": [
+      ".. r> .. EX",
+      ".. .. b< ..",
+      ".. .. .. ..",
+      ".. PP .. b<",
+      "## ## ## GG",
+      ".. .. .. r^",
+      ".. .. .. .."
+    ]
+  },
+  {
+    "id": "pinch",
+    "name": "Pinch",
+    "par": 8,
+    "witness": ["blue","forward","red","forward","red","red","forward","forward"],
+    "grid": [
+      "EX bv GG bv",
+      "r> .. ## ..",
+      "r^ .. ## ..",
+      ".. PP ## .."
+    ]
+  },
+  {
+    "id": "three-at-the-gate",
+    "name": "Three at the Gate",
+    "par": 7,
+    "witness": ["yellow","red","forward","forward","yellow","red","forward"],
+    "grid": [
+      ".. .. .. .. .. ..",
+      ".. r> y> .. .. ..",
+      ".. .. .. .. .. ..",
+      "## ## GG ## ## ##",
+      "EX PP rv .. b< .."
+    ]
+  },
+  {
+    "id": "colour-gate",
+    "name": "Colour Gate",
+    "par": 9,
+    "witness": ["forward","red","forward","forward","forward","forward","forward","blue","forward"],
+    "grid": [
+      "EB .. ## .. r> ..",
+      ".. .. GG .. b< ..",
+      "b< .. ## .. .. ..",
+      ".. .. ## .. .. PP",
+      ".. .. ## .. r> ..",
+      ".. .. ## .. .. ER"
+    ]
+  },
+  {
+    "id": "turnstile",
+    "name": "Turnstile",
+    "par": 9,
+    "witness": ["forward","blue","red","forward","red","forward","forward","forward","forward"],
+    "grid": [
+      ".. .. .. ## .. ..",
+      ".. .. .. ## .. ..",
+      ".. .. .. GG PP @@",
+      ".. b^ .. ## b^ rv",
+      ".. .. .. ## r< EX"
+    ]
+  },
+  {
+    "id": "double-gate",
+    "name": "Double Gate",
+    "par": 10,
+    "witness": ["blue","forward","forward","forward","forward","forward","blue","forward","forward","forward"],
+    "grid": [
+      ".. .. .. .. .. ..",
+      "rv .. .. b> .. ..",
+      "rv .. .. .. .. ..",
+      "GG ## ## GG ## ##",
+      "b> .. .. .. .. ..",
+      "EX r< PP .. .. bv"
+    ]
+  },
+  {
+    "id": "sorted-gate",
+    "name": "Sorted Gate",
+    "par": 8,
+    "witness": ["red","yellow","yellow","yellow","forward","forward","forward","forward"],
+    "grid": [
+      "EY .. r^ .. GG ER",
+      "y^ .. .. .. ## r<",
+      ".. .. .. .. ## bv",
+      ".. .. .. .. ## bv",
+      ".. .. .. .. ## ..",
+      "y> PP .. .. ## EB"
+    ]
+  },
+  {
+    "id": "wide-gate",
+    "name": "Wide Gate",
+    "par": 8,
+    "witness": ["forward","red","red","forward","forward","forward","yellow","forward"],
+    "grid": [
+      "bv ## .. .. .. .. ..",
+      ".. ## .. .. .. .. ..",
+      "PP ## .. .. .. .. ..",
+      "y> ## r> .. .. .. ..",
+      "EX GG .. b< .. .. r>"
+    ]
+  },
+  {
+    "id": "long-gate",
+    "name": "Long Gate",
+    "par": 9,
+    "witness": ["forward","forward","forward","blue","blue","red","forward","forward","forward"],
+    "grid": [
+      ".. .. .. .. .. .. r^ EX",
+      ".. .. .. .. PP b< b< r^",
+      ".. .. .. .. .. .. .. b^",
+      "## ## ## ## ## GG ## ##",
+      ".. .. .. .. .. r^ .. ..",
+      ".. .. .. .. .. .. .. .."
+    ]
+  },
+  {
+    "id": "great-wall",
+    "name": "Great Wall",
+    "par": 11,
+    "witness": ["forward","forward","forward","blue","blue","blue","forward","forward","forward","forward","forward"],
+    "grid": [
+      ".. .. .. .. .. .. ..",
+      ".. .. .. .. .. .. ..",
+      ".. .. .. .. .. .. ..",
+      ".. .. .. .. .. .. ..",
+      ".. .. .. bv .. .. ..",
+      "## ## ## GG ## ## ##",
+      "y> bv r> r> r> PP EX"
+    ]
+  },
+  {
+    "id": "open-sesame",
+    "name": "Open Sesame",
+    "par": 8,
+    "witness": ["forward","forward","forward","forward","forward","forward","blue","forward"],
+    "grid": [
+      ".. ## .. .. .. rv",
+      ".. ## .. .. .. rv",
+      ".. ## b> .. .. PP",
+      "b> GG .. .. .. ..",
+      ".. ## r> .. .. EX"
+    ]
+  },
+  {
+    "id": "grand-gate",
+    "name": "Grand Gate",
+    "par": 11,
+    "witness": ["forward","forward","red","forward","red","forward","forward","forward","red","blue","forward"],
+    "grid": [
+      ".. .. .. .. .. .. .. ..",
+      ".. bv .. .. .. .. .. ..",
+      "## GG ## ## ## .. ## ##",
+      ".. .. .. .. .. .. .. ..",
+      ".. .. .. .. .. .. .. ..",
+      ".. .. rv .. .. .. .. ..",
+      "rv r^ .. .. .. .. .. ..",
+      "EX PP .. .. .. b< b< .."
+    ]
   }
 ]

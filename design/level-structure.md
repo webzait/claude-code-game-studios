@@ -138,7 +138,7 @@ Vuistregels die bij het ordenen zijn gebruikt:
 
 Pagina 2 begint lager dan pagina 1 eindigt (4,4 na 7,9): een nieuwe pagina is een nieuw begin.
 
-## 4. Pagina 1 tot en met 4
+## 4. Pagina 1 tot en met 5
 
 ### Pagina 1 (level 1–20): de regels en de eerste combinaties
 
@@ -313,6 +313,53 @@ Eerlijk hierover:
   "verkeerde deur" op grote borden vroegen, leverden geen bruikbare kandidaat op.
 - De volledige meting van *Grand Sort* is afgekapt bij 3 miljoen standen; lengte en oplossing zijn bewezen.
 - Het economiemodel (`design/economy.md`) rekent nog met drie pagina's; pagina 4 zit daar niet in.
+
+### Pagina 5 (level 81–100): drukplaat en poort — in het spel
+
+Gebouwd op 22 november 2026 na jouw "ja" op de drukplaat. De regel staat in hoofdstuk 7 (D). In elk level op
+deze pagina doet de poort ertoe: een test bewijst dat het level korter of losser wordt als de poorten open
+zouden blijven staan.
+
+| # | Level | Idee | Bord | Score | Herkomst |
+|--:|---|---|:-:|--:|---|
+| 81 | Hold the Door | `plate-gate` | 4×3 | 2,2 | hand |
+| 82 | Doorman | `plate-gate` | 5×4 | 3,5 | gegenereerd |
+| 83 | Stand Here | `plate-gate` | 5×5 | 4,0 | gegenereerd |
+| 84 | Knock First | `plate-gate` | 5×5 | 4,3 | gegenereerd |
+| 85 | Through the Wall | `plate-gate` | 5×5 | 4,8 | gegenereerd |
+| 86 | Back Door | `wall-stopper` | 6×5 | 5,0 | gegenereerd |
+| 87 | Side Gate | `three-rights` | 6×5 | 5,5 | gegenereerd |
+| 88 | Waiting Room | `queue` | 6×5 | 4,8 | gegenereerd |
+| 89 | Long Wait | `board-shape` | 4×7 | 5,4 | gegenereerd |
+| 90 | Pinch | `tight` | 4×4 | 5,7 | gegenereerd |
+| 91 | Three at the Gate | `three-colours` | 6×5 | 5,6 | gegenereerd |
+| 92 | Colour Gate | `colour-exit` | 6×6 | 5,6 | gegenereerd |
+| 93 | Turnstile | `turn-tile` | 6×5 | 5,8 | gegenereerd |
+| 94 | Double Gate | `plate-gate` | 6×6 | 6,0 | gegenereerd |
+| 95 | Sorted Gate | `three-colours` | 6×6 | 5,7 | gegenereerd |
+| 96 | Wide Gate | `board-shape` | 7×5 | 6,4 | gegenereerd |
+| 97 | Long Gate | `board-shape` | 8×6 | 6,2 | gegenereerd |
+| 98 | Great Wall | `queue` | 7×7 | 6,4 | gegenereerd |
+| 99 | Open Sesame | `plate-gate` | 6×5 | 4,7 | gegenereerd |
+| 100 | Grand Gate | `big` | 8×8 | 7,3 | gegenereerd, opgeschoond |
+
+Level 81 tot 85 leren het element: de poort gaat open als iemand over de plaat loopt (alleen VOORUIT); een
+robot naar de plaat sturen; iemand die tegen de rand op de plaat blijft staan; eerst botsen, dan erdoor; vier
+robots om één poort. Level 92 en 95 combineren de poort met uitgangen per kleur, level 93 met de draaitegel.
+
+Eerlijk hierover:
+- Eén level met de hand (81), één door het gereedschap opgeschoond (100: de tweede poort en de tweede plaat
+  bleken overbodig en zijn weg; er zit nu een opening in de muur), achttien ongewijzigd gekozen.
+- **Dit is de lichtste van de vijf pagina's.** De piek is 6,4 en alleen het pronkstuk komt boven de 7. Een
+  poort maakt de zoekruimte kleiner in plaats van groter: robots kunnen minder kanten op.
+- **Het pronkstuk heeft maar zes robots.** Op 8×8 met meer robots vond de generator in vijf zoekrondes geen
+  bord waarin de poort echt nodig was. Het is het zwaarste level van de pagina, maar geen optocht zoals
+  level 20, 40 en 80.
+- De muren van een afsluiting zijn bij het opschonen bewust blijven staan, ook waar de oplossing ze niet
+  nodig heeft: zonder muur staat een poort los in het veld.
+- Bij vier grote borden uit de eerste ronde deed de poort niets (zelfde oplossing zonder poort). Die zijn
+  vervangen, en de generator wijst zulke borden nu zelf af.
+- Het economiemodel rekent nog met drie pagina's; pagina 4 en 5 zitten daar niet in.
 
 ## 5. Hoe een level wordt gemaakt en bewezen
 
@@ -491,6 +538,27 @@ Afwijking van het voorstel hieronder: daar stond dat twee robots van een verkeer
 de uitgang. Gebouwd is de iets ruimere regel hierboven (een niet-opgenomen robot wacht zodra *iemand* anders
 hetzelfde vakje wil, ook een robot die wel wordt opgenomen), omdat anders twee robots in één zet hetzelfde
 vakje in zouden gaan. D tot en met G en C2 zijn niet gebouwd.
+
+**Stand na 22 november 2026, derde ronde: ook D, drukplaat en poort, is gebouwd** (engine, levelparser,
+zeef, meting, generator en tekenwerk). Wat er precies in zit:
+
+- Celcodes `PP` (plaat) en `GG` (poort). Een level met een poort maar zonder plaat wordt geweigerd. Een robot
+  kan niet op een plaat of in een poort beginnen.
+- De regel: de poorten zijn open zolang er, vóór de zet, een robot op een plaat staat. Een dichte poort
+  houdt een robot tegen zoals een muur (uitkomst `blocked-gate`). Elke plaat opent alle poorten van het bord.
+- De poort volgt de stand van vóór de zet. De robot die op de plaat aankomt, opent de poort dus voor de
+  *volgende* zet; en wie in dezelfde zet van de plaat af stapt terwijl een ander de poort in stapt, laat die
+  ander nog door.
+- Een robot zit nooit vast in een poort: hij mag er blijven staan en eruit lopen, open of dicht. Dat is
+  eenvoudiger dan de regel uit het voorstel ("de poort gaat niet dicht zolang er iemand in staat") en komt
+  op hetzelfde neer.
+- De toestand is niet groter geworden en de solver is niet gewijzigd.
+- Tekenwerk: plaat en poort delen één paars dat verder nergens voorkomt. De poort is een blok met twee witte
+  strepen dat in de vloer zakt als hij open is; de knop van de plaat zakt in als er een robot op staat.
+- Een bord zonder platen en poorten gedraagt zich exact als voorheen: de eerste 80 levels en hun tests zijn
+  onveranderd groen.
+
+Daarmee zijn de drie aanbevolen elementen gebouwd. B (eenrichtingstegel), C2, E, F en G niet.
 
 ### Waar elk element aan moet voldoen
 
@@ -726,7 +794,7 @@ omdat ze op `step` leunen.
 | # | Vraag | Besluit | Stand |
 |--:|---|---|---|
 | 1 | De sleutelfout in de engine repareren | Ja | Gedaan, zie hoofdstuk 5 |
-| 2 | Nieuwe elementen | Draaitegel (pagina 3), uitgang per kleur (pagina 4), drukplaat met poort (pagina 5); eenrichtingstegel als reserve | Draaitegel en uitgang per kleur gebouwd, getekend en in het spel. Drukplaat met poort niet begonnen: afgesproken was die pas te bouwen als de eerste twee bevallen |
+| 2 | Nieuwe elementen | Draaitegel (pagina 3), uitgang per kleur (pagina 4), drukplaat met poort (pagina 5); eenrichtingstegel als reserve | Alle drie gebouwd, getekend en in het spel (pagina 3, 4 en 5). De eenrichtingstegel is niet nodig geweest |
 | 3 | Pagina 3 | Variant A, met de draaitegel | Gedaan: 20 levels in `data/levels.json`, het spel heeft er 60 |
 | 4 | Volgorde van pagina 1 en 2 | Akkoord: *Follow the Arrow* op plek 3, *Two Lanes* en *Patience* op pagina 2 | Gedaan |
 | 5 | Oude saves met een opgelost level achter een gesloten level | Zo laten | Geen wijziging |
@@ -749,7 +817,15 @@ en 7) en is de browsertest die alle levels uitspeelt ruimer gaan wachten. Niet g
 requests van andere sessies bijwerken (het samenvoegen in die branches werd geweigerd), en de drukplaat met
 poort (zie besluit 2).
 
+Later die dag volgde "ja en ja en ja" op de vragen over de open pull requests en de drukplaat. De pull
+requests #8 en #5 bleken al samengevoegd; op `claude/turnflock-bottom-buttons` staat nieuw werk van een
+andere sessie dat niet is aangeraakt. De drukplaat met poort en pagina 5 zijn gebouwd (hoofdstuk 4 en 7),
+bewust vóórdat iemand pagina 3 en 4 had gespeeld: dat was jouw keuze.
+
 ## 9. Niet gecontroleerd
+
+- **Pagina 5 is door niemand buiten deze sessie gespeeld.** Of een speler zonder uitleg begrijpt dat de
+  paarse knop bij het paarse blok hoort, en dat de poort pas de zet erna opengaat, is niet getest.
 
 - **Pagina 4 is door niemand buiten deze sessie gespeeld.** Of spelers de gekleurde uitgang zonder uitleg
   begrijpen, en of geel-op-geel en rood naast de rode knop goed lezen op een telefoon, is niet getest.

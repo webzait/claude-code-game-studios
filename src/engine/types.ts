@@ -52,6 +52,17 @@ export interface Board {
    * A robot that steps onto a turn tile turns 90 degrees clockwise there, whatever its colour.
    */
   readonly turnTiles?: readonly boolean[];
+  /**
+   * Row-major pressure-plate flags; absent on a board without plates. While any robot stands on a plate,
+   * every gate of the board is open.
+   */
+  readonly plates?: readonly boolean[];
+  /**
+   * Row-major gate flags; absent on a board without gates. A gate is floor a robot may step onto only
+   * when, before the step, a robot stood on a plate. A robot already in a gate is never trapped: it may
+   * stay and may leave, open or closed.
+   */
+  readonly gates?: readonly boolean[];
 }
 
 /** Rule switches. Kept as data so variants can be tried without touching the engine. */
@@ -71,6 +82,7 @@ export type Outcome =
   | 'moved'
   | 'exited'
   | 'blocked-wall'
+  | 'blocked-gate'
   | 'blocked-robot'
   | 'blocked-conflict'
   | 'blocked-cycle';

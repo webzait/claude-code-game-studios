@@ -31,6 +31,14 @@ export interface Recipe {
   readonly yellow?: number | string;
   /** Walls: a number or a range. */
   readonly walls?: number | string;
+  /** Pressure plates and gates: a number or a range each. A gate is placed only when there is a plate. */
+  readonly plates?: number | string;
+  readonly gates?: number | string;
+  /**
+   * A wall across the board, from edge to edge, with the gates as its only openings (at least one).
+   * Without it gates land anywhere and are easy to walk around.
+   */
+  readonly barrier?: boolean;
   /** Turn tiles: a number or a range. */
   readonly tiles?: number | string;
   /** One exit per colour in play, each taking only that colour, instead of the one exit for everyone. */
@@ -155,6 +163,40 @@ export function randomGrid(recipe: Recipe, rnd: () => number): string[] | null {
     }
   }
 
+  const plateCount = between(range(recipe.plates, [0, 0]));
+  let gateCount = plateCount > 0 ? between(range(recipe.gates, [0, 0])) : 0;
+  if (recipe.barrier && plateCount > 0) {
+    // A line of walls right across, not on the outer rows or columns, with the gates as openings.
+    const across = pick(2) === 0;
+    const line = 1 + pick((across ? height : width) - 2);
+    const length = across ? width : height;
+    const openings = new Set<number>();
+    for (let guard = 0; openings.size < Math.max(1, gateCount) && guard < 50; guard++) openings.add(pick(length));
+    for (let k = 0; k < length; k++) {
+      const x = across ? k : line;
+      const y = across ? line : k;
+      if (!free(x, y)) continue;
+      cells[y][x] = openings.has(k) ? 'GG' : '##';
+    }
+    gateCount = 0;
+  }
+  for (let guard = 0; gateCount > 0 && guard < 200; guard++) {
+    const x = pick(width);
+    const y = pick(height);
+    if (!free(x, y)) continue;
+    cells[y][x] = 'GG';
+    gateCount--;
+  }
+  let plates = plateCount;
+  for (let guard = 0; plates > 0 && guard < 200; guard++) {
+    const x = pick(width);
+    const y = pick(height);
+    if (!free(x, y)) continue;
+    cells[y][x] = 'PP';
+    plates--;
+  }
+  if (plates > 0) return null;
+
   let tiles = between(range(recipe.tiles, [0, 0]));
   for (let guard = 0; tiles > 0 && guard < 200; guard++) {
     const x = pick(width);
@@ -206,11 +248,13 @@ export function plannedGrid(recipe: Recipe, rnd: () => number): string[] | null 
     placed++;
   }
   const rows = base.map((r) => r.split(' '));
-  const wins = (robots: [number, number, string][]): boolean => {
+  // While robots are being collected one by one the gates count as open: a robot behind a gate cannot get
+  // home alone. The finished set is checked once more under the real rule.
+  const wins = (robots: [number, number, string][], gatesForcedOpen = true): boolean => {
     const trial = rows.map((r) => r.slice());
     for (const [x, y, cell] of robots) trial[y][x] = cell;
     const level = parseLevel({ id: 'plan', name: 'plan', grid: trial.map((r) => r.join(' ')) });
-    const fast = prepare(level.board, level.start, CONFIG.rules.exitAcceptsMany);
+    const fast = prepare(level.board, level.start, CONFIG.rules.exitAcceptsMany, gatesForcedOpen);
     const a = fast.start.slice();
     const b = new Uint8Array(a.length);
     for (const command of plan) {
@@ -247,6 +291,7 @@ export function plannedGrid(recipe: Recipe, rnd: () => number): string[] | null 
     }
     if (!placed) return null;
   }
+  if (!wins(chosen, false)) return null;
   for (const [x, y, cell] of chosen) rows[y][x] = cell;
   return rows.map((r) => r.join(' '));
 }
@@ -256,11 +301,19 @@ export interface Candidate {
   readonly metrics: Metrics;
 }
 
-/** Remove every wall and turn tile the puzzle does not need: without it the shortest solutions are exactly the same. */
-export function dropIdleWalls(grid: string[], maxStates?: number): Candidate {
+/**
+ * `keep` lists cell codes to leave alone: a barrier's walls stay, or its gate would stand alone in open floor.
+ */
+/** Remove every wall, turn tile, gate and plate the puzzle does not need: without it the shortest solutions are exactly the same. */
+export function dropIdleWalls(grid: string[], maxStates?: number, keep: readonly string[] = []): Candidate {
   const toLevel = (g: string[]): Level => parseLevel({ id: 'candidate', name: 'candidate', grid: g });
   const quick = (g: string[]): string => {
-    const level = toLevel(g);
+    let level: Level;
+    try {
+      level = toLevel(g);
+    } catch {
+      return 'not a level'; // for example a gate left without a plate
+    }
     const r = fastSolve(prepare(level.board, level.start, CONFIG.rules.exitAcceptsMany), CONFIG.levelDesign.maxPar, maxStates);
     return `${r.capped}/${r.optimalCount}/${r.solution?.join()}`;
   };
@@ -268,7 +321,7 @@ export function dropIdleWalls(grid: string[], maxStates?: number): Candidate {
   const wanted = quick(grid);
   for (let y = 0; y < rows.length; y++) {
     for (let x = 0; x < rows[y].length; x++) {
-      if (rows[y][x] !== '##' && rows[y][x] !== '@@') continue;
+      if (!['##', '@@', 'GG', 'PP'].includes(rows[y][x]) || keep.includes(rows[y][x])) continue;
       const trial = rows.map((r) => r.slice());
       trial[y][x] = '..';
       if (quick(trial.map((r) => r.join(' '))) === wanted) rows = trial;
@@ -318,6 +371,14 @@ export function generate(recipe: Recipe, seed: number, tries: number, keep: numb
       no('too loose: too many shortest solutions');
       continue;
     }
+    // A gate the puzzle does not need: with every gate held open the shortest solutions are the same.
+    if (level.board.gates) {
+      const open = fastSolve(prepare(level.board, level.start, CONFIG.rules.exitAcceptsMany, true), quick.solution.length, cap);
+      if (open.solution?.length === quick.solution.length && open.optimalCount === quick.optimalCount) {
+        no('does not show the idea');
+        continue;
+      }
+    }
     // What can be read from replaying the one solution is checked before the costly full measurement.
     const replay = replayMeasures(level, quick.solution);
     const early = Object.fromEntries(Object.entries(recipe.require ?? {}).filter(([name]) => name.startsWith('tally.') || name in replay));
@@ -347,7 +408,7 @@ export function generate(recipe: Recipe, seed: number, tries: number, keep: numb
       continue;
     }
     // Walls that change nothing go; a board that then no longer shows its idea goes too.
-    const tidy = first.walls > 0 || grid.some((row) => row.includes('@@')) ? dropIdleWalls(grid, cap * 20) : { grid, metrics: first };
+    const tidy = first.walls > 0 || grid.some((row) => /@@|GG|PP/.test(row)) ? dropIdleWalls(grid, cap * 20, recipe.barrier ? ['##'] : []) : { grid, metrics: first };
     const after = rejectReason(tidy.metrics, recipe);
     if (after) {
       no(after);

@@ -52,7 +52,15 @@ for (const number of numbers) {
   await settle(1500);
   const tag = `${String(number).padStart(2, '0')}-${level.id}`;
   await page.screenshot({ path: `${OUT}/level-${tag}.png` });
-  for (const command of level.witness) await page.dispatchEvent(`.cmd[data-cmd=${command}]`, 'pointerdown');
+  // SHOTS_MID=3 also takes a picture after the third move, once its animation has finished.
+  const mid = Number(process.env.SHOTS_MID ?? 0);
+  for (const [index, command] of level.witness.entries()) {
+    await page.dispatchEvent(`.cmd[data-cmd=${command}]`, 'pointerdown');
+    if (mid > 0 && index + 1 === mid) {
+      await settle(6000);
+      await page.screenshot({ path: `${OUT}/level-${tag}-after-${mid}.png` });
+    }
+  }
   const after = await snap();
   results.push({ number, id: level.id, par: level.par, status: after.status, moves: after.commands.length, collected: `${after.collected}/${after.total}` });
   await page.locator('#card .tf-end-card').waitFor({ state: 'visible', timeout: 240000 });
