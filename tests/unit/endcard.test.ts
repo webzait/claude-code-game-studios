@@ -4,7 +4,7 @@ import config from '../../data/config.json';
 import parts from '../../data/parts.json';
 import { payout, rewardFor } from '../../src/game/coins';
 import { formatCoins, landingAmounts, rewardPlate, type RewardView } from '../../src/ui/coins';
-import { winLine, winMarkup, type WinCard } from '../../src/ui/endCard';
+import { sheetBottom, winLine, winMarkup, type WinCard } from '../../src/ui/endCard';
 
 // Findings B5 and B6 (production/findings.md): the win pop-up shows one amount, the one really paid, and the coin
 // flight ends exactly on the true balance.
@@ -139,5 +139,34 @@ describe('coin flight: what the counter reads on each landing', () => {
     expect(COUNT).toBeLessThanOrEqual(8);
     expect(parts.coins.fly.flightMs).toBeGreaterThan(0);
     expect(parts.coins.fly.staggerMs).toBeGreaterThanOrEqual(0);
+  });
+});
+
+// Finding B10: the pop-up rests above the puzzle screen's buttons, and on a screen too short for that it stays whole.
+describe('pop-up position: above the buttons under the board', () => {
+  const GAP = config.endCard.gapAboveControls;
+  const SCREEN = 844;
+  const CONTROLS_TOP = 665;
+
+  it('test_sheetBottom_roomEnough_restsTheGapAboveTheControls', () => {
+    const bottom = sheetBottom(SCREEN, CONTROLS_TOP, GAP, { layerTop: 0, height: 300, minTop: config.endCard.minTop });
+    expect(SCREEN - bottom).toBe(CONTROLS_TOP - GAP);
+    expect(sheetBottom(SCREEN, CONTROLS_TOP, GAP)).toBe(bottom);
+  });
+
+  it('test_sheetBottom_cardTallerThanTheRoom_keepsTheTopOnScreen', () => {
+    const height = CONTROLS_TOP; // taller than what is left above the controls once the gap is kept
+    const bottom = sheetBottom(SCREEN, CONTROLS_TOP, GAP, { layerTop: 0, height, minTop: config.endCard.minTop });
+    expect(SCREEN - bottom - height).toBe(config.endCard.minTop);
+  });
+
+  it('test_sheetBottom_controlsBelowTheLayer_neverGoesNegative', () => {
+    expect(sheetBottom(SCREEN, SCREEN + 100, GAP)).toBe(0);
+    expect(sheetBottom(SCREEN, CONTROLS_TOP, GAP, { layerTop: 0, height: SCREEN * 2, minTop: config.endCard.minTop })).toBe(0);
+  });
+
+  it('test_armSeconds_isShort', () => {
+    expect(config.endCard.armSeconds).toBeGreaterThan(0);
+    expect(config.endCard.armSeconds).toBeLessThanOrEqual(0.5);
   });
 });

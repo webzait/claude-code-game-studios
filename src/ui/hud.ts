@@ -2,7 +2,7 @@ import { CONFIG } from '../config';
 import { COMMANDS, type Color, type Command } from '../engine/types';
 import PARTS from '../../data/parts.json';
 import { mountPricedButton, setPrice, type PriceState } from './coins';
-import { END_DEFS, renderEndCard, type EndCard } from './endCard';
+import { ARMING_CLASS, END_DEFS, renderEndCard, sheetBottom, type EndCard } from './endCard';
 
 /** What the level HUD needs to draw one frame of status. */
 export interface HudModel {
@@ -57,9 +57,11 @@ export class Hud {
   private lastCollected = -1;
   /** Called whenever the pop-up is put away, so whatever it was animating can finish at once. */
   onCardHidden: (() => void) | null = null;
+  private armTimer = 0;
   private getCoins: HTMLButtonElement;
 
   constructor(handlers: HudHandlers, isLevelOpen: () => boolean) {
+    window.addEventListener('resize', () => this.placeCard());
     this.getCoins = document.createElement('button');
     this.getCoins.type = 'button';
     this.getCoins.id = 'getCoins';
@@ -156,11 +158,22 @@ export class Hud {
     window.setTimeout(() => button.classList.remove('pressed'), 140);
   }
 
-  /** Show the end-of-round pop-up. `animate` false shows its end state at once (reduced motion). */
+  /**
+   * Show the end-of-round pop-up. `animate` false shows its end state at once (reduced motion).
+   * It rests above the helper buttons, and when it newly appears its buttons wait `endCard.armSeconds` before they
+   * react, so a tap meant as a move cannot press one (finding B10).
+   */
   showCard(card: EndCard, animate: boolean): void {
     const host = el('card');
+    const fresh = host.hidden;
     renderEndCard(el('cardBody'), card, animate);
     host.hidden = false;
+    this.placeCard();
+    if (fresh) {
+      window.clearTimeout(this.armTimer);
+      host.classList.add(ARMING_CLASS);
+      this.armTimer = window.setTimeout(() => host.classList.remove(ARMING_CLASS), CONFIG.endCard.armSeconds * 1000);
+    }
     host.classList.remove('tf-end-play');
     if (animate) {
       void host.offsetWidth;
@@ -168,8 +181,27 @@ export class Hud {
     }
   }
 
+  /** Rest the pop-up above the helper buttons, wherever the layout has put them. */
+  private placeCard(): void {
+    const host = el('card');
+    const sheet = host.querySelector<HTMLElement>('.tf-end-card');
+    if (host.hidden || !sheet) return;
+    const layer = host.getBoundingClientRect();
+    const tools = el('tools').getBoundingClientRect();
+    if (tools.height === 0) {
+      host.style.removeProperty('--tf-end-bottom');
+      return;
+    }
+    // The stars ride above the sheet's top edge; they count as part of its height.
+    const rise = Math.max(0, -(host.querySelector<HTMLElement>('.tf-end-stars')?.offsetTop ?? 0));
+    const { gapAboveControls, minTop } = CONFIG.endCard;
+    host.style.setProperty('--tf-end-bottom', `${sheetBottom(layer.bottom, tools.top, gapAboveControls, { layerTop: layer.top, height: sheet.offsetHeight + rise, minTop })}px`);
+  }
+
   /** Hide the result card. */
   hideCard(): void {
+    window.clearTimeout(this.armTimer);
+    el('card').classList.remove(ARMING_CLASS);
     el('card').hidden = true;
     el('cardBody').innerHTML = '';
     this.onCardHidden?.();

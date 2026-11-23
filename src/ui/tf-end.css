@@ -14,9 +14,10 @@
 }
 /* A win gets a little warmth behind the stars. */
 .tf-end-card:has(.tf-end-stars) { background: radial-gradient(150px 84px at 50% 0, #fff1bd, rgba(255, 241, 189, 0) 100%), linear-gradient(180deg, #ffffff 0, #f8faff 70px); }
-/* Option A: centred card. Option B: a sheet resting near the bottom edge, inside the thumb's reach. */
+/* Option A: centred card. Option B: a sheet resting near the bottom edge, inside the thumb's reach. In the game the
+   sheet rests above the puzzle screen's buttons instead (finding B10): the game sets --tf-end-bottom from where they are. */
 .tf-end-card.centre { top: 0; bottom: 0; height: fit-content; margin: auto; }
-.tf-end-card.sheet { bottom: calc(19px + env(safe-area-inset-bottom, 0px)); }
+.tf-end-card.sheet { bottom: var(--tf-end-bottom, calc(19px + env(safe-area-inset-bottom, 0px))); }
 .tf-end-card > * { margin: 0; }
 .tf-end-head { order: 0; max-width: 100%; }
 .tf-end-level { margin: 0 0 2px; font-size: 13px; font-weight: 800; letter-spacing: .04em; color: #5d6a84; overflow-wrap: anywhere; text-wrap: balance; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
@@ -90,7 +91,7 @@
 .tf-end-wallet b { color: #24314f; }
 
 /* The win, played once: the card rises, the stars land one by one, a few flecks fly, the coins count up.
-   Nothing here blocks input: the buttons are in place and tappable from the first frame. */
+   Nothing here waits for the animation: the buttons are in place from the first frame and react after the short arming time (below). */
 .tf-end-confetti { position: absolute; left: 50%; top: -18px; width: 0; height: 0; pointer-events: none; }
 .tf-end-confetti i { position: absolute; left: -4px; top: -4px; width: 8px; height: 11px; border-radius: 3px; background: var(--c); opacity: 0; }
 .tf-end-play .tf-end-dim { animation: tf-end-fade .25s ease-out backwards; }
@@ -126,11 +127,15 @@
   .tf-end-offer .tf-btn { grid-column: 1 / -1; }
 }
 @container tf-end (min-width: 600px) {
-  .tf-end-card.sheet { bottom: 40px; }
+  .tf-end-card.sheet { bottom: var(--tf-end-bottom, 40px); }
 }
 
 /* The game has its own "reduce motion" setting besides the system one. */
 .reduce-motion .tf-end-play .tf-end-dim, .reduce-motion .tf-end-play .tf-end-card, .reduce-motion .tf-end-play .tf-end-star.on, .reduce-motion .tf-end-play .tf-end-slot.won::after, .reduce-motion .tf-end-play .tf-end-confetti i, .reduce-motion .tf-end-play .tf-end-earned, .reduce-motion .tf-end-play .tf-coin-total { animation: none; }
+
+/* Just appeared (finding B10): for a moment the pop-up takes no taps, so a tap meant as a move presses nothing on it.
+   The layer under it still swallows the tap. */
+.tf-end-arming .tf-end-card { pointer-events: none; }
 
 /* In the game the card holds the coin controls' reward and offer (tf-coins.css). */
 .tf-end-card:focus { outline: none; }

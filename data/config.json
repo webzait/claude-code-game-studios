@@ -129,6 +129,7 @@
     "turn": { "radius": 0.54, "width": 0.1, "startGap": 6, "endGap": 30, "head": 18, "headWidth": 0.26 },
     "pulse": { "seconds": 1.1, "slide": 0.07, "fade": 0.25 }
   },
+  "endCard": { "gapAboveControls": 16, "minTop": 8, "armSeconds": 0.35 },
   "celebration": {
     "variant": "confetti",
     "cardDelay": 0.7,
