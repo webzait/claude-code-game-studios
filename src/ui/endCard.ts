@@ -2,8 +2,8 @@ import { CONFIG } from '../config';
 import { coinIcon, formatCoins, offerButton, priceSlot, priceTag, rewardPlate, spokenPrice, type PriceState, type RewardView } from './coins';
 
 /**
- * The end-of-round pop-up: a sheet resting near the bottom edge, as designed
- * on the parts sheet (`tf-end-*`). One function per situation builds the
+ * The end-of-round pop-up: a sheet as designed on the parts sheet (`tf-end-*`).
+ * In the game it rests above the puzzle screen's buttons, never on them (finding B10). One function per situation builds the
  * dialog; the buttons are the shared `tf-btn` blocks and every number and
  * label is real text. Each situation says one thing: a win is its stars, one
  * line, the coins really earned and one main button (finding B5).
@@ -158,6 +158,24 @@ function infoBody(c: InfoCard): string {
     <div class="tf-end-actions lead">${utility('second', escape(c.second.label), 'none', 'tf-end-mid')}${button('levels', 'tf-end-main tf-end-mid', 'Levels', 'levels')}</div>`;
 }
 
+/** The class the pop-up's layer carries while its buttons do not react yet (finding B10). */
+export const ARMING_CLASS = 'tf-end-arming';
+
+/**
+ * How far above the bottom of its layer the pop-up rests, in px, so that it clears the puzzle screen's buttons.
+ * @param layerBottom Bottom edge of the pop-up's layer.
+ * @param controlsTop Top edge of the highest row of buttons under the board.
+ * @param gap Space to keep between the pop-up and those buttons.
+ * @param room What limits it on a short screen: the layer's top edge, the pop-up's height (with whatever rides above
+ *   its top edge) and the least space to keep above it. The pop-up then gives up gap rather than leave the screen.
+ */
+export function sheetBottom(layerBottom: number, controlsTop: number, gap: number, room?: { readonly layerTop: number; readonly height: number; readonly minTop: number }): number {
+  const wanted = Math.max(0, layerBottom - controlsTop + gap);
+  if (!room) return wanted;
+  const most = layerBottom - room.layerTop - room.minTop - room.height;
+  return Math.max(0, Math.min(wanted, most));
+}
+
 /**
  * Put the pop-up for `card` into `host` and wire its buttons.
  * @param animate Play the entrance once (card rises, stars land); false shows the end state at once.
@@ -167,7 +185,11 @@ export function renderEndCard(host: HTMLElement, card: EndCard, animate: boolean
   host.innerHTML = `<section class="tf-end-card sheet ${card.kind}" role="dialog" aria-modal="true" aria-labelledby="end-title" aria-describedby="end-result" tabindex="-1">${body}</section>`;
   const on = (act: string, action: (() => void) | undefined): void => {
     const node = host.querySelector<HTMLButtonElement>(`#end-${act}`);
-    if (node && action) node.addEventListener('click', action);
+    // Not yet armed: a press by key is ignored too (taps are already kept off by the style sheet).
+    if (node && action)
+      node.addEventListener('click', () => {
+        if (!host.closest(`.${ARMING_CLASS}`)) action();
+      });
   };
   if (card.kind === 'win') {
     on('next', card.next);
