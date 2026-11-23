@@ -371,10 +371,39 @@ test('the bottom buttons are one set, and every price is the same tag in the sam
   const commands = (await page.locator('#commands').boundingBox())!;
   expect(boxes[0].y + boxes[0].height + hang[0]).toBeLessThanOrEqual(commands.y);
   // The tools stand apart from the command row and are compact: clearly narrower than a command button, centred as a group.
-  expect(commands.y - (boxes[0].y + boxes[0].height)).toBeGreaterThanOrEqual(16);
+  expect(commands.y - (boxes[0].y + boxes[0].height)).toBeGreaterThanOrEqual(24);
   const cmd = (await page.locator('.cmd:not([hidden])').first().boundingBox())!;
   expect(boxes[0].width).toBeLessThan(cmd.width);
   expect(boxes[0].x - commands.x).toBeCloseTo(commands.x + commands.width - (boxes[2].x + boxes[2].width), 0);
+});
+
+test('the helper buttons stay clear of the command row on every phone size (finding B11)', async ({ page }) => {
+  const parts = JSON.parse(readFileSync('data/parts.json', 'utf8'));
+  const clearance: number = parts.buttons.tools.clearance;
+  // WCAG 2.5.8 asks for 24 CSS px between touch targets; the helpers cost coins or wipe the level, so never less.
+  expect(clearance).toBeGreaterThanOrEqual(24);
+  for (const [width, height] of [[320, 568], [360, 640], [390, 844], [430, 932]]) {
+    await page.setViewportSize({ width, height });
+    await open(page);
+    await page.click('#node-1');
+    await press(page, 'forward');
+    const bottoms: number[] = [];
+    for (const selector of ['#undo', '#restart', '#scan', '#undo .tf-coin-price', '#scan .tf-coin-price']) {
+      const box = (await page.locator(selector).boundingBox())!;
+      bottoms.push(box.y + box.height);
+    }
+    const tops: number[] = [];
+    for (const cmd of await page.locator('.cmd:not([hidden])').all()) tops.push((await cmd.boundingBox())!.y);
+    const gap = Math.min(...tops) - Math.max(...bottoms);
+    expect(gap, `${width}x${height}`).toBeGreaterThanOrEqual(clearance - 0.5);
+    // The move upwards is taken from the play zone, never from the screen: the command row still ends on screen
+    // and the tools start below the play zone.
+    const stage = (await page.locator('.stage').boundingBox())!;
+    const tools = (await page.locator('#tools').boundingBox())!;
+    const commands = (await page.locator('#commands').boundingBox())!;
+    expect(tools.y, `${width}x${height}`).toBeGreaterThanOrEqual(stage.y + stage.height - 0.5);
+    expect(commands.y + commands.height, `${width}x${height}`).toBeLessThanOrEqual(height);
+  }
 });
 
 test('Hint: the status is free, the next move costs coins and is drawn on the board, and without coins it is refused', async ({ page }) => {

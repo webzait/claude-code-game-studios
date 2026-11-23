@@ -67,12 +67,13 @@ export class Hud {
     this.getCoins.textContent = 'Get coins';
     this.getCoins.addEventListener('click', () => handlers.getCoins(this.getCoins));
     // The bottom area's build (finding B9) comes from data/parts.json: one depth and corner rule for every block,
-    // and the size of a tool and the space between two.
+    // the size of a tool and the space between two, and the clear space between the tools and the command row (finding B11).
     const family = PARTS.buttons.family;
     const controls = el('tools').parentElement!;
     controls.style.setProperty('--tf-depth', String(family.depth));
     controls.style.setProperty('--tf-round', String(family.radius));
     const tools = PARTS.buttons.tools;
+    controls.style.setProperty('--tools-clear', `${tools.clearance}px`);
     for (const [name, px] of [['h', tools.height], ['w', tools.width], ['r', tools.radius], ['gap', tools.gap]] as const) el('tools').style.setProperty(`--tool-${name}`, `${px}px`);
     mountPricedButton(el<HTMLButtonElement>('undo'));
     mountPricedButton(el<HTMLButtonElement>('scan'));
