@@ -118,3 +118,14 @@ picture's round corners or its thin far side. `bedTone` 1.2 brightens it against
   own. Leave it as it is.
 - **Thicker rim on large boards (8×8): not now, ask again later.** It would change the board's
   footprint. Ask the owner again when the theme goes into the game.
+
+## In the game (2026-11-24)
+
+The owner asked for the picture rim in the game. This branch merges `claude/turnflock-theme-garden`
+(where the garden theme is in the game, with the code braid) and so the garden board in the game
+now uses the picture rim and the picture grass bed: the theme's builders read `buildRim` and
+`buildUnderlay` from `src/render/parts/garden/board.ts`, which now give the picture versions. No
+other change was needed: `fuse` keeps a part's `customDepthMaterial`, so the rim's shadow follows
+the picture, and the game draws every frame, so the pictures appear as soon as they have loaded.
+Evidence: `production/qa/evidence/garden-board/rim/in-game-390x844-*.webp` (levels 1, 3, 5, 7, 11:
+4×4, 5×4, 5×5, 6×6, 6×5, on a 390×844 phone at 3× pixel density).
