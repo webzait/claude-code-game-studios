@@ -78,7 +78,7 @@
     "starsAt": 0.12,
     "starsScale": 2.0,
     "sparkleAt": 0.2,
-    "sparkleSize": 0.65,
+    "sparkleSize": 0.5,
     "calm": {
       "seconds": 0.9,
       "cardDelay": 0.2
@@ -91,39 +91,39 @@
     "_note": "Sizes of the owner's pictures on the board, in cells. Anchors are where in the picture (0..1 from left, 0..1 from top) the effect touches the cell. lift: how far the picture moves towards the camera so it does not cut into the tiles.",
     "lift": 0.3,
     "beam": {
-      "width": 1.0,
-      "aspect": 1.078,
+      "width": 1.09,
+      "aspect": 1.263,
       "anchor": [
-        0.5,
-        0.703
+        0.499,
+        0.749
       ],
       "stretch": 0.35,
       "sparks": 6,
-      "sparkSize": 0.14
+      "sparkSize": 0.08
     },
     "star": {
       "size": 0.5,
-      "aspect": 1.03,
+      "aspect": 0.96,
       "twinkleSize": 0.16,
       "lift": 0.25,
       "spread": 0.48
     },
     "cloud": {
       "width": 0.95,
-      "aspect": 1.071,
+      "aspect": 0.91,
       "anchor": [
-        0.53,
-        0.62
+        0.5,
+        0.6
       ],
       "ballSize": 1.0
     },
     "ring": {
-      "width": 0.98,
-      "aspect": 1.03,
-      "squash": 0.86,
+      "width": 1.0,
+      "aspect": 0.816,
+      "squash": 0.8,
       "centre": [
-        0.475,
-        0.483
+        0.499,
+        0.495
       ],
       "turn": 0.35
     }

@@ -1,6 +1,6 @@
 """Paint the garden theme's blue energy ring at high resolution.
 
-Makes  assets/turnflock/garden/effects/ring.webp  (528x544, WebP with alpha)
+Makes  production/qa/evidence/garden-effects/redraw-8x/ring.webp  (528x544, WebP with alpha)
 
 A redraw, not an enlargement, of the blue ring on the owner's effects sheet
 (design/reference/turnflock/garden/21-sheet-effects.png, crop box left 176,
@@ -30,7 +30,7 @@ import os
 import numpy as np
 from PIL import Image
 
-OUT = 'assets/turnflock/garden/effects/ring.webp'
+OUT = 'production/qa/evidence/garden-effects/redraw-8x/ring.webp'
 SCALE = 8
 W0, H0 = 66, 68                      # the sheet crop, in sheet pixels
 QUALITY = 78

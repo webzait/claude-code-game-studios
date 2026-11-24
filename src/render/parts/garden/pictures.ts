@@ -7,8 +7,9 @@ import cloudBallUrl from '../../../../assets/turnflock/garden/effects/cloud-ball
 import ringUrl from '../../../../assets/turnflock/garden/effects/ring.webp';
 
 /**
- * The owner's effect pictures, cut from design/reference/turnflock/garden/21-sheet-effects.png by
- * tools/asset-pipeline/cut-garden-effects.py, as textures. They load in the background; `ready`
+ * The owner's effect pictures, made from the high-resolution elements in
+ * design/reference/turnflock/garden/elements/ by tools/asset-pipeline/garden-effects-from-elements.py,
+ * as textures. They load in the background; `ready`
  * settles once all are in (a picture that has not loaded yet simply draws nothing).
  */
 export const PICTURE_URLS = { beam: beamUrl, star: starUrl, twinkle: twinkleUrl, cloud: cloudUrl, cloudBall: cloudBallUrl, ring: ringUrl } as const;

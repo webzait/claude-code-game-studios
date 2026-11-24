@@ -9,6 +9,11 @@ import { PICTURE_URLS, type PictureName } from '../render/parts/garden/pictures'
 import { GardenEffects, type GardenFxLook } from '../render/parts/garden/gardenEffects';
 import { GARDEN_FX_KINDS, GARDEN_FX_NAMES, fxSeconds, planGardenCelebration, type GardenFxKind } from '../render/parts/garden/effectsPlan';
 import sheetPicture from '../../design/reference/turnflock/garden/21-sheet-effects.png';
+import originalBeam from '../../production/qa/evidence/garden-effects/originals/groen-portaal.webp';
+import originalStar from '../../production/qa/evidence/garden-effects/originals/ster.webp';
+import originalCluster from '../../production/qa/evidence/garden-effects/originals/sterrencluster.webp';
+import originalCloud from '../../production/qa/evidence/garden-effects/originals/wolk.webp';
+import originalRing from '../../production/qa/evidence/garden-effects/originals/blauw-portaal.webp';
 import './gardenEffects.css';
 
 /**
@@ -282,41 +287,23 @@ function playCard(sheet: HTMLElement): void {
   show();
 }
 
-/** Where each cut picture sits on the sheet, in sheet pixels (as in tools/asset-pipeline/cut-garden-effects.py). */
-const CUTS: Record<PictureName, { box: [number, number, number, number]; label: string }> = {
-  beam: { box: [0, 3, 64, 72], label: 'Straal' },
-  star: { box: [66, 32, 99, 66], label: 'Ster (één)' },
-  twinkle: { box: [96, 9, 109, 23], label: 'Twinkeling' },
-  cloud: { box: [119, 6, 175, 66], label: 'Wolkje' },
-  cloudBall: { box: [133, 38, 157, 62], label: 'Wolkbolletje (één)' },
-  ring: { box: [176, 4, 242, 72], label: 'Blauwe ring' },
+/** The owner's element picture each effect picture is made from (smaller previews of the PNGs, by tools/asset-pipeline/garden-effects-from-elements.py). */
+const ORIGINALS: Record<PictureName, { url: string; label: string }> = {
+  beam: { url: originalBeam, label: 'Straal (groen-portaal)' },
+  star: { url: originalStar, label: 'Ster (ster)' },
+  twinkle: { url: originalCluster, label: 'Twinkeling (uit sterrencluster)' },
+  cloud: { url: originalCloud, label: 'Wolkje (wolk)' },
+  cloudBall: { url: originalCloud, label: 'Wolkbolletje (uit wolk)' },
+  ring: { url: originalRing, label: 'Blauwe ring (blauw-portaal)' },
 };
 
-/** The part of the sheet a cut came from, enlarged to `w` by `h`, as a canvas. */
-function sheetCrop(sheet: HTMLImageElement, box: [number, number, number, number], w: number, h: number): HTMLCanvasElement {
-  const c = document.createElement('canvas');
-  c.width = w;
-  c.height = h;
-  const ctx = c.getContext('2d')!;
-  ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(sheet, box[0], box[1], box[2] - box[0], box[3] - box[1], 0, 0, w, h);
-  return c;
-}
-
-/** The cut pictures beside the sheet, and the effects at their fullest beside it. */
+/** The effect pictures beside the owner's originals, and the effects at their fullest. */
 async function compareCard(el: HTMLElement, painter: StillPainter): Promise<void> {
-  const img = document.createElement('img');
-  img.src = sheetPicture;
-  img.alt = 'Voorbeeld: groene lichtstraal, sterren, wolkje, blauwe ring';
-  img.className = 'gfx-sheet';
-  await img.decode().catch(() => undefined);
-  el.appendChild(img);
-  // Each cut picture: the original crop of the sheet, the WebP on white, the WebP on the lawn.
   const cuts = document.createElement('div');
   cuts.className = 'gfx-cuts';
   let total = 0;
-  for (const name of Object.keys(CUTS) as PictureName[]) {
-    const cut = CUTS[name];
+  for (const name of Object.keys(ORIGINALS) as PictureName[]) {
+    const original = ORIGINALS[name];
     const url = PICTURE_URLS[name];
     const bytes = (await (await fetch(url)).blob()).size;
     total += bytes;
@@ -325,24 +312,34 @@ async function compareCard(el: HTMLElement, painter: StillPainter): Promise<void
     await pic.decode().catch(() => undefined);
     const fig = document.createElement('figure');
     fig.className = 'gfx-cut';
-    const w = pic.naturalWidth;
-    const h = pic.naturalHeight;
     const pair = document.createElement('div');
-    pair.className = 'gfx-pair';
-    const original = sheetCrop(img, cut.box, w, h);
-    const onWhite = pic.cloneNode() as HTMLImageElement;
-    onWhite.className = 'on-white';
-    const onLawn = pic.cloneNode() as HTMLImageElement;
-    onLawn.className = 'on-lawn';
-    pair.append(original, onWhite, onLawn);
+    pair.className = 'gfx-pair four';
+    const source = new Image();
+    source.src = original.url;
+    source.className = 'on-dark';
+    source.alt = `Origineel: ${original.label}`;
+    const views = (['on-white', 'on-lawn', 'on-dark'] as const).map((cls) => {
+      const copy = pic.cloneNode() as HTMLImageElement;
+      copy.className = cls;
+      return copy;
+    });
+    pair.append(source, ...views);
     fig.appendChild(pair);
-    fig.insertAdjacentHTML('beforeend', `<figcaption>${cut.label}: ${w}×${h} px, ${(bytes / 1024).toFixed(1)} kB</figcaption>`);
+    fig.insertAdjacentHTML('beforeend', `<figcaption>${original.label}: ${pic.naturalWidth}×${pic.naturalHeight} px, ${(bytes / 1024).toFixed(1)} kB</figcaption>`);
     cuts.appendChild(fig);
   }
   const sum = document.createElement('p');
   sum.className = 'note';
-  sum.textContent = `Per stuk: links het origineel (uitsnede van het voorbeeld, vergroot), midden de WebP op wit, rechts de WebP op gras. Samen ${(total / 1024).toFixed(1)} kB. Het voorbeeld is klein (elk effect ± 60 px); de WebP's zijn 4× vergroot met een nette rand, maar meer detail dan het voorbeeld hebben ze niet.`;
+  sum.textContent = `Per stuk: links het beeld van de eigenaar (heel, verkleind), dan de WebP voor het spel op wit, op gras en op donker. Samen ${(total / 1024).toFixed(1)} kB. De beelden zijn netjes verkleind (kleur vermenigvuldigd met de doorzichtigheid, geen randen) tot ongeveer twee keer hun grootte op een telefoon; er is niets nagetekend.`;
   el.append(cuts, sum);
+  const old = document.createElement('img');
+  old.src = sheetPicture;
+  old.alt = 'Eerder voorbeeld: 21-sheet-effects';
+  old.className = 'gfx-sheet small';
+  const oldNote = document.createElement('p');
+  oldNote.className = 'note';
+  oldNote.textContent = 'Ter vergelijking het eerdere, kleine voorbeeld (21-sheet-effects, 242×76 px) waar de effecten eerst uit gesneden waren.';
+  el.append(old, oldNote);
   // The effects at their fullest, from close by and a little lower than the game's camera, as on the sheet.
   const peak: Record<GardenFxKind, number> = { beam: 0.45, stars: 0.5, cloud: 0.25, ring: 0.45 };
   for (const look of ['picture', 'code'] as const) {
@@ -554,7 +551,7 @@ export function addGardenEffectCards(sheet: HTMLElement): void {
   head.textContent = 'Tuinthema · effecten';
   sheet.appendChild(head);
   playCard(sheet);
-  const compare = section('garden-fx-compare', 'Tuineffecten · beelden van de eigenaar', 'De effecten zijn de beelden uit het voorbeeld (21-sheet-effects), uitgesneden met een doorzichtige achtergrond. Onderaan de effecten op hun volste moment: met de beelden (standaard) en, ter vergelijking, de eerdere code-versie.');
+  const compare = section('garden-fx-compare', 'Tuineffecten · beelden van de eigenaar', 'De effecten zijn de losse beelden van de eigenaar (design/reference/turnflock/garden/elements). Onderaan de effecten op hun volste moment: met de beelden (standaard) en, ter vergelijking, de eerdere code-versie.');
   const timeline = section('garden-fx-timeline', 'Tuineffecten · verloop', 'Elk effect in zeven beelden van begin tot eind, onder de spelcamera op één tegel: met de beelden, de rustige versie, en de code-versie.');
   sheet.append(compare, timeline);
   celebrationCard(sheet);

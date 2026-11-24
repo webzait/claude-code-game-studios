@@ -28,3 +28,8 @@
 .gfx .gfx-pair .on-lawn { background: #8bcb4f; }
 .gfx .gfx-row.four + .gfx-row.four { margin-top: 8px; }
 @media (max-width: 700px) { .gfx .gfx-cuts { grid-template-columns: 1fr; } }
+.gfx .gfx-pair.four { grid-template-columns: repeat(4, 1fr); }
+.gfx .gfx-pair .on-dark { background: #282830; }
+.gfx .gfx-pair > img { aspect-ratio: 1; object-fit: contain; }
+.gfx .gfx-sheet.small { max-width: 360px; margin-top: 12px; }
+.gfx .gfx-cuts { grid-template-columns: repeat(2, 1fr); }

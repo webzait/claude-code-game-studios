@@ -1,7 +1,7 @@
 """Rebuild the garden green beam at 8x, crisp, with a transparent background.
 
 Reads  design/reference/turnflock/garden/21-sheet-effects.png (the owner's 242x76 sheet)
-Writes assets/turnflock/garden/effects/beam.webp   (512x552, WebP with alpha)
+Writes production/qa/evidence/garden-effects/redraw-8x/beam.webp   (512x552, WebP with alpha)
        production/qa/evidence/garden-effects/hd-beam-compare.png  (side-by-side check)
 
 What it makes: the beam piece of the sheet (crop box left 0, top 3, right 64,
@@ -32,7 +32,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 SRC = 'design/reference/turnflock/garden/21-sheet-effects.png'
-OUT = 'assets/turnflock/garden/effects/beam.webp'
+OUT = 'production/qa/evidence/garden-effects/redraw-8x/beam.webp'
 EVIDENCE = 'production/qa/evidence/garden-effects/hd-beam-compare.png'
 BOX = (0, 3, 64, 72)       # sheet crop, same as cut-garden-effects.py
 S = 8                      # enlargement

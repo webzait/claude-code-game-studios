@@ -1,6 +1,6 @@
 """Paint the garden star and twinkle at high resolution, from geometry and colours read off the owner's sheet.
 
-Writes assets/turnflock/garden/effects/
+Writes production/qa/evidence/garden-effects/redraw-8x/
        star.webp     264x272  one puffy star (the large lower-left one of the sheet's star group)
        twinkle.webp  104x112  one small four-pointed twinkle
 and    production/qa/evidence/garden-effects/hd-stars-compare.png (side-by-side check)
@@ -33,7 +33,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 SHEET = 'design/reference/turnflock/garden/21-sheet-effects.png'
-OUT = 'assets/turnflock/garden/effects/'
+OUT = 'production/qa/evidence/garden-effects/redraw-8x/'
 EVIDENCE = 'production/qa/evidence/garden-effects/hd-stars-compare.png'
 SCALE = 8
 QUALITY = 90
