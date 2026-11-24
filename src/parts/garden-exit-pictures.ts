@@ -52,7 +52,7 @@ function cells(extras: [number, number, THREE.Object3D][]): [number, number, THR
 export function addPictureCards(sheet: HTMLElement, k: Kit): void {
   // ---- Exit pad ----
   {
-    const el = k.section('garden-exit', 'Tuin · Uitgang: het beeld van de eigenaar', 'Standaard. Uitgesneden uit 22-sheet-exit-pad-states, achtergrond transparant met nette rand, ingebakken schaduw behouden. In het spel een plat vlak dat recht naar de spelcamera kijkt (30° gekanteld, perspectief), op een grastegel.');
+    const el = k.section('garden-exit', 'Tuin · Uitgang: het beeld van de eigenaar', 'Standaard. Uitgesneden uit 22-sheet-exit-pad-states en 3× vergroot (ca. 300 px breed): omtrek, vinkje en stralen scherp nagetrokken van het beeld, de vlakken zijn het geschilderde beeld zelf. In het spel een plat vlak dat recht naar de spelcamera kijkt (30° gekanteld, perspectief), op een grastegel.');
     const ref = k.row(el, 'ref');
     ref.appendChild(k.figure(k.img(k.refPads, 'Origineel'), 'Origineel van de eigenaar (22-sheet-exit-pad-states)'));
     const cuts = k.row(el, 'cutouts');
@@ -99,11 +99,11 @@ export function addPictureCards(sheet: HTMLElement, k: Kit): void {
 
   // ---- Special tiles ----
   {
-    const el = k.section('garden-specials', 'Tuin · Draaitegel, drukplaat en poort: uit stukken van de beelden', 'De eigenaar heeft hier geen beelden van; ze zijn gemaakt uit stukken van zijn beelden, zodat ze dezelfde geschilderde stijl hebben. Draaitegel: het plateau met een crèmekleurig vlak en de draaipijl van de draaiknop (18-sheet-action-buttons), groen gekleurd. Drukplaat: het plateau in lavendel, zonder vinkje. Poort: een stuk balustrade uit 08-gazebo, in lavendel.');
+    const el = k.section('garden-specials', 'Tuin · Draaitegel, drukplaat en poort: uit stukken van de beelden', 'De eigenaar heeft hier geen beelden van; ze zijn gemaakt uit stukken van zijn beelden, zodat ze dezelfde geschilderde stijl hebben. Draaitegel: het plateau met een crèmekleurig vlak en de draaipijl van de draaiknop (18-sheet-action-buttons), groen gekleurd. Drukplaat: het plateau in lavendel met een verhoogde knop in de stijl van de knoppen van de eigenaar. Poort: de balustrade uit 08-gazebo tussen twee stenen zuilen, in dezelfde lavendel. Alles op 3× (ca. 300 px breed).');
     const cuts = k.row(el, 'cutouts');
     cuts.appendChild(cutout(k, 'turn', 'Draaitegel'));
     cuts.appendChild(cutout(k, 'plate', 'Drukplaat'));
-    cuts.appendChild(cutout(k, 'gate', 'Poort', 2));
+    cuts.appendChild(cutout(k, 'gate', 'Poort'));
     el.insertAdjacentHTML('beforeend', '<h3>Op spelgrootte</h3>');
     for (const cellPx of [53, 42]) {
       const game = k.row(el, 'game');
@@ -121,13 +121,13 @@ export function addPictureCards(sheet: HTMLElement, k: Kit): void {
 
   // ---- Gazebo ----
   {
-    const el = k.section('garden-gazebo', 'Tuin · Het prieel: het beeld van de eigenaar', 'Uitgesneden uit 08-gazebo (verkleind naar 320 px breed) en 24-sheet-gazebo-goal (op ware grootte, 310 px). Voorstel: het beeld bij "level gehaald" en het eindpunt van het levelpad, niet op een vak van het bord.');
+    const el = k.section('garden-gazebo', 'Tuin · Het prieel: het beeld van de eigenaar', 'Uitgesneden uit 08-gazebo (960 px breed, lucht door de bogen doorzichtig, echte schaduw) en 24-sheet-gazebo-goal (2,5× vergroot naar 775 px; het origineel is maar 318 px). Voorstel: het beeld bij "level gehaald" en het eindpunt van het levelpad, niet op een vak van het bord.');
     const ref = k.row(el, 'two');
     ref.appendChild(k.figure(k.img(k.refGazebo, 'Origineel 08-gazebo'), 'Origineel (08-gazebo)'));
-    ref.appendChild(cutout(k, 'gazebo', 'WebP', 0.5));
+    ref.appendChild(cutout(k, 'gazebo', 'WebP (getoond op 40 %)', 0.4));
     const ref2 = k.row(el, 'two');
     ref2.appendChild(k.figure(k.img(k.refGoal, 'Origineel 24-sheet-gazebo-goal'), 'Origineel (24-sheet-gazebo-goal)'));
-    ref2.appendChild(cutout(k, 'gazebo-goal', 'WebP', 1));
+    ref2.appendChild(cutout(k, 'gazebo-goal', 'WebP (getoond op 50 %)', 0.5));
     const sizes = k.row(el, 'game');
     for (const [name, px] of [['gazebo-goal', 160], ['gazebo', 120], ['gazebo', 64]] as [SpriteName, number][]) {
       const i = k.img(pic.pictureUrl(name), 'prieel');

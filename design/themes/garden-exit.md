@@ -190,3 +190,27 @@ has one to three. Budgets are held by the unit tests (`budget` in the data file)
   the inpainted area where the tick was is a little smoother than the rest of the face.
 - The yellow exit's dark-ochre tick has less contrast than the white tick on the other colours.
 - The pads are softer than the modelled pad at game size (see Resolution).
+
+## Higher resolution, one part per session (2026-11-24)
+
+The owner asked for higher resolution, each part worked out on its own. The pipeline is now
+`tools/asset-pipeline/garden_exit/` — `lib.py` (shared), `enlarge.py` (edge-preserving
+enlargement: Lanczos, then each soft edge turned into a ~1 px ramp between its two sides, no
+ringing) and one module per part, run by `build.py [part…]`. Each part writes its WebP files and
+its own size fragment `data/themes/garden/exit-sprites/<part>.json`; the game reads all fragments
+and pictures with `import.meta.glob`, so a part changes without touching code. Comparisons per
+part: `production/qa/evidence/garden-exit/hires/`.
+
+| Part | Now | kB | How |
+|---|---|---|---|
+| Exit pads (grey, green, rays) | ~300 px (3×) | 4.3 / 5.8 / 10.3 | outline fitted to the owner's pad (two ellipses), rays traced, both drawn smooth at 3×; inside colour is the owner's painting, enlarged |
+| Turn tile | 309×195 | 11.3 | pad enlarged, retoned cream at 3×; the owner's turn-button arrow traced (least-squares fit) and redrawn at 3× in leaf green |
+| Pressure plate | 309×195 | 12.1 | pad enlarged, tick painted out at 3×, lavender; a raised lavender button drawn in the style of the owner's buttons |
+| Gate | 300×195 | 7.2 | the balustrade of `08-gazebo` between two of its stone columns (mirrored inner halves), lavender #A77DF2 like the plate |
+| Gazebo | 960×1069 | 87.4 | own cut (sky through the arches and between balusters transparent, shadow kept as real shadow) |
+| Gazebo goal | 775×532 | 62.7 | `24-sheet-gazebo-goal` enlarged 2.5×; the plain 310 px cut kept as `gazebo-goal-small-original` (15 kB) |
+| Colour exits and shapes | (pending) | — | a high-resolution version is ready as a draft; it waits for the owner's approval to replace `colour_exits.py` |
+
+All pictures together: about 300 kB (the single-file game embeds them as base64, about a third
+more). The source pad sheet is ~100 px per pad, so the pads are faithful enlargements: no detail
+finer than the sheet's own pixels was invented.
