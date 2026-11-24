@@ -28,3 +28,4 @@ compressed and the size is reported.
 | 20-sheet-icons-coin-star-gem-heart | Coin, star, gem, heart | Buttons and icons |
 | 23-sheet-level-path | Level path: done nodes, current node, locked nodes, gazebo at the end | Level screen |
 | 21-sheet-effects | Green beam on a ring, star sparkle, cloud puff, blue ring | Effects |
+| 26-logo-garden | Garden-theme logo: TURNFLOCK lettering with the blue, red and yellow chicks and a golden ring | Logo |
