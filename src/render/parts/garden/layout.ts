@@ -1,11 +1,14 @@
 /**
- * Garden board: the plain arithmetic behind the 3D parts in `board.ts`. Nothing here touches
+ * Garden board: the plain arithmetic behind the 3D parts (rim path, decoration places, board size). Nothing here touches
  * three.js or the DOM, so it is unit-tested on its own (tests/unit/garden-board.test.ts).
  *
  * Coordinates are the game's: x to the right, z towards the player (the bottom of the screen),
  * one cell = 1. "Top" in the reference pictures is therefore -z, "left" is -x.
  */
-import G from '../../../../data/themes/garden/board.json';
+import TILE from '../../../../data/themes/garden/tile.json';
+import RIM from '../../../../data/themes/garden/rim.json';
+
+const G = { tile: TILE.tile, rim: RIM.rim, decor: RIM.decor };
 
 /** A small, fast seeded random generator (mulberry32): the same seed gives the same numbers every run. */
 export function seeded(seed: number): () => number {
@@ -119,7 +122,7 @@ export interface DecorPlace {
 
 /**
  * Where the leaves and flowers sit on a `cols` by `rows` board. The places are fixed in
- * `data/themes/garden/board.json` as a fraction along each straight side, as in the reference
+ * `data/themes/garden/rim.json` as a fraction along each straight side, as in the reference
  * `03-rim-vines`, so every board of a given size looks the same every time and a larger board
  * spreads the same arrangement over its longer sides.
  */
@@ -141,27 +144,14 @@ export function rimDecorLayout(cols: number, rows: number, gap: number): DecorPl
   });
 }
 
-/** What the garden hint needs from one engine event (see `RobotEvent`). */
-export interface HintStep {
-  readonly toX: number;
-  readonly toY: number;
-  readonly outcome: string;
-}
-
 /**
- * The cells the garden hint lights up for one hinted command: every cell a chick will step
- * onto (or leave the board through, for an exit). A chick that is blocked or only turns stays
- * where it is, so its cell is not lit: the hint shows where the flock goes. Each cell once, as
- * `y * width + x`, in order of first appearance.
+ * What a garden board of `cols` by `rows` cells measures on a screen where its outside is
+ * `boardPx` wide: the pixels per cell and the sizes that follow (as the robot `boardPixels`).
  */
-export function hintGlowCells(events: readonly HintStep[], width: number): number[] {
-  const cells: number[] = [];
-  for (const e of events) {
-    if (e.outcome !== 'moved' && e.outcome !== 'exited') continue;
-    const cell = e.toY * width + e.toX;
-    if (!cells.includes(cell)) cells.push(cell);
-  }
-  return cells;
+export function boardPixels(cols: number, rows: number, gap: number, boardPx: number): { unit: number; tile: number; gap: number; frame: number; width: number; height: number } {
+  const { outerW, outerD } = boardFootprint(cols, rows, gap);
+  const unit = boardPx / outerW;
+  return { unit, tile: G.tile.size * unit, gap: gap * unit, frame: G.rim.width * unit, width: boardPx, height: outerD * unit };
 }
 
 /** Distance from (x, y) to a rounded square of half-size `half` and corner radius `r`; negative inside. */

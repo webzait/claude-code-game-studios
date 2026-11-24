@@ -3,22 +3,27 @@
 Part of the garden (chick) theme. Built loose, on the parts page only; the theme session
 puts it into the game. References: `design/reference/turnflock/garden/` 01, 02, 03, 11, 12, 13.
 
-## What there is
+## What there is, and who works on it
 
-| Part | Function (`src/render/parts/garden/board.ts`) | Robot counterpart (`src/render/parts/board.ts`) |
-|---|---|---|
-| Grass tile, light and dark | `buildFloorTile(alt, pegs)` | `buildFloorTile(alt, pegs)` |
-| Glowing tile | `buildHighlightTile(alt, pegs)`, the glow alone `buildTileGlow()` | — (the robot hint draws arrows) |
-| Dirt tile (new type) | `buildDirtTile(alt, pegs)` | — |
-| Twig rim with leaves and flowers | `buildRim(cols, rows, gap)` | `buildRim(cols, rows, gap)` |
-| Underlay with grass bed | `buildUnderlay(cols, rows, gap, pegs)` | `buildUnderlay(cols, rows, gap, pegs)` |
-| Board size | `boardFootprint`, `boardPixels` | same names, same signatures |
-| Hint cells | `hintGlowCells(events, width)` | — |
+Each part has its own code file, data file, parts-page card file and test file, so each can be
+worked out in its own session without touching the others.
 
-Same units as the robot parts: one cell = 1, the floor at y = 0, the tile top at 0.2, so a
-chick stands where a robot stands. Every size and colour is in `data/themes/garden/board.json`;
-the plain arithmetic (rim path, decoration places, hint cells) is in `layout.ts` and unit-tested
-in `tests/unit/garden-board.test.ts`.
+| Part | Function | Code (`src/render/parts/garden/`) | Data (`data/themes/garden/`) | Parts page (`src/parts/garden-board/`) | Tests (`tests/unit/`) |
+|---|---|---|---|---|---|
+| Grass tile, light and dark | `buildFloorTile(alt, pegs)` | `grass.ts` | `tile.json` | `tile.ts` | `garden-tile.test.ts` |
+| Glowing tile, hint glow | `buildHighlightTile(alt, pegs)`, `buildTileGlow()`, `hintGlowCells` | `highlight.ts` | `highlight.json` | `highlight.ts` | `garden-highlight.test.ts` |
+| Dirt tile (new type) | `buildDirtTile(alt, pegs)` | `dirt.ts` | `dirt.json` | `dirt.ts` | `garden-dirt.test.ts` |
+| Rim, underlay, whole board | `buildRim`, `buildUnderlay`, `boardFootprint`, `boardPixels` | `rim.ts`, `underlay.ts`, `layout.ts` | `rim.json`, `underlay.json` | `rim.ts` | `garden-rim.test.ts` |
+
+Shared, changed only when every part needs it: `board.ts` (the contract: it re-exports every
+part under the robot theme's names), `geometry.ts`, `paint.ts`, `src/parts/garden-board/render.ts`,
+`index.ts`, `garden-board.css` and `tests/unit/garden-helpers.ts`. The glowing and dirt tiles and
+the rim's inner grass read the grass tile's body and fur from `grass.ts` and `tile.json`, and only
+read them.
+
+The robot counterparts are in `src/render/parts/board.ts`: `buildFloorTile`, `buildRim`,
+`buildUnderlay`, `boardFootprint`, `boardPixels`, with the same signatures. Same units: one cell = 1,
+the floor at y = 0, the tile top at 0.2, so a chick stands where a robot stands.
 
 ## How it is made
 
@@ -32,8 +37,10 @@ in `tests/unit/garden-board.test.ts`.
   its own, so it can pulse (`glow.pulse`).
 - **Dirt tile.** A soil floor, sunk 0.045 into a frame of rounded clay blocks (three per side,
   one per corner), short grass round the foot and tufts over the near edge.
-- **Rim.** Three twigs twisted round the rim's centre line (a rounded rectangle from
-  `boardFootprint`), with a dark core between them. The twist count round the whole rim is a
+- **Rim.** Three bundles of four thin twigs, twisted round the rim's centre line (a rounded
+  rectangle from `boardFootprint`), each bundle twisting on itself, three fine twigs winding the
+  other way over them, and a core of the same bark. The bark is glossy (clearcoat) and painted at
+  1024 px; the upper side of each twig is brighter. The twist count round the whole rim is a
   whole number, so the braid closes without a seam on every board from 4×4 to 8×8, square or not.
   Grass grows against its inside. Leaves, vines and white flowers sit at fixed fractions of each
   side (`decor.clusters`), modelled on `03-rim-vines`: never random, the same every load.
@@ -51,15 +58,16 @@ Measured on the parts page (fused, as the game fuses the board):
 | | Garden | Robot |
 |---|---|---|
 | One tile | 300 triangles | 216 triangles |
-| Dirt tile | 1,918 triangles (the clay blocks) | — |
-| Rim 6×6 | 13,632 triangles | 4,704 triangles |
-| Board 4×4, fused | 16,220 triangles, 5 draw calls | 7,596 triangles, 3 draw calls |
-| Board 6×6 with two glowing tiles, fused | 24,754 triangles, 7 draw calls | 12,732 triangles, 3 draw calls |
-| Board 8×8, fused | 35,724 triangles, 5 draw calls | 19,596 triangles, 3 draw calls |
+| Dirt tile | about 1,900 triangles (the clay blocks) | — |
+| Rim 6×6 | about 39,100 triangles, 3 draw calls | 4,704 triangles, 1 draw call |
+| Board 4×4, fused | 33,908 triangles, 5 draw calls | 7,596 triangles, 3 draw calls |
+| Board 6×6 with two glowing tiles | 50,230 triangles, 7 draw calls | 12,732 triangles, 3 draw calls |
+| Board 8×8, fused | 69,120 triangles, 5 draw calls | 19,596 triangles, 3 draw calls |
 
-The five draws are: grass tiles, grass fur, grass bed, bark, leaves/flowers/soil. A glowing tile
-adds one draw per glow (each has its own material so it can pulse); a dirt tile adds one
-material. Under 36,000 triangles is checked by a test.
+Most of the triangles are the full braid of thin twigs the owner asked for (2026-11-24). It is a
+single draw call; a phone draws 70,000 triangles easily, the number of draws matters more. A test
+keeps an 8×8 board under 70,000. The textures are painted at start-up at up to 1024 px (about
+4 MB of graphics memory each), and add nothing to the file size.
 
 ## Notes for the theme session
 
@@ -95,8 +103,9 @@ Recommendation: 1 now (free), 2 as a later optional goal.
 
 - The tile's fur is short and reads as a soft, slightly lighter edge at game size; in `02-tile-grass`
   the fur is longer and more visible. Longer fur cards stick out between tiles at 30° tilt.
-- The braid is a rope of three thick twigs; the reference rim reads as a bundle of many fine
-  twigs with glossy highlights. Ours is a little narrower (about 0.45 of a cell against 0.5).
+- The braid now has twelve thin twigs and fine twigs over them, with gloss; the reference reads
+  smoother and more orange, as if the twigs were polished. Ours is a little narrower (about 0.45
+  of a cell against 0.5).
 - The reference board uses one tile colour; ours has the light/dark checkerboard as asked.
 - The clover pattern is faint by design; at game size it is barely visible, as in the reference.
 - The dirt tile's clay blocks are a little smaller and more separate than in `13-sheet-tile-dirt`.

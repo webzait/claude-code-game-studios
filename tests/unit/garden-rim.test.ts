@@ -1,102 +1,29 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import G from '../../data/themes/garden/board.json';
 import config from '../../data/config.json';
-import * as robot from '../../src/render/parts/board';
-import {
-  boardFootprint, boardPixels, buildDirtTile, buildFloorTile, buildHighlightTile, buildRim, buildTileGlow, buildUnderlay, hintGlowCells, rimDecorLayout,
-} from '../../src/render/parts/garden/board';
+import TILE from '../../data/themes/garden/tile.json';
+import RIM from '../../data/themes/garden/rim.json';
+import UNDER from '../../data/themes/garden/underlay.json';
+import { boardFootprint, boardPixels, buildFloorTile, buildRim, buildUnderlay, rimDecorLayout } from '../../src/render/parts/garden/board';
 import { braidTwists, rimPath, RoundedPath, seeded } from '../../src/render/parts/garden/layout';
+import { boxOf, outwardShare, SIZES } from './garden-helpers';
 
 const GAP = config.board.grid.gap;
-/** Every board size the game uses: 4×4 to 8×8, square or not. */
-const SIZES: [number, number][] = [];
-for (let c = 4; c <= 8; c++) for (let r = 4; r <= 8; r++) SIZES.push([c, r]);
 
-const boxOf = (o: THREE.Object3D): THREE.Box3 => new THREE.Box3().setFromObject(o);
-
-/**
- * Share of a single-sided mesh's triangles whose winding agrees with their vertex normals, so
- * the face the camera sees is its outside. Double-sided meshes (leaves, fur, flowers) are skipped.
- */
-function outwardShare(object: THREE.Object3D): { agree: number; total: number } {
-  let agree = 0;
-  let total = 0;
-  const a = new THREE.Vector3();
-  const b = new THREE.Vector3();
-  const c = new THREE.Vector3();
-  const n = new THREE.Vector3();
-  object.traverse((node) => {
-    if (!(node instanceof THREE.Mesh)) return;
-    if ((node.material as THREE.Material).side === THREE.DoubleSide) return;
-    const g = node.geometry as THREE.BufferGeometry;
-    const pos = g.getAttribute('position');
-    const nor = g.getAttribute('normal');
-    const index = g.index;
-    const count = index ? index.count : pos.count;
-    for (let i = 0; i < count; i += 3) {
-      const [i0, i1, i2] = [0, 1, 2].map((k) => (index ? index.getX(i + k) : i + k));
-      a.fromBufferAttribute(pos, i0);
-      b.fromBufferAttribute(pos, i1);
-      c.fromBufferAttribute(pos, i2);
-      const face = b.clone().sub(a).cross(c.clone().sub(a));
-      if (face.lengthSq() < 1e-14) continue;
-      n.fromBufferAttribute(nor, i0).add(new THREE.Vector3().fromBufferAttribute(nor, i1)).add(new THREE.Vector3().fromBufferAttribute(nor, i2));
-      total++;
-      if (face.dot(n) > 0) agree++;
-    }
-  });
-  return { agree, total };
-}
-
-describe('garden board parts', () => {
-  it('grass tile fills one cell and is as high as the robot tile', () => {
-    const box = boxOf(buildFloorTile(false, false));
-    const size = box.getSize(new THREE.Vector3());
-    expect(size.x).toBeLessThanOrEqual(G.tile.size);
-    expect(size.x).toBeGreaterThan(0.9);
-    expect(box.max.y).toBeCloseTo(boxOf(robot.buildFloorTile(false, false)).max.y, 3);
-    expect(box.min.y).toBeCloseTo(0, 3);
-  });
-
-  it('light and dark grass tiles differ only in tone', () => {
-    const light = boxOf(buildFloorTile(false, false)).getSize(new THREE.Vector3());
-    const dark = boxOf(buildFloorTile(true, false)).getSize(new THREE.Vector3());
-    expect(dark.distanceTo(light)).toBeLessThan(1e-6);
-  });
-
-  it('pegs hang below the tile only when asked for', () => {
-    expect(boxOf(buildFloorTile(false, true)).min.y).toBeCloseTo(-G.tile.pegHeight, 3);
-    expect(boxOf(buildDirtTile(false, true)).min.y).toBeCloseTo(-G.tile.pegHeight, 3);
-  });
-
-  it('every closed part faces outward', () => {
-    const parts = [buildFloorTile(false, true), buildFloorTile(true, false), buildHighlightTile(false, false), buildDirtTile(false, true), buildRim(6, 6, GAP), buildRim(4, 7, GAP), buildUnderlay(5, 5, GAP, true)];
-    for (const part of parts) {
+describe('garden rim, underlay and board', () => {
+  it('faces outward', () => {
+    for (const part of [buildRim(6, 6, GAP), buildRim(4, 7, GAP), buildUnderlay(5, 5, GAP, true)]) {
       const { agree, total } = outwardShare(part);
       expect(total).toBeGreaterThan(0);
       expect(agree / total).toBeGreaterThan(0.97);
     }
   });
 
-  it('highlight tile carries its glow and the glow does not change its size', () => {
-    const tile = buildHighlightTile(false, false);
-    const glow = tile.userData.glow as THREE.Mesh;
-    expect(glow).toBeInstanceOf(THREE.Mesh);
-    expect(glow.name).toBe('tile-glow');
-    const material = glow.material as THREE.MeshBasicMaterial;
-    expect(material.depthWrite).toBe(false);
-    expect(material.opacity).toBe(G.glow.pulse.high);
-    expect(boxOf(tile).getSize(new THREE.Vector3()).x).toBeLessThanOrEqual(G.tile.size);
-    // Each glow has a material of its own, so one can pulse without the others.
-    expect(buildTileGlow().material).not.toBe(buildTileGlow().material);
-  });
-
   it('the rim sits outside the tiles and inside the footprint on every board size', () => {
     for (const [cols, rows] of SIZES) {
       const { innerW, innerD, outerW, outerD } = boardFootprint(cols, rows, GAP);
-      const tilesW = cols * G.tile.size + (cols - 1) * GAP;
-      const tilesD = rows * G.tile.size + (rows - 1) * GAP;
+      const tilesW = cols * TILE.tile.size + (cols - 1) * GAP;
+      const tilesD = rows * TILE.tile.size + (rows - 1) * GAP;
       expect(innerW).toBeGreaterThan(tilesW);
       expect(innerD).toBeGreaterThan(tilesD);
       const braid = (buildRim(cols, rows, GAP).children[0] as THREE.Mesh).geometry;
@@ -142,7 +69,7 @@ describe('garden board parts', () => {
 
   it('decorations sit at the same places every time', () => {
     expect(rimDecorLayout(6, 6, GAP)).toEqual(rimDecorLayout(6, 6, GAP));
-    expect(rimDecorLayout(6, 6, GAP)).toHaveLength(G.decor.clusters.length);
+    expect(rimDecorLayout(6, 6, GAP)).toHaveLength(RIM.decor.clusters.length);
     const a = buildRim(5, 7, GAP);
     const b = buildRim(5, 7, GAP);
     const points = (o: THREE.Object3D): number[] => {
@@ -166,7 +93,7 @@ describe('garden board parts', () => {
         else expect(Math.abs(p.x)).toBeCloseTo(path.a, 9);
       }
       for (let i = 0; i < places.length; i++) for (let j = i + 1; j < places.length; j++) {
-        expect(Math.hypot(places[i].x - places[j].x, places[i].z - places[j].z)).toBeGreaterThanOrEqual(G.decor.minGap);
+        expect(Math.hypot(places[i].x - places[j].x, places[i].z - places[j].z)).toBeGreaterThanOrEqual(RIM.decor.minGap);
       }
     }
   });
@@ -182,10 +109,10 @@ describe('garden board parts', () => {
       const { outerW, outerD } = boardFootprint(cols, rows, GAP);
       const box = boxOf(buildUnderlay(cols, rows, GAP));
       const size = box.getSize(new THREE.Vector3());
-      expect(size.x).toBeCloseTo(outerW + 2 * G.underlay.lip, 3);
-      expect(size.z).toBeCloseTo(outerD + 2 * G.underlay.lip, 3);
+      expect(size.x).toBeCloseTo(outerW + 2 * UNDER.underlay.lip, 3);
+      expect(size.z).toBeCloseTo(outerD + 2 * UNDER.underlay.lip, 3);
       expect(box.max.y).toBeCloseTo(0, 3);
-      expect(box.min.y).toBeCloseTo(-G.underlay.height, 3);
+      expect(box.min.y).toBeCloseTo(-UNDER.underlay.height, 3);
     }
   });
 
@@ -209,25 +136,6 @@ describe('garden board parts', () => {
     // costs most of the difference; it is one draw call, which a phone handles easily.
     expect(tris).toBeLessThan(70000);
   });
-});
-
-describe('garden hint', () => {
-  it('lights the cells the flock steps onto', () => {
-    const cells = hintGlowCells([
-      { toX: 2, toY: 1, outcome: 'moved' },
-      { toX: 0, toY: 0, outcome: 'blocked-wall' },
-      { toX: 3, toY: 0, outcome: 'exited' },
-    ], 6);
-    expect(cells).toEqual([8, 3]);
-  });
-
-  it('lights a shared cell once and nothing for a blocked command', () => {
-    expect(hintGlowCells([{ toX: 1, toY: 1, outcome: 'moved' }, { toX: 1, toY: 1, outcome: 'moved' }], 4)).toEqual([5]);
-    expect(hintGlowCells([{ toX: 1, toY: 1, outcome: 'blocked-robot' }, { toX: 2, toY: 1, outcome: 'blocked-cycle' }], 4)).toEqual([]);
-  });
-});
-
-describe('seeded random', () => {
   it('gives the same numbers for the same seed', () => {
     const a = seeded(42);
     const b = seeded(42);

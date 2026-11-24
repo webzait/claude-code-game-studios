@@ -1,0 +1,40 @@
+{
+  "$comment": "Garden theme board. Sizes in cells (1 cell = 56 px on the asset sheet), the same units as data/parts.json. Overview: design/themes/garden-board.md. Grass tile (buildFloorTile) and the grass fur shared by the other garden parts. Reference: 02-tile-grass, 11-sheet-tile-grass. Owner: the grass tile session.",
+  "tile": {
+    "size": 1,
+    "body": 0.9,
+    "height": 0.2,
+    "radius": 0.21,
+    "bevel": 0.1,
+    "bevelSteps": 3,
+    "cornerSteps": 4,
+    "peg": 0.12,
+    "pegHeight": 0.06,
+    "pegSpread": 0.28,
+    "fur": {
+      "reach": 0.03,
+      "inset": 0.06,
+      "droop": 0.07,
+      "blade": 0.18
+    },
+    "side": {
+      "low": 0.01,
+      "reach": 0.01
+    },
+    "texture": 1024,
+    "clovers": 6,
+    "seed": 11
+  },
+  "colors": {
+    "grassTop": "#BDE426",
+    "grassLight": "#D3F04C",
+    "grassDark": "#9FCC1E",
+    "grassSide": "#8CBF18",
+    "grassShade": "#4E8A10",
+    "altShade": 0.9,
+    "clover": "#D8F55C",
+    "blade": "#96CB1A",
+    "bladeTip": "#DDF66A",
+    "bladeBase": "#4F8E12"
+  }
+}
