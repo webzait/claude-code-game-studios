@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import TILE from '../../data/themes/garden/tile.json';
 import HL from '../../data/themes/garden/highlight.json';
-import { buildHighlightTile, buildTileGlow, hintGlowCells } from '../../src/render/parts/garden/board';
+import { buildFloorTile, buildHighlightTile, buildTileGlow, hintGlowCells } from '../../src/render/parts/garden/board';
+import { glowAt, glowPulse } from '../../src/render/parts/garden/highlight';
 import { boxOf, outwardShare } from './garden-helpers';
 
 describe('garden glowing tile', () => {
@@ -24,6 +25,41 @@ describe('garden glowing tile', () => {
       const { agree, total } = outwardShare(part);
       expect(total).toBeGreaterThan(0);
       expect(agree / total).toBeGreaterThan(0.97);
+    }
+  });
+
+  it('is the plain grass tile with the glow on it', () => {
+    for (const alt of [false, true]) {
+      const lit = buildHighlightTile(alt, false);
+      const plain = buildFloorTile(alt, false);
+      // The same tile meshes, plus the glow.
+      expect(lit.children.length).toBe(plain.children.length + 1);
+      expect(lit.children.at(-1)).toBe(lit.userData.glow);
+    }
+  });
+
+  it('follows the profile measured from the reference: cream line on the outline, halo out, nothing far off', () => {
+    const line = glowAt(0);
+    expect(line.alpha).toBe(1);
+    expect(Math.min(...line.rgb)).toBeGreaterThan(225); // cream, close to white
+    const halo = glowAt(0.05);
+    expect(halo.alpha).toBeGreaterThan(0.5);
+    expect(halo.rgb[2]).toBeLessThan(halo.rgb[0] - 120); // yellow: little blue
+    expect(glowAt(-0.05).alpha).toBeGreaterThan(0.4); // inner glow
+    expect(glowAt(HL.glow.reach).alpha).toBe(0);
+    expect(glowAt(-0.3).alpha).toBe(0);
+    // Out from the line the halo only fades.
+    for (let d = 0.036; d < HL.glow.reach; d += 0.01) expect(glowAt(d + 0.01).alpha).toBeLessThanOrEqual(glowAt(d).alpha);
+  });
+
+  it('pulses between low and high, one cycle per pulse.seconds', () => {
+    const p = HL.glow.pulse;
+    expect(glowPulse(0)).toBeCloseTo(p.high);
+    expect(glowPulse(p.seconds / 2)).toBeCloseTo(p.low);
+    expect(glowPulse(p.seconds)).toBeCloseTo(p.high);
+    for (let t = 0; t < 2 * p.seconds; t += 0.05) {
+      expect(glowPulse(t)).toBeGreaterThanOrEqual(p.low - 1e-9);
+      expect(glowPulse(t)).toBeLessThanOrEqual(p.high + 1e-9);
     }
   });
 
