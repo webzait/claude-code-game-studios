@@ -79,13 +79,13 @@ describe('theme register', () => {
     expect(slots).toEqual(['robot', 'floorTile', 'rim', 'underlay', 'obstacle', 'exit', 'turnTile', 'plate', 'gate', 'backdrop', 'decor', 'levelScreen', 'colours', 'light', 'sounds']);
   });
 
-  it('every 3D slot names a function the robot theme has', () => {
-    for (const slot of THEME_SLOTS.filter((s) => s.kind === '3d')) for (const name of slot.supplies) expect(typeof ROBOT_BUILDERS[name as keyof typeof ROBOT_BUILDERS]).toBe('function');
+  it('every 3D slot names a value the robot theme has', () => {
+    for (const slot of THEME_SLOTS.filter((s) => s.kind === '3d')) for (const name of slot.supplies) expect(ROBOT_BUILDERS[name as keyof typeof ROBOT_BUILDERS]).toBeDefined();
   });
 
   it('the garden theme is always complete: own light and colours, robot parts wherever it has none', () => {
     const garden = resolveTheme('garden');
-    for (const name of Object.keys(ROBOT_BUILDERS)) expect(typeof garden.builders[name as keyof typeof garden.builders]).toBe('function');
+    for (const name of Object.keys(ROBOT_BUILDERS)) expect(typeof garden.builders[name as keyof typeof garden.builders]).toBe(typeof ROBOT_BUILDERS[name as keyof typeof ROBOT_BUILDERS]);
     expect(garden.light.sun).toBeGreaterThan(0);
     expect(garden.light).not.toEqual(ROBOT_LIGHT);
     expect(garden.colours['--tf-theme-sky']).toMatch(/^#[0-9A-F]{6}$/i);

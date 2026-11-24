@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import PARTS from '../../data/parts.json';
-import { boardFootprint } from './parts/board';
 import { CONFIG } from '../config';
 import { exitsOf } from '../engine/engine';
 import { DIR_DX, DIR_DY, type Color, type GameState, type RobotEvent } from '../engine/types';
@@ -185,8 +184,11 @@ export class BoardView {
   private boardSize(): { w: number; d: number } {
     const { width, height } = this.level?.board ?? { width: 1, height: 1 };
     if (!this.modular) return { w: width + this.layout.frame, d: height + this.layout.frame };
+    const { boardFootprint, underlayLip } = this.theme.builders;
     const { outerW, outerD } = boardFootprint(width, height, GRID.gap);
-    return { w: outerW + 2 * PARTS.underlay.lip, d: outerD + 2 * PARTS.underlay.lip };
+    // The underlay reaches past the rim (robot) or sits under it (garden: negative lip, the rim is the edge).
+    const lip = Math.max(0, underlayLip);
+    return { w: outerW + 2 * lip, d: outerD + 2 * lip };
   }
 
   /** Hand over the asset kit once it has loaded. Takes effect at the next level load. */

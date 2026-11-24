@@ -17,8 +17,9 @@ import { CONFIG } from '../config';
 import type { Level } from '../levels/parse';
 import type { ThemeId } from '../game/theme';
 import { isSoundSet } from '../sound/sets';
-import { buildExit, buildFloorTile, buildGate, buildObstacle, buildPlate, buildRim, buildTurnTile, buildUnderlay, gateDoorScale } from './parts/board';
+import { boardFootprint, buildExit, buildFloorTile, buildGate, buildObstacle, buildPlate, buildRim, buildTurnTile, buildUnderlay, gateDoorScale } from './parts/board';
 import { buildPartsRobot, buildRobot } from './robot';
+import PARTS from '../../data/parts.json';
 
 /** Every build function a theme can replace. Each keeps the robot function's name, parameters and return value. */
 export interface ThemeBuilders {
@@ -42,6 +43,13 @@ export interface ThemeBuilders {
    * mixes rocks, stumps and bushes). A returned object marked `userData.keepApart` is not fused.
    */
   readonly obstaclesFor: (level: Level) => (x: number, y: number) => THREE.Object3D;
+  /**
+   * Size of the theme's rim and everything under it: `outerW`/`outerD` is the rim's outside.
+   * Belongs with `buildRim`; the board view frames the camera on it.
+   */
+  readonly boardFootprint: typeof boardFootprint;
+  /** How far the underlay reaches past the rim's outside (negative: it sits under the rim). */
+  readonly underlayLip: number;
 }
 
 /** The robot theme's obstacles: the one block on every wall cell. */
@@ -63,6 +71,8 @@ export const ROBOT_BUILDERS: ThemeBuilders = {
   buildGate,
   gateDoorScale,
   obstaclesFor: robotObstaclesFor,
+  boardFootprint,
+  underlayLip: PARTS.underlay.lip,
 };
 
 /** Light on the 3D board. `sky`, `ground`, `ambient`, `sun`, `reflections` and `shadow` mean what they mean in `config.light`. */
@@ -102,8 +112,8 @@ export interface ThemeSlot {
 export const THEME_SLOTS: readonly ThemeSlot[] = [
   { id: 'robot', kind: '3d', supplies: ['buildPartsRobot', 'buildRobot'], robot: 'src/render/robot.ts' },
   { id: 'floorTile', kind: '3d', supplies: ['buildFloorTile'], robot: 'src/render/parts/board.ts' },
-  { id: 'rim', kind: '3d', supplies: ['buildRim'], robot: 'src/render/parts/board.ts' },
-  { id: 'underlay', kind: '3d', supplies: ['buildUnderlay'], robot: 'src/render/parts/board.ts' },
+  { id: 'rim', kind: '3d', supplies: ['buildRim', 'boardFootprint'], robot: 'src/render/parts/board.ts' },
+  { id: 'underlay', kind: '3d', supplies: ['buildUnderlay', 'underlayLip'], robot: 'src/render/parts/board.ts' },
   { id: 'obstacle', kind: '3d', supplies: ['buildObstacle', 'obstaclesFor'], robot: 'src/render/parts/board.ts' },
   { id: 'exit', kind: '3d', supplies: ['buildExit'], robot: 'src/render/parts/board.ts' },
   { id: 'turnTile', kind: '3d', supplies: ['buildTurnTile'], robot: 'src/render/parts/board.ts' },
@@ -152,7 +162,7 @@ export function resolveBuilders(sources: ThemeSources): ThemeBuilders {
   const out: Record<string, unknown> = { ...ROBOT_BUILDERS };
   for (const name of Object.keys(ROBOT_BUILDERS)) {
     const own = sources.exports[name];
-    if (typeof own === 'function') out[name] = own;
+    if (typeof own === typeof ROBOT_BUILDERS[name as keyof ThemeBuilders]) out[name] = own;
   }
   return out as unknown as ThemeBuilders;
 }
@@ -192,7 +202,7 @@ export function resolveSoundSet(sources: ThemeSources): string | null {
 /** For each slot, whether the theme supplies it itself (`own`) or shows the robot part (`robot`). */
 export function slotStatus(sources: ThemeSources): Record<string, 'own' | 'robot'> {
   const has = (slot: ThemeSlot): boolean => {
-    if (slot.kind === '3d') return slot.supplies.some((name) => typeof sources.exports[name] === 'function');
+    if (slot.kind === '3d') return slot.supplies.some((name) => sources.exports[name] !== undefined && typeof sources.exports[name] === typeof ROBOT_BUILDERS[name as keyof ThemeBuilders]);
     if (slot.kind === '2d') return slot.supplies.some((file) => sources.styles.includes(file));
     return slot.supplies.some((file) => sources.data[file] !== undefined);
   };

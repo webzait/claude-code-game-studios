@@ -31,6 +31,8 @@ export function fuse(source: THREE.Object3D): THREE.Group {
   source.updateMatrixWorld(true);
   const inverse = new THREE.Matrix4().copy(source.matrixWorld).invert();
   const byMaterial = new Map<THREE.Material, THREE.BufferGeometry[]>();
+  // A part's own shadow shape (a cut-out picture, grass blades) goes with its material onto the fused mesh.
+  const depthOf = new Map<THREE.Material, THREE.Material>();
   const apart: { node: THREE.Object3D; matrix: THREE.Matrix4 }[] = [];
   const visit = (node: THREE.Object3D): void => {
     if (node !== source && node.userData.keepApart === true) {
@@ -46,6 +48,7 @@ export function fuse(source: THREE.Object3D): THREE.Group {
       const list = byMaterial.get(node.material as THREE.Material) ?? [];
       list.push(geometry);
       byMaterial.set(node.material as THREE.Material, list);
+      if (node.customDepthMaterial && !depthOf.has(node.material as THREE.Material)) depthOf.set(node.material as THREE.Material, node.customDepthMaterial);
     }
     for (const child of node.children) visit(child);
   };
@@ -63,6 +66,8 @@ export function fuse(source: THREE.Object3D): THREE.Group {
       const mesh = new THREE.Mesh(geometry, material);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
+      const depth = depthOf.get(material);
+      if (depth) mesh.customDepthMaterial = depth;
       fused.add(mesh);
     }
   }
