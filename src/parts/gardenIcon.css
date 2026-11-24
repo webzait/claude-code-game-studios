@@ -1,0 +1,22 @@
+/* Parts sheet only: the garden icon cards (src/parts/gardenIcon.ts). */
+.tgi-sizes { display: grid; gap: 14px; }
+.tgi-row { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-end; }
+.tgi-row figure, .tgi-use figure { margin: 0; text-align: center; font-size: 12px; color: #5b6676; }
+.tgi-name { width: 52px; font-weight: 700; align-self: center; }
+.tgi-img { display: block; margin: 0 auto 4px; }
+/* A 16 px icon drawn at its own pixels and blown up, as a 1x screen shows it. */
+.tgi-pixel .tgi-1x { width: 16px; height: 16px; transform: scale(4); transform-origin: bottom center; image-rendering: pixelated; margin-top: 52px; }
+.tgi-use { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-start; }
+.tgi-home { display: flex; gap: 22px; padding: 22px 26px; border-radius: 22px; }
+.tgi-wall-light { background: linear-gradient(160deg, #f6d9b8, #c8dcf4); }
+.tgi-wall-dark { background: linear-gradient(160deg, #1f2a44, #3c2a4d); }
+.tgi-app { display: grid; justify-items: center; gap: 5px; font: 12px/1.2 system-ui, sans-serif; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .5); }
+.tgi-ios { border-radius: 22.5%; margin: 0; box-shadow: 0 2px 6px rgba(0, 0, 0, .25); }
+.tgi-tabfig { display: grid; gap: 8px; }
+.tgi-tabs { display: flex; gap: 2px; padding: 6px 6px 0; background: #dfe3ea; border-radius: 10px 10px 0 0; font: 12px system-ui, sans-serif; color: #333; }
+.tgi-tabs.tgi-dark { background: #202124; color: #e8eaed; }
+.tgi-tab { display: flex; align-items: center; gap: 7px; width: 170px; padding: 8px 10px; border-radius: 8px 8px 0 0; white-space: nowrap; overflow: hidden; }
+.tgi-tab .tgi-img { margin: 0; flex: none; }
+.tgi-tab i { width: 16px; height: 16px; border-radius: 50%; background: #9aa3b2; flex: none; }
+.tgi-tab.tgi-on { background: #fff; }
+.tgi-dark .tgi-tab.tgi-on { background: #35363a; }

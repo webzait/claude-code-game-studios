@@ -22,6 +22,7 @@ import extraMovesIcon from '../../assets/turnflock/ui/extra-moves.webp';
 import { addSettingsCards } from './settings';
 import { addGardenLevelCards } from './gardenLevels';
 import { addGardenLogoCards } from './gardenLogo';
+import { addGardenIconCards } from './gardenIcon';
 
 /**
  * The parts sheet: every game element built on its own and shown from the
@@ -1045,5 +1046,6 @@ addCoinCards(document.getElementById('sheet')!);
 addSettingsCards(document.getElementById('sheet')!);
 addGardenLevelCards(document.getElementById('sheet')!);
 addGardenLogoCards(document.getElementById('sheet')!);
+addGardenIconCards(document.getElementById('sheet')!);
 
 document.body.dataset.ready = 'true';
