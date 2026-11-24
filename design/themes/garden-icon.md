@@ -48,6 +48,10 @@ Players who already added the game to their home screen keep the robot icon unti
 Options that were offered: A (one icon), B (tab follows the theme, home screen fixed; recommended),
 C (both follow the theme; the home-screen icon would show whichever theme was on when it was added).
 
-Note on the single file: `npm run build:single` does not inline the two `<link>` icons; it writes
-them as two PNG files next to `index.html`, as it already did for the robot icons. The game itself
-is still one HTML file; a copy of only `index.html` shows the browser's default icon.
+Single file: `npm run build:single` used to write the two `<link>` icons as PNG files next to
+`index.html` (it did so for the robot icons too). At the owner's request (2026-11-24) the build now
+puts them into the page as data URLs and drops the files: `tools/single-file/inlineLinkIcons.ts`, a Vite
+plugin used in the single build only (test: `tests/unit/inline-link-icons.test.ts`). The single file
+grows by 25.7 KB (1,767,898 to 1,793,572 bytes); the decoded icons are byte for byte the files in
+`assets/turnflock/garden/icon/`. Evidence: `production/qa/evidence/garden-icon/single-file-icons-390.png`
+(the game from `dist-single/index.html`, with both icons loaded from its own `<link>` tags).

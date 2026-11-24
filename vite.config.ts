@@ -4,6 +4,7 @@
 // Vitest reads the test block; Playwright has its own config.
 import { defineConfig } from 'vitest/config';
 import { viteSingleFile } from 'vite-plugin-singlefile';
+import { inlineLinkIconsPlugin } from './tools/single-file/inlineLinkIcons';
 
 export default defineConfig(({ mode }) => ({
   // Relative paths, so the build works from any folder, itch.io included.
@@ -14,7 +15,8 @@ export default defineConfig(({ mode }) => ({
   publicDir: false,
   // The asset kit's 3D models are imported from code like the images are.
   assetsInclude: ['**/*.glb'],
-  plugins: mode === 'single' || mode === 'parts' || mode === 'sounds' ? [viteSingleFile()] : [],
+  // The single file also carries its tab and home-screen icon (tools/single-file/inlineLinkIcons.ts).
+  plugins: mode === 'single' ? [viteSingleFile(), inlineLinkIconsPlugin()] : mode === 'parts' || mode === 'sounds' ? [viteSingleFile()] : [],
   // The game's page only: other pages in the project (one-shots in prototypes/)
   // are not scanned for packages.
   optimizeDeps: { entries: ['index.html'] },
