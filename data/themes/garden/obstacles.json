@@ -19,15 +19,6 @@
       "stump": true,
       "bushWhite": true,
       "bushPink": true
-    },
-    "ground": {
-      "_note": "Soft square shadow under every obstacle, the shape of the tile (tile 0.96 wide, corner radius 0.15): size and corner radius in cells, how far in from its edge it reaches full strength (shares of its size), strength at the centre, colour, and height above the tile top.",
-      "size": 0.92,
-      "radius": 0.16,
-      "softness": 0.2,
-      "strength": 0.5,
-      "color": "#3E2F5C",
-      "lift": 0.003
     }
   },
   "choice": {

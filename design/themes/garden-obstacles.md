@@ -11,21 +11,20 @@ The owner's picture is the part. The rocks and the stump were supplied already c
 out at 1254 px (`25`–`28` in the reference folder) and keep their own edge. The bushes
 are cut by `tools/asset-pipeline/garden-obstacles.py` out of the reference picture
 (background made transparent with an un-mixed edge, no halo; their wide baked shadow
-dropped). Every obstacle gets the same small, tight lavender shadow right under its foot
-(`CONTACT` in the tool), so it reads as part of its tile. The tool scales each picture
+dropped); no obstacle has a shadow under it. The tool scales each picture
 with premultiplied alpha, saves a WebP in `assets/turnflock/garden/obstacles/` and
 writes `data/themes/garden/obstacle-sprites.json` (picture size, where the object and
 its foot sit in the picture). Rerun the tool after changing a source picture.
 
 | Kind | Source | Picture | Size |
 |---|---|---|---|
-| `rock` | `25-rock-hd` (1254 px, cut out by the owner) | 224×177 | 7.8 kB |
-| `rockMossLight` | `26-rock-moss-light-hd` (sharp version of `04-rock`) | 224×168 | 8.6 kB |
-| `rockMossy` | `27-rock-mossy-hd` (sharp version of `15-sheet-rock-mossy`) | 224×171 | 9.9 kB |
-| `stump` | `28-stump-hd` (sharp version of `05-stump`) | 224×174 | 12.0 kB |
-| `bushWhite` | `06-bush-flowers` (1254 px) | 224×181 | 13.2 kB |
-| `bushPink` | `06-bush-flowers`, white flowers retinted pink / lilac / light pink as on `17-sheet-bushes-plants` (whose pink bush is only 83 px) | 224×181 | 13.2 kB |
-| **Obstacles together** | | | **64.7 kB** |
+| `rock` | `25-rock-hd` (1254 px, cut out by the owner) | 224×197 | 7.2 kB |
+| `rockMossLight` | `26-rock-moss-light-hd` (sharp version of `04-rock`) | 224×187 | 8.3 kB |
+| `rockMossy` | `27-rock-mossy-hd` (sharp version of `15-sheet-rock-mossy`) | 224×191 | 10.3 kB |
+| `stump` | `28-stump-hd` (sharp version of `05-stump`) | 224×191 | 13.0 kB |
+| `bushWhite` | `06-bush-flowers` (1254 px) | 224×202 | 14.0 kB |
+| `bushPink` | `06-bush-flowers`, white flowers retinted pink / lilac / light pink as on `17-sheet-bushes-plants` (whose pink bush is only 83 px) | 224×202 | 14.1 kB |
+| **Obstacles together** | | | **66.8 kB** |
 | `plant-sprig`, `plant-grass` | `17-sheet-bushes-plants`, 2x | ~120×102 | 6.5 / 6.2 kB |
 | `plant-flower-white`, `plant-flower-pink` | biggest flower of `06-bush-flowers` (pink: retinted) | 128×114 | 5.8 / 6.5 kB |
 
@@ -46,19 +45,13 @@ on screen but keeps a robot standing behind from cutting into the top of the pic
 An odd `turn` mirrors the stump and bushes (lit from the front); the rocks are never
 mirrored (their light comes from one side).
 
-**Square shadow on the tile.** Under every card lies a second, flat quad just on the tile
-top (`sprite.ground`): a soft rounded-square shadow the shape of the tile (0.92 cells,
-corner radius 0.16), darkest in the middle and fading out before the tile edge. The
-object is round, but the darker square makes the whole tile read as taken (owner's
-wish, 2026-11-24: obstacles should feel part of the square tile). It is computed in
-code (a 128 px DataTexture), shared by every obstacle, unlit, and does not write depth.
+**No shadow under the obstacles** (owner's choice, 2026-11-24, after trying a small contact
+shadow and a square shadow patch on the tile): the pictures carry none and the cards cast none.
 
-**For the theme session:** place it exactly like the robot block. The card casts no
-shadow (the shadow is in the picture): `fuse()` in `kit.ts` sets `castShadow` on every
-merged mesh, so either add the obstacle groups to `boardGroup` outside the fused group,
-or set `castShadow = false` on the fused meshes that use a `garden-obstacle-*` material
-(the ground patch included).
-Add them row by row from the back (as `boardView` does), so overlapping cards blend in
+**For the theme session:** place it exactly like the robot block. The card must cast no
+shadow: `fuse()` in `kit.ts` sets `castShadow` on every merged mesh, so either add the
+obstacle groups to `boardGroup` outside the fused group, or set `castShadow = false` on
+the fused meshes that use a `garden-obstacle-*` material. Add them row by row from the back (as `boardView` does), so overlapping cards blend in
 the right order. Per level: `chooseObstacles(level.id, width, height, walls)` from
 `obstacleChoice.ts`, then `buildObstacle(choice.kind, choice.turn)` per wall cell.
 Settings (card size, foot, lift, mirroring, choice weights) are in
@@ -82,10 +75,8 @@ over all shipped levels and an all-wall board.
 
 ## Known differences of the pictures from the originals
 
-- Shadow: every obstacle has the same small added shadow under its foot (owner's wish,
-  2026-11-24: obstacles should look part of their tile); the supplied rocks and stump
-  had none, and the bushes' wide baked shadow is dropped. Everything else is the owner's
-  picture, scaled down.
+- Shadow: none under any obstacle (owner's choice); the bushes' baked shadow is dropped.
+  Everything else is the owner's picture, scaled down.
 - Pink bush: retinted from the white bush, so it is the same bush with pink, lilac and
   light-pink flowers rather than the sheet's slightly different pink bush.
 - A picture always shows the object from the front, while the board is seen from above:
