@@ -2,14 +2,15 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import PARTS from '../../data/parts.json';
-import { boardFootprint, buildExit, buildFloorTile, buildGate, buildObstacle, buildPlate, buildRim, buildTurnTile, buildUnderlay, gateDoorScale } from './parts/board';
+import { boardFootprint } from './parts/board';
 import { CONFIG } from '../config';
 import { exitsOf } from '../engine/engine';
 import { DIR_DX, DIR_DY, type Color, type GameState, type RobotEvent } from '../engine/types';
 import type { Level } from '../levels/parse';
 import { QUARTER, headingAngle, nearestAngle, squashScale, turnAngle, type HeadingStyle } from './heading';
 import { fuse, type Kit } from './kit';
-import { buildPartsRobot, buildRobot, type RobotView } from './robot';
+import type { RobotView } from './robot';
+import { resolveTheme, type ResolvedTheme } from './themes';
 import { tileBeats } from './stepPlan';
 import type { CelebrationPlan } from '../game/celebration';
 import { CelebrationFx } from './celebration';
@@ -118,6 +119,10 @@ export class BoardView {
   /** Seconds into the turn tiles' opening cue, or null when it is not playing. */
   private cueTime: number | null = null;
   private sun: THREE.DirectionalLight;
+  private hemisphere: THREE.HemisphereLight;
+  private groundShadow: THREE.ShadowMaterial;
+  /** The active theme: its build functions and light (src/render/themes.ts). */
+  private theme: ResolvedTheme = resolveTheme('robot');
   private time = 0;
   private last = 0;
   private particleGeo = new RoundedBoxGeometry(0.09, 0.09, 0.09, 2, 0.02);
@@ -141,22 +146,25 @@ export class BoardView {
     // Soft studio reflections give the glossy materials something to mirror.
     const pmrem = new THREE.PMREMGenerator(this.renderer);
     this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    this.scene.environmentIntensity = CONFIG.light.reflections;
     pmrem.dispose();
     this.scene.add(this.boardGroup);
-    this.scene.add(new THREE.HemisphereLight(CONFIG.light.sky, CONFIG.light.ground, CONFIG.light.ambient));
-    this.sun = new THREE.DirectionalLight('#FFFFFF', CONFIG.light.sun);
+    const light = this.theme.light;
+    this.hemisphere = new THREE.HemisphereLight(light.sky, light.ground, light.ambient);
+    this.scene.add(this.hemisphere);
+    this.sun = new THREE.DirectionalLight(light.sunColor, light.sun);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(2048, 2048);
     this.sun.shadow.radius = 4;
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.add(this.sun, this.sun.target);
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.ShadowMaterial({ color: '#1F3A7A', opacity: CONFIG.light.shadow }));
+    this.groundShadow = new THREE.ShadowMaterial({ color: light.shadowColor, opacity: light.shadow });
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), this.groundShadow);
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = BOX_BOTTOM - 0.01;
     ground.receiveShadow = true;
     this.scene.add(ground);
+    this.applyLight();
     requestAnimationFrame((t) => this.frame(t));
   }
 
@@ -186,6 +194,34 @@ export class BoardView {
     void kit;
   }
 
+  /**
+   * Show the board in another theme. The light changes at once; the parts are rebuilt at once
+   * when a level is on show (`state` is where it stands), else at the next level load.
+   */
+  setTheme(theme: ResolvedTheme, state?: GameState): void {
+    if (theme.id === this.theme.id) return;
+    this.theme = theme;
+    this.applyLight();
+    if (this.level && state) {
+      this.loadLevel(this.level);
+      this.cueTime = null;
+      this.sync(state, false);
+    }
+  }
+
+  /** The active theme's light on the scene. */
+  private applyLight(): void {
+    const light = this.theme.light;
+    this.scene.environmentIntensity = light.reflections;
+    this.hemisphere.color.set(light.sky);
+    this.hemisphere.groundColor.set(light.ground);
+    this.hemisphere.intensity = light.ambient;
+    this.sun.color.set(light.sunColor);
+    this.sun.intensity = light.sun;
+    this.groundShadow.color.set(light.shadowColor);
+    this.groundShadow.opacity = light.shadow;
+  }
+
   /** Choose kit models or the built-in shapes. Takes effect at the next level load. */
   setStyle(style: BoardStyle): void {
     this.style = style;
@@ -213,8 +249,8 @@ export class BoardView {
     }
     const open = held.size > 0;
     if (open === this.gatesShownOpen && animate) return;
-    const from = gateDoorScale(this.gatesShownOpen);
-    const to = gateDoorScale(open);
+    const from = this.theme.builders.gateDoorScale(this.gatesShownOpen);
+    const to = this.theme.builders.gateDoorScale(open);
     this.gatesShownOpen = open;
     if (!animate || this.reduced) {
       for (const door of this.gateDoors) door.scale.y = to;
@@ -279,7 +315,8 @@ export class BoardView {
     for (const r of level.start.robots) {
       const heading = this.style.heading ?? 'faceUp';
       const viewTilt = (this.layout.tilt * Math.PI) / 180;
-      const view = this.style.kitRobots ? buildPartsRobot(r.id, r.color, heading, viewTilt) : buildRobot(r.id, r.color, heading);
+      const parts = this.theme.builders;
+      const view = this.style.kitRobots ? parts.buildPartsRobot(r.id, r.color, heading, viewTilt) : parts.buildRobot(r.id, r.color, heading);
       view.showShape(this.colourShapes);
       this.robots.set(r.id, view);
       this.boardGroup.add(view.root);
@@ -318,6 +355,7 @@ export class BoardView {
    */
   private buildPartsBoard(level: Level): void {
     const { width, height, walls } = level.board;
+    const { buildUnderlay, buildRim, buildExit, buildTurnTile, buildPlate, buildGate, buildFloorTile, buildObstacle } = this.theme.builders;
     const exitAt = new Map(exitsOf(level.board).map((e) => [e.y * width + e.x, e] as const));
     // Everything that never moves goes into one group and is fused into a few meshes.
     const fixed = new THREE.Group();
@@ -386,6 +424,7 @@ export class BoardView {
     const c = CONFIG.colors;
     const mat = (color: string, roughness = 0.8): THREE.MeshStandardMaterial =>
       new THREE.MeshStandardMaterial({ color, roughness });
+    const { buildTurnTile, buildPlate, buildGate } = this.theme.builders;
     const rim = this.layout.frame;
     const frame = new THREE.Mesh(
       slab(width + rim, height + rim, 0.22 + rim * 0.35, 0.34),

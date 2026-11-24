@@ -6,6 +6,9 @@ import './ui/tf-end.css';
 import './ui/tf-settings.css';
 import './ui/tf-scene.css';
 import './ui/tf-shop.css';
+// After the robot theme's sheets, so a theme's rules win over them (design/themes.md).
+import { applyPageTheme } from './ui/themes';
+import { resolveTheme } from './render/themes';
 import { AudioHub, Sfx, type PlayedSound } from './audio';
 import { movePlan, soundSet } from './sound/sets';
 import { CONFIG } from './config';
@@ -13,6 +16,7 @@ import type { Color, Command, Robot, RobotEvent } from './engine/types';
 import { previewStep, witnessNext, type RescueResult, type ScanResult } from './game/assist';
 import { CelebrationRun, planCelebration, type CelebrationPlan, type CelebrationVariant } from './game/celebration';
 import { extraMovesPrice, hintPrice, payout, rewardFor, settlePaid, undoQuote, type UndoQuote } from './game/coins';
+import type { ThemeId } from './game/theme';
 import { applyLab, levelScreenView, rulesFor, usesCertifiedRules, type LabSettings } from './game/lab';
 import { emptyLedger, record, type LedgerEntry } from './game/ledger';
 import { MemorySink, type MetricsEvent } from './game/metrics';
@@ -64,6 +68,8 @@ export interface Snapshot {
   coins: number;
   kitReady: boolean;
   lab: LabSettings;
+  /** The active theme and the root element's `data-theme`. */
+  theme: { setting: ThemeId; page: string | undefined };
   events: MetricsEvent[];
   /** The test shop sheet is open. */
   shopOpen: boolean;
@@ -349,6 +355,10 @@ class Game {
     this.music.set({ enabled: this.save.settings.music, variant: this.save.lab.music });
     applyColourShapes(this.save.settings.colourShapes);
     this.view.setColourShapes(this.save.settings.colourShapes);
+    // A theme switch rebuilds the board on show; no reload.
+    const theme = resolveTheme(this.save.settings.theme);
+    applyPageTheme(theme);
+    this.view.setTheme(theme, this.session.state);
   }
 
   // ---------------------------------------------------------------- screens
@@ -457,6 +467,8 @@ class Game {
       music: this.save.settings.music,
       setMusic: (on) => change(() => (this.save.settings.music = on)),
       setReduceMotion: (value) => change(() => (this.save.settings.reduceMotion = value)),
+      theme: this.save.settings.theme,
+      setTheme: (theme) => change(() => (this.save.settings.theme = theme)),
       colourShapes: this.save.settings.colourShapes,
       setColourShapes: (on) => change(() => (this.save.settings.colourShapes = on)),
       resetProgress: () =>
@@ -999,6 +1011,7 @@ class Game {
       coins: this.save.coins,
       kitReady: this.kitReady,
       lab: { ...this.save.lab },
+      theme: { setting: this.save.settings.theme, page: document.documentElement.dataset.theme },
       events: [...this.metrics.events],
       shopOpen: this.shop.isOpen,
       ledger: [...this.save.ledger.entries],
