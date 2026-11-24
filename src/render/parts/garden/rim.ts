@@ -1,16 +1,25 @@
 /**
- * Garden board: the rim (`buildRim`), a braid of thin glossy twigs with leaves, vines and white
- * flowers at fixed places, and the grass growing against its inside. Sizes and colours:
- * `data/themes/garden/rim.json`; the arithmetic (path, decoration places) is in `layout.ts`.
- * Reference: `03-rim-vines`, `01-board-full`.
+ * Garden board: the rim.
+ *
+ * `buildRim` (the default, under the robot theme's name) is the owner's picture `03-rim-vines`
+ * itself: corners, plain braid and decorated pieces cut from it into `rim-atlas.webp`
+ * (`assets/turnflock/garden/board/rim/build-rim.py`), laid flat just above the tiles as a nine-part
+ * frame that fits every board from 4×4 to 8×8 without stretching. Where the pieces go is worked
+ * out in `layout.ts` (`rimQuads`).
+ *
+ * `buildRimModel` is the earlier rim modelled in code: a braid of thin glossy twigs with leaves,
+ * vines and white flowers at fixed places, and grass growing against its inside. Kept as a choice.
+ *
+ * Sizes and colours: `data/themes/garden/rim.json`. Design: `design/themes/garden-board-rim.md`.
  */
 import * as THREE from 'three';
 import RIM from '../../../../data/themes/garden/rim.json';
 import UNDER from '../../../../data/themes/garden/underlay.json';
 import { Mesher, mergeAll, once, plainMaterial, shade, shadowed, tube } from './geometry';
 import { painted } from './paint';
-import { boardFootprint, braidTwists, rimDecorLayout, rimPath, RoundedPath, seeded, type DecorPlace } from './layout';
+import { boardFootprint, braidTwists, rimDecorLayout, rimPath, rimQuads, RoundedPath, seeded, type DecorPlace, type RimQuad } from './layout';
 import { furMesh } from './grass';
+import atlasUrl from '../../../../assets/turnflock/garden/board/rim/rim-atlas.webp';
 
 const G = { rim: RIM.rim, decor: RIM.decor, underlay: UNDER.underlay };
 const C = RIM.colors;
@@ -300,7 +309,7 @@ export function decoration(place: DecorPlace): THREE.Group {
  * board from 4×4 to 8×8, square or not: the braid follows the footprint and twists a whole
  * number of times, the decorations sit at fixed fractions of each side.
  */
-export function buildRim(cols: number, rows: number, gap: number): THREE.Group {
+export function buildRimModel(cols: number, rows: number, gap: number): THREE.Group {
   const path = rimPath(cols, rows, gap);
   const frame = new THREE.Group();
   frame.add(new THREE.Mesh(braidGeometry(path), barkMaterial));
@@ -314,4 +323,117 @@ export function buildRim(cols: number, rows: number, gap: number): THREE.Group {
   }
   frame.add(new THREE.Mesh(vines.build(), plainMaterial));
   return shadowed(frame);
+}
+
+// ---------------------------------------------------------------------------------------------
+// The rim as the owner's picture (the default `buildRim`).
+// ---------------------------------------------------------------------------------------------
+
+const IMG = RIM.image;
+const ATLAS = RIM.atlas;
+
+/**
+ * A texture loaded from `url` (a WebP the build puts in the page), and a promise that settles
+ * once it has loaded. Outside a browser (the unit tests) there is no image: the texture is null
+ * and the promise settles at once.
+ */
+export function imageTexture(url: string, repeat: boolean): { texture: THREE.Texture | null; ready: Promise<void> } {
+  if (typeof document === 'undefined') return { texture: null, ready: Promise.resolve() };
+  const texture = new THREE.Texture();
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = texture.wrapT = repeat ? THREE.RepeatWrapping : THREE.ClampToEdgeWrapping;
+  texture.anisotropy = 8;
+  const ready = new Promise<void>((resolve) => {
+    const image = new Image();
+    image.decoding = 'async';
+    image.onload = () => {
+      texture.image = image;
+      texture.needsUpdate = true;
+      resolve();
+    };
+    image.onerror = () => resolve();
+    image.src = url;
+  });
+  return { texture, ready };
+}
+
+const atlas = imageTexture(atlasUrl, false);
+
+/** The rim picture (`rim-atlas.webp`), null outside a browser. */
+export const rimAtlas = atlas.texture;
+
+/** Settles once the rim picture has loaded; a still drawn before that shows no rim. */
+export const rimReady: Promise<void> = atlas.ready;
+
+/**
+ * The rim's material: the picture as it is, unlit, so its colours are the owner's (the light
+ * and shade are painted in). Fully see-through pixels are dropped (`alphaTest`), so they hide
+ * nothing behind them.
+ */
+export const rimMaterial = new THREE.MeshBasicMaterial({ map: rimAtlas, transparent: true, alphaTest: IMG.alphaTest, toneMapped: false });
+
+/** For the rim's shadow: only the solid part of the picture casts one. Give it back after `fuse`. */
+export const rimDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: rimAtlas, alphaTest: IMG.shadowAlpha });
+
+/** Texture coordinates (0-1, three.js's v up) of the source point (`sx`, `sy`) of the atlas piece `name`. */
+function atlasUv(name: string, sx: number, sy: number): [number, number] {
+  const p = ATLAS.pieces.find((q) => q.name === name)!;
+  const [x0, y0, x1, y1] = p.src;
+  const [ax, ay, aw, ah] = p.atlas;
+  // A repeating tile holds one period of the braid along its side.
+  const period = (p as { period?: number }).period;
+  const horizontal = p.side === 'top' || p.side === 'bottom';
+  const w = period && horizontal ? period : x1 - x0;
+  const h = period && !horizontal ? period : y1 - y0;
+  const u = (ax + ((sx - x0) / w) * aw) / ATLAS.size[0];
+  const v = (ay + ((sy - y0) / h) * ah) / ATLAS.size[1];
+  return [u, 1 - v];
+}
+
+/** The flat geometry of every rim piece on a `cols` by `rows` board, facing up, layered by `RimQuad.layer`. */
+export function rimImageGeometry(quads: readonly RimQuad[]): THREE.BufferGeometry {
+  const pos: number[] = [];
+  const nor: number[] = [];
+  const uv: number[] = [];
+  const index: number[] = [];
+  for (const q of quads) {
+    const y = IMG.height + q.layer * IMG.layer;
+    const base = pos.length / 3;
+    const corners: [number, number, number, number][] = [
+      [q.x0, q.z0, q.sx0, q.sy0],
+      [q.x1, q.z0, q.sx1, q.sy0],
+      [q.x1, q.z1, q.sx1, q.sy1],
+      [q.x0, q.z1, q.sx0, q.sy1],
+    ];
+    for (const [x, z, sx, sy] of corners) {
+      pos.push(x, y, z);
+      nor.push(0, 1, 0);
+      uv.push(...atlasUv(q.piece, sx, sy));
+    }
+    // Counter-clockwise seen from above (+y), so the face looks up.
+    index.push(base, base + 2, base + 1, base, base + 3, base + 2);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(index);
+  return g;
+}
+
+/**
+ * Whole board frame: the owner's rim picture `03-rim-vines`, as a nine-part frame laid flat at
+ * `image.height`, just above the tiles. The four corners come from the picture's own corners;
+ * each straight side repeats a plain stretch of the picture's braid (cut short at the end, never
+ * stretched); the leaves and flowers are pieces of the picture at fixed places along each side
+ * (`rimDecorSlots`). Fits every board from 4×4 to 8×8, square or not. One mesh, one material.
+ */
+export function buildRim(cols: number, rows: number, gap: number): THREE.Group {
+  const frame = new THREE.Group();
+  const mesh = new THREE.Mesh(rimImageGeometry(rimQuads(cols, rows, gap)), rimMaterial);
+  mesh.name = 'garden-rim';
+  mesh.castShadow = true;
+  mesh.customDepthMaterial = rimDepthMaterial;
+  frame.add(mesh);
+  return frame;
 }
