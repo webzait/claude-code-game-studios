@@ -68,6 +68,21 @@
       },
       "eye": "#111826",
       "eyeWhite": "#FFFFFF"
+    },
+    "chicks": {
+      "red": { "belly": "#FF7468", "bellyMix": 0.12, "blush": "#FF8FA6" },
+      "blue": { "belly": "#C0DDFF", "bellyMix": 1, "blush": "#FF8FC4" },
+      "yellow": { "belly": "#FFE98F", "bellyMix": 0.2, "blush": "#FF8F86" },
+      "beak": "#FFAA1E",
+      "beakUnder": "#F07A0C",
+      "mouth": "#8E1F2B",
+      "tongue": "#FF8C99",
+      "foot": "#FF8A1A",
+      "eye": "#150F18",
+      "eyeIris": "#9A541C",
+      "eyeWhite": "#FFFFFF",
+      "symbolLight": "#FFFFFF",
+      "symbolDark": "#2B2F45"
     }
   },
   "anim": {

@@ -678,6 +678,7 @@ export class BoardView {
     view.root.position.set(x, this.floorY, z);
     view.angle = angle;
     view.visibleScale = scale;
+    view.cheer?.(false);
     view.body.rotation.set(0, 0, 0);
     view.aim(angle);
     view.body.position.set(0, 0, 0);
@@ -751,6 +752,7 @@ export class BoardView {
           if (e.outcome === 'moved') return walk;
           // Collected: pop, spin and sink into the pad while confetti flies.
           return walk.then(() => {
+            view.cheer?.(true);
             // The theme's own effect (garden: a beam of light), or the robot theme's flecks.
             if (this.playFx) this.playFx.exit(tx, tz);
             else this.burst(tx, tz, view.color);

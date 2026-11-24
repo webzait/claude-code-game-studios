@@ -4,6 +4,7 @@ import { CONFIG } from '../config';
 import type { Color } from '../engine/types';
 import { bodyYaw, travelAxis, type HeadingStyle } from './heading';
 import { fuse } from './kit';
+import { buildChick } from './parts/chick';
 import { buildFlockbot, shapePlate } from './parts/flockbot';
 import PARTS from '../../data/parts.json';
 
@@ -20,6 +21,8 @@ export interface RobotView {
   readonly aim: (angle: number) => void;
   /** Show or hide the shape of the robot's colour (the "Colour shapes" setting). */
   readonly showShape: (on: boolean) => void;
+  /** Look delighted (eyes squeezed shut) or normal again; only figures with a face of their own have it. */
+  readonly cheer?: (on: boolean) => void;
   /** Cumulative heading in radians, so turns always animate clockwise. */
   angle: number;
   /** Seconds until the next blink. */
@@ -353,4 +356,29 @@ export function buildPartsRobot(id: number, color: Color, style: HeadingStyle = 
     );
   };
   return { id, color, root, body, lids: [], aim, showShape, angle: 0, blinkIn: 1e9, visibleScale: 1 };
+}
+
+/**
+ * Build a robot from the standalone flock chick part (a test lab choice; the Flockbot stays the game's
+ * figure). The whole chick turns around the board's upright to its heading: beak, eyes and the mark on
+ * its forehead in front, tail behind. It leans back by `chick.board.lean` (data/parts.json).
+ */
+export function buildChickRobot(id: number, color: Color): RobotView {
+  const chick = buildChick(color, { detail: 'game' });
+  // The mark and the eyes are kept out of the fused body: the colour shape and the expression change while a level is open.
+  chick.root.remove(chick.symbol, chick.eyes);
+  const scale = CONFIG.board.grid.robotFill;
+  const root = new THREE.Group();
+  const body = new THREE.Group();
+  root.add(body);
+  const lean = new THREE.Group();
+  lean.scale.setScalar(scale);
+  lean.rotation.x = -PARTS.chick.board.lean;
+  const turn = new THREE.Group();
+  turn.add(fuse(chick.root), chick.symbol, chick.eyes);
+  lean.add(turn);
+  body.add(lean);
+  const aim = (angle: number): void => void (turn.rotation.y = bodyYaw(angle));
+  const cheer = (on: boolean): void => chick.setExpression(on ? 'happy' : 'open');
+  return { id, color, root, body, lids: [], aim, showShape: chick.showShape, cheer, angle: 0, blinkIn: 1e9, visibleScale: 1 };
 }
