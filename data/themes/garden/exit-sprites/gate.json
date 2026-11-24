@@ -3,10 +3,10 @@
   "sprites": {
     "gate": {
       "width": 0.84,
-      "height": 0.6272,
+      "height": 0.4116,
       "anchor": [
         0.5,
-        0.97
+        0.999
       ]
     }
   }
