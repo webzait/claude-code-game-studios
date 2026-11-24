@@ -1,0 +1,29 @@
+{
+  "_about": "Written by tools/asset-pipeline/garden_exit/exit_pads.py: size in cells and anchor (fractions from the top left) of each picture.",
+  "sprites": {
+    "exit-grey": {
+      "width": 1.0426,
+      "height": 0.6489,
+      "anchor": [
+        0.5,
+        0.2945
+      ]
+    },
+    "exit-green": {
+      "width": 1.0957,
+      "height": 0.6915,
+      "anchor": [
+        0.4951,
+        0.3533
+      ]
+    },
+    "exit-rays": {
+      "width": 1.0638,
+      "height": 0.8723,
+      "anchor": [
+        0.495,
+        0.4874
+      ]
+    }
+  }
+}
