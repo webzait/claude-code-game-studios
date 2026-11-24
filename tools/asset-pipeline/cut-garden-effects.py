@@ -1,7 +1,9 @@
 """Cut the garden effects out of the owner's effects sheet.
 
 Reads  design/reference/turnflock/garden/21-sheet-effects.png (242x76, white background)
-Writes assets/turnflock/garden/effects/
+Writes production/qa/evidence/garden-effects/cut-4x/ (first version; the game now uses the 8x
+       redraws in assets/turnflock/garden/effects/, made by tools/asset-pipeline/garden-effects-hd/,
+       with the same framing; these cuts stay as the baseline they are compared with)
        beam.webp        green beam on its ring
        star.webp        one star (the large lower-left one), to fly as many
        twinkle.webp     one small four-pointed twinkle
@@ -35,7 +37,7 @@ import numpy as np
 from PIL import Image, ImageFilter
 
 SRC = 'design/reference/turnflock/garden/21-sheet-effects.png'
-OUT = 'assets/turnflock/garden/effects/'
+OUT = 'production/qa/evidence/garden-effects/cut-4x/'
 SCALE = 4          # enlargement of the stored pieces
 QUALITY = 84       # WebP quality
 
