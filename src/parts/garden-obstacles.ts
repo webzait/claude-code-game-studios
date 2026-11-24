@@ -5,7 +5,7 @@ import { LEVELS } from '../levels';
 import { buildObstacle as buildRobotObstacle } from '../render/parts/board';
 import { buildFlockbot } from '../render/parts/flockbot';
 import { shadeByHeight, roundedBlock } from '../render/parts/shapes';
-import { buildObstacle, buildObstacleModel, GARDEN_OBSTACLE_KINDS, OBSTACLE_SPRITES, obstaclePicturesLoaded } from '../render/parts/garden/obstacles';
+import { buildObstacle, GARDEN_OBSTACLE_KINDS, OBSTACLE_SPRITES, obstaclePicturesLoaded } from '../render/parts/garden/obstacles';
 import spriteData from '../../data/themes/garden/obstacle-sprites.json';
 import rockWebp from '../../assets/turnflock/garden/obstacles/rock.webp';
 import rockMossyWebp from '../../assets/turnflock/garden/obstacles/rock-mossy.webp';
@@ -53,50 +53,16 @@ scene.add(sun, sun.target);
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.ShadowMaterial({ color: '#5B4A6E', opacity: 0.28 }));
 ground.rotation.x = -Math.PI / 2;
 scene.add(ground);
-const ortho = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
 const perspective = new THREE.PerspectiveCamera(CONFIG.camera.fov, 1, 0.1, 200);
 const TILT = CONFIG.board.roomy.tilt;
 const PITCH = 1 + CONFIG.board.grid.gap;
 const TILE_TOP = 0.12;
-
-const VIEWS = {
-  ref: { label: 'Zoals het voorbeeld (bijna van voren)', dir: new THREE.Vector3(0, 0.36, 1) },
-  quarter: { label: 'Driekwart', dir: new THREE.Vector3(-0.55, 0.62, 1) },
-  front: { label: 'Voorkant', dir: new THREE.Vector3(0, 0.0001, 1) },
-  side: { label: 'Zijaanzicht', dir: new THREE.Vector3(1, 0.0001, 0) },
-  top: { label: 'Bovenaanzicht', dir: new THREE.Vector3(0, 1, 0.0001) },
-} as const;
-type View = keyof typeof VIEWS;
 
 function copyCanvas(): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = SIZE;
   canvas.getContext('2d')!.drawImage(renderer.domElement, 0, 0);
   return canvas;
-}
-
-/** Draw one object from one side, filling the picture. */
-function snapshot(object: THREE.Object3D, view: View, floorY = 0): HTMLCanvasElement {
-  const box = new THREE.Box3().setFromObject(object);
-  const centre = box.getCenter(new THREE.Vector3());
-  const size = box.getSize(new THREE.Vector3());
-  const reach = Math.max(size.x, size.y, size.z) * 0.66;
-  scene.add(object);
-  ground.position.y = floorY - 0.002;
-  ground.visible = view !== 'front' && view !== 'side';
-  ortho.left = ortho.bottom = -reach;
-  ortho.right = ortho.top = reach;
-  ortho.updateProjectionMatrix();
-  ortho.position.copy(centre).addScaledVector(VIEWS[view].dir.clone().normalize(), 20);
-  ortho.lookAt(centre);
-  const cam = sun.shadow.camera;
-  cam.left = cam.bottom = -reach * 3;
-  cam.right = cam.top = reach * 3;
-  cam.updateProjectionMatrix();
-  sun.target.position.copy(centre);
-  renderer.render(scene, ortho);
-  scene.remove(object);
-  return copyCanvas();
 }
 
 /** Draw a board-like field as the game camera sees it: perspective, tilted `TILT` degrees from straight down. */
@@ -273,22 +239,6 @@ function plantsCard(sheet: HTMLElement): void {
   sheet.appendChild(el);
 }
 
-/** The code-built versions, kept as an option. */
-function modelsCard(sheet: HTMLElement): void {
-  const el = document.createElement('section');
-  el.className = 'card wide garden';
-  el.id = 'garden-models';
-  el.innerHTML = '<h2>Tuin · codeversie (keuze, niet de standaard)</h2><p class="dims">Dezelfde obstakels in code nagebouwd (<code>buildObstacleModel</code>). Echt 3D en vrij te draaien, maar minder trouw aan de beelden; daarom is het beeld de standaard.</p>';
-  const row = document.createElement('div');
-  row.className = 'garden-row';
-  for (const kind of GARDEN_OBSTACLE_KINDS) {
-    const model = buildObstacleModel(kind, 0, data.detail.closeUp);
-    row.appendChild(figure(snapshot(model, 'ref'), `${NAMES[kind]} · ${cost(buildObstacleModel(kind)).triangles.toLocaleString('nl')} driehoeken`));
-  }
-  el.appendChild(row);
-  sheet.appendChild(el);
-}
-
 /** The rule at work on real levels: which obstacle each wall cell gets, at game size. */
 function boardsCard(sheet: HTMLElement): void {
   const el = document.createElement('section');
@@ -315,9 +265,9 @@ function boardsCard(sheet: HTMLElement): void {
   }
   el.appendChild(holder);
   const robot = cost(buildRobotObstacle());
-  const lines = GARDEN_OBSTACLE_KINDS.map((k) => `<tr><td>${NAMES[k]}</td><td>${kB(OBSTACLE_SPRITES[k].bytes)}</td><td>2</td><td>1</td><td>${cost(buildObstacleModel(k)).triangles.toLocaleString('nl')}</td></tr>`).join('');
+  const lines = GARDEN_OBSTACLE_KINDS.map((k) => `<tr><td>${NAMES[k]}</td><td>${kB(OBSTACLE_SPRITES[k].bytes)}</td><td>2</td><td>1</td></tr>`).join('');
   const total = GARDEN_OBSTACLE_KINDS.reduce((sum, k) => sum + OBSTACLE_SPRITES[k].bytes, 0);
-  el.insertAdjacentHTML('beforeend', `<table class="garden-cost"><tr><th>Onderdeel</th><th>WebP</th><th>Driehoeken</th><th>Tekenopdrachten</th><th>Codeversie: driehoeken</th></tr>${lines}<tr><td><b>Samen</b></td><td><b>${kB(total)}</b></td><td></td><td></td><td></td></tr><tr><td>Robotthema: obstakelblok</td><td>—</td><td>${robot.triangles.toLocaleString('nl')}</td><td>${robot.draws}</td><td></td></tr></table><p class="note">Elk soort beeld heeft één gedeeld materiaal: op een samengevoegd bord kosten alle tuinobstakels samen hooguit vijf tekenopdrachten. In het losse HTML-bestand komen de beelden als base64 erbij (ongeveer een derde groter dan de WebP's).</p>`);
+  el.insertAdjacentHTML('beforeend', `<table class="garden-cost"><tr><th>Onderdeel</th><th>WebP</th><th>Driehoeken</th><th>Tekenopdrachten</th></tr>${lines}<tr><td><b>Samen</b></td><td><b>${kB(total)}</b></td><td></td><td></td></tr><tr><td>Robotthema: obstakelblok</td><td>—</td><td>${robot.triangles.toLocaleString('nl')}</td><td>${robot.draws}</td></tr></table><p class="note">Elk soort beeld heeft één gedeeld materiaal: op een samengevoegd bord kosten alle tuinobstakels samen hooguit vijf tekenopdrachten. In het losse HTML-bestand komen de beelden als base64 erbij (ongeveer een derde groter dan de WebP's).</p>`);
   sheet.appendChild(el);
 }
 
@@ -332,6 +282,5 @@ export async function addGardenObstacleCards(sheet: HTMLElement): Promise<void> 
   for (const kind of GARDEN_OBSTACLE_KINDS) obstacleCard(holder, kind);
   plantsCard(holder);
   boardsCard(holder);
-  modelsCard(holder);
   anchor.appendChild(holder);
 }

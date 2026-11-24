@@ -9,15 +9,15 @@ import bushWhiteUrl from '../../../../assets/turnflock/garden/obstacles/bush-whi
 import bushPinkUrl from '../../../../assets/turnflock/garden/obstacles/bush-pink.webp';
 import type { GardenObstacleKind } from './obstacleChoice';
 
-export { buildObstacleModel, GARDEN_OBSTACLE_KINDS } from './obstacleModels';
+/** Every garden obstacle kind, in the order the parts page shows them. */
+export const GARDEN_OBSTACLE_KINDS: readonly GardenObstacleKind[] = ['rock', 'rockMossy', 'stump', 'bushWhite', 'bushPink'];
 
 /**
  * The garden theme's obstacles as the owner drew them: each one is the
  * owner's picture (cut out, transparent, baked shadow kept; made by
  * `tools/asset-pipeline/garden-obstacles.py`) on a flat card that faces the
  * game camera, its foot on the tile. Garden counterpart of `buildObstacle`
- * in `src/render/parts/board.ts`. The code-built versions stay available as
- * `buildObstacleModel`.
+ * in `src/render/parts/board.ts`.
  */
 
 const URLS: Readonly<Record<GardenObstacleKind, string>> = {

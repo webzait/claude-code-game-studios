@@ -4,23 +4,11 @@ import levels from '../../data/levels.json';
 import data from '../../data/themes/garden/obstacles.json';
 import { parseLevel } from '../../src/levels/parse';
 import { cellHash, chooseObstacles, FAMILY_OF, type ChoiceWeights, type ObstacleChoice } from '../../src/render/parts/garden/obstacleChoice';
-import { buildObstacle, buildObstacleModel, GARDEN_OBSTACLE_KINDS, OBSTACLE_SPRITES } from '../../src/render/parts/garden/obstacles';
-import { buildFlower, buildGrassTuft, buildLeaf, buildSprig } from '../../src/render/parts/garden/plants';
-import { buildObstacle as buildRobotObstacle } from '../../src/render/parts/board';
+import { buildObstacle, GARDEN_OBSTACLE_KINDS, OBSTACLE_SPRITES } from '../../src/render/parts/garden/obstacles';
 
 const LEVELS = levels.map((def) => parseLevel(def));
-const boxOf = (o: THREE.Object3D): THREE.Box3 => new THREE.Box3().setFromObject(o);
-const triangles = (o: THREE.Object3D): number => {
-  let n = 0;
-  o.traverse((m) => {
-    if (m instanceof THREE.Mesh) n += (m.geometry as THREE.BufferGeometry).index!.count / 3;
-  });
-  return n;
-};
 /** A 5×5 board that is all wall: the hardest case for the neighbour rule. */
 const ALL_WALLS = { width: 5, height: 5, walls: new Array(25).fill(true) as boolean[] };
-/** Game-detail triangle budget per obstacle; the robot block is about 3,800. */
-const GAME_TRIANGLE_BUDGET = 10000;
 
 describe('garden obstacle choice', () => {
   it('cell_hash_is_stable_and_differs_between_cells_and_levels', () => {
@@ -146,53 +134,5 @@ describe('garden obstacle pictures (the default)', () => {
   it('the_pictures_stay_small', () => {
     const total = GARDEN_OBSTACLE_KINDS.reduce((sum, k) => sum + OBSTACLE_SPRITES[k].bytes, 0);
     expect(total).toBeLessThanOrEqual(80 * 1024);
-  });
-});
-
-describe('garden obstacles modelled in code (the alternative) fit one cell', () => {
-  for (const kind of GARDEN_OBSTACLE_KINDS) {
-    it(`${kind}_stands_on_the_floor_inside_one_cell`, () => {
-      for (const turn of [0, 1]) {
-        const box = boxOf(buildObstacleModel(kind, turn));
-        expect(box.min.y).toBeCloseTo(0, 3);
-        expect(box.max.x - box.min.x).toBeLessThanOrEqual(1);
-        expect(box.max.z - box.min.z).toBeLessThanOrEqual(1);
-        expect(Math.abs(box.min.x + box.max.x) / 2).toBeLessThan(0.08);
-        expect(Math.abs(box.min.z + box.max.z) / 2).toBeLessThan(0.08);
-        // Taller than the robot block, lower than a robot.
-        expect(box.max.y).toBeGreaterThan(0.43);
-        expect(box.max.y).toBeLessThan(0.82);
-      }
-    });
-
-    it(`${kind}_stays_within_the_game_triangle_budget_in_at_most_two_draw_calls`, () => {
-      const o = buildObstacleModel(kind);
-      let meshes = 0;
-      o.traverse((m) => (m instanceof THREE.Mesh ? meshes++ : undefined));
-      expect(triangles(o)).toBeLessThanOrEqual(GAME_TRIANGLE_BUDGET);
-      expect(meshes).toBeLessThanOrEqual(2);
-    });
-  }
-
-  it('has_the_same_call_shape_as_the_robot_obstacle', () => {
-    // No arguments works and gives a group on the floor, like the robot theme's block.
-    const garden = buildObstacleModel();
-    const robot = buildRobotObstacle();
-    expect(garden).toBeInstanceOf(THREE.Group);
-    expect(boxOf(garden).min.y).toBeCloseTo(boxOf(robot).min.y, 2);
-  });
-
-  it('is_the_same_shape_every_time', () => {
-    const a = buildObstacleModel('bushPink');
-    const b = buildObstacleModel('bushPink');
-    const pa = ((a.children[0] as THREE.Mesh).geometry as THREE.BufferGeometry).getAttribute('position').array;
-    const pb = ((b.children[0] as THREE.Mesh).geometry as THREE.BufferGeometry).getAttribute('position').array;
-    expect(Array.from(pa)).toEqual(Array.from(pb));
-  });
-
-  it('loose_plants_stand_on_the_floor', () => {
-    for (const p of [buildLeaf(), buildSprig(), buildGrassTuft(), buildFlower('white'), buildFlower('pink')]) {
-      expect(boxOf(p).min.y).toBeCloseTo(0, 3);
-    }
   });
 });
