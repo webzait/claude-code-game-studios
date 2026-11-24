@@ -25,6 +25,48 @@ export interface CoinRules {
   readonly freeUndosPerLevel: number;
 }
 
+/** A coin pack as the data file writes it; `configuredPacks` in shop.ts checks and sorts them. */
+export interface PackData {
+  readonly id: string;
+  readonly name: string;
+  readonly coins: number;
+  readonly examplePriceCents: number;
+}
+
+/**
+ * One tuning of the economy: the amounts and the shop's packs that belong together.
+ * The game's own is `coins` and `shop.packs` in data/config.json, named by `economy.tuning`;
+ * `economy.alternatives` holds the others, which the test lab can switch to (finding B12).
+ */
+export interface Tuning {
+  readonly id: string;
+  /** Short name on the test lab's choice. */
+  readonly label: string;
+  /** One line on what sets this tuning apart. */
+  readonly about: string;
+  readonly coins: CoinRules;
+  readonly packs: readonly PackData[];
+}
+
+/** The id of the tuning the game uses unless the test lab says otherwise. */
+export const DEFAULT_TUNING: string = CONFIG.economy.tuning.id;
+
+/** Every tuning, in the order of `economy.order`: the game's own and the alternatives. */
+export const TUNINGS: readonly Tuning[] = (() => {
+  const own: Tuning = { ...CONFIG.economy.tuning, coins: CONFIG.coins, packs: CONFIG.shop.packs };
+  const all: readonly Tuning[] = [own, ...CONFIG.economy.alternatives];
+  const place = (t: Tuning): number => {
+    const at = CONFIG.economy.order.indexOf(t.id);
+    return at < 0 ? CONFIG.economy.order.length : at;
+  };
+  return [...all].sort((a, b) => place(a) - place(b));
+})();
+
+/** The tuning with this id; an unknown id (one that was since removed) gives the game's own. */
+export function tuningFor(id: string): Tuning {
+  return TUNINGS.find((t) => t.id === id) ?? TUNINGS.find((t) => t.id === DEFAULT_TUNING)!;
+}
+
 /** Paid help used in the attempt that won. */
 export interface Help {
   /** A paid hint showed a move. */
@@ -64,10 +106,10 @@ export function rewardFor(moves: number, par: number, budget: number, help: Help
 }
 
 /**
- * Levels paid under earlier amounts, brought to today's: a level that was paid
- * counts as paid for the result it has, so the same result never pays a
- * leftover difference and a better one pays the step between today's amounts.
- * No coins are added or taken. Returns the new `paid` map.
+ * Levels paid under other amounts (an earlier economy, or another tuning chosen in the test lab), brought to
+ * the given ones: a level that was paid counts as paid for the result it has, so the same result never pays
+ * a leftover difference and a better one pays the step between the given amounts. This is bookkeeping only:
+ * no coins are added or taken. Unpaid and unsolved levels are left alone. Returns the new `paid` map.
  */
 export function settlePaid(
   paid: Readonly<Record<string, number>>,
@@ -77,15 +119,34 @@ export function settlePaid(
 ): Record<string, number> {
   const out: Record<string, number> = { ...paid };
   for (const level of levels) {
-    const was = paid[level.id];
     const moves = best[level.id];
-    if (was === undefined || moves === undefined) continue;
+    if (paid[level.id] === undefined || moves === undefined) continue;
     const budget = level.par + CONFIG.moveSlack;
     // A win carried over from the first prototype has no move count (0): it is a one-star win.
-    const worth = moves === 0 ? rules.win : rewardFor(moves, level.par, budget, { hint: false, extraMoves: moves > budget }, rules).total;
-    out[level.id] = Math.max(was, worth);
+    out[level.id] = moves === 0 ? rules.win : rewardFor(moves, level.par, budget, { hint: false, extraMoves: moves > budget }, rules).total;
   }
   return out;
+}
+
+/** What changing the tuning does to a save's wallet and paid amounts. */
+export interface Retuned {
+  readonly coins: number;
+  readonly paid: Record<string, number>;
+}
+
+/**
+ * Change the tuning under a running save (the test lab's choice). The paid amounts are settled to the new
+ * tuning. The wallet is kept as it is, with one exception: a player who has not won a level and still holds
+ * exactly the old opening balance gets the new one, so a fresh tester sees each tuning as a new player would.
+ */
+export function retune(
+  wallet: { readonly coins: number; readonly paid: Readonly<Record<string, number>>; readonly best: Readonly<Record<string, number>> },
+  from: CoinRules,
+  to: CoinRules,
+  levels: readonly { readonly id: string; readonly par: number }[],
+): Retuned {
+  const untouched = Object.keys(wallet.best).length === 0 && wallet.coins === from.start;
+  return { coins: untouched ? to.start : wallet.coins, paid: settlePaid(wallet.paid, wallet.best, levels, to) };
 }
 
 /**

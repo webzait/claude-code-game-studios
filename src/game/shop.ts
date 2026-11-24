@@ -60,14 +60,15 @@ export class SimulatedProvider implements PurchaseProvider {
   readonly simulated = true;
   private serial = 0;
 
-  constructor(private readonly packs: readonly CoinPack[], private readonly options: SimulatedOptions) {}
+  /** @param packs The packs on offer, asked for each time: the test lab can change the tuning they belong to. */
+  constructor(private readonly packs: () => readonly CoinPack[], private readonly options: SimulatedOptions) {}
 
   listPacks(): Promise<readonly CoinPack[]> {
-    return Promise.resolve(this.packs);
+    return Promise.resolve(this.packs());
   }
 
   async buy(packId: string): Promise<PurchaseResult> {
-    const pack = this.packs.find((p) => p.id === packId);
+    const pack = this.packs().find((p) => p.id === packId);
     if (!pack) return { status: 'failed', pack: { id: packId, name: packId, coins: 0, examplePriceCents: 0 }, reason: 'This pack does not exist.' };
     await this.options.delay(this.options.processingMs);
     const outcome = this.options.outcome();
@@ -78,7 +79,7 @@ export class SimulatedProvider implements PurchaseProvider {
   }
 }
 
-/** The packs of data/config.json, cheapest first. Entries that are not a whole pack are left out. */
+/** The packs of a tuning (the game's own by default), cheapest first. Entries that are not a whole pack are left out. */
 export function configuredPacks(raw: readonly Partial<CoinPack>[] = CONFIG.shop.packs): CoinPack[] {
   return raw
     .filter((p): p is CoinPack => typeof p.id === 'string' && typeof p.name === 'string' && Number.isInteger(p.coins) && p.coins! > 0 && Number.isInteger(p.examplePriceCents) && p.examplePriceCents! > 0)

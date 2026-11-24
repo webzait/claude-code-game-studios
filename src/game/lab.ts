@@ -4,6 +4,7 @@ import type { GameLevel } from '../levels/index';
 import type { HeadingStyle } from '../render/heading';
 import { DEFAULT_VARIANT, type MusicVariant } from '../music/tracks';
 import { defaultVariant, type CelebrationVariant } from './celebration';
+import { DEFAULT_TUNING } from './coins';
 import type { PurchaseOutcome } from './shop';
 
 /**
@@ -40,6 +41,8 @@ export interface LabSettings {
   levelScreen: 'path' | 'grid';
   /** The test shop behind the plus button. Off: the plus button opens the explainer that says there is no shop. */
   shop: boolean;
+  /** Which tuning of the coin economy is in play (`economy` in data/config.json): amounts, prices and packs together. */
+  economy: string;
   /** How a pretend purchase ends: it succeeds, the buyer cancels, or it fails. */
   purchaseOutcome: PurchaseOutcome;
   /** The sound set in use (`data/sound-sets.json`), so the sets can be compared while playing. */
@@ -69,6 +72,7 @@ export const DEFAULT_LAB: LabSettings = {
   boardPieces: 'kit',
   levelScreen: 'path',
   shop: true,
+  economy: DEFAULT_TUNING,
   purchaseOutcome: 'success',
   soundSet: CONFIG.audio.set,
   music: DEFAULT_VARIANT,

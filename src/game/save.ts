@@ -1,6 +1,7 @@
 import { CONFIG } from '../config';
 import { HEADING_STYLES, type HeadingStyle } from '../render/heading';
 import { CELEBRATION_VARIANTS, type CelebrationVariant } from './celebration';
+import { DEFAULT_TUNING, TUNINGS, tuningFor } from './coins';
 import { DEFAULT_LAB, type LabSettings } from './lab';
 import { isMusicVariant } from '../music/tracks';
 import { emptyLedger, readLedger, type Ledger } from './ledger';
@@ -11,9 +12,11 @@ import { isSoundSet } from '../sound/sets';
 export const SAVE_VERSION = 7;
 /**
  * Which amounts the `paid` map is in. 1: base, spare moves and perfect bonus (until 2026-11-22). 2: the reward
- * follows the stars (design/economy.md). Kept apart from `SAVE_VERSION` because the save's shape does not change.
+ * follows the stars. 3: the tightened economy of finding B12, with a tuning chosen in the test lab
+ * (design/economy.md). Kept apart from `SAVE_VERSION` because the save's shape does not change. An older
+ * number is settled once when the game starts (`settlePaid`); the wallet is never touched by it.
  */
-export const ECONOMY_VERSION = 2;
+export const ECONOMY_VERSION = 3;
 /** Storage key of the current format. */
 export const SAVE_KEY = 'turnflock.save';
 /** Storage key of the first prototype's format (version 1). */
@@ -54,7 +57,7 @@ export interface KeyValueStore {
 
 /** A fresh save. */
 export function defaultSave(): SaveData {
-  return { version: SAVE_VERSION, best: {}, coins: CONFIG.coins.start, paid: {}, economy: ECONOMY_VERSION, settings: { mute: false, music: true, reduceMotion: null, colourShapes: false }, lab: { ...DEFAULT_LAB }, ledger: emptyLedger() };
+  return { version: SAVE_VERSION, best: {}, coins: tuningFor(DEFAULT_TUNING).coins.start, paid: {}, economy: ECONOMY_VERSION, settings: { mute: false, music: true, reduceMotion: null, colourShapes: false }, lab: { ...DEFAULT_LAB }, ledger: emptyLedger() };
 }
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -89,7 +92,7 @@ export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
     }
   }
   // A save from before the reward followed the stars carries no marker: its paid amounts are the first economy's.
-  save.economy = raw.economy === ECONOMY_VERSION ? ECONOMY_VERSION : 1;
+  save.economy = raw.economy === ECONOMY_VERSION || raw.economy === 2 ? raw.economy : 1;
   if (withCoins) {
     if (typeof raw.coins === 'number' && raw.coins >= 0) save.coins = Math.floor(raw.coins);
     if (isRecord(raw.paid)) {
@@ -123,6 +126,8 @@ export function migrate(raw: unknown, levelIds: readonly string[]): SaveData {
     if (typeof lab.shop === 'boolean') save.lab.shop = lab.shop;
     // An unknown variant (one that was since removed) falls back to the configured one.
     if (isMusicVariant(lab.music)) save.lab.music = lab.music;
+    // A save from before finding B12 has no tuning, and a stored one may have been removed since: both get the game's own.
+    if (typeof lab.economy === 'string' && TUNINGS.some((t) => t.id === lab.economy)) save.lab.economy = lab.economy;
     if (PURCHASE_OUTCOMES.includes(lab.purchaseOutcome as PurchaseOutcome)) save.lab.purchaseOutcome = lab.purchaseOutcome as PurchaseOutcome;
     // A stored set that no longer exists (removed after the owner's choice) falls back to the default set.
     if (isSoundSet(lab.soundSet)) save.lab.soundSet = lab.soundSet;
@@ -152,7 +157,7 @@ export function writeSave(store: KeyValueStore, data: SaveData): boolean {
   }
 }
 
-/** Forget progress and coins. Settings, lab switches and the test ledger are kept. */
+/** Forget progress and coins: the wallet is the opening balance of the tuning in play. Settings, lab switches and the test ledger are kept. */
 export function resetProgress(data: SaveData): SaveData {
-  return { ...data, best: {}, coins: CONFIG.coins.start, paid: {}, economy: ECONOMY_VERSION };
+  return { ...data, best: {}, coins: tuningFor(data.lab.economy).coins.start, paid: {}, economy: ECONOMY_VERSION };
 }

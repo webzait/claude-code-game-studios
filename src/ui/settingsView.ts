@@ -1,6 +1,8 @@
 import { CONFIG } from '../config';
 import { CELEBRATION_NAMES, CELEBRATION_VARIANTS, type CelebrationVariant } from '../game/celebration';
+import { TUNINGS, tuningFor, type Tuning } from '../game/coins';
 import { DEFAULT_LAB, usesCertifiedRules, type LabSettings } from '../game/lab';
+import { formatExamplePrice } from '../game/shop';
 import { MUSIC_VARIANTS, scoreOf } from '../music/tracks';
 import parts from '../../data/parts.json';
 import { SHAPE_COLOURS, shapeOf, shapesInWords, shapeSvg } from './colourShapes';
@@ -328,6 +330,7 @@ export function labContent(start: Partial<LabSettings>, hooks: LabHooks = {}): {
 
   const shop = panel('Coin shop', '', 'A pretend shop for testing. No purchase here is real and nothing is ever charged.');
   shop.body.append(
+    choice('economy', 'Coin tuning', (v) => tuningLine(tuningFor(v)), TUNINGS.map((t) => ({ label: t.label, value: t.id }))),
     flag('shop', 'Test shop', 'The plus button opens the test shop. Off: it explains coins and says there is nothing to buy.'),
     choice('purchaseOutcome', 'Purchase outcome', (v) => (v === 'success' ? 'A test purchase goes through and adds the coins.' : v === 'cancelled' ? 'A test purchase ends as cancelled. The coins do not change.' : 'A test purchase fails. The coins do not change.'), [
       { label: 'Succeeds', value: 'success' },
@@ -366,6 +369,13 @@ export function labContent(start: Partial<LabSettings>, hooks: LabHooks = {}): {
   });
   refresh();
   return { groups: [rules.panel, look.panel, sound.panel, music.panel, shortcuts.panel, shop.panel, ...(hooks.panels ?? []), sizes.panel], bar, count, onCount: (fn) => listeners.push(fn) };
+}
+
+/** A tuning in one line for the test lab: what sets it apart, then its amounts. */
+export function tuningLine(t: Tuning): string {
+  const c = t.coins;
+  const packs = t.packs.map((p) => `${p.coins} for ${formatExamplePrice(p.examplePriceCents)}`).join(', ');
+  return `${t.about} Start ${c.start}. Win ${c.win}, ${c.win + c.twoStars} or ${c.win + c.perfect}. Undo ${c.undoCost}, hint ${c.hintCost}, +${CONFIG.extraMoves} moves ${c.extraMovesCost}. Packs: ${packs}. "Reset progress" starts again on this start amount.`;
 }
 
 /** One screen: a fixed top bar with a back button and a title, and a list that scrolls under it. */

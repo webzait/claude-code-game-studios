@@ -219,15 +219,15 @@
     }
   },
   "coins": {
-    "start": 50,
+    "start": 30,
     "win": 10,
     "twoStars": 10,
     "perfect": 20,
     "perSpareMove": 0,
     "hintedWinPays": "stars",
-    "hintCost": 20,
-    "extraMovesCost": 40,
-    "undoCost": 5,
+    "hintCost": 75,
+    "extraMovesCost": 150,
+    "undoCost": 10,
     "freeUndosPerLevel": 0
   },
   "shop": {
@@ -235,9 +235,48 @@
     "ledgerMax": 200,
     "ledgerShown": 40,
     "packs": [
-      { "id": "handful", "name": "Handful of coins", "coins": 100, "examplePriceCents": 99 },
-      { "id": "pouch", "name": "Pouch of coins", "coins": 250, "examplePriceCents": 199 },
-      { "id": "chest", "name": "Chest of coins", "coins": 700, "examplePriceCents": 499 }
+      { "id": "handful", "name": "Handful of coins", "coins": 150, "examplePriceCents": 99 },
+      { "id": "pouch", "name": "Pouch of coins", "coins": 400, "examplePriceCents": 199 },
+      { "id": "chest", "name": "Chest of coins", "coins": 1100, "examplePriceCents": 499 }
+    ]
+  },
+  "economy": {
+    "tuning": { "id": "tight", "label": "Tight", "about": "Thought-out help costs several levels of winnings; Undo stays small. The smallest pack is one +3 moves or two hints." },
+    "order": ["roomy", "firmer", "tight", "scarce"],
+    "alternatives": [
+      {
+        "id": "roomy",
+        "label": "Roomy",
+        "about": "The amounts until finding B12: one perfect level pays for six Undos.",
+        "coins": { "start": 50, "win": 10, "twoStars": 10, "perfect": 20, "perSpareMove": 0, "hintedWinPays": "stars", "hintCost": 20, "extraMovesCost": 40, "undoCost": 5, "freeUndosPerLevel": 0 },
+        "packs": [
+          { "id": "handful", "name": "Handful of coins", "coins": 100, "examplePriceCents": 99 },
+          { "id": "pouch", "name": "Pouch of coins", "coins": 250, "examplePriceCents": 199 },
+          { "id": "chest", "name": "Chest of coins", "coins": 700, "examplePriceCents": 499 }
+        ]
+      },
+      {
+        "id": "firmer",
+        "label": "Firmer",
+        "about": "Hint and +3 moves cost double; Undo and the packs stay as they were.",
+        "coins": { "start": 40, "win": 10, "twoStars": 10, "perfect": 20, "perSpareMove": 0, "hintedWinPays": "stars", "hintCost": 40, "extraMovesCost": 80, "undoCost": 5, "freeUndosPerLevel": 0 },
+        "packs": [
+          { "id": "handful", "name": "Handful of coins", "coins": 100, "examplePriceCents": 99 },
+          { "id": "pouch", "name": "Pouch of coins", "coins": 250, "examplePriceCents": 199 },
+          { "id": "chest", "name": "Chest of coins", "coins": 700, "examplePriceCents": 499 }
+        ]
+      },
+      {
+        "id": "scarce",
+        "label": "Scarce",
+        "about": "Close to the owner's reference: +3 moves costs what 25 perfect levels pay, and nearly the whole smallest pack.",
+        "coins": { "start": 20, "win": 10, "twoStars": 10, "perfect": 20, "perSpareMove": 0, "hintedWinPays": "stars", "hintCost": 250, "extraMovesCost": 750, "undoCost": 25, "freeUndosPerLevel": 0 },
+        "packs": [
+          { "id": "handful", "name": "Handful of coins", "coins": 800, "examplePriceCents": 199 },
+          { "id": "pouch", "name": "Pouch of coins", "coins": 2200, "examplePriceCents": 499 },
+          { "id": "chest", "name": "Chest of coins", "coins": 5000, "examplePriceCents": 999 }
+        ]
+      }
     ]
   },
   "light": {
