@@ -7,8 +7,8 @@ import './gardenIcon.css';
 /**
  * The garden app icon on the parts sheet (design/themes/garden-icon.md): the home-screen icon
  * and the tab icon of the garden theme next to the robot ones, at 180, 64, 32 and 16 px, and as
- * they look on a phone's home screen and in a browser tab. Nothing here is wired into the game:
- * index.html still points at the robot icons.
+ * they look on a phone's home screen and in a browser tab. The game uses the garden icons for the
+ * whole app (index.html; the owner's choice, design/themes/garden-icon.md).
  */
 
 /** Bytes of an asset when the build inlined it as a data URL (the parts build does); otherwise null. */
@@ -56,7 +56,7 @@ export function addGardenIconCards(sheet: HTMLElement): void {
     </div>`).join('');
   card('garden-icon', 'Tuinthema · app-pictogram en favicon', '180×180 aanraakpictogram (vierkant, zonder transparantie) · 64×64 favicon (afgeronde hoeken) — naast de robotpictogrammen',
     `<div class="tgi-sizes">${rows}</div>`,
-    'Jouw pictogrambeeld (27-app-icon-garden, 1254×1254), niet nagetekend: alleen uitgesneden, verkleind en voor het tabblad de hoeken afgerond. Het aanraakpictogram is het hele beeld; het tabblad-pictogram een kleiner vierkant rond het rode kuiken, met wat lucht eromheen, zodat het op 16 px nog leest als rode bol met witte driehoek. Gemaakt met assets/turnflock/garden/icon/build-icon-garden.py. Het spel gebruikt nog steeds de robotpictogrammen.');
+    'Jouw pictogrambeeld (27-app-icon-garden, 1254×1254), niet nagetekend: alleen uitgesneden, verkleind en voor het tabblad de hoeken afgerond. Het aanraakpictogram is het hele beeld; het tabblad-pictogram een kleiner vierkant rond het rode kuiken, met wat lucht eromheen, zodat het op 16 px nog leest als rode bol met witte driehoek. Gemaakt met assets/turnflock/garden/icon/build-icon-garden.py. Jouw keuze: dit tuinpictogram is het pictogram van de hele app, in elk thema (index.html).');
 
   const home = THEMES.map((t) => `<div class="tgi-app">${img(t.touch, 60, 'tgi-ios')}<span>Turnflock</span></div>`).join('');
   const tabs = (dark: boolean): string => `<div class="tgi-tabs${dark ? ' tgi-dark' : ''}">${THEMES.map((t, i) =>

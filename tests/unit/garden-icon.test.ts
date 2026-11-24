@@ -31,6 +31,16 @@ describe('garden app icons', () => {
   });
 });
 
+describe('the app links the garden icons (one icon for the whole app)', () => {
+  it('index.html points the tab icon and the home-screen icon at the garden files', () => {
+    const html = readFileSync(resolve('index.html'), 'utf8');
+    expect(html).toMatch(/<link rel="icon"[^>]*href="\.\/assets\/turnflock\/garden\/icon\/favicon-64-garden\.png"/);
+    expect(html).toMatch(/<link rel="apple-touch-icon"[^>]*href="\.\/assets\/turnflock\/garden\/icon\/icon-180-garden\.png"/);
+    expect(html).not.toContain('brand/favicon-64.png');
+    expect(html).not.toContain('brand/icon-180.png');
+  });
+});
+
 describe('dataUrlBytes', () => {
   it('counts the decoded bytes of a base64 data URL, padding included', () => {
     expect(dataUrlBytes('data:image/png;base64,QUJD')).toBe(3);

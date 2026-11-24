@@ -38,18 +38,16 @@ with both themes' icons at every size, on a home screen and in browser tabs. Scr
 `node tools/asset-pipeline/garden-icon-shots.mjs` after `npx vite build --mode parts`; size sheet:
 `python3 assets/turnflock/garden/icon/icon-sheet.py`. Test: `tests/unit/garden-icon.test.ts`.
 
-## Not done yet: which icon the app uses (owner's choice)
+## Decision: one icon for the whole app, the garden chick (owner, 2026-11-24)
 
-`index.html` still links the robot icons. Options:
+The owner chose option A (one icon for the whole app, not following the theme) with the garden
+icon. `index.html` links `favicon-64-garden.png` and `icon-180-garden.png`, in both themes. The
+robot icons stay in `assets/turnflock/brand/` (made by `build-logo.py`) but are no longer linked.
+Players who already added the game to their home screen keep the robot icon until they add it again.
 
-- **A. One icon for the whole app.** Either robot or garden, set in `index.html`. Simple and
-  predictable; the home screen always shows the same thing.
-- **B. Tab icon follows the theme; home-screen icon fixed.** The favicon can be swapped at runtime
-  (change the `<link rel="icon">` when the theme changes), so the tab follows at once. The
-  home-screen icon is read when the player adds the game to the home screen and is not updated
-  after that on iOS (Android mostly the same), so switching it with the theme would only reach
-  players who add the game again. Keep one there.
-- **C. Both follow the theme.** Possible in code, but in practice the home-screen icon would show
-  whichever theme was active when the game was added, which looks random to the player.
+Options that were offered: A (one icon), B (tab follows the theme, home screen fixed; recommended),
+C (both follow the theme; the home-screen icon would show whichever theme was on when it was added).
 
-Recommendation: B, with the home-screen icon chosen once by the owner.
+Note on the single file: `npm run build:single` does not inline the two `<link>` icons; it writes
+them as two PNG files next to `index.html`, as it already did for the robot icons. The game itself
+is still one HTML file; a copy of only `index.html` shows the browser's default icon.
