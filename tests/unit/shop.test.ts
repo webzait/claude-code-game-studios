@@ -16,7 +16,7 @@ const MAX = config.shop.ledgerMax;
 /** A provider whose outcome the test sets, and which records the waits it was asked for instead of waiting. */
 function provider(outcome: PurchaseOutcome): { shop: PurchaseProvider; waits: number[] } {
   const waits: number[] = [];
-  const shop = new SimulatedProvider(PACKS, { outcome: () => outcome, delay: (ms) => Promise.resolve(void waits.push(ms)), processingMs: 900 });
+  const shop = new SimulatedProvider(() => PACKS, { outcome: () => outcome, delay: (ms) => Promise.resolve(void waits.push(ms)), processingMs: 900 });
   return { shop, waits };
 }
 const entry = (kind: LedgerEntry['kind'], item: string, coins: number, balance: number, at = 1000): LedgerEntry => ({ at, kind, item, coins, balance });
@@ -250,7 +250,7 @@ describe('lab switches for the shop', () => {
 
   it('the outcome switch is read at the moment of buying, so changing it needs no restart', async () => {
     const lab = { ...DEFAULT_LAB };
-    const shop = new SimulatedProvider(PACKS, { outcome: () => lab.purchaseOutcome, delay: () => Promise.resolve(), processingMs: 0 });
+    const shop = new SimulatedProvider(() => PACKS, { outcome: () => lab.purchaseOutcome, delay: () => Promise.resolve(), processingMs: 0 });
     expect((await shop.buy('small')).status).toBe('success');
     lab.purchaseOutcome = 'cancelled';
     expect((await shop.buy('small')).status).toBe('cancelled');

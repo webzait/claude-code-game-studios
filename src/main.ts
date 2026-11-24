@@ -18,7 +18,7 @@ import { CONFIG } from './config';
 import type { Color, Command, Robot, RobotEvent } from './engine/types';
 import { previewStep, witnessNext, type RescueResult, type ScanResult } from './game/assist';
 import { CelebrationRun, planCelebration, type CelebrationPlan, type CelebrationVariant } from './game/celebration';
-import { extraMovesPrice, hintPrice, payout, rewardFor, settlePaid, undoQuote, type UndoQuote } from './game/coins';
+import { extraMovesPrice, hintPrice, payout, retune, rewardFor, settlePaid, tuningFor, undoQuote, type CoinRules, type UndoQuote } from './game/coins';
 import type { ThemeId } from './game/theme';
 import { applyLab, DEFAULT_LAB, levelScreenView, rulesFor, usesCertifiedRules, type LabSettings } from './game/lab';
 import { emptyLedger, record, type LedgerEntry } from './game/ledger';
@@ -101,10 +101,10 @@ const wait = (seconds: number): Promise<void> => new Promise((r) => window.setTi
 const COMMAND_LABEL: Record<Command, string> = { red: 'Red turns, then all step', blue: 'Blue turns, then all step', yellow: 'Yellow turns, then all step', forward: 'All step forward' };
 const LEVEL_IDS = LEVELS.map((l) => l.id);
 
-/** A save whose levels were paid under earlier amounts, brought to today's once (`settlePaid`). Coins are untouched. */
+/** A save whose levels were paid under earlier amounts, brought once to the tuning in play (`settlePaid`). Coins are untouched. */
 function settled(save: SaveData): SaveData {
   if (save.economy === ECONOMY_VERSION) return save;
-  return { ...save, paid: settlePaid(save.paid, save.best, LEVELS), economy: ECONOMY_VERSION };
+  return { ...save, paid: settlePaid(save.paid, save.best, LEVELS, tuningFor(save.lab.economy).coins), economy: ECONOMY_VERSION };
 }
 
 /** `localStorage`, or a throwaway store when the browser blocks it. */
@@ -213,7 +213,7 @@ class Game {
    * The purchase layer. The game only knows the interface; this build has the simulated provider alone,
    * which charges nothing and makes no request. Its outcome is the test lab's switch.
    */
-  private provider: PurchaseProvider = new SimulatedProvider(configuredPacks(), {
+  private provider: PurchaseProvider = new SimulatedProvider(() => configuredPacks(tuningFor(this.save.lab.economy).packs), {
     outcome: () => this.save.lab.purchaseOutcome,
     delay: (ms) => wait((this.reduced ? ms / 2 : ms) / 1000),
     processingMs: CONFIG.shop.processingMs,
@@ -245,8 +245,7 @@ class Game {
     });
     this.counters = new CoinCounters([el('mapCoins'), el('levelCoins'), this.shop.balanceHost], () => this.reduced, (button) => this.tap(() => this.openCoins(button)));
     this.hud.onCardHidden = () => this.counters.settle();
-    el('coinInfoBody').innerHTML = coinInfo('coinInfoTitle');
-    el('coinInfoClose').addEventListener('click', () => this.tap(() => this.closeCoinInfo()));
+        el('coinInfoClose').addEventListener('click', () => this.tap(() => this.closeCoinInfo()));
     el('coinInfo').addEventListener('click', (e) => {
       if (e.target === e.currentTarget) this.closeCoinInfo();
     });
@@ -318,6 +317,7 @@ class Game {
   /** The plus button: there is no shop, so it explains what coins are and what they cost. */
   private openCoinInfo(opener: HTMLElement): void {
     this.coinInfoOpener = opener;
+    el('coinInfoBody').innerHTML = coinInfo('coinInfoTitle', this.rules);
     el('coinInfo').hidden = false;
     el('coinInfoClose').focus();
   }
@@ -564,6 +564,15 @@ class Game {
         }),
       ],
       onChange: (lab) => {
+        if (lab.economy !== this.save.lab.economy) {
+          // Another tuning: the paid amounts follow it, and a wallet nobody has touched yet takes its opening balance.
+          const next = retune(this.save, this.rules, tuningFor(lab.economy).coins, LEVELS);
+          const before = this.save.coins;
+          this.save.coins = next.coins;
+          this.save.paid = next.paid;
+          if (next.coins !== before) this.log('set', 'balance', next.coins - before);
+          this.counters.set(this.save.coins);
+        }
         this.save.lab = lab;
         this.persist();
         this.applySettings();
@@ -674,7 +683,7 @@ class Game {
   private refresh(): void {
     const colors = new Set<Color>(this.level.start.robots.map((r) => r.color));
     const status = this.session.status;
-    const price = hintPrice(this.save.lab.freeHelp);
+    const price = hintPrice(this.save.lab.freeHelp, this.rules);
     const undo = this.undoOffer();
     const revealed = this.scanResult?.kind === 'on-route' && this.nudge !== null;
     this.counters.set(this.save.coins);
@@ -752,7 +761,7 @@ class Game {
     const stars = starsFor(moves, this.par, this.usedBackup);
     const previous = this.save.best[id];
     if (previous === undefined || previous === 0 || moves < previous) this.save.best[id] = moves;
-    const reward = rewardFor(moves, this.par, this.session.budget, { hint: this.usedHint, extraMoves: this.usedBackup });
+    const reward = rewardFor(moves, this.par, this.session.budget, { hint: this.usedHint, extraMoves: this.usedBackup }, this.rules);
     const earned = payout(reward.total, this.save.paid[id]);
     this.save.paid[id] = Math.max(this.save.paid[id] ?? 0, reward.total);
     this.save.coins += earned;
@@ -864,7 +873,7 @@ class Game {
   /** The out-of-moves pop-up for a checked position, with every price judged against the wallet as it is now. */
   private showLost(rescue: RescueResult, animate: boolean): void {
     const offer = rescue.kind === 'rescuable';
-    const price = extraMovesPrice(this.save.lab.freeHelp);
+    const price = extraMovesPrice(this.save.lab.freeHelp, this.rules);
     const afford = this.save.coins >= price;
     const undoPrice = this.undoOffer();
     const short = (offer && price > 0 && !afford) || undoPrice.state === 'short';
@@ -893,7 +902,7 @@ class Game {
   }
 
   private useBackup(): void {
-    const price = extraMovesPrice(this.save.lab.freeHelp);
+    const price = extraMovesPrice(this.save.lab.freeHelp, this.rules);
     if (this.save.coins < price) {
       // The offer stays tappable when it is too expensive; the counter answers.
       this.counters.short();
@@ -913,9 +922,14 @@ class Game {
     this.refresh();
   }
 
+  /** The amounts in play: the tuning chosen in the test lab, the game's own unless changed there. */
+  private get rules(): CoinRules {
+    return tuningFor(this.save.lab.economy).coins;
+  }
+
   /** What the next Undo costs now. A board-size test board is never paid for. */
   private undoOffer(): UndoQuote {
-    return undoQuote(this.save.coins, this.save.lab.freeHelp || this.preview, this.undosTaken);
+    return undoQuote(this.save.coins, this.save.lab.freeHelp || this.preview, this.undosTaken, this.rules);
   }
 
   /**
@@ -986,7 +1000,7 @@ class Game {
     if (this.scanKey === key && this.scanResult) {
       if (this.scanResult.kind === 'on-route' && this.nudge === null) {
         // Revealing the move is the paid step; the status before it is free.
-        const price = hintPrice(this.save.lab.freeHelp);
+        const price = hintPrice(this.save.lab.freeHelp, this.rules);
         if (this.save.coins < price) {
           this.counters.short();
           this.offerCoins = true;

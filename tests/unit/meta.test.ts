@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CONFIG } from '../../src/config';
-import { extraMovesPrice, hintPrice, NO_HELP, payout, rewardFor, settlePaid, undoPrice, undoQuote, type CoinRules } from '../../src/game/coins';
+import { DEFAULT_TUNING, extraMovesPrice, hintPrice, NO_HELP, payout, retune, rewardFor, settlePaid, tuningFor, TUNINGS, undoPrice, undoQuote, type CoinRules } from '../../src/game/coins';
 import { applyLab, DEFAULT_LAB, levelScreenView, rulesFor, usesCertifiedRules, type LabSettings } from '../../src/game/lab';
 import { isUnlocked, mainAction, resumeIndex, solvedCount, starsFor, starsOfBest } from '../../src/game/progress';
 import { defaultSave, ECONOMY_VERSION, LEGACY_KEY, loadSave, migrate, resetProgress, SAVE_KEY, SAVE_VERSION, writeSave, type KeyValueStore } from '../../src/game/save';
@@ -85,11 +85,16 @@ describe('coins', () => {
     expect(undoPrice(false, 1, { ...c, undoCost: 10, freeUndosPerLevel: 1 })).toBe(10);
     expect(undoQuote(9, false, 0, { ...c, undoCost: 10, freeUndosPerLevel: 0 })).toEqual({ cost: 10, state: 'short' });
   });
-  it('the prices stand in one scale with the rewards: Undo below a hint, a hint below the extra moves, the start buys one of each', () => {
+  it('the prices stand in one order: Undo below a hint, a hint below the extra moves, all in steps of five', () => {
     expect(c.undoCost).toBeLessThan(c.hintCost);
     expect(c.hintCost).toBeLessThan(c.extraMovesCost);
-    expect(c.start).toBeGreaterThanOrEqual(c.undoCost + c.hintCost);
     for (const amount of [c.start, c.win, c.twoStars, c.perfect, c.hintCost, c.extraMovesCost, c.undoCost]) expect(amount % 5).toBe(0);
+  });
+  it('coins are scarce since finding B12: a perfect level does not pay for a hint, and the start does not either', () => {
+    expect(rewardFor(7, 7, 9, NO_HELP).total).toBeLessThan(c.hintCost);
+    expect(c.start).toBeLessThan(c.hintCost);
+    // The reflex help stays within reach: a perfect level pays for more than one Undo.
+    expect(rewardFor(7, 7, 9, NO_HELP).total).toBeGreaterThan(c.undoCost);
   });
   it('a level pays its best reward once; a replay pays only the improvement', () => {
     expect(payout(20, undefined)).toBe(20);
@@ -101,10 +106,6 @@ describe('coins', () => {
     expect(hintPrice(true)).toBe(0);
     expect(extraMovesPrice(false)).toBe(c.extraMovesCost);
     expect(extraMovesPrice(true)).toBe(0);
-  });
-  it('one perfect level pays for at least one hint, and extra moves cost more than a hint', () => {
-    expect(rewardFor(7, 7, 9, NO_HELP).total).toBeGreaterThanOrEqual(c.hintCost);
-    expect(c.extraMovesCost).toBeGreaterThan(c.hintCost);
   });
 });
 
@@ -268,9 +269,9 @@ describe('a save from before the reward followed the stars (design/economy.md)',
     expect(payout(rewardFor(7, 7, 9, NO_HELP).total, paid.b)).toBe(three - two);
   });
 
-  it('never lowers what a level paid, and leaves unpaid and unsolved levels alone', () => {
+  it('a level paid more than its result is worth today counts as paid for that result; unpaid and unsolved levels are left alone', () => {
     const paid = settlePaid({ a: 500, e: 10 }, { a: 7, b: 7 }, levels);
-    expect(paid).toEqual({ a: 500, e: 10 });
+    expect(paid).toEqual({ a: three, e: 10 });
   });
 
   it('a win carried over from the first prototype (no move count) is a one-star win', () => {
@@ -400,5 +401,92 @@ describe('level path', () => {
     expect(improvableLevels([3, 2, 3, 1, 0, 0])).toEqual([1, 3]);
     expect(improvableLevels([3, 3, 0])).toEqual([]);
     expect(improvableLevels([])).toEqual([]);
+  });
+});
+
+describe('the tunings of finding B12 (design/economy.md)', () => {
+  const levels = [
+    { id: 'a', par: 7 },
+    { id: 'b', par: 7 },
+  ];
+
+  it('the game\'s own tuning is the coins and packs of the config, and every id in the order exists once', () => {
+    expect(tuningFor(DEFAULT_TUNING).coins).toBe(CONFIG.coins);
+    expect(tuningFor(DEFAULT_TUNING).packs).toBe(CONFIG.shop.packs);
+    expect(TUNINGS.map((t) => t.id)).toEqual(CONFIG.economy.order);
+    expect(DEFAULT_LAB.economy).toBe(DEFAULT_TUNING);
+  });
+
+  it('an unknown tuning is the game\'s own', () => {
+    expect(tuningFor('gone').id).toBe(DEFAULT_TUNING);
+  });
+
+  it('every tuning keeps the fixed limits: prices in order, a hint never earns its price back, the smallest pack buys the dearest help', () => {
+    for (const t of TUNINGS) {
+      const c = t.coins;
+      expect(c.undoCost).toBeGreaterThan(0);
+      expect(c.undoCost).toBeLessThan(c.hintCost);
+      expect(c.hintCost).toBeLessThan(c.extraMovesCost);
+      expect(c.hintCost).toBeGreaterThanOrEqual(c.perfect - c.twoStars);
+      expect(Math.min(...t.packs.map((p) => p.coins))).toBeGreaterThanOrEqual(c.extraMovesCost);
+    }
+  });
+
+  it('each tuning in the order is tighter than the one before: a smaller start and no cheaper help, measured in three-star wins', () => {
+    for (let i = 1; i < TUNINGS.length; i++) {
+      const [a, b] = [TUNINGS[i - 1].coins, TUNINGS[i].coins];
+      const wins = (c: CoinRules, price: number): number => price / (c.win + c.perfect);
+      expect(b.start).toBeLessThan(a.start);
+      expect(wins(b, b.undoCost)).toBeGreaterThanOrEqual(wins(a, a.undoCost));
+      expect(wins(b, b.hintCost)).toBeGreaterThan(wins(a, a.hintCost));
+      expect(wins(b, b.extraMovesCost)).toBeGreaterThan(wins(a, a.extraMovesCost));
+    }
+  });
+
+  it('a save from the economy before B12 keeps its balance and its paid levels, and takes the game\'s tuning', () => {
+    // Arrange: a save written under economy 2 (start 50, 10 per star), two levels won.
+    const raw = { version: SAVE_VERSION, economy: 2, best: { [ids[0]]: LEVELS[0].par, [ids[1]]: LEVELS[1].par + 1 }, coins: 430, paid: { [ids[0]]: 30, [ids[1]]: 20 }, settings: {}, lab: {} };
+    // Act
+    const save = migrate(raw, ids);
+    const paid = settlePaid(save.paid, save.best, LEVELS, tuningFor(save.lab.economy).coins);
+    // Assert: nothing is lost, the marker says "settle me once", and the same results pay nothing again.
+    expect(save).toMatchObject({ economy: 2, coins: 430, paid: { [ids[0]]: 30, [ids[1]]: 20 }, best: raw.best });
+    expect(save.lab.economy).toBe(DEFAULT_TUNING);
+    const now = tuningFor(DEFAULT_TUNING).coins;
+    const budget = (i: number): number => LEVELS[i].par + CONFIG.moveSlack;
+    expect(payout(rewardFor(LEVELS[0].par, LEVELS[0].par, budget(0), NO_HELP, now).total, paid[ids[0]])).toBe(0);
+    expect(payout(rewardFor(LEVELS[1].par + 1, LEVELS[1].par, budget(1), NO_HELP, now).total, paid[ids[1]])).toBe(0);
+    // A better result pays the step between today's amounts.
+    expect(payout(rewardFor(LEVELS[1].par, LEVELS[1].par, budget(1), NO_HELP, now).total, paid[ids[1]])).toBe(now.perfect - now.twoStars);
+  });
+
+  it('a stored tuning is kept, and one that no longer exists falls back to the game\'s own', () => {
+    expect(migrate({ version: SAVE_VERSION, lab: { economy: 'scarce' } }, ids).lab.economy).toBe('scarce');
+    expect(migrate({ version: SAVE_VERSION, lab: { economy: 'gone' } }, ids).lab.economy).toBe(DEFAULT_TUNING);
+    expect(migrate({ version: SAVE_VERSION, lab: { economy: 7 } }, ids).lab.economy).toBe(DEFAULT_TUNING);
+  });
+
+  it('reset progress gives the opening balance of the tuning in play', () => {
+    const save = defaultSave();
+    save.lab.economy = 'scarce';
+    save.coins = 999;
+    expect(resetProgress(save).coins).toBe(tuningFor('scarce').coins.start);
+  });
+
+  it('changing the tuning keeps a played wallet and settles the paid levels to the new amounts', () => {
+    const from = tuningFor('roomy').coins;
+    const to: CoinRules = { ...from, start: 20, win: 5, twoStars: 5, perfect: 10 };
+    const next = retune({ coins: 430, paid: { a: 30, b: 20 }, best: { a: 7, b: 8 } }, from, to, levels);
+    expect(next).toEqual({ coins: 430, paid: { a: 15, b: 10 } });
+    // The same result pays nothing; a better one pays the new step.
+    expect(payout(rewardFor(8, 7, 9, NO_HELP, to).total, next.paid.b)).toBe(0);
+    expect(payout(rewardFor(7, 7, 9, NO_HELP, to).total, next.paid.b)).toBe(5);
+  });
+
+  it('changing the tuning gives a wallet nobody has touched the new opening balance, and no other wallet', () => {
+    const [from, to] = [tuningFor('roomy').coins, tuningFor('scarce').coins];
+    expect(retune({ coins: from.start, paid: {}, best: {} }, from, to, levels).coins).toBe(to.start);
+    expect(retune({ coins: from.start - 5, paid: {}, best: {} }, from, to, levels).coins).toBe(from.start - 5);
+    expect(retune({ coins: from.start, paid: { a: 30 }, best: { a: 7 } }, from, to, levels).coins).toBe(from.start);
   });
 });

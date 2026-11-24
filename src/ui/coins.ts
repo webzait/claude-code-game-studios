@@ -1,5 +1,5 @@
 import { CONFIG } from '../config';
-import type { Reward } from '../game/coins';
+import type { CoinRules, Reward } from '../game/coins';
 import parts from '../../data/parts.json';
 import extraMovesImage from '../../assets/turnflock/ui/extra-moves.webp';
 
@@ -12,7 +12,6 @@ import extraMovesImage from '../../assets/turnflock/ui/extra-moves.webp';
 
 const C = parts.coins;
 const F = C.fly;
-const COINS = CONFIG.coins;
 
 /** An amount as the player reads it: thousands apart with a narrow space, never abbreviated. */
 export function formatCoins(amount: number): string {
@@ -115,8 +114,8 @@ export function landingAmounts(from: number, to: number, count: number): number[
   return Array.from({ length: coins }, (_, i) => (i === coins - 1 ? to : from + Math.round(((to - from) * (i + 1)) / coins)));
 }
 
-/** The honest stand-in for a shop: what coins are, how they are earned and what they cost. */
-export function coinInfo(titleId: string): string {
+/** The honest stand-in for a shop: what coins are, how they are earned and what they cost, in the amounts in play. */
+export function coinInfo(titleId: string, COINS: CoinRules = CONFIG.coins): string {
   const small = coinIcon(C.reward.lineIcon);
   const line = (name: string, amount: string, spend = false): string => `<div class="tf-coin-line${spend ? ' spend' : ''}"><dt>${name}</dt><dd>${amount}${small}</dd></div>`;
   return `<h4 id="${titleId}">${coinIcon(24)}Coins</h4>

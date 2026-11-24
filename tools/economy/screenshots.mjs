@@ -1,17 +1,19 @@
-// Screenshots of the places that show coin amounts, taken from the built game at phone size:
-// the win pop-up for three, two and one star, the price tags and the coin explainer.
+// Screenshots of every place that shows a coin amount, for each tuning of the economy (finding B12),
+// taken from the built game at phone size: the top bar with the balance and the price tags, the win
+// pop-up, the out-of-moves offer, the test shop and the test lab's choice.
 // Usage: npm run build:single && node tools/economy/screenshots.mjs
-// Pictures go to production/qa/evidence/economy/. Fails if an amount on screen is not the one in data/config.json.
+// Pictures go to production/qa/evidence/economy-tighten/. Fails if an amount on screen is not the one in data/config.json.
 import { chromium } from 'playwright';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const OUT = 'production/qa/evidence/economy';
+const OUT = 'production/qa/evidence/economy-tighten';
 const config = JSON.parse(readFileSync('data/config.json', 'utf8'));
 const levels = JSON.parse(readFileSync('data/levels.json', 'utf8'));
-const c = config.coins;
+const own = { ...config.economy.tuning, coins: config.coins, packs: config.shop.packs };
+const tunings = config.economy.order.map((id) => (id === own.id ? own : config.economy.alternatives.find((t) => t.id === id)));
 const build = pathToFileURL(resolve('dist-single/index.html')).href;
 mkdirSync(OUT, { recursive: true });
 
@@ -21,7 +23,7 @@ const executablePath = process.env.PAGE_SHOT_BROWSER || which || undefined;
 const browser = await chromium.launch({ executablePath, args: ['--use-gl=angle', '--use-angle=swiftshader-webgl', '--enable-unsafe-swiftshader'] });
 const failures = [];
 const check = (what, actual, expected) => {
-  const ok = String(actual).trim() === String(expected);
+  const ok = String(actual).replace(/\s+/g, '').trim() === String(expected).replace(/\s+/g, '');
   console.log(`${ok ? 'ok  ' : 'FAIL'} ${what}: ${String(actual).trim()}${ok ? '' : ` (expected ${expected})`}`);
   if (!ok) failures.push(what);
 };
@@ -43,79 +45,74 @@ async function press(page, command) {
   await page.waitForFunction((n) => { const s = window.turnflock.snapshot(); return s.commands.length > n && !s.busy; }, before, { timeout: 30000 }).catch(() => {});
   await page.waitForTimeout(450);
 }
-const shot = async (page, name) => {
-  await page.waitForTimeout(2600); // stars, coin flight and count-up have landed
-  await page.screenshot({ path: `${OUT}/${name}.png` });
-};
-const fresh = { version: 5, economy: 2, best: {}, coins: c.start, paid: {}, settings: {}, lab: {} };
-const afterOne = { ...fresh, best: { [levels[0].id]: levels[0].par }, paid: { [levels[0].id]: c.win + c.perfect } };
 
-// Three stars: level 1 by its shortest solution.
-{
-  const page = await start(fresh);
-  await page.click('#node-1');
-  await page.waitForTimeout(800);
-  await page.screenshot({ path: `${OUT}/01-level-start-${c.start}-coins.png` });
-  for (const command of levels[0].witness) await press(page, command);
-  await page.waitForSelector('#card .tf-coin-sum', { timeout: 30000 });
-  check('three stars pay', await page.textContent('#card .tf-coin-sum'), `+${c.win + c.perfect}`);
-  check('three stars shown', await page.getAttribute('#card .tf-end-stars', 'aria-label'), '3 of 3 stars');
-  await shot(page, '02-win-3-stars');
-  check('wallet after three stars', (await snap(page)).coins, c.start + c.win + c.perfect);
-  await page.context().close();
-}
+for (const t of tunings) {
+  const c = t.coins;
+  const lab = { economy: t.id };
+  const fresh = { version: 7, economy: 3, best: {}, coins: c.start, paid: {}, settings: { music: false }, lab };
+  const afterOne = { ...fresh, coins: c.start + c.win + c.perfect, best: { [levels[0].id]: levels[0].par }, paid: { [levels[0].id]: c.win + c.perfect } };
+  const name = (n) => `${OUT}/${t.id}-${n}.png`;
+  console.log(`\n== ${t.label} ==`);
 
-// Two stars: level 2 with one wasted step against the wall.
-{
-  const page = await start(afterOne);
-  await page.click('#node-2');
-  await page.waitForTimeout(800);
-  for (const command of ['forward', 'forward', 'forward', 'forward']) await press(page, command);
-  check('Undo price tag', await page.textContent('#undo .tf-coin-price'), c.undoCost);
-  await page.click('#scan');
-  await page.waitForTimeout(900);
-  check('Hint price tag', await page.textContent('#scan .tf-coin-price'), c.hintCost);
-  await page.screenshot({ path: `${OUT}/03-price-tags-undo-hint.png` });
-  for (const command of ['red', 'forward', 'forward']) await press(page, command);
-  await page.waitForSelector('#card .tf-coin-sum', { timeout: 30000 });
-  check('two stars pay', await page.textContent('#card .tf-coin-sum'), `+${c.win + c.twoStars}`);
-  check('two stars shown', await page.getAttribute('#card .tf-end-stars', 'aria-label'), '2 of 3 stars');
-  await shot(page, '04-win-2-stars');
-  await page.context().close();
-}
-
-// One star: level 2 run out of moves at the wall, "+3 moves" bought, then won.
-{
-  const page = await start(afterOne);
-  await page.click('#node-2');
-  await page.waitForTimeout(800);
-  for (let i = 0; i < levels[1].par + config.moveSlack; i++) await press(page, 'forward');
-  await page.waitForSelector('#end-offer', { timeout: 30000 });
-  check('+3 moves price', await page.getAttribute('#end-offer', 'aria-label'), `+${config.extraMoves} moves, ${c.extraMovesCost} coins`);
-  check('Undo price on the pop-up', await page.getAttribute('#end-undo', 'aria-label'), `Undo, ${c.undoCost} coins`);
-  await page.waitForTimeout(900);
-  await page.screenshot({ path: `${OUT}/05-out-of-moves-offer.png` });
-  await page.click('#end-offer');
-  await page.waitForTimeout(900);
-  check('wallet after +3 moves', (await snap(page)).coins, c.start - c.extraMovesCost);
-  for (const command of ['red', 'forward', 'forward']) await press(page, command);
-  await page.waitForSelector('#card .tf-coin-sum', { timeout: 30000 });
-  check('one star pays', await page.textContent('#card .tf-coin-sum'), `+${c.win}`);
-  check('one star shown', await page.getAttribute('#card .tf-end-stars', 'aria-label'), '1 of 3 stars');
-  await shot(page, '06-win-1-star');
-  await page.context().close();
-}
-
-// The coin explainer behind the plus button lists every amount.
-{
-  const page = await start(fresh);
-  await page.click('#mapCoins button');
-  await page.waitForTimeout(500);
-  const text = (await page.textContent('#coinInfoBody')).replace(/\s+/g, ' ');
-  for (const [label, amount] of [['Level won', `+${c.win}`], ['Two stars', `+${c.win + c.twoStars}`], ['Three stars', `+${c.win + c.perfect}`], ['Hint: the next move', c.hintCost], [`+${config.extraMoves} moves`, c.extraMovesCost], ['Undo: one step back', c.undoCost]]) {
-    check(`explainer: ${label}`, text.includes(`${label}${amount}`) ? amount : text, amount);
+  // A new player wins level 1 by its shortest solution: the opening balance, then the win pop-up.
+  {
+    const page = await start(fresh);
+    check('opening balance on the level screen', await page.textContent('#mapCoins .tf-coin-amount'), c.start);
+    await page.click('#node-1');
+    await page.waitForTimeout(800);
+    for (const command of levels[0].witness) await press(page, command);
+    await page.waitForSelector('#card .tf-coin-sum', { timeout: 30000 });
+    check('three stars pay', await page.textContent('#card .tf-coin-sum'), `+${c.win + c.perfect}`);
+    await page.waitForTimeout(2600); // stars, coin flight and count-up have landed
+    await page.screenshot({ path: name('02-win-popup') });
+    check('wallet after three stars', (await snap(page)).coins, c.start + c.win + c.perfect);
+    await page.context().close();
   }
-  await page.screenshot({ path: `${OUT}/07-coin-explainer.png` });
+
+  // Level 2 after one move: the top bar with the balance, and the price tags on Undo and Hint.
+  {
+    const page = await start(afterOne);
+    await page.click('#node-2');
+    await page.waitForTimeout(800);
+    await press(page, 'forward');
+    check('Undo price tag', await page.textContent('#undo .tf-coin-price'), c.undoCost);
+    check('Hint price tag', await page.textContent('#scan .tf-coin-price'), c.hintCost);
+    check('balance in the top bar', await page.textContent('#levelCoins .tf-coin-amount'), afterOne.coins);
+    await page.screenshot({ path: name('01-top-bar-and-price-tags') });
+    // Run out of moves at the wall: the solver proves three moves are enough, so "+3 moves" is offered at its price.
+    for (let i = 1; i < levels[1].par + config.moveSlack; i++) await press(page, 'forward');
+    await page.waitForSelector('#end-offer', { timeout: 30000 });
+    const can = afterOne.coins >= c.extraMovesCost;
+    check('+3 moves price', await page.getAttribute('#end-offer', 'aria-label'), `+${config.extraMoves} moves, ${c.extraMovesCost} coins${can ? '' : ', you do not have enough coins'}`);
+    check('Retry is there and free', await page.locator('#end-retry').count(), 1);
+    await page.waitForTimeout(900);
+    await page.screenshot({ path: name('03-out-of-moves-offer') });
+    await page.context().close();
+  }
+
+  // The test shop: this tuning's packs at their example prices.
+  {
+    const page = await start(fresh);
+    await page.click('#mapCoins button');
+    await page.waitForSelector('.tf-shop-pack');
+    const packs = await page.locator('.tf-shop-pack').allTextContents();
+    t.packs.forEach((p, i) => check(`pack ${i + 1}`, packs[i].includes(`€${Math.floor(p.examplePriceCents / 100)}.${String(p.examplePriceCents % 100).padStart(2, '0')}`) && packs[i].replace(/\s/g, '').includes(`${p.coins}coins`) ? p.coins : packs[i], p.coins));
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: name('04-shop') });
+    await page.context().close();
+  }
+}
+
+// The choice in the test lab, as it stands for a new player.
+{
+  const page = await start({ version: 7, economy: 3, best: {}, coins: own.coins.start, paid: {}, settings: { music: false }, lab: {} });
+  await page.click('#toSettings');
+  await page.click('.tf-set-entry');
+  const row = page.locator('[data-key=economy]');
+  await row.scrollIntoViewIfNeeded();
+  check('the lab starts on the game\'s own tuning', await row.locator('[role=radio][aria-checked=true]').textContent(), own.label);
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: `${OUT}/lab-coin-tuning.png` });
   await page.context().close();
 }
 

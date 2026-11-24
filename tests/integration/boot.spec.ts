@@ -31,13 +31,13 @@ const tilesOnPage = Math.min(levels.length, config.levelsPerPage);
 const ahead = Math.min(levels.length - 1, config.levelsAhead);
 
 /** Start with every level before `index` already solved at par, so that level is open like for a real player. */
-async function solvedUpTo(page: Page, index: number, lab: Record<string, unknown> = {}): Promise<void> {
+async function solvedUpTo(page: Page, index: number, lab: Record<string, unknown> = {}, coins: number = config.coins.start): Promise<void> {
   const best = Object.fromEntries(levels.slice(0, index).map((l) => [l.id, l.par]));
   await page.addInitScript(
     ([save]) => {
       if (!localStorage.getItem('turnflock.save')) localStorage.setItem('turnflock.save', save);
     },
-    [JSON.stringify({ version: 4, best, coins: config.coins.start, paid: {}, settings: {}, lab })],
+    [JSON.stringify({ version: 4, best, coins, paid: {}, settings: {}, lab })],
   );
 }
 
@@ -311,7 +311,9 @@ test('out of moves in a hopeless position: free Retry, a priced Undo, and no ext
 });
 
 test('out of moves two steps from home: extra moves are offered and really win', async ({ page }) => {
-  await solvedUpTo(page, ARROW);
+  // Since finding B12 the opening balance does not buy the extra moves: this player has saved up for them.
+  const saved = config.coins.extraMovesCost + 2 * undoCost;
+  await solvedUpTo(page, ARROW, {}, saved);
   await open(page);
   await page.click(`#node-${ARROW + 1}`);
   // Follow the Arrow's witness is three forwards, red, three forwards. Spend the spare
@@ -329,14 +331,14 @@ test('out of moves two steps from home: extra moves are offered and really win',
   await expect(page.locator('#end-undo > .tf-coin-slot .tf-coin-price')).toHaveText(String(undoCost));
   await expect(page.locator('#end-retry')).toBeVisible();
   await page.click('#end-offer');
-  expect(await snap(page)).toMatchObject({ status: 'playing', movesLeft: config.extraMoves, coins: config.coins.start - config.coins.extraMovesCost });
+  expect(await snap(page)).toMatchObject({ status: 'playing', movesLeft: config.extraMoves, coins: saved - config.coins.extraMovesCost });
   for (let i = 0; i < config.extraMoves && (await snap(page)).status === 'playing'; i++) await press(page, 'forward');
   expect((await snap(page)).status).toBe('won');
   await expect(page.locator('#end-title')).toContainText('extra moves', { timeout: 15000 });
   await expect(page.locator('#card .tf-coin-sum')).toHaveText(`+${config.coins.win}`);
   await expect(page.locator('.tf-end-stars')).toHaveAttribute('aria-label', '1 of 3 stars');
   // A win with extra moves is a one-star win: it pays the base amount only.
-  expect((await snap(page)).coins).toBe(config.coins.start - config.coins.extraMovesCost + config.coins.win);
+  expect((await snap(page)).coins).toBe(saved - config.coins.extraMovesCost + config.coins.win);
 });
 
 test('the bottom buttons are one set, and every price is the same tag in the same place (finding B9)', async ({ page }) => {
@@ -408,12 +410,14 @@ test('the helper buttons stay clear of the command row on every phone size (find
 });
 
 test('Hint: the status is free, the next move costs coins and is drawn on the board, and without coins it is refused', async ({ page }) => {
-  await solvedUpTo(page, ARROW);
+  // Since finding B12 the opening balance does not buy a hint: this player has saved up for two, and an Undo.
+  const saved = 2 * config.coins.hintCost + undoCost;
+  await solvedUpTo(page, ARROW, {}, saved);
   await open(page);
   await page.click(`#node-${ARROW + 1}`);
   await press(page, 'red'); // leave the witness so the solver has to search
   await page.click('#undo');
-  const wallet = config.coins.start - undoCost; // that Undo was paid for
+  const wallet = saved - undoCost; // that Undo was paid for
   await press(page, 'forward');
   // The price is on the Hint button before it is tapped.
   await expect(page.locator('#scan')).toHaveAttribute('aria-label', `Hint, ${config.coins.hintCost} coins`);
@@ -699,7 +703,9 @@ test('on a turn-tile level the hint shows the tile\'s extra turn, and following 
 });
 
 test('on a turn-tile level, out of moves one step from home: extra moves are offered and really win', async ({ page }) => {
-  await solvedUpTo(page, TURNTABLE);
+  // Since finding B12 the opening balance does not buy the extra moves: this player has saved up for them.
+  const saved = config.coins.extraMovesCost;
+  await solvedUpTo(page, TURNTABLE, {}, saved);
   await open(page);
   await page.click(`#node-${TURNTABLE + 1}`);
   // Four reds walk the robot round the corner and back to the top row, one cell on; then the
@@ -717,5 +723,5 @@ test('on a turn-tile level, out of moves one step from home: extra moves are off
   await expect(page.locator('#end-title')).toContainText('extra moves', { timeout: 15000 });
   await expect(page.locator('#card .tf-coin-sum')).toHaveText(`+${config.coins.win}`);
   // A helped win pays the base amount only, on a tile level as on any other.
-  expect((await snap(page)).coins).toBe(config.coins.start - config.coins.extraMovesCost + config.coins.win);
+  expect((await snap(page)).coins).toBe(saved - config.coins.extraMovesCost + config.coins.win);
 });
