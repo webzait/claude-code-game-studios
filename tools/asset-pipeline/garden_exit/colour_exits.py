@@ -1,7 +1,7 @@
 """Exit pads per chick colour, and the same with the colour's shape for the tick ("Colour shapes").
 
 No coloured pad exists: every one is made from the owner's green pad at full resolution
-(design/reference/turnflock/garden/elements/checkpoint-actief.png, `checkpoints.source('green')`),
+(design/reference/turnflock/garden/exit-pads-v2/checkpoint-actief.png, cut out by `checkpoints.source("green")`),
 then shrunk to the output size of the green pad. Steps, all on the owner's picture:
 
 1. The tick is separated from the face: its coverage is the face's own blue channel (the lime face

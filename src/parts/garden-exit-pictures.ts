@@ -4,6 +4,7 @@ import * as pic from '../render/parts/garden/exitPictures';
 import refGrey from './ref/garden/checkpoint-inactief.webp';
 import refGreen from './ref/garden/checkpoint-actief.webp';
 import refRays from './ref/garden/checkpoint-opgelicht.webp';
+import refPortal from './ref/garden/checkpoint-portaal.webp';
 import type { ExitLook } from '../render/parts/garden/exitMoments';
 
 /**
@@ -30,7 +31,15 @@ export interface Kit {
 }
 
 type SpriteName = string;
-const LOOK_NAMES: Record<ExitLook, string> = { grey: 'Grijs', green: 'Groen', rays: 'Groen met stralen' };
+const LOOK_NAMES: Record<ExitLook, string> = { grey: 'Grijs', green: 'Groen', rays: 'Groen met stralen', portal: 'Portaal' };
+const LOOKS: ExitLook[] = ['grey', 'green', 'rays', 'portal'];
+/** The owner's corrected pictures (design/reference/turnflock/garden/exit-pads-v2/), shown here at 520 px. */
+const REFS: Record<ExitLook, [string, string]> = {
+  grey: [refGrey, 'checkpoint-inactief'],
+  green: [refGreen, 'checkpoint-actief'],
+  rays: [refRays, 'checkpoint-opgelicht'],
+  portal: [refPortal, 'checkpoint-portaal'],
+};
 
 /** The cut-out shown enlarged `zoom` times on a checkerboard (so the transparent edge is visible), with its size. */
 function cutout(k: Kit, name: SpriteName, caption: string, zoom = 1): HTMLElement {
@@ -55,30 +64,37 @@ function cells(extras: [number, number, THREE.Object3D][]): [number, number, THR
 export function addPictureCards(sheet: HTMLElement, k: Kit): void {
   // ---- Exit pad ----
   {
-    const el = k.section('garden-exit', 'Tuin · Uitgang: het beeld van de eigenaar', 'Standaard. De drie checkpoint-beelden van de eigenaar (losse spelelementen, ca. 800 px), alleen netjes verkleind: de steen is 320 px breed (twee keer de grootste weergave op een telefoon). In het spel een plat vlak dat recht naar de spelcamera kijkt (30° gekanteld, perspectief), op een grastegel.');
-    const ref = k.row(el, 'cutouts');
-    for (const [src, name] of [[refGrey, 'checkpoint-inactief'], [refGreen, 'checkpoint-actief'], [refRays, 'checkpoint-opgelicht']]) {
-      const i = k.img(src, name);
-      i.className = 'ge-cutout';
-      ref.appendChild(k.figure(i, `Origineel van de eigenaar (${name}, hier verkleind)`));
+    const el = k.section('garden-exit', 'Tuin · Uitgang: de gecorrigeerde beelden van de eigenaar', 'Standaard. De vier gecorrigeerde checkpoint-beelden van de eigenaar (exit-pads-v2, 1254×1254 op wit): uitgesneden van de witte achtergrond (stenen tegel dekkend, gloed, stralen en de lichtstraal half doorzichtig als licht, de zachte schaduw als doorzichtige schaduw), dan alleen netjes verkleind: de steen is 320 px breed (twee keer de grootste weergave op een telefoon) en elke stand is op de hoogte van de groene tegel gebracht, zodat de tegel niet verspringt. Nieuw: het portaal, voorgesteld voor het moment dat een kuiken binnengaat. In het spel een plat vlak dat recht naar de spelcamera kijkt (30° gekanteld, perspectief), op een grastegel.');
+    for (const look of LOOKS) {
+      el.insertAdjacentHTML('beforeend', `<h3>${LOOK_NAMES[look]}</h3>`);
+      const row = document.createElement('div');
+      row.className = 'ge-look';
+      const [src, name] = REFS[look];
+      const ref = k.img(src, name);
+      row.appendChild(k.figure(ref, `Origineel (${name}.png, verkleind)`));
+      for (const [cls, label] of [['', 'uitgesneden, op ruitjes'], ['on-dark', 'op donker'], ['on-grass', 'op gras #8BCB4F']]) {
+        const f = cutout(k, `exit-${look}` as SpriteName, `WebP ${label}`);
+        const i = f.querySelector('img')!;
+        if (cls) i.classList.add(cls);
+        row.appendChild(f);
+      }
+      el.appendChild(row);
     }
-    const cuts = k.row(el, 'cutouts');
-    for (const look of ['grey', 'green', 'rays'] as ExitLook[]) cuts.appendChild(cutout(k, `exit-${look}` as SpriteName, `${LOOK_NAMES[look]} · WebP`));
     el.insertAdjacentHTML('beforeend', '<h3>Op spelgrootte, onder de spelcamera</h3>');
     for (const cellPx of [53, 42]) {
       const game = k.row(el, 'game');
-      for (const look of ['grey', 'green', 'rays'] as ExitLook[]) {
+      for (const look of LOOKS) {
         const f = k.field(null, cells([[0, 0, pic.buildExit(undefined, look)]]).concat([[-1, 0, k.bot('blue', 1)], [0, 1, k.bot('yellow', 0)], [0, -1, k.bot('red', 2)]]));
         game.appendChild(k.figure(k.inGame(f, 3, 3, cellPx), `${LOOK_NAMES[look]} · vak ${cellPx} px`));
       }
     }
-    k.note(el, `Kosten per uitgang: ${k.cost(pic.buildExit(undefined, 'green'))} (grastegel, gloed en het beeld: één vlak van 2 driehoeken). De robots staan er als maatstaf; de kuikens zijn een andere sessie.`);
+    k.note(el, `Kosten per uitgang: ${k.cost(pic.buildExit(undefined, 'green'))} (grastegel, gloed en het beeld: één vlak van 2 driehoeken). Moment → stand (data/themes/garden/exit.json, <code>moments</code>): wachten = groen, kuiken net binnen = portaal (voorstel), alle kuikens binnen = stralen, uitgang klaar terwijl anderen nog buiten zijn = grijs. Een uitgang in een kuikenkleur heeft geen portaal of stralen in eigen kleur en houdt dan zijn kleur. De robots staan er als maatstaf; de kuikens zijn een andere sessie.`);
     sheet.appendChild(el);
   }
 
   // ---- Colour exits ----
   {
-    const el = k.section('garden-exit-colours', 'Tuin · Uitgangen per kleur (levels 61 tot 80): uit het beeld', 'Er is geen beeld per kleur: het groene plateau van de eigenaar is omgekleurd (alleen het verlichte vlak en de gloed in de voegen; steen en vinkje blijven). Geel krijgt het vinkje van de eigenaar in donker oker, zoals bij de robotuitgang. Voor "Kleurvormen" is het vinkje weggeschilderd en de vorm erin gezet.');
+    const el = k.section('garden-exit-colours', 'Tuin · Uitgangen per kleur (levels 61 tot 80): uit het beeld', 'Er is geen beeld per kleur: de groene tegel van de eigenaar (gecorrigeerd beeld) is omgekleurd (alleen het verlichte vlak en de gloed in de voegen; steen en vinkje blijven). Geel krijgt het vinkje van de eigenaar in donker oker, zoals bij de robotuitgang. Voor "Kleurvormen" is het vinkje weggeschilderd en de vorm erin gezet.');
     const cuts = k.row(el, 'cutouts');
     for (const c of ['red', 'blue', 'yellow'] as Color[]) cuts.appendChild(cutout(k, `exit-${c}` as SpriteName, c === 'red' ? 'Rood' : c === 'blue' ? 'Blauw' : 'Geel', 0.5));
     for (const c of ['red', 'blue', 'yellow'] as Color[]) cuts.appendChild(cutout(k, `exit-shape-${c}` as SpriteName, 'met kleurvorm', 0.5));
@@ -98,15 +114,15 @@ export function addPictureCards(sheet: HTMLElement, k: Kit): void {
       game.appendChild(k.figure(k.inGame(f, 3, 3, 53), 'Met "Kleurvormen" aan · vak 53 px'));
     }
     {
-      const f = k.field(null, cells([[-1, 0, pic.buildExit('red', 'grey')], [0, 0, pic.buildExit('blue', 'green')], [1, 0, pic.buildExit(undefined, 'rays')]]));
-      game.appendChild(k.figure(k.inGame(f, 3, 3, 53), 'Rood klaar (grijs), blauw wacht, gewone uitgang net binnen (stralen)'));
+      const f = k.field(null, cells([[-1, 0, pic.buildExit('red', 'grey')], [0, 0, pic.buildExit('blue', 'green')], [1, 0, pic.buildExit(undefined, 'portal')]]));
+      game.appendChild(k.figure(k.inGame(f, 3, 3, 53), 'Rood klaar (grijs), blauw wacht, gewone uitgang: kuiken net binnen (portaal)'));
     }
     sheet.appendChild(el);
   }
 
   // ---- Special tiles ----
   {
-    const el = k.section('garden-specials', 'Tuin · Draaitegel, drukplaat en poort: uit stukken van de beelden', 'De eigenaar heeft hier geen beelden van; ze zijn gemaakt uit stukken van de beelden van de eigenaar, zodat ze dezelfde geschilderde stijl hebben. Draaitegel: het groene checkpoint-plateau met een crèmekleurig vlak en de draaipijl van de draaiknop (18-sheet-action-buttons), groen gekleurd. Drukplaat: hetzelfde plateau in lavendel met een verhoogde knop in de stijl van de knoppen van de eigenaar. Poort: de balustrade uit 08-gazebo tussen twee stenen zuilen, in dezelfde lavendel. Plateaus gemaakt op volle grootte en daarna verkleind tot een steen van 320 px.');
+    const el = k.section('garden-specials', 'Tuin · Draaitegel, drukplaat en poort: uit stukken van de beelden', 'De eigenaar heeft hier geen beelden van; ze zijn gemaakt uit stukken van de beelden van de eigenaar, zodat ze dezelfde geschilderde stijl hebben. Draaitegel: de groene checkpoint-tegel (gecorrigeerd beeld) met een crèmekleurig vlak en de draaipijl van de draaiknop (18-sheet-action-buttons), groen gekleurd. Drukplaat: dezelfde tegel in lavendel met een verhoogde knop in de stijl van de knoppen van de eigenaar. Poort: de balustrade uit 08-gazebo tussen twee stenen zuilen, in dezelfde lavendel. Tegels gemaakt op volle grootte en daarna verkleind tot een steen van 320 px.');
     const cuts = k.row(el, 'cutouts');
     cuts.appendChild(cutout(k, 'turn', 'Draaitegel'));
     cuts.appendChild(cutout(k, 'plate', 'Drukplaat'));
