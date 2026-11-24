@@ -3,10 +3,10 @@
   "sprites": {
     "exit-grey": {
       "width": 1.0188,
-      "height": 0.6531,
+      "height": 0.7031,
       "anchor": [
         0.4981,
-        0.3905
+        0.3907
       ]
     },
     "exit-green": {
