@@ -133,7 +133,8 @@ export interface ThemeSlot {
 
 /**
  * Every part of the look a theme may change, in the order of design/themes.md. Buttons and icons
- * are not here: by the owner's decision (2026-11-24) they are the robot theme's in every theme.
+ * are not here: by the owner's decision (2026-11-24) they are the robot theme's in every theme,
+ * with one exception, the coin (the garden's star coin: design/themes/garden-coin.md).
  */
 export const THEME_SLOTS: readonly ThemeSlot[] = [
   { id: 'robot', kind: '3d', supplies: ['buildPartsRobot', 'buildRobot'], robot: 'src/render/robot.ts' },
@@ -150,6 +151,7 @@ export const THEME_SLOTS: readonly ThemeSlot[] = [
   { id: 'backdrop', kind: '2d', supplies: ['backdrop.css', 'garden-scene.css'], robot: 'src/ui/tf-scene.css' },
   { id: 'decor', kind: '2d', supplies: ['decor.css', 'garden-scene.css'], robot: 'src/ui/style.css (.tf-decor-*)' },
   { id: 'levelScreen', kind: '2d', supplies: ['level-screen.css', 'tf-levels-garden.css'], robot: 'src/ui/tf-levels.css' },
+  { id: 'coin', kind: '2d', supplies: ['coin.css'], robot: 'src/ui/tf-coins.css (.tf-coin-ico)' },
   { id: 'colours', kind: 'data', supplies: ['colours.json'], robot: '(none: the robot theme sets no theme colours)' },
   { id: 'light', kind: 'data', supplies: ['light.json'], robot: 'data/config.json (light)' },
   { id: 'sounds', kind: 'data', supplies: ['sounds.json'], robot: 'the sound set chosen in the test lab (data/sound-sets.json)' },

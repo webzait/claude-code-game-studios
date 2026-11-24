@@ -51,13 +51,15 @@ to update when a part is added:
 | `backdrop` — background | 2D | `src/ui/themes/garden/garden-scene.css` (or `backdrop.css`) | `src/ui/tf-scene.css` |
 | `decor` — foreground decor | 2D | `garden-scene.css` + `applyGardenDecor` (a picture per place) | `.tf-decor-*` in `src/ui/style.css` |
 | `levelScreen` — level screen (the path) | 2D | `src/ui/themes/garden/tf-levels-garden.css` + `gardenPathModel()` | `src/ui/tf-levels.css` |
+| `coin` — the coin picture, everywhere | 2D | `src/ui/themes/garden/coin.css` (star coin, `design/themes/garden-coin.md`) | `.tf-coin-ico` in `src/ui/tf-coins.css` |
 | `colours` — base colours | data | `data/themes/garden/colours.json` | — |
 | `light` — light on the board | data | `data/themes/garden/light.json` | `light` in `data/config.json` |
 | `sounds` — button and move sounds | data | `data/themes/garden/sounds.json`: `{ "set": "<id>" }`, a set in `data/sound-sets.json` | the set chosen in the test lab |
 
 **Not theme slots.** By the owner's decision (2026-11-24) buttons and icons, and the
 settings screens and pop-ups, are the robot theme's in every theme; the register has
-no slot for them. The level screen is a slot: it has its own session.
+no slot for them. The one exception is the coin (owner, 2026-11-24): the garden shows its star coin
+everywhere a coin is, through the `coin` slot. The level screen is a slot: it has its own session.
 
 While a theme has its own sound set, that set plays and the test lab's
 "Button sounds" choice applies only in the robot theme (owner, 2026-11-24).
