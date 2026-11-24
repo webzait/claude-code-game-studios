@@ -77,6 +77,10 @@ describe('garden obstacle choice', () => {
 const TILT = THREE.MathUtils.degToRad(30);
 const screenUp = (p: THREE.Vector3): number => p.y * Math.sin(TILT) - p.z * Math.cos(TILT);
 const toCamera = new THREE.Vector3(0, Math.cos(TILT), Math.sin(TILT));
+/** The obstacle's picture card and its square ground shadow, found by material name. */
+const partOf = (o: THREE.Object3D, ground: boolean): THREE.Mesh =>
+  o.children.find((c) => c instanceof THREE.Mesh && ((c.material as THREE.Material).name === 'garden-obstacle-ground') === ground) as THREE.Mesh;
+const card = (o: THREE.Object3D): THREE.Mesh => partOf(o, false);
 
 describe('garden obstacle pictures (the default)', () => {
   for (const kind of GARDEN_OBSTACLE_KINDS) {
@@ -84,8 +88,8 @@ describe('garden obstacle pictures (the default)', () => {
       const o = buildObstacle(kind);
       const meshes: THREE.Mesh[] = [];
       o.traverse((m) => (m instanceof THREE.Mesh ? meshes.push(m) : undefined));
-      expect(meshes).toHaveLength(1);
-      const g = meshes[0].geometry as THREE.BufferGeometry;
+      expect(meshes).toHaveLength(2);
+      const g = card(o).geometry as THREE.BufferGeometry;
       expect(g.index!.count / 3).toBe(2);
       // Square to the camera: every corner the same distance along the view direction.
       const pos = g.getAttribute('position');
@@ -104,7 +108,7 @@ describe('garden obstacle pictures (the default)', () => {
 
   it('the_object_foot_sits_on_the_cell_as_seen_from_the_camera', () => {
     for (const kind of GARDEN_OBSTACLE_KINDS) {
-      const g = (buildObstacle(kind).children[0] as THREE.Mesh).geometry as THREE.BufferGeometry;
+      const g = card(buildObstacle(kind)).geometry as THREE.BufferGeometry;
       const pos = g.getAttribute('position');
       const bottom = screenUp(new THREE.Vector3().fromBufferAttribute(pos, 0));
       const top = screenUp(new THREE.Vector3().fromBufferAttribute(pos, 3));
@@ -117,7 +121,7 @@ describe('garden obstacle pictures (the default)', () => {
 
   it('odd_turns_mirror_only_pictures_that_allow_it', () => {
     for (const kind of GARDEN_OBSTACLE_KINDS) {
-      const uv = (turn: number) => Array.from(((buildObstacle(kind, turn).children[0] as THREE.Mesh).geometry as THREE.BufferGeometry).getAttribute('uv').array);
+      const uv = (turn: number) => Array.from((card(buildObstacle(kind, turn)).geometry as THREE.BufferGeometry).getAttribute('uv').array);
       if (data.sprite.mirror[kind]) expect(uv(1)).not.toEqual(uv(0));
       else expect(uv(1)).toEqual(uv(0));
       expect(uv(2)).toEqual(uv(0));
@@ -125,10 +129,26 @@ describe('garden obstacle pictures (the default)', () => {
   });
 
   it('copies_share_one_material_per_kind_and_cast_no_shadow', () => {
-    const a = buildObstacle('stump').children[0] as THREE.Mesh;
-    const b = buildObstacle('stump', 3).children[0] as THREE.Mesh;
+    const a = card(buildObstacle('stump'));
+    const b = card(buildObstacle('stump', 3));
     expect(a.material).toBe(b.material);
     expect(a.castShadow).toBe(false);
+  });
+
+  it('every_obstacle_stands_in_one_shared_square_shadow_lying_flat_inside_its_tile', () => {
+    const tile = 0.96;
+    const grounds = GARDEN_OBSTACLE_KINDS.map((k) => partOf(buildObstacle(k), true));
+    for (const g of grounds) {
+      expect(g.material).toBe(grounds[0].material);
+      expect(g.castShadow).toBe(false);
+      const box = new THREE.Box3().setFromObject(g);
+      const size = box.getSize(new THREE.Vector3());
+      expect(size.y).toBeCloseTo(0, 5);
+      expect(box.min.y).toBeGreaterThan(0);
+      expect(size.x).toBeLessThanOrEqual(tile);
+      expect(size.z).toBeLessThanOrEqual(tile);
+      expect(size.x).toBeCloseTo(size.z, 5);
+    }
   });
 
   it('the_pictures_stay_small', () => {

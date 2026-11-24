@@ -48,7 +48,7 @@ COLOURED_SHADOW_LUM = 60   # bushes are never grey, so every grey-lavender pixel
 COLOURED_SHADOW_SAT = 0.25 # ... even a slightly tinted one (the leaves are far more saturated)
 # The one shadow every obstacle gets: small and tight under its foot. Shares of the object's width:
 # half-width, half-depth, how far up under the object its centre sits; strength at the centre; falloff.
-CONTACT = {'width': 0.5, 'depth': 0.075, 'under': 0.035, 'strength': 0.62, 'falloff': 3.0}
+CONTACT = {'width': 0.54, 'depth': 0.085, 'under': 0.035, 'strength': 0.78, 'falloff': 3.0}
 
 
 def load(name):
