@@ -88,7 +88,12 @@ describe('garden dirt tile (the owner\'s picture)', () => {
     }
   });
 
-  it('mirrors the picture on the second tile, keeping the grass on the near side', () => {
+  it('gives the same tile for alt, as the grass tile does (no checkerboard) unless picture.checker is on', () => {
+    expect(DIRT.picture.checker).toBe(false);
+    expect(block(true).geometry).toBe(block(false).geometry);
+  });
+
+  it('can mirror the picture for a checkerboard tile, keeping the grass on the near side', () => {
     const plain = vertices(dirtBlock(false, '#FFFFFF'));
     const mirrored = vertices(dirtBlock(true, '#FFFFFF'));
     for (let i = 0; i < plain.length; i++) {

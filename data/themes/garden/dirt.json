@@ -1,6 +1,7 @@
 {
   "$comment": "Garden theme board. Sizes in cells (1 cell = 56 px on the asset sheet), the same units as data/parts.json. Overview: design/themes/garden-board.md, dirt tile: design/themes/garden-board-dirt.md. Dirt tile (new tile type). Reference: 13-sheet-tile-dirt. Owner: the dirt tile session. 'picture' is the default tile (the owner's picture as a texture, cut by assets/turnflock/garden/board/dirt/cut.py); 'dirt' is the modelled alternative (buildDirtTileModelled).",
   "picture": {
+    "checker": false,
     "corner": 0.18,
     "cornerSteps": 8,
     "wallTop": 0.012,

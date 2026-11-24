@@ -103,15 +103,18 @@ export function dirtBlock(mirror: boolean, tint: string): THREE.BufferGeometry {
 /**
  * 1c. Dirt tile: the owner's picture `13-sheet-tile-dirt` on a plain rounded block: an earthen
  * floor in a frame of terracotta blocks, grass over the near corners. Same size and height as the
- * grass tile. `alt` is the checkerboard's second tile: a touch darker and mirrored left to right.
+ * grass tile. `alt` is kept for the contract but, as with the grass tile (the owner chose one tile
+ * everywhere, as in `01-board-full`), gives the same tile; `picture.checker: true` brings back a
+ * checkerboard second tile, a touch darker and mirrored left to right.
  * `style: 'modelled'` gives the earlier tile modelled in code instead (`buildDirtTileModelled`).
  * A new tile type: the game has no rule for it yet (see `design/themes/garden-board-dirt.md`).
  */
 export function buildDirtTile(alt = false, pegs = true, style: 'picture' | 'modelled' = 'picture'): THREE.Group {
   if (style === 'modelled') return buildDirtTileModelled(alt, pegs);
-  const tint = alt ? `#${new THREE.Color('#FFFFFF').multiplyScalar(P.altShade).getHexString()}` : '#FFFFFF';
+  const second = alt && P.checker;
+  const tint = second ? `#${new THREE.Color('#FFFFFF').multiplyScalar(P.altShade).getHexString()}` : '#FFFFFF';
   const tile = new THREE.Group();
-  tile.add(new THREE.Mesh(once(`dirt-picture-${alt ? 'alt' : 'main'}`, () => dirtBlock(alt, tint)), dirtMaterial));
+  tile.add(new THREE.Mesh(once(`dirt-picture-${second ? 'alt' : 'main'}`, () => dirtBlock(second, tint)), dirtMaterial));
   if (pegs) addPegs(tile, plainMaterial);
   return shadowed(tile);
 }

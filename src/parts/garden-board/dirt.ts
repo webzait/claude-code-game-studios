@@ -66,7 +66,7 @@ export function addDirtTileCards(sheet: HTMLElement): void {
       </div>
       <div class="gb-row three">
         ${figure(still(buildDirtTile(false, false), VIEWS.top, PX, 0.56), 'Bovenaanzicht')}
-        ${figure(still(buildDirtTile(true, false), VIEWS.quarter, PX, 0.62), 'Tweede tegel (dambord): iets donkerder, gespiegeld · driekwart')}
+        ${figure(still(buildDirtTile(false, false), VIEWS.quarter, PX, 0.62), 'Driekwart (overal dezelfde tegel, geen dambord)')}
         ${figure(still(buildDirtTileModelled(false, true), VIEWS.close, PX, 0.62), 'Ter vergelijking: de eerdere zandtegel, in code nagebouwd (<code>style: \'modelled\'</code>)')}
       </div>
       <p class="note">Het beeld van de eigenaar is het onderdeel: de bovenkant van <code>13-sheet-tile-dirt</code> (aarden vloer in een kader van terracotta blokjes, gras over de onderste hoeken) ligt als textuur op een eenvoudig afgerond blok, de voorwand uit het beeld loopt rond de zijkant. Uitgesneden met <code>assets/turnflock/garden/board/dirt/cut.py</code>: wit en grijze schaduw eruit, kleuren aan de rand doorgetrokken (geen halo), opgeschaald met Lanczos en licht verscherpt. Eén textuur, één materiaal: alle zandtegels op een bord samen één tekenopdracht. Kosten: ${fmt(tileCost.tris)} driehoeken, ${tileCost.draws} tekenopdracht (de nagebouwde: ${fmt(oldCost.tris)} en ${oldCost.draws}). Code: <code>src/render/parts/garden/dirt.ts</code>, maten: <code>data/themes/garden/dirt.json</code>. Het spel kent dit tegeltype nog niet; voorstellen in <code>design/themes/garden-board-dirt.md</code>.</p>`;

@@ -30,8 +30,10 @@ Part of the garden board (`design/themes/garden-board.md`). Reference: `13-sheet
 - **Light.** The picture is lit as the grass tiles are (standard material, same lights), so it sits
   in the same light as its neighbours. `picture.brightness` (1.05) brings its floor to the
   reference's colour under the parts page's light (measured: floor 204/121/55 in the reference).
-- **Checkerboard.** The second tile (`alt`) is 6% darker (`picture.altShade`) and mirrored left to
-  right, so the grass stays on the near side.
+- **No checkerboard.** The owner chose one grass tile everywhere, as in `01-board-full` (grass tile
+  session, 2026-11-24). The dirt tile follows: `alt` is kept in the signature but gives the same
+  tile. `picture.checker: true` brings back a second tile, 6% darker (`picture.altShade`) and
+  mirrored left to right so the grass stays on the near side.
 - **Loading.** The picture loads a moment after start-up. Until then the tile shows in a plain soil
   colour (`picture.fallback`); `dirtTileReady` (from `src/render/parts/garden/dirt.ts`) settles when
   the picture is on. In the game this is a flicker of a frame or two at most; anything that draws a
