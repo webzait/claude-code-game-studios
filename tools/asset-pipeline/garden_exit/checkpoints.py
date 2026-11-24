@@ -12,8 +12,8 @@ The corrected pictures are 1254x1254 on a WHITE background, so they are cut out 
    through them and stops at the stone's outline. The body is fully opaque.
 2. Outside the body (soft shadow, glow round the rays, the portal's beam above the stone) the
    picture is un-mixed from the white: "colour to alpha", the least alpha for which the colour is
-   reachable over white. Light stays light and half-transparent; the neutral shadow becomes a
-   half-transparent dark shadow.
+   reachable over white. Light stays light and half-transparent; the painted shadow is dropped
+   (the owner wants none, like the tile it replaces).
 3. The body's antialiased outline (a band of BAND px either side) is un-mixed between the body
    colour just inside and the outside layer just outside, so no white or grey rim is left.
 
@@ -48,6 +48,10 @@ BAND = 2
 # it: a gap this wide (px, across) in the light is closed with the alpha of the light on both sides,
 # and the colour there comes out near white, as painted.
 LIGHT_GAP_PX = 21
+# No painted shadow (owner, 2026-11-24: "geen schaduw", the tile it replaces has none). Outside the
+# body only light is kept: colour-to-alpha gives the neutral shadow a near-black colour, light a bright
+# one, so a pixel counts as light by the brightest channel of its un-mixed colour, ramped over these.
+LIGHT_FROM, LIGHT_TO = 60.0, 180.0
 # The white is 253-255: below this much darkening a pixel is background.
 NOISE = 3.0
 # In the output the stone is this many px wide: a cell is at most 53 CSS px on a phone at 3 device
@@ -96,6 +100,7 @@ def cut(rgb: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     out_a = np.where(gap, closed, out_a)
     unmixed = np.clip((rgb - 255.0 * (1 - out_a[..., None])) / np.maximum(out_a, 1e-4)[..., None], 0, 255)
     out_c = np.where(gap[..., None], unmixed, out_c)
+    out_a = out_a * np.clip((out_c.max(axis=2) - LIGHT_FROM) / (LIGHT_TO - LIGHT_FROM), 0, 1)
 
     # Nearest pixel BAND+1 px inside and outside the outline, for the band.
     deep_in = ndimage.binary_erosion(body, iterations=BAND + 1)
