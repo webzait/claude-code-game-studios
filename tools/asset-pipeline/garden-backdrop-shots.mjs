@@ -16,7 +16,7 @@ const css = readFileSync(`${DIR}/garden-scene.css`, 'utf8').replace(/url\('\.\/(
 // Same mapping as GARDEN_DECOR_ART in src/ui/themes/garden/gardenArt.ts.
 const art = {
   'sprig-tl': 'garden-branch.webp', 'tuft-tr': 'garden-clump-birdhouse.webp', 'back-l': 'garden-clump-rocks-left.webp',
-  'back-r': 'garden-clump-rocks-right.webp', 'front-l': 'garden-clump-birdhouse.webp', 'front-r': 'garden-bush-white.webp',
+  'back-r': 'garden-clump-rocks-right.webp', 'front-l': 'garden-corner-growth.webp', 'front-r': 'garden-bush-white.webp',
 };
 const decor = Object.fromEntries(Object.entries(art).map(([k, f]) => [k, dataUrl(f)]));
 const SIZES = (process.env.SIZES ?? '390x844,320x568,430x932,768x1024').split(',').map((s) => s.split('x').map(Number));

@@ -2,7 +2,7 @@
 """Build the garden backdrop, its foreground decor and its two props from the owner's pictures.
 
 Reads  data/themes/garden/backdrop.json (every crop, row and quality used here)
-       design/reference/turnflock/garden/{06,07,09,10}-*.png
+       design/reference/turnflock/garden/{06,07,09,10}-*.png, elements/hoekbegroeiing.png
 Writes src/ui/themes/garden/garden-scene.webp    rows 0..sceneRows of the backdrop, unchanged
        src/ui/themes/garden/garden-paving.webp   three rows of paving stones that repeat downwards
        src/ui/themes/garden/garden-*.webp        decor pieces and props, transparent
@@ -33,6 +33,11 @@ OUT.mkdir(parents=True, exist_ok=True)
 def load(name: str) -> np.ndarray:
     path = next(REF.glob(name + '*.png'))
     return np.asarray(Image.open(path).convert('RGB')).astype(float)
+
+
+def load_rgba(name: str) -> np.ndarray:
+    path = next(REF.glob(name + '*.png'))
+    return np.asarray(Image.open(path).convert('RGBA')).astype(float)
 
 
 def save_rgb(px: np.ndarray, name: str, quality: int) -> None:
@@ -237,6 +242,12 @@ def pieces() -> None:
     dec = CFG['decor']
     for name, p in dec['pieces'].items():
         x0, y0, x1, y1 = p['box']
+        if p['from'].startswith('elements/'):
+            # Already a transparent picture from the owner: crop, shade the foot, nothing else.
+            rgba = load_rgba(p['from'])[y0:y1, x0:x1]
+            rgba = with_shadow(trim(rgba, 14), blur=8, drop=6, opacity=0.3, squash=0.5, foot_rows=0.3)
+            save_rgba(rgba, name + '.webp', p['width'], dec['quality'])
+            continue
         px = load(p['from'])[y0:y1, x0:x1]
         if p['from'].startswith('10-'):
             rgba = trim(sky_cutout(px), 0)

@@ -142,15 +142,16 @@ export function addGardenBackdropCards(sheet: HTMLElement): void {
   // Decor: the pieces, the props, and the safety check.
   const pieces: [string, string, string][] = [
     [GARDEN_DECOR_PIECES.bushWhite, 'Ronde struik met witte bloemen', 'uit 06 · dichtbij, rechtsonder'],
-    [GARDEN_DECOR_PIECES.clumpBirdhouse, 'Bloemenperkje', 'voet van 07 zonder paal · dichtbij, linksonder; klein rechtsboven'],
+    [GARDEN_DECOR_PIECES.cornerGrowth, 'Hoekbegroeiing', 'elements/hoekbegroeiing van de eigenaar · dichtbij, linksonder, klimt langs de rand omhoog'],
+    [GARDEN_DECOR_PIECES.clumpBirdhouse, 'Bloemenperkje', 'voet van 07 zonder paal · klein, rechtsboven boven het bord'],
     [GARDEN_DECOR_PIECES.rocksLeft, 'Stenen met roze bloem', 'voet van 09 links zonder palen · verder weg, links onder het bord'],
     [GARDEN_DECOR_PIECES.rocksRight, 'Stenen met roze bloem (2)', 'voet van 09 rechts zonder palen · verder weg, rechts'],
     [GARDEN_DECOR_PIECES.branch, 'Boomtak', 'linksboven uit 10 · hangt in de bovenhoek'],
   ];
   const decorBytes = pieces.reduce((n, [src]) => n + bytes(src), 0);
-  card(sheet, 'garden-decor-pieces', 'Tuinthema · losse randstukken', `5 stukken, samen ${kb(decorBytes)} (WebP met transparantie)`,
+  card(sheet, 'garden-decor-pieces', 'Tuinthema · losse randstukken', `6 stukken, samen ${kb(decorBytes)} (WebP met transparantie)`,
     `<div class="tf-decor-pieces tf-garden-pieces">${pieces.map(([src, name, role]) => `<figure><img src="${src}" alt="" /><figcaption><b>${name}</b><br />${role}<br />${kb(bytes(src))}</figcaption></figure>`).join('')}</div>`,
-    'Alles uit de eigen beelden van de eigenaar: witte achtergrond en de geschilderde vloerschaduw weg, de houten paal van vogelhuisje en boog weggehaald, een zachte schaduw onder elk stuk ingebakken (zoals bij de struiken van het robotthema). Grassprietjes zitten in de perkjes zelf.');
+    'Alles uit de eigen beelden van de eigenaar. De hoekbegroeiing kwam al los en transparant aan en is alleen bijgesneden en verkleind. Bij de andere: witte achtergrond en de geschilderde vloerschaduw weg, de houten paal van vogelhuisje en boog weggehaald, een zachte schaduw onder elk stuk ingebakken (zoals bij de struiken van het robotthema). Grassprietjes zitten in de perkjes zelf.');
   const propBytes = bytes(GARDEN_PROPS.birdhouse) + bytes(GARDEN_PROPS.flowerArch);
   card(sheet, 'garden-props', 'Tuinthema · vogelhuisje en bloemenboog los', `2 stukken, samen ${kb(propBytes)}`,
     `<div class="tf-decor-pieces tf-garden-pieces"><figure><img src="${GARDEN_PROPS.birdhouse}" alt="" /><figcaption><b>Vogelhuisje</b> (07) · ${kb(bytes(GARDEN_PROPS.birdhouse))}</figcaption></figure><figure><img src="${GARDEN_PROPS.flowerArch}" alt="" /><figcaption><b>Bloemenboog</b> (09) · ${kb(bytes(GARDEN_PROPS.flowerArch))}</figcaption></figure></div>`,

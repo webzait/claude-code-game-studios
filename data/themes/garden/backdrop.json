@@ -248,6 +248,16 @@
           250
         ],
         "width": 360
+      },
+      "garden-corner-growth": {
+        "from": "elements/hoekbegroeiing",
+        "box": [
+          330,
+          130,
+          1170,
+          860
+        ],
+        "width": 560
       }
     },
     "quality": 82
