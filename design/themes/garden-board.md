@@ -32,10 +32,9 @@ the floor at y = 0, the tile top at 0.2, so a chick stands where a robot stands.
   shoulder (the fuzzy outline seen from above) and one up the side. The top is a 512 px
   texture painted at start-up: mottled lime, fine fur strokes, six faint clovers. The dark tile
   is 10% darker and has its texture turned half round.
-- **Glowing tile.** The ordinary grass tile with a flat patch of light on top, painted from a
-  profile measured from `12-sheet-tile-highlight`: a cream line on the tile outline, a yellow
-  halo outside, yellow fading inward. Its material is its own, so it can pulse (`glow.pulse`).
-  Details, and why the glow is code and not the cut-out picture: `garden-highlight.md`.
+- **Glowing tile.** The grass tile a little brighter and yellower, with a flat patch of additive
+  light on top: a bright yellow-green line on the tile outline fading outward. Its material is
+  its own, so it can pulse (`glow.pulse`).
 - **Dirt tile.** A soil floor, sunk 0.045 into a frame of rounded clay blocks (three per side,
   one per corner), short grass round the foot and tufts over the near edge.
 - **Rim.** Three bundles of four thin twigs, twisted round the rim's centre line (a rounded
@@ -81,9 +80,10 @@ keeps an 8×8 board under 70,000. The textures are painted at start-up at up to 
 
 ## Hint in the garden (proposal)
 
-In place of the robot theme's arrows, the cells the chicks will walk to glow (`hintGlowCells`,
-`buildTileGlow`, pulsing with `glowPulse`); the rule of the hint does not change. Worked out, with
-an example board: `garden-highlight.md`.
+The robot hint draws arrows and arcs on the board. In the garden the proposal is to light the
+cells the flock will step onto with the glowing tile's glow (`hintGlowCells` gives them from the
+engine's preview events; a blocked chick lights nothing) and keep the turn arcs for chicks that
+only turn. The rule of the hint does not change, only its picture.
 
 ## Dirt tile: what it could mean (proposals — the rules are unchanged)
 

@@ -8,9 +8,9 @@ distance to that outline (negative inside). Then:
   on the line: opaque, its own colour;
   inside the line: the yellow fading into the green top, alpha from the red channel against
   the green of the top, so the rim can lie on any tile.
-Writes glow-rim.png (square, the tile outline mapped onto body = 0.9 cell, reach REACH cells
+Writes glow-rim.webp (square, the tile outline mapped onto body = 0.9 cell, reach REACH cells
 round it) and prints the profile (colour and alpha against d, in cells) that highlight.json holds.
-Run: python3 -I assets/turnflock/garden/board/highlight/cutout.py <repo root>
+Run from the repo root: python3 -I assets/turnflock/garden/board/highlight/cutout.py .
 """
 import json
 import sys
@@ -21,7 +21,7 @@ from PIL import Image
 
 root = Path(sys.argv[1] if len(sys.argv) > 1 else '.')
 src = root / 'design/reference/turnflock/garden/12-sheet-tile-highlight.png'
-out = Path(__file__).with_name('glow-rim.png')
+out = Path(__file__).with_name('glow-rim.webp')
 
 # Line centre: left 10.5, right 99, top 15, bottom 98.5 px; corner radius from the diagonal.
 FIT = dict(cx=54.75, cy=56.75, hx=44.25, hy=41.75, r=23.0)
@@ -31,7 +31,7 @@ HALF_LINE = 2.2     # source px
 HALO = np.array([236, 236, 40.0])
 INNER = np.array([240, 246, 20.0])
 TOP_R = 132.0       # red of the green top, inside the inner glow
-SIZE = 128          # about the source's own resolution: 0.9 cell = 88 px there
+OUT_PX = 176        # twice the largest phone size: a 65 px tile spans 1.2/0.9 x 65 = 87 px with its glow
 
 
 def sdf(x, y):
@@ -55,11 +55,21 @@ alpha[out_m] = np.clip((255 - a[..., 2][out_m]) / (255 - HALO[2]), 0, 1)
 rgb[out_m] = HALO
 alpha[line_m] = 1
 rgb[line_m] = a[line_m]
-alpha[in_m] = np.clip((a[..., 0][in_m] - TOP_R) / (INNER[0] - TOP_R), 0, 1)
+# The green under the inner glow is not even (darker at the top, lighter lower down), so the
+# inner glow is measured against the green a little further in along the outline's normal.
+eps = 0.5
+nx = (sdf(xs + eps, ys) - sdf(xs - eps, ys)) / (2 * eps)
+ny = (sdf(xs, ys + eps) - sdf(xs, ys - eps)) / (2 * eps)
+depth = 15 + d  # how far further in the reference green lies
+bx = np.clip(np.round(xs - 0.5 - nx * depth).astype(int), 0, w - 1)
+by = np.clip(np.round(ys - 0.5 - ny * depth).astype(int), 0, h - 1)
+base_r = a[by, bx, 0]
+alpha[in_m] = np.clip((a[..., 0] - base_r)[in_m] / np.maximum(INNER[0] - base_r, 1)[in_m], 0, 1)
 rgb[in_m] = INNER
 alpha[d < -12] = 0
-# Where the line is a little wider than the fit (bottom and right), keep its cream, not a gap.
-wide = (np.abs(d) < 4.5) & (a.min(2) > 235)
+# Where the line is a little wider than the fit, and where it blends into the halo, it is opaque
+# in the picture (cream into yellow): keep its own colour there, not a gap.
+wide = (np.abs(d) < 4.5) & ((a.min(2) > 235) | ((d > 0) & (a[..., 2] > 60)))
 alpha[wide] = 1
 rgb[wide] = a[wide]
 # Soften the hard switch at the line's edges by one pixel.
@@ -76,12 +86,16 @@ for lo in np.arange(-12, 13, 1.0):
     profile.append([round((lo + 0.5) / px_per_cell, 3), *[int(round(v)) for v in c], round(float(alpha[m].mean()), 2)])
 print(json.dumps(profile))
 
-# Square texture: tile units u, v in [-span/2, span/2] mapped onto the fitted outline.
+# Square texture: tile units u, v in [-span/2, span/2]. Every quadrant is taken from the picture's
+# top-right quadrant, mirrored: that one is whole (the halo runs off the picture on the left, and
+# the line is wider at the bottom), so the rim comes out even all round. Sampled 4x finer, then
+# scaled down, so the edge is smooth.
+FINE = OUT_PX * 4
 span = BODY + 2 * REACH
-uu = ((np.arange(SIZE) + 0.5) / SIZE - 0.5) * span
+uu = ((np.arange(FINE) + 0.5) / FINE - 0.5) * span
 U, V = np.meshgrid(uu, uu)
-sx = FIT['cx'] + U / (BODY / 2) * FIT['hx'] - 0.5
-sy = FIT['cy'] + V / (BODY / 2) * FIT['hy'] - 0.5
+sx = FIT['cx'] + np.abs(U) / (BODY / 2) * FIT['hx'] - 0.5
+sy = FIT['cy'] - np.abs(V) / (BODY / 2) * FIT['hy'] - 0.5
 rgba = np.dstack([rgb, alpha * 255])
 
 
@@ -95,9 +109,13 @@ def sample(img, x, y):
 
 
 tex = sample(rgba, sx, sy)
-# Beyond the source's left edge (x < 0) and the neighbour on the right there is no glow to copy:
-# mirror the far side of the outline instead (the glow is symmetric).
-dd = sdf(sx + 0.5, sy + 0.5)
-tex[dd > 11.5, 3] = 0
-Image.fromarray(np.clip(tex, 0, 255).astype(np.uint8), 'RGBA').save(out, optimize=True)
+tex[sdf(sx + 0.5, sy + 0.5) > 11.5, 3] = 0
+# Premultiply for the downscale, so no dark or white fringe creeps in where alpha is low.
+pm = tex.copy()
+pm[..., :3] *= pm[..., 3:4] / 255
+big = Image.fromarray(np.clip(pm, 0, 255).astype(np.uint8), 'RGBA')
+small = np.asarray(big.resize((OUT_PX, OUT_PX), Image.LANCZOS)).astype(float)
+a_ = small[..., 3:4]
+small[..., :3] = np.where(a_ > 0, small[..., :3] * 255 / np.maximum(a_, 1), 0)
+Image.fromarray(np.clip(small, 0, 255).astype(np.uint8), 'RGBA').save(out, 'WEBP', quality=90, alpha_quality=100, method=6)
 print('wrote', out, out.stat().st_size, 'bytes')

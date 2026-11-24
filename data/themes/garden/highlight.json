@@ -1,6 +1,8 @@
 {
-  "$comment": "Garden theme board. Sizes in cells (1 cell = 56 px on the asset sheet), the same units as data/parts.json. Overview: design/themes/garden-board.md, this part: design/themes/garden-highlight.md. Glowing tile and the hint glow. Reference: 12-sheet-tile-highlight. Owner: the glowing tile session.",
+  "$comment": "Garden theme board. Sizes in cells (1 cell = 56 px on the asset sheet), the same units as data/parts.json. Overview: design/themes/garden-board.md, this part: design/themes/garden-board-highlight.md. Glowing tile and the hint glow. Reference: 12-sheet-tile-highlight. Owner: the glowing tile session.",
   "glow": {
+    "$style": "The default look of buildTileGlow and buildHighlightTile: 'picture' = the glow rim cut out of the owner's picture (cutout.file), 'painted' = painted in code from profile.",
+    "style": "picture",
     "$profile": "Measured from 12-sheet-tile-highlight by assets/turnflock/garden/board/highlight/cutout.py: [distance to the tile outline in cells (negative inside), colour, opacity]. Inside: yellow fading into the grass; on the outline: a cream line 0.04 wide; outside: a yellow halo.",
     "profile": [
       [-0.125, "#F0F614", 0],
@@ -10,8 +12,9 @@
       [-0.024, "#F8FA8C", 1],
       [-0.016, "#FDFDE4", 1],
       [0.016, "#FEFEF2", 1],
-      [0.026, "#F2F267", 0.9],
-      [0.036, "#ECEC28", 0.8],
+      [0.026, "#F9F9B6", 1],
+      [0.037, "#F2F260", 0.97],
+      [0.047, "#EDED39", 0.85],
       [0.06, "#ECEC28", 0.7],
       [0.09, "#ECEC28", 0.42],
       [0.13, "#ECEC28", 0.14],
@@ -27,8 +30,8 @@
     }
   },
   "cutout": {
-    "$comment": "The glow rim cut out of the reference, kept for comparison only (parts page). Not used in the game: see design/themes/garden-highlight.md, 'Picture or code'.",
-    "file": "assets/turnflock/garden/board/highlight/glow-rim.png",
-    "pixels": 128
+    "$comment": "The glow rim cut out of 12-sheet-tile-highlight by assets/turnflock/garden/board/highlight/cutout.py: a square body + 2 * glow.reach cells wide, transparent WebP. The 'picture' style. See design/themes/garden-board-highlight.md.",
+    "file": "assets/turnflock/garden/board/highlight/glow-rim.webp",
+    "pixels": 176
   }
 }

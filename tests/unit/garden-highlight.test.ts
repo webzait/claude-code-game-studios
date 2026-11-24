@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import TILE from '../../data/themes/garden/tile.json';
 import HL from '../../data/themes/garden/highlight.json';
 import { buildFloorTile, buildHighlightTile, buildTileGlow, hintGlowCells } from '../../src/render/parts/garden/board';
-import { glowAt, glowPulse } from '../../src/render/parts/garden/highlight';
+import { glowAt, glowPictureSource, glowPulse } from '../../src/render/parts/garden/highlight';
 import { boxOf, outwardShare } from './garden-helpers';
 
 describe('garden glowing tile', () => {
@@ -26,6 +26,14 @@ describe('garden glowing tile', () => {
       expect(total).toBeGreaterThan(0);
       expect(agree / total).toBeGreaterThan(0.97);
     }
+  });
+
+  it("shows the owner's picture by default, the painted glow only when asked", () => {
+    expect(buildTileGlow().userData.style).toBe('picture');
+    expect((buildHighlightTile().userData.glow as THREE.Mesh).userData.style).toBe('picture');
+    expect(buildTileGlow('painted').userData.style).toBe('painted');
+    expect(buildHighlightTile(true, false, 'painted').userData.glow.userData.style).toBe('painted');
+    expect(glowPictureSource).toMatch(/glow-rim\.webp$/);
   });
 
   it('is the plain grass tile with the glow on it', () => {
