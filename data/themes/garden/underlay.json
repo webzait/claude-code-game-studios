@@ -1,0 +1,18 @@
+{
+  "$comment": "Garden theme board. Sizes in cells (1 cell = 56 px on the asset sheet), the same units as data/parts.json. Overview: design/themes/garden-board.md. Underlay and the grass bed between the tiles. Reference: 01-board-full. Owner: the rim session.",
+  "underlay": {
+    "height": 0.22,
+    "lip": -0.12,
+    "bedRepeat": 1.0,
+    "texture": 512,
+    "seed": 7,
+    "edgeGrass": 0.06
+  },
+  "colors": {
+    "bed": "#5E9E10",
+    "bedDark": "#3E7A06",
+    "bedLight": "#8CC428",
+    "soil": "#6B4220",
+    "soilDark": "#4A2C14"
+  }
+}

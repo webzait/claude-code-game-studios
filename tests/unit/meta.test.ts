@@ -152,7 +152,7 @@ describe('save', () => {
     expect(save.best).toEqual({ [ids[0]]: 7 });
     expect(save.coins).toBe(73);
     expect(save.paid).toEqual({ [ids[0]]: 26 });
-    expect(save.settings).toEqual({ mute: true, music: true, reduceMotion: true, colourShapes: false });
+    expect(save.settings).toEqual({ mute: true, music: true, reduceMotion: true, colourShapes: false, theme: 'garden', themeChosen: false });
     expect(save.lab.moveSlack).toBe(3);
     expect(save.lab.unlockAll).toBe(true);
   });
@@ -176,7 +176,7 @@ describe('save', () => {
     const save = migrate({ version: 4, best: { [ids[0]]: 7 }, coins: 73, settings: { mute: true, reduceMotion: false, vibration: false }, lab: { unlockAll: true } }, ids);
     expect(save.best).toEqual({ [ids[0]]: 7 });
     expect(save.coins).toBe(73);
-    expect(save.settings).toEqual({ mute: true, music: true, reduceMotion: false, colourShapes: false });
+    expect(save.settings).toEqual({ mute: true, music: true, reduceMotion: false, colourShapes: false, theme: 'garden', themeChosen: false });
     expect(save.lab.unlockAll).toBe(true);
   });
 
@@ -186,7 +186,7 @@ describe('save', () => {
     expect(save.best).toEqual({ [ids[0]]: 7 });
     expect(save.coins).toBe(73);
     expect(save.paid).toEqual({ [ids[0]]: 26 });
-    expect(save.settings).toEqual({ mute: true, music: true, reduceMotion: true, colourShapes: false });
+    expect(save.settings).toEqual({ mute: true, music: true, reduceMotion: true, colourShapes: false, theme: 'garden', themeChosen: false });
     expect(save.lab.moveSlack).toBe(3);
     expect(defaultSave().settings.colourShapes).toBe(false);
   });

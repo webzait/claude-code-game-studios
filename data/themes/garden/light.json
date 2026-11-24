@@ -1,0 +1,11 @@
+{
+  "_note": "Light on the 3D board in the garden theme: warm sun, sky light from above, green bounce from the lawn. Same keys as ROBOT_LIGHT in src/render/themes.ts; a key left out keeps the robot value. See design/themes.md.",
+  "sky": "#FFF7E0",
+  "ground": "#8CC063",
+  "ambient": 0.86,
+  "sun": 1.7,
+  "sunColor": "#FFF2D2",
+  "reflections": 0.12,
+  "shadow": 0.3,
+  "shadowColor": "#2E5A1E"
+}

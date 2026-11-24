@@ -20,6 +20,12 @@ import { addCoinCards, toolButton, toolTray, type ToolName } from './coins';
 import coinIcon from '../../assets/turnflock/ui/coin.webp';
 import extraMovesIcon from '../../assets/turnflock/ui/extra-moves.webp';
 import { addSettingsCards } from './settings';
+import { addGardenObstacleCards } from './garden-obstacles';
+import { addGardenBoardCards } from './garden-board/index';
+import { addGardenBackdropCards } from './gardenBackdrop';
+import { addGardenLevelCards } from './gardenLevels';
+import { addGardenEffectCards } from './gardenEffects';
+import { addGardenExitCards } from './garden-exit';
 
 /**
  * The parts sheet: every game element built on its own and shown from the
@@ -618,6 +624,9 @@ for (const [cols, rows] of [[5, 5], [6, 6], [8, 8], [4, 7]] as const) {
   });
 }
 
+// Garden theme: backdrop, edge decor and the loose birdhouse and arch (src/parts/gardenBackdrop.ts).
+addGardenBackdropCards(document.getElementById('sheet')!);
+
 // Coin controls: counter, plus button, price tags, reward and the icon at small sizes.
 addCoinCards(document.getElementById('sheet')!);
 
@@ -1041,5 +1050,16 @@ addCoinCards(document.getElementById('sheet')!);
 
 // The settings screen and its controls (src/parts/settings.ts).
 addSettingsCards(document.getElementById('sheet')!);
+void addGardenObstacleCards(document.getElementById('sheet')!);
+
+// The garden theme's board (src/parts/garden-board/).
+addGardenBoardCards(document.getElementById('sheet')!);
+addGardenLevelCards(document.getElementById('sheet')!);
+
+// Garden theme: the board effects (src/parts/gardenEffects.ts).
+addGardenEffectCards(document.getElementById('sheet')!);
+
+// Garden theme: exit, gazebo goal and special tiles (src/parts/garden-exit.ts).
+void addGardenExitCards(document.getElementById('sheet')!);
 
 document.body.dataset.ready = 'true';

@@ -1,0 +1,281 @@
+{
+  "_doc": "Garden backdrop and decor (design/themes/garden-backdrop.md). Read by tools/asset-pipeline/build-garden-backdrop.py and by src/ui/themes/garden/backdropLayout.ts; the CSS in src/ui/themes/garden/garden-scene.css repeats the layout numbers and a unit test keeps them equal.",
+  "source": {
+    "backdrop": "design/reference/turnflock/garden/10-backdrop-garden.png",
+    "width": 941,
+    "height": 1672
+  },
+  "scene": {
+    "_doc": "Rows 0..sceneRows of the owner's backdrop, unchanged. anchorRow is the row that lands on the top edge of the board: the lawn just in front of the birdhouse posts and the arch, so birdhouses, gazebo and arch stand in the strip above the board.",
+    "sceneRows": 1412,
+    "anchorRow": 700,
+    "lawnEdgeRow": 995,
+    "quality": 74
+  },
+  "paving": {
+    "_doc": "Three rows of paving stones (rows pavingTop..pavingTop+period) repeat downwards under the scene. The top blend band makes the tile continue the scene's last row and itself.",
+    "pavingTop": 1180,
+    "period": 232,
+    "blend": 28,
+    "quality": 76
+  },
+  "sky": {
+    "_doc": "Fill above the scene picture on screens squat enough to show it; the colours of the picture's top rows.",
+    "top": "#1C8EE2",
+    "bottom": "#159CFD"
+  },
+  "decor": {
+    "_doc": "Foreground pieces cut from the owner's single-object pictures (white background removed, wooden posts removed from the plant bases). width = output width in pixels. erase = polygons in the source picture's pixels cleared by hand: bits of vine and post left at the crop's top edge.",
+    "pieces": {
+      "garden-bush-white": {
+        "from": "06-bush-flowers",
+        "box": [
+          200,
+          220,
+          1010,
+          960
+        ],
+        "width": 520
+      },
+      "garden-clump-birdhouse": {
+        "from": "07-birdhouse",
+        "box": [
+          360,
+          860,
+          880,
+          1160
+        ],
+        "width": 480,
+        "erase": [
+          [
+            [
+              528,
+              860
+            ],
+            [
+              590,
+              860
+            ],
+            [
+              590,
+              912
+            ],
+            [
+              528,
+              912
+            ]
+          ],
+          [
+            [
+              688,
+              860
+            ],
+            [
+              724,
+              860
+            ],
+            [
+              724,
+              874
+            ],
+            [
+              688,
+              874
+            ]
+          ]
+        ]
+      },
+      "garden-clump-rocks-left": {
+        "from": "09-flower-arch",
+        "box": [
+          80,
+          850,
+          420,
+          1130
+        ],
+        "width": 360,
+        "erase": [
+          [
+            [
+              168,
+              850
+            ],
+            [
+              198,
+              850
+            ],
+            [
+              198,
+              898
+            ],
+            [
+              168,
+              898
+            ]
+          ],
+          [
+            [
+              266,
+              850
+            ],
+            [
+              298,
+              850
+            ],
+            [
+              298,
+              926
+            ],
+            [
+              266,
+              926
+            ]
+          ],
+          [
+            [
+              322,
+              850
+            ],
+            [
+              384,
+              850
+            ],
+            [
+              384,
+              932
+            ],
+            [
+              322,
+              932
+            ]
+          ]
+        ]
+      },
+      "garden-clump-rocks-right": {
+        "from": "09-flower-arch",
+        "box": [
+          820,
+          850,
+          1180,
+          1130
+        ],
+        "width": 360,
+        "erase": [
+          [
+            [
+              826,
+              850
+            ],
+            [
+              930,
+              850
+            ],
+            [
+              930,
+              904
+            ],
+            [
+              880,
+              912
+            ],
+            [
+              826,
+              906
+            ]
+          ],
+          [
+            [
+              944,
+              850
+            ],
+            [
+              968,
+              850
+            ],
+            [
+              968,
+              912
+            ],
+            [
+              944,
+              912
+            ]
+          ],
+          [
+            [
+              1024,
+              850
+            ],
+            [
+              1056,
+              850
+            ],
+            [
+              1056,
+              880
+            ],
+            [
+              1024,
+              880
+            ]
+          ],
+          [
+            [
+              1104,
+              850
+            ],
+            [
+              1146,
+              850
+            ],
+            [
+              1146,
+              870
+            ],
+            [
+              1104,
+              870
+            ]
+          ]
+        ]
+      },
+      "garden-branch": {
+        "from": "10-backdrop-garden",
+        "box": [
+          0,
+          0,
+          360,
+          250
+        ],
+        "width": 360
+      }
+    },
+    "quality": 82
+  },
+  "props": {
+    "_doc": "The two backdrop props as loose pictures, for layers and other screens.",
+    "pieces": {
+      "garden-birdhouse": {
+        "from": "07-birdhouse",
+        "box": [
+          300,
+          40,
+          960,
+          1170
+        ],
+        "width": 440
+      },
+      "garden-flower-arch": {
+        "from": "09-flower-arch",
+        "box": [
+          80,
+          30,
+          1180,
+          1130
+        ],
+        "width": 640
+      }
+    },
+    "quality": 82
+  }
+}
