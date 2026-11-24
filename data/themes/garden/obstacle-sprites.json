@@ -5,73 +5,73 @@
       "file": "rock.webp",
       "px": [
         224,
-        177
+        197
       ],
-      "bytes": 8034,
-      "objectLeft": 0.0835,
-      "objectRight": 0.9165,
-      "objectTop": 0.0066,
-      "foot": 0.9339
+      "bytes": 7360,
+      "objectLeft": 0.0062,
+      "objectRight": 0.9948,
+      "objectTop": 0.007,
+      "foot": 0.993
     },
     "rockMossLight": {
       "file": "rock-moss-light.webp",
       "px": [
         224,
-        168
+        187
       ],
-      "bytes": 8784,
-      "objectLeft": 0.0835,
-      "objectRight": 0.9165,
-      "objectTop": 0.0072,
-      "foot": 0.9305
+      "bytes": 8518,
+      "objectLeft": 0.0053,
+      "objectRight": 0.9947,
+      "objectTop": 0.0077,
+      "foot": 0.9923
     },
     "rockMossy": {
       "file": "rock-mossy.webp",
       "px": [
         224,
-        171
+        191
       ],
-      "bytes": 10118,
-      "objectLeft": 0.0833,
-      "objectRight": 0.9167,
-      "objectTop": 0.0055,
-      "foot": 0.9324
+      "bytes": 10538,
+      "objectLeft": 0.005,
+      "objectRight": 0.995,
+      "objectTop": 0.0058,
+      "foot": 0.9942
     },
     "stump": {
       "file": "stump.webp",
       "px": [
         224,
-        174
+        191
       ],
-      "bytes": 12252,
-      "objectLeft": 0.0726,
-      "objectRight": 0.9171,
-      "objectTop": 0.0051,
-      "foot": 0.9323
+      "bytes": 13294,
+      "objectLeft": 0.0056,
+      "objectRight": 0.9953,
+      "objectTop": 0.0055,
+      "foot": 0.9945
     },
     "bushWhite": {
       "file": "bush-white.webp",
       "px": [
         224,
-        181
+        202
       ],
-      "bytes": 13558,
-      "objectLeft": 0.084,
-      "objectRight": 0.916,
-      "objectTop": 0.0065,
-      "foot": 0.935
+      "bytes": 14292,
+      "objectLeft": 0.0062,
+      "objectRight": 0.995,
+      "objectTop": 0.0069,
+      "foot": 0.9972
     },
     "bushPink": {
       "file": "bush-pink.webp",
       "px": [
         224,
-        181
+        202
       ],
-      "bytes": 13504,
-      "objectLeft": 0.084,
-      "objectRight": 0.916,
-      "objectTop": 0.0065,
-      "foot": 0.935
+      "bytes": 14418,
+      "objectLeft": 0.0062,
+      "objectRight": 0.995,
+      "objectTop": 0.0069,
+      "foot": 0.9972
     }
   },
   "plants": {

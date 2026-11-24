@@ -112,59 +112,9 @@ export function spriteGeometry(kind: GardenObstacleKind, mirrored = false, tilt:
   return g;
 }
 
-let groundMaterial: THREE.MeshBasicMaterial | null = null;
-
-/**
- * The soft square shadow every obstacle stands in: a rounded square the shape
- * of the tile, darkest in the middle and fading out before the tile edge.
- * Computed in code (no picture), shared by every obstacle.
- */
-function groundShadowMaterial(): THREE.MeshBasicMaterial {
-  if (groundMaterial) return groundMaterial;
-  const G = data.sprite.ground;
-  const n = 128;
-  const pixels = new Uint8Array(n * n * 4);
-  const [r, g, b] = new THREE.Color(G.color).toArray().map((v) => Math.round(v * 255));
-  const half = 0.5;
-  const radius = G.radius / G.size;
-  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
-    // Distance inside the rounded square (0 at its edge, growing inwards), in shares of the patch.
-    const px = Math.abs((x + 0.5) / n - 0.5);
-    const py = Math.abs((y + 0.5) / n - 0.5);
-    const qx = px - (half - radius);
-    const qy = py - (half - radius);
-    const outside = Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - radius;
-    const t = Math.min(1, Math.max(0, -outside / G.softness));
-    const a = G.strength * t * t * (3 - 2 * t);
-    const k = (y * n + x) * 4;
-    pixels[k] = r;
-    pixels[k + 1] = g;
-    pixels[k + 2] = b;
-    pixels[k + 3] = Math.round(a * 255);
-  }
-  const map = new THREE.DataTexture(pixels, n, n, THREE.RGBAFormat);
-  map.colorSpace = THREE.SRGBColorSpace;
-  map.magFilter = THREE.LinearFilter;
-  map.minFilter = THREE.LinearMipmapLinearFilter;
-  map.generateMipmaps = true;
-  map.needsUpdate = true;
-  groundMaterial = new THREE.MeshBasicMaterial({ map, transparent: true, depthWrite: false, toneMapped: false });
-  groundMaterial.name = 'garden-obstacle-ground';
-  return groundMaterial;
-}
-
-/** The flat square patch under an obstacle, lying just on the tile top, `ground.size` cells across. */
-export function groundGeometry(): THREE.BufferGeometry {
-  const G = data.sprite.ground;
-  const g = new THREE.PlaneGeometry(G.size, G.size);
-  g.rotateX(-Math.PI / 2);
-  g.translate(0, G.lift, 0);
-  return g;
-}
-
 /**
  * One garden obstacle, filling one cell: the owner's picture on a card facing
- * the game camera, standing in a soft square shadow the shape of the tile, to be placed on the floor tile at the cell centre exactly
+ * the game camera, to be placed on the floor tile at the cell centre exactly
  * like the robot theme's `buildObstacle()`. `kind` picks the picture (default:
  * the plain rock); an odd `turn` mirrors the pictures that allow it, so
  * neighbouring copies differ (`chooseObstacles` picks both per cell). The
@@ -173,16 +123,11 @@ export function groundGeometry(): THREE.BufferGeometry {
 export function buildObstacle(kind: GardenObstacleKind = 'rock', turn = 0): THREE.Group {
   const mirrored = turn % 2 === 1 && data.sprite.mirror[kind];
   const mesh = new THREE.Mesh(spriteGeometry(kind, mirrored), material(kind));
-  // The picture's shadow is drawn in; a flat card or patch would cast a wrong one.
+  // No shadow under an obstacle (owner's choice); a flat card would cast a wrong one anyway.
   mesh.castShadow = false;
   mesh.receiveShadow = false;
-  // The square patch makes the whole tile read as taken, although the object itself is round.
-  const ground = new THREE.Mesh(groundGeometry(), groundShadowMaterial());
-  ground.castShadow = false;
-  ground.receiveShadow = false;
-  ground.renderOrder = -1;
   const group = new THREE.Group();
-  group.add(ground, mesh);
+  group.add(mesh);
   group.userData.kind = kind;
   return group;
 }

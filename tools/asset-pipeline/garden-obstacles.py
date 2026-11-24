@@ -4,7 +4,7 @@
 Reads  design/reference/turnflock/garden/25-rock-hd.webp, 26-rock-moss-light-hd.webp,
        27-rock-mossy-hd.webp, 28-stump-hd.webp (already cut out by the owner),
        06-bush-flowers.png, 17-sheet-bushes-plants.png
-Writes assets/turnflock/garden/obstacles/*.webp   (transparent, baked shadow kept)
+Writes assets/turnflock/garden/obstacles/*.webp   (transparent, no shadow)
        data/themes/garden/obstacle-sprites.json   (size and foot of each picture)
 
 The owner's picture is the part: nothing is drawn. Per picture:
@@ -13,14 +13,13 @@ The owner's picture is the part: nothing is drawn. Per picture:
    background-like pixels (so white flowers inside the bush stay solid).
 3. Inside the object alpha is 1. On its outer ring alpha and colour are
    un-mixed from the background (clean edge, no white or grey halo).
-4. Outside the object, the soft baked shadow is kept as a semi-transparent
-   dark lavender, so the piece still sits on the tile.
+4. The soft baked shadow under the object is recognised and left out
+   (cut(keep_shadow=0)); cut() can still keep it as semi-transparent lavender.
 5. Cropped, scaled with premultiplied alpha (no dark fringe) and saved as WebP.
 
 The three rocks and the stump come already cut out (transparent, no shadow):
-their own edge is kept. Every obstacle, the bushes included (their wide baked
-shadow is dropped), gets the same small lavender shadow right under its foot
-(CONTACT), so it sits on its tile. The pink bush is made from 06-bush-flowers by retinting its white
+their own edge is kept. No obstacle has a shadow under it (owner's choice): the
+bushes' baked shadow is dropped too. The pink bush is made from 06-bush-flowers by retinting its white
 flowers pink and lilac, as on 17-sheet-bushes-plants, because the pink bush
 exists only at 83 px there; the smallest flower stays white, as on the sheet.
 
@@ -46,9 +45,6 @@ SHADOW_LUM = 172       # for a grey object (default of cut()): baked-shadow pixe
 DARK_FOOT = 80         # ... and a grey object's foot line is darker than this
 COLOURED_SHADOW_LUM = 60   # bushes are never grey, so every grey-lavender pixel low down is shadow
 COLOURED_SHADOW_SAT = 0.25 # ... even a slightly tinted one (the leaves are far more saturated)
-# The one shadow every obstacle gets: small and tight under its foot. Shares of the object's width:
-# half-width, half-depth, how far up under the object its centre sits; strength at the centre; falloff.
-CONTACT = {'width': 0.54, 'depth': 0.085, 'under': 0.035, 'strength': 0.78, 'falloff': 3.0}
 
 
 def load(name):
@@ -227,7 +223,7 @@ def pink_flowers(rgb, obj, tints):
 
 
 def from_cutout(name):
-    """A picture the owner supplied already cut out: its own alpha, stray specks dropped, a soft contact shadow added."""
+    """A picture the owner supplied already cut out: its own alpha, stray specks dropped."""
     a = np.asarray(Image.open(SRC / name).convert('RGBA')).astype(np.float64)
     rgb, alpha = a[..., :3], a[..., 3] / 255.0
     # The owner's cut-outs top out just under full alpha (253): make the body solid.
@@ -237,21 +233,8 @@ def from_cutout(name):
     big = [m for m in parts if m.sum() > 0.02 * keep.sum()]
     near = morph(np.any(big, axis=0), 5, grow=True)
     alpha = np.where(near, alpha, 0)
-    return with_contact_shadow(rgb, alpha, alpha > 0.5)
+    return rgb, alpha, alpha > 0.5
 
-
-def with_contact_shadow(rgb, alpha, obj):
-    """Put a small, tight lavender shadow right under the object's foot, so it sits on its tile."""
-    ys, xs = np.nonzero(obj)
-    foot, left, right = ys.max(), xs.min(), xs.max()
-    width = right - left
-    yy, xx = np.mgrid[0:alpha.shape[0], 0:alpha.shape[1]]
-    S = CONTACT
-    d = ((xx - (left + right) / 2) / (S['width'] * width)) ** 2 + ((yy - foot + S['under'] * width) / (S['depth'] * width)) ** 2
-    shade = S['strength'] * np.exp(-S['falloff'] * d)
-    out_a = alpha + shade * (1 - alpha)
-    colour = (rgb * alpha[..., None] + SHADOW * (shade * (1 - alpha))[..., None]) / np.maximum(out_a, 1e-6)[..., None]
-    return colour, out_a, obj
 
 def save(colour, alpha, obj, name, longest=None, scale=None):
     ys, xs = np.nonzero(alpha > 0.02)
@@ -289,13 +272,13 @@ def main():
         c, a, o = from_cutout(source)
         meta[kind] = save(c, a, o, name, LONGEST)
     bush = load('06-bush-flowers.png')
-    # The bushes' own wide baked shadow is dropped for the same small shadow as the others.
+    # No shadow under an obstacle (owner's choice): the bushes' baked shadow is dropped.
     c, a, o = cut(bush, keep_shadow=0.0, shadow_lum=COLOURED_SHADOW_LUM, shadow_sat=COLOURED_SHADOW_SAT)
-    meta['bushWhite'] = save(*with_contact_shadow(c, a, o), 'bush-white', LONGEST)
+    meta['bushWhite'] = save(c, a, o, 'bush-white', LONGEST)
     white_flower = flower_masks(bush, o)[0]
     pink = pink_flowers(bush, o, [(255, 112, 172), (226, 150, 238), (244, 84, 150)])
     c, a, o = cut(pink, keep_shadow=0.0, shadow_lum=COLOURED_SHADOW_LUM, shadow_sat=COLOURED_SHADOW_SAT)
-    meta['bushPink'] = save(*with_contact_shadow(c, a, o), 'bush-pink', LONGEST)
+    meta['bushPink'] = save(c, a, o, 'bush-pink', LONGEST)
     # Loose plants. The four-leaf sprig and the grass tuft come from 17-sheet-bushes-plants (429 x 83),
     # kept at twice the sheet's size; only the largest part of each column is kept.
     sheet = load('17-sheet-bushes-plants.png')
