@@ -27,6 +27,7 @@ import { addGardenLevelCards } from './gardenLevels';
 import { addGardenEffectCards } from './gardenEffects';
 import { addGardenExitCards } from './garden-exit';
 import { addGardenLogoCards } from './gardenLogo';
+import { addGardenIconCards } from './gardenIcon';
 
 /**
  * The parts sheet: every game element built on its own and shown from the
@@ -1057,6 +1058,7 @@ void addGardenObstacleCards(document.getElementById('sheet')!);
 addGardenBoardCards(document.getElementById('sheet')!);
 addGardenLevelCards(document.getElementById('sheet')!);
 addGardenLogoCards(document.getElementById('sheet')!);
+addGardenIconCards(document.getElementById('sheet')!);
 
 // Garden theme: the board effects (src/parts/gardenEffects.ts).
 addGardenEffectCards(document.getElementById('sheet')!);

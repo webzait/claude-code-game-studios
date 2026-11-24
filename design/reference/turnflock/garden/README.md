@@ -33,3 +33,4 @@ compressed and the size is reported.
 | 23-sheet-level-path | Level path: done nodes, current node, locked nodes, gazebo at the end | Level screen |
 | 21-sheet-effects | Green beam on a ring, star sparkle, cloud puff, blue ring | Effects |
 | 26-logo-garden | Garden-theme logo: TURNFLOCK lettering with the blue, red and yellow chicks (each with a triangle mark) and a golden ring; improved version from the owner, 2026-11-24 | Logo |
+| 27-app-icon-garden | App icon: the red chick (white triangle on its head) riding a yellow turn arrow towards a star, the small blue chick behind, on sky and lawn; 1254x1254, as the owner sent it (WebP, 191 KB) | App icon |
