@@ -1,0 +1,317 @@
+{
+  "_about": "Garden theme: buttons, icons and top bar (design/themes/garden-buttons.md). Read by tools/asset-pipeline/garden-buttons/build.ts, which writes src/ui/themes/garden/buttons-tokens.css and the SVG pictures in src/ui/themes/garden/. Run `npx tsx tools/asset-pipeline/garden-buttons/build.ts` after a change.",
+  "finish": {
+    "_about": "The garden block: rounder, a thinner wall and a softer, glossier face than the robot block (reference 18). Fractions of the face height --h.",
+    "radius": 0.34,
+    "toolRadius": 0.42,
+    "depth": 0.15,
+    "rim": 0.06,
+    "gloss": 0.55
+  },
+  "tones": {
+    "_about": "Block colours: top of the face, face, wall, bottom of the wall, and the ink of a symbol drawn in the button's own SVG. The four command tones are the robot theme's command colours (the colours of the chicks, and the dark slate of 'all forward'), only finished in the garden way: a player who switches themes keeps the same four colours.",
+    "red": {
+      "top": "#ff6e74",
+      "main": "#f1454b",
+      "side": "#c22a35",
+      "deep": "#9e1c27",
+      "ink": "#ffffff"
+    },
+    "blue": {
+      "top": "#6cb1ff",
+      "main": "#2e84f1",
+      "side": "#1b62c2",
+      "deep": "#134a98",
+      "ink": "#ffffff"
+    },
+    "yellow": {
+      "top": "#ffe680",
+      "main": "#f4c62f",
+      "side": "#d79a0c",
+      "deep": "#b07604",
+      "ink": "#1f3d99"
+    },
+    "forward": {
+      "top": "#6c7699",
+      "main": "#454e70",
+      "side": "#2f3651",
+      "deep": "#21263b",
+      "ink": "#ffffff"
+    },
+    "cloud": {
+      "top": "#ffffff",
+      "main": "#eef4ff",
+      "side": "#93b5f4",
+      "deep": "#6f95e0",
+      "ink": "#1f45a8"
+    },
+    "play": {
+      "top": "#ffe45c",
+      "main": "#ffc21a",
+      "side": "#f39a10",
+      "deep": "#d87806",
+      "ink": "#1f3d99"
+    },
+    "go": {
+      "top": "#8ee86a",
+      "main": "#4cc63a",
+      "side": "#2f9a26",
+      "deep": "#237a1c",
+      "ink": "#ffffff"
+    },
+    "main": {
+      "top": "#6f93ee",
+      "main": "#3f6bd6",
+      "side": "#2a4fae",
+      "deep": "#1f3d8c",
+      "ink": "#ffffff"
+    }
+  },
+  "glyphTones": {
+    "_about": "How a symbol is painted: fill from top to bottom, an optional outline, and the soft shade under it. 'white' sits on the saturated blocks (reference 18), 'outlined' on the yellow ones (the Play button of reference 19), 'navy' on the white cloud buttons (round buttons of reference 19).",
+    "white": {
+      "fillTop": "#ffffff",
+      "fillBottom": "#ebf1fd",
+      "outline": null,
+      "shade": "#000a3c",
+      "shadeOpacity": 0.28
+    },
+    "outlined": {
+      "fillTop": "#ffffff",
+      "fillBottom": "#e3ecff",
+      "outline": "#1f3d99",
+      "shade": "#7a3c00",
+      "shadeOpacity": 0.3
+    },
+    "navy": {
+      "fillTop": "#2f5fcf",
+      "fillBottom": "#173a94",
+      "outline": null,
+      "shade": "#ffffff",
+      "shadeOpacity": 0.9
+    },
+    "lit": {
+      "fillTop": "#fff7b8",
+      "fillBottom": "#ffc928",
+      "outline": "#1f3d99",
+      "shade": "#ffd23a",
+      "shadeOpacity": 0.55
+    },
+    "leaf": {
+      "fillTop": "#ffffff",
+      "fillBottom": "#e6f6dc",
+      "outline": "#15530f",
+      "shade": "#0d3a08",
+      "shadeOpacity": 0.3
+    }
+  },
+  "glyphs": {
+    "_about": "Every symbol picture the CSS uses: file name -> [shape, glyph tone, the block tones it sits on]. Shapes are drawn in tools/asset-pipeline/garden-buttons/art.ts; the unit test checks each symbol against each block it sits on.",
+    "turn-white": [
+      "turn",
+      "white",
+      [
+        "red",
+        "blue"
+      ]
+    ],
+    "turn-outlined": [
+      "turn",
+      "outlined",
+      [
+        "yellow"
+      ]
+    ],
+    "forward-white": [
+      "forward",
+      "white",
+      [
+        "forward"
+      ]
+    ],
+    "undo-navy": [
+      "undo",
+      "navy",
+      [
+        "cloud"
+      ]
+    ],
+    "restart-navy": [
+      "restart",
+      "navy",
+      [
+        "cloud"
+      ]
+    ],
+    "restart-white": [
+      "restart",
+      "white",
+      [
+        "main"
+      ]
+    ],
+    "hint-navy": [
+      "hint",
+      "navy",
+      [
+        "cloud"
+      ]
+    ],
+    "hint-lit": [
+      "hint",
+      "lit",
+      [
+        "cloud"
+      ]
+    ],
+    "home-navy": [
+      "home",
+      "navy",
+      [
+        "cloud"
+      ]
+    ],
+    "home-white": [
+      "home",
+      "white",
+      [
+        "main"
+      ]
+    ],
+    "next-leaf": [
+      "next",
+      "leaf",
+      [
+        "go"
+      ]
+    ],
+    "play-outlined": [
+      "play",
+      "outlined",
+      [
+        "play"
+      ]
+    ],
+    "back-navy": [
+      "back",
+      "navy",
+      [
+        "cloud"
+      ]
+    ],
+    "prev-navy": [
+      "prev",
+      "navy",
+      [
+        "cloud"
+      ]
+    ],
+    "chevron-navy": [
+      "chevron",
+      "navy",
+      [
+        "cloud"
+      ]
+    ],
+    "gear-navy": [
+      "gear",
+      "navy",
+      [
+        "cloud"
+      ]
+    ],
+    "sound-navy": [
+      "sound",
+      "navy",
+      [
+        "cloud"
+      ]
+    ],
+    "plus-leaf": [
+      "plus",
+      "leaf",
+      [
+        "go"
+      ]
+    ]
+  },
+  "icons": {
+    "_about": "The four pictures of reference 20, drawn as SVG so they stay sharp at every size. Coin and star replace the robot theme's coin and star; gem and heart are loose parts (proposals only).",
+    "coin": {
+      "rim": "#f9b01c",
+      "edge": "#e2860a",
+      "face": [
+        "#ffea6a",
+        "#ffcf22"
+      ],
+      "ring": "#f3a20e",
+      "star": [
+        "#fff38a",
+        "#ffd633"
+      ],
+      "starEdge": "#ea960c"
+    },
+    "star": {
+      "fill": [
+        "#fff27a",
+        "#ffd92c",
+        "#ffc01a"
+      ],
+      "edge": "#f2a00e",
+      "deep": "#de8406"
+    },
+    "starOff": {
+      "fill": [
+        "#f3efe2",
+        "#e2dccb",
+        "#d8d1bd"
+      ],
+      "edge": "#c7bea4",
+      "deep": "#b3a98c"
+    },
+    "gem": {
+      "light": "#ffb8f6",
+      "main": "#ec44dc",
+      "mid": "#d22fc6",
+      "dark": "#a8189e",
+      "edge": "#8e1287"
+    },
+    "heart": {
+      "fill": [
+        "#ff6a5c",
+        "#f23a32",
+        "#d8211e"
+      ],
+      "edge": "#b5161a"
+    },
+    "chick": {
+      "body": [
+        "#ffe766",
+        "#ffc61f"
+      ],
+      "edge": "#e39a0b",
+      "beak": "#ff8a1c",
+      "eye": "#3a2a1a"
+    }
+  },
+  "topBar": {
+    "_about": "The status plate (level, moves left, chicks home), the coin counter and the back button in garden colours.",
+    "plate": [
+      "#fffdf6",
+      "#fff3d9"
+    ],
+    "plateEdge": "#e6c891",
+    "plateLine": "rgba(140, 96, 30, .22)",
+    "well": "#fbecc8",
+    "wellShade": "#e7cf9c",
+    "label": "#7a6338",
+    "number": "#3b2f1a",
+    "medal": [
+      "#8ee86a",
+      "#4cc63a",
+      "#2f9a26"
+    ],
+    "medalRing": "#ffffff",
+    "medalShade": "rgba(25, 90, 20, .6)"
+  }
+}

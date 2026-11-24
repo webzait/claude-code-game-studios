@@ -1,0 +1,172 @@
+/* Garden theme: every button of the game, the coin and star icons and the top bar (design/themes/garden-buttons.md).
+   Only under [data-theme="garden"] on an ancestor (the root element in the game): the robot theme is untouched.
+   The markup is the game's own (tf-btn blocks, tf-coin-*, tf-status-*); only the look changes. Colours and measures
+   come from data/themes/garden/buttons.json through buttons-tokens.css, written by tools/asset-pipeline/garden-buttons/build.ts. */
+@import './buttons-tokens.css';
+
+/* ---------- The garden block (reference 18): rounder, a softer pillow face with a strong gloss, a darker outline ---------- */
+/* Never less round than the robot block; the footprint (and so every touch target and gap, finding B11) is the same. */
+[data-theme="garden"] .tf-btn { --gr: max(var(--r), calc(var(--h) * var(--g-radius))); --cast: rgba(40, 52, 20, .38); }
+[data-theme="garden"] .tf-btn::before, [data-theme="garden"] .tf-clip, [data-theme="garden"] .tf-face { border-radius: var(--gr); }
+[data-theme="garden"] .tf-btn:focus-visible { border-radius: var(--gr); }
+[data-theme="garden"] .tf-btn.nudge::after { border-radius: calc(var(--gr) + 5px); }
+[data-theme="garden"] .tf-face {
+  --side: calc(var(--h) * .035 + 1px); --lip: calc(var(--h) * .03 + 1px);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--wall) 55%, var(--face-top)) 0, var(--wall) calc(var(--h) * .45), var(--wall) calc(var(--h) + var(--d) * .4), var(--wall-deep) 100%);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--wall-deep) 88%, #000), inset 0 -2px 1px rgba(255, 255, 255, .16);
+}
+/* The face: a pillow. A light band runs round its edge (the bevel of reference 18), the gloss lies over its upper half,
+   and it darkens a little towards the bottom, where it rounds over into the wall. */
+[data-theme="garden"] .tf-face::before {
+  border-radius: calc(var(--gr) - var(--side) * .7);
+  background:
+    radial-gradient(70% 46% at 50% 4%, rgba(255, 255, 255, calc(var(--gloss) * var(--g-gloss) * 2.2)), rgba(255, 255, 255, 0) 100%),
+    linear-gradient(180deg, var(--face-top) 0, var(--face) 48%, color-mix(in srgb, var(--face) 86%, var(--wall)) 100%);
+  box-shadow:
+    0 0 0 calc(var(--h) * .01 + .5px) color-mix(in srgb, var(--wall) 55%, var(--face)),
+    inset 0 calc(var(--h) * .03 + 1px) calc(var(--h) * .02) rgba(255, 255, 255, .55),
+    inset 0 0 0 calc(var(--h) * var(--g-rim)) color-mix(in srgb, var(--face-top) 40%, transparent),
+    inset 0 calc(var(--h) * -.06 - 1px) calc(var(--h) * .06) color-mix(in srgb, var(--wall) 45%, transparent);
+}
+[data-theme="garden"] .tf-btn:active:not(:disabled) .tf-face, [data-theme="garden"] .tf-btn.pressed .tf-face { filter: brightness(.93) saturate(1.05); }
+[data-theme="garden"] .tf-btn:disabled { --gloss: .1; --cast: rgba(40, 52, 20, .16); }
+
+/* Labels: white, ringed in the block's own deepest tone, like the Play of reference 19. A block whose ink is dark keeps it. */
+[data-theme="garden"] .tf-label {
+  font-weight: 900; letter-spacing: .015em;
+  text-shadow: 0 1.5px 0 var(--g-ring, transparent), 1.2px 0 0 var(--g-ring, transparent), -1.2px 0 0 var(--g-ring, transparent), 0 -1.2px 0 var(--g-ring, transparent),
+    1px 1.5px 0 var(--g-ring, transparent), -1px 1.5px 0 var(--g-ring, transparent), 0 2.6px 0 var(--g-ring, transparent);
+}
+
+/* ---------- Tones: the four command colours stay the chicks' colours; only the finish is the garden's ---------- */
+[data-theme="garden"] .tf-action.red { --c-top: var(--g-red-top); --c-main: var(--g-red-main); --c-side: var(--g-red-side); --c-deep: var(--g-red-deep); --ink-c: #fff; --g-ring: var(--g-red-deep); }
+[data-theme="garden"] .tf-action.blue { --c-top: var(--g-blue-top); --c-main: var(--g-blue-main); --c-side: var(--g-blue-side); --c-deep: var(--g-blue-deep); --ink-c: #fff; --g-ring: var(--g-blue-deep); }
+[data-theme="garden"] .tf-action.yellow { --c-top: var(--g-yellow-top); --c-main: var(--g-yellow-main); --c-side: var(--g-yellow-side); --c-deep: var(--g-yellow-deep); --ink-c: #fff; --g-ring: var(--g-yellow-ink); }
+[data-theme="garden"] .tf-action.forward { --c-top: var(--g-forward-top); --c-main: var(--g-forward-main); --c-side: var(--g-forward-side); --c-deep: var(--g-forward-deep); --ink-c: #fff; --gloss: .2; --g-ring: var(--g-forward-deep); }
+[data-theme="garden"] .tf-action { --icon: calc(var(--h) * .8); }
+
+/* The cloud: the white round buttons of reference 19 (settings, sound, home), with a blue rim and a navy symbol.
+   Every neutral button: the helpers of the puzzle screen and the pop-up, settings, paging, back, Close, Keep. */
+[data-theme="garden"] .tf-utility, [data-theme="garden"] .tf-hint, [data-theme="garden"] .tf-tools .tf-utility, [data-theme="garden"] .tf-neutral,
+[data-theme="garden"] .tf-levels-play.tf-levels-backbtn {
+  --c-top: var(--g-cloud-top); --c-main: var(--g-cloud-main); --c-side: var(--g-cloud-side); --c-deep: var(--g-cloud-deep);
+  --ink-c: var(--g-cloud-ink); --ink-shadow: transparent; --gloss: .5; --g-ring: transparent; --cast: rgba(31, 69, 168, .34);
+}
+[data-theme="garden"] .tf-tools .tf-utility .tf-face, [data-theme="garden"] .tf-neutral .tf-face, [data-theme="garden"] .tf-utility .tf-face {
+  --side: calc(var(--h) * .05 + 1px); --lip: calc(var(--h) * .04 + 1px);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--wall) 40%, #fff) 0, var(--wall) calc(var(--h) * .55), var(--wall) calc(var(--h) + var(--d) * .4), var(--wall-deep) 100%);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--wall-deep) 75%, #10307a), inset 0 -2px 1px rgba(255, 255, 255, .25);
+}
+[data-theme="garden"] .tf-tools .tf-utility .tf-face::before, [data-theme="garden"] .tf-neutral .tf-face::before { border-radius: calc(var(--gr) - var(--side) * .7); }
+[data-theme="garden"] .tf-tools .tf-utility svg, [data-theme="garden"] .tf-neutral svg { filter: none; }
+[data-theme="garden"] .tf-neutral .tf-label { text-shadow: none; }
+[data-theme="garden"] .tf-tools .tf-utility:disabled, [data-theme="garden"] .tf-neutral:disabled, [data-theme="garden"] .tf-utility:disabled { --ink-c: #6f83b8; }
+/* The helpers are rounder than the commands, as in the robot theme, so the two kinds still read apart. */
+[data-theme="garden"] .tf-tools .tf-btn, [data-theme="garden"] .tf-end-symbol.tf-neutral { --gr: max(var(--r), calc(var(--h) * var(--g-toolRadius))); }
+[data-theme="garden"] .tf-tools .tf-btn { --icon: calc(var(--h) * .96); }
+/* Hint while its hint is on the board: half sunk in the cloud colours, the lamp lit (its own picture, below). */
+[data-theme="garden"] .tf-tools .tf-btn.showing:disabled { --face-top: var(--g-cloud-top); --face: var(--g-cloud-main); --wall: var(--g-cloud-side); --wall-deep: var(--g-cloud-deep); --gloss: .3; }
+[data-theme="garden"] .tf-tools .tf-btn.showing:disabled .tf-face svg { filter: drop-shadow(0 0 5px rgba(255, 210, 58, .95)); }
+
+/* The pop-up's main buttons: Next in leaf green, Retry and Levels in the royal blue of reference 18. */
+[data-theme="garden"] .tf-end-go, [data-theme="garden"] .tf-coin-plus, [data-theme="garden"] .tf-coin-buy.boost { --c-top: var(--g-go-top); --c-main: var(--g-go-main); --c-side: var(--g-go-side); --c-deep: var(--g-go-deep); --ink-c: #fff; --ink-shadow: transparent; --gloss: .4; --g-ring: var(--g-go-deep); }
+[data-theme="garden"] .tf-end-go .tf-label, [data-theme="garden"] .tf-coin-buy.offer .tf-label { text-shadow: inherit; }
+[data-theme="garden"] .tf-end-main, [data-theme="garden"] .tf-end-buy { --c-top: var(--g-main-top); --c-main: var(--g-main-main); --c-side: var(--g-main-side); --c-deep: var(--g-main-deep); --ink-c: #fff; --g-ring: var(--g-main-deep); }
+[data-theme="garden"] .tf-end-main .tf-label, [data-theme="garden"] .tf-end-buy .tf-label, [data-theme="garden"] .tf-end-go .tf-label,
+[data-theme="garden"] .tf-coin-buy.offer .tf-label, [data-theme="garden"] .tf-levels-play .tf-label {
+  text-shadow: 0 1.5px 0 var(--g-ring), 1.2px 0 0 var(--g-ring), -1.2px 0 0 var(--g-ring), 0 -1.2px 0 var(--g-ring), 1px 1.5px 0 var(--g-ring), -1px 1.5px 0 var(--g-ring), 0 2.6px 0 var(--g-ring);
+}
+[data-theme="garden"] .tf-coin-buy .tf-face .tf-coin-art { filter: drop-shadow(0 1.5px 1px rgba(13, 58, 8, .45)); }
+
+/* The Play button of the level screen: the yellow pill of reference 19, white symbol and word ringed in navy. */
+[data-theme="garden"] .tf-levels-play:not(.tf-levels-backbtn) {
+  --c-top: var(--g-play-top); --c-main: var(--g-play-main); --c-side: var(--g-play-side); --c-deep: var(--g-play-deep); --glow: #fff2a8;
+  --ink-c: #fff; --ink-shadow: transparent; --gloss: .55; --g-ring: var(--g-play-ink); --icon: calc(var(--h) * .5);
+}
+[data-theme="garden"] .tf-levels-play { --gr: max(var(--r), calc(var(--h) * .5)); }
+[data-theme="garden"] .tf-levels-play .tf-label { font-size: calc(var(--fs) * 1.04); }
+/* The word of reference 19: a thicker navy ring than the other labels. */
+[data-theme="garden"] .tf-levels-play:not(.tf-levels-backbtn) .tf-label {
+  text-shadow: 2px 0 0 var(--g-ring), -2px 0 0 var(--g-ring), 0 2px 0 var(--g-ring), 0 -2px 0 var(--g-ring), 1.5px 1.5px 0 var(--g-ring), -1.5px 1.5px 0 var(--g-ring), 1.5px -1.5px 0 var(--g-ring), -1.5px -1.5px 0 var(--g-ring), 0 3.5px 0 var(--g-ring), 1.5px 3px 0 var(--g-ring), -1.5px 3px 0 var(--g-ring);
+}
+[data-theme="garden"] .tf-levels-play.tf-levels-backbtn .tf-label { text-shadow: none; }
+
+/* ---------- Symbols: the button's own SVG keeps its place and size; the garden picture is painted in its box ---------- */
+[data-theme="garden"] .tf-face > svg { background: var(--g-glyph, none) center / contain no-repeat; }
+[data-theme="garden"] .tf-face > svg > * { visibility: var(--g-own, visible); }
+[data-theme="garden"] :is(.cmd[data-cmd="red"], .cmd[data-cmd="blue"]) svg { --g-glyph: url('./glyph-turn-white.svg'); --g-own: hidden; }
+[data-theme="garden"] .cmd[data-cmd="yellow"] svg { --g-glyph: url('./glyph-turn-outlined.svg'); --g-own: hidden; }
+[data-theme="garden"] .cmd[data-cmd="forward"] svg { --g-glyph: url('./glyph-forward-white.svg'); --g-own: hidden; }
+[data-theme="garden"] :is(#undo, #end-undo) svg { --g-glyph: url('./glyph-undo-navy.svg'); --g-own: hidden; }
+[data-theme="garden"] :is(#restart, #end-retry) svg { --g-glyph: url('./glyph-restart-navy.svg'); --g-own: hidden; }
+[data-theme="garden"] #end-retry.tf-end-main svg { --g-glyph: url('./glyph-restart-white.svg'); }
+[data-theme="garden"] #scan svg { --g-glyph: url('./glyph-hint-navy.svg'); --g-own: hidden; }
+[data-theme="garden"] #scan.showing svg { --g-glyph: url('./glyph-hint-lit.svg'); }
+[data-theme="garden"] #end-levels svg { --g-glyph: url('./glyph-home-navy.svg'); --g-own: hidden; }
+[data-theme="garden"] #end-levels.tf-end-main svg { --g-glyph: url('./glyph-home-white.svg'); }
+[data-theme="garden"] #end-next svg { --g-glyph: url('./glyph-next-leaf.svg'); --g-own: hidden; }
+[data-theme="garden"] .tf-levels-play .tf-levels-ico-play { --g-glyph: url('./glyph-play-outlined.svg'); --g-own: hidden; }
+[data-theme="garden"] .tf-levels-play .tf-levels-ico-back, [data-theme="garden"] .tf-set-top .tf-utility svg { --g-glyph: url('./glyph-back-navy.svg'); --g-own: hidden; }
+[data-theme="garden"] #toSettings svg { --g-glyph: url('./glyph-gear-navy.svg'); --g-own: hidden; }
+[data-theme="garden"] #pagePrev svg { --g-glyph: url('./glyph-prev-navy.svg'); --g-own: hidden; }
+[data-theme="garden"] #pageNext svg { --g-glyph: url('./glyph-chevron-navy.svg'); --g-own: hidden; }
+[data-theme="garden"] .tf-coin-plus svg { --g-glyph: url('./glyph-plus-leaf.svg'); --g-own: hidden; }
+[data-theme="garden"] :is(#toSettings, #pagePrev, #pageNext, .tf-set-top .tf-utility) { --icon: calc(var(--h) * .72); }
+[data-theme="garden"] .tf-coin-plus { --icon: calc(var(--h) * .7); }
+[data-theme="garden"] .tf-end-card .tf-btn { --icon: calc(var(--h) * .62); }
+
+/* ---------- Icons: the coin and the star of reference 20 ---------- */
+/* The coin is an <img> of the robot theme's coin; the garden coin is painted in its box and the picture moved out of it. */
+[data-theme="garden"] img.tf-coin-ico, [data-theme="garden"] .tf-coin-fly img {
+  object-position: -9999px 0; background: url('./icon-coin.svg') center / contain no-repeat; filter: drop-shadow(0 1px 0 rgba(150, 80, 0, .35));
+}
+[data-theme="garden"] .tf-coin-price.short img.tf-coin-ico { filter: saturate(.55) drop-shadow(0 1px 0 rgba(150, 80, 0, .35)); }
+[data-theme="garden"] .tf-levels-star { background-image: url('./icon-star.svg'); }
+[data-theme="garden"] .tf-levels-tile.s1 .tf-levels-stars { background-image: url('./icon-stars-1.svg'); }
+[data-theme="garden"] .tf-levels-tile.s2 .tf-levels-stars { background-image: url('./icon-stars-2.svg'); }
+[data-theme="garden"] .tf-levels-tile.s3 .tf-levels-stars { background-image: url('./icon-stars-3.svg'); }
+/* The pop-up's stars are drawn in their own SVG: the garden star is painted in its box, the old drawing hidden. */
+[data-theme="garden"] .tf-end-star { background: url('./icon-star.svg') center / contain no-repeat; }
+[data-theme="garden"] .tf-end-star.off { background-image: url('./icon-star-off.svg'); }
+[data-theme="garden"] .tf-end-star > * { visibility: hidden; }
+
+/* ---------- The top bar: level, moves left, chicks home, the coin counter and Back ---------- */
+[data-theme="garden"] .tf-status-plate, [data-theme="garden"] .tf-coin-counter, [data-theme="garden"] .tf-levels-pill {
+  background: linear-gradient(180deg, var(--g-bar-plate-0) 0, var(--g-bar-plate-1) 100%);
+  box-shadow: inset 0 0 0 1.5px var(--g-bar-plateLine), inset 0 2.5px 0 #fff, 0 3px 0 var(--g-bar-plateEdge), 0 6px 10px rgba(60, 50, 20, .26);
+  color: var(--g-bar-number);
+}
+/* The counter keeps its own bottom wall (--cd) in the garden's warm edge colour. */
+[data-theme="garden"] .tf-coin-counter {
+  background: linear-gradient(180deg, var(--g-bar-plate-0) 0, var(--g-bar-plate-1) calc(100% - var(--cd) - 1px), var(--g-bar-plateEdge) calc(100% - var(--cd)), color-mix(in srgb, var(--g-bar-plateEdge) 80%, #7a5a20) 100%);
+  box-shadow: inset 0 0 0 1.5px var(--g-bar-plateLine), inset 0 2.5px 0 #fff, 0 2px 2px rgba(60, 50, 20, .3), 0 5px 8px rgba(60, 50, 20, .22);
+}
+[data-theme="garden"] .tf-coin-counter.earn { box-shadow: inset 0 0 0 2px #e9930a, inset 0 2.5px 0 #fff, 0 0 0 3px #ffc41c, 0 0 12px 4px rgba(255, 228, 120, .9), 0 5px 8px rgba(60, 50, 20, .22); }
+[data-theme="garden"] .tf-coin-counter.short { background: linear-gradient(180deg, #fff5f5 0, var(--no-soft) calc(100% - var(--cd) - 1px), #e3a4a8 calc(100% - var(--cd)), #d58a90 100%); color: #b3202a; }
+[data-theme="garden"] .tf-status-label { color: var(--g-bar-label); }
+[data-theme="garden"] .tf-status-num { color: var(--g-bar-number); }
+[data-theme="garden"] .tf-status-cell.moves.low .tf-status-num { color: var(--red); }
+[data-theme="garden"] .tf-status-well { background: var(--g-bar-well); box-shadow: inset 0 2px 0 var(--g-bar-wellShade), inset 0 -1px 0 #fff; }
+/* The level medal: a round leaf-green badge with a white ring, its number white ringed in deep green. */
+[data-theme="garden"] .tf-status-cell.level {
+  border-color: var(--g-bar-medalRing);
+  background: radial-gradient(60% 40% at 50% 12%, rgba(255, 255, 255, .55), rgba(255, 255, 255, 0) 100%), linear-gradient(180deg, var(--g-bar-medal-0) 0%, var(--g-bar-medal-1) 55%, var(--g-bar-medal-2) 100%);
+  box-shadow: 0 3px 0 var(--g-bar-plateEdge), 0 7px 12px rgba(60, 50, 20, .3), inset 0 -3px 0 rgba(20, 80, 15, .3);
+  text-shadow: 0 1.5px 0 var(--g-bar-medalShade), 1px 0 0 var(--g-bar-medalShade), -1px 0 0 var(--g-bar-medalShade), 0 -1px 0 var(--g-bar-medalShade);
+}
+[data-theme="garden"] .tf-status-cell.level .tf-status-label, [data-theme="garden"] .tf-status-cell.level .tf-status-num { color: #fff; }
+[data-theme="garden"] .tf-status-tab {
+  background: linear-gradient(180deg, var(--g-bar-plate-1), var(--g-bar-well)); color: var(--g-bar-number);
+  box-shadow: inset 0 0 0 1.5px var(--g-bar-plateLine), 0 3px 0 var(--g-bar-plateEdge), 0 6px 9px rgba(60, 50, 20, .24);
+}
+/* Chicks home: a chick instead of the robot head. */
+[data-theme="garden"] .tf-status-tab .ico { width: 17px; height: 17px; background: url('./icon-chick.svg') center / contain no-repeat; }
+[data-theme="garden"] .tf-status-tab .ico > * { visibility: hidden; }
+/* Back (puzzle screen): a cloud button like the others, with the garden arrow. */
+[data-theme="garden"] .back {
+  border-radius: 50%; background: radial-gradient(70% 46% at 50% 6%, rgba(255, 255, 255, .9), rgba(255, 255, 255, 0) 100%), linear-gradient(180deg, var(--g-cloud-top), var(--g-cloud-main));
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--g-cloud-deep) 75%, #10307a), inset 0 -3px 0 color-mix(in srgb, var(--g-cloud-side) 45%, transparent), 0 4px 0 var(--g-cloud-side), 0 5px 0 var(--g-cloud-deep), 0 8px 10px rgba(31, 69, 168, .3);
+}
+[data-theme="garden"] .back:active { transform: translateY(3px); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--g-cloud-deep) 75%, #10307a), 0 1px 0 var(--g-cloud-side), 0 2px 0 var(--g-cloud-deep), 0 3px 5px rgba(31, 69, 168, .3); }
+[data-theme="garden"] .back .ico { width: 28px; height: 28px; background: url('./glyph-back-navy.svg') center / contain no-repeat; }
+[data-theme="garden"] .back .ico > * { visibility: hidden; }
