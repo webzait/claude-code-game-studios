@@ -4,7 +4,7 @@ import levels from '../../data/levels.json';
 import data from '../../data/themes/garden/obstacles.json';
 import { parseLevel } from '../../src/levels/parse';
 import { cellHash, chooseObstacles, FAMILY_OF, type ChoiceWeights, type ObstacleChoice } from '../../src/render/parts/garden/obstacleChoice';
-import { buildObstacle, GARDEN_OBSTACLE_KINDS } from '../../src/render/parts/garden/obstacles';
+import { buildObstacle, buildObstacleModel, GARDEN_OBSTACLE_KINDS, OBSTACLE_SPRITES } from '../../src/render/parts/garden/obstacles';
 import { buildFlower, buildGrassTuft, buildLeaf, buildSprig } from '../../src/render/parts/garden/plants';
 import { buildObstacle as buildRobotObstacle } from '../../src/render/parts/board';
 
@@ -85,11 +85,75 @@ describe('garden obstacle choice', () => {
   });
 });
 
-describe('garden obstacles fit one cell', () => {
+/** Where a point lands on screen under the game camera (orthographic approximation): x right, y up. */
+const TILT = THREE.MathUtils.degToRad(30);
+const screenUp = (p: THREE.Vector3): number => p.y * Math.sin(TILT) - p.z * Math.cos(TILT);
+const toCamera = new THREE.Vector3(0, Math.cos(TILT), Math.sin(TILT));
+
+describe('garden obstacle pictures (the default)', () => {
+  for (const kind of GARDEN_OBSTACLE_KINDS) {
+    it(`${kind}_is_one_camera_facing_card_whose_object_fits_the_cell`, () => {
+      const o = buildObstacle(kind);
+      const meshes: THREE.Mesh[] = [];
+      o.traverse((m) => (m instanceof THREE.Mesh ? meshes.push(m) : undefined));
+      expect(meshes).toHaveLength(1);
+      const g = meshes[0].geometry as THREE.BufferGeometry;
+      expect(g.index!.count / 3).toBe(2);
+      // Square to the camera: every corner the same distance along the view direction.
+      const pos = g.getAttribute('position');
+      const depth = [0, 1, 2, 3].map((i) => new THREE.Vector3().fromBufferAttribute(pos, i).dot(toCamera));
+      for (const d of depth) expect(d).toBeCloseTo(depth[0], 5);
+      // The object (not its shadow) is as wide as the data says, so it stays inside one cell.
+      const s = OBSTACLE_SPRITES[kind];
+      const cardWidth = new THREE.Box3().setFromBufferAttribute(pos as THREE.BufferAttribute).getSize(new THREE.Vector3()).x;
+      const objectWidth = cardWidth * (s.objectRight - s.objectLeft);
+      expect(objectWidth).toBeCloseTo(data.sprite.width[kind], 5);
+      expect(objectWidth).toBeLessThanOrEqual(0.9);
+      // Never below the tile.
+      for (let i = 0; i < 4; i++) expect(pos.getY(i)).toBeGreaterThanOrEqual(0);
+    });
+  }
+
+  it('the_object_foot_sits_on_the_cell_as_seen_from_the_camera', () => {
+    for (const kind of GARDEN_OBSTACLE_KINDS) {
+      const g = (buildObstacle(kind).children[0] as THREE.Mesh).geometry as THREE.BufferGeometry;
+      const pos = g.getAttribute('position');
+      const bottom = screenUp(new THREE.Vector3().fromBufferAttribute(pos, 0));
+      const top = screenUp(new THREE.Vector3().fromBufferAttribute(pos, 3));
+      const s = OBSTACLE_SPRITES[kind];
+      const foot = top + (bottom - top) * s.foot;
+      // The foot line lands where the floor point footForward towards the camera lands.
+      expect(foot).toBeCloseTo(screenUp(new THREE.Vector3(0, 0, data.sprite.footForward)), 5);
+    }
+  });
+
+  it('odd_turns_mirror_only_pictures_that_allow_it', () => {
+    for (const kind of GARDEN_OBSTACLE_KINDS) {
+      const uv = (turn: number) => Array.from(((buildObstacle(kind, turn).children[0] as THREE.Mesh).geometry as THREE.BufferGeometry).getAttribute('uv').array);
+      if (data.sprite.mirror[kind]) expect(uv(1)).not.toEqual(uv(0));
+      else expect(uv(1)).toEqual(uv(0));
+      expect(uv(2)).toEqual(uv(0));
+    }
+  });
+
+  it('copies_share_one_material_per_kind_and_cast_no_shadow', () => {
+    const a = buildObstacle('stump').children[0] as THREE.Mesh;
+    const b = buildObstacle('stump', 3).children[0] as THREE.Mesh;
+    expect(a.material).toBe(b.material);
+    expect(a.castShadow).toBe(false);
+  });
+
+  it('the_pictures_stay_small', () => {
+    const total = GARDEN_OBSTACLE_KINDS.reduce((sum, k) => sum + OBSTACLE_SPRITES[k].bytes, 0);
+    expect(total).toBeLessThanOrEqual(80 * 1024);
+  });
+});
+
+describe('garden obstacles modelled in code (the alternative) fit one cell', () => {
   for (const kind of GARDEN_OBSTACLE_KINDS) {
     it(`${kind}_stands_on_the_floor_inside_one_cell`, () => {
       for (const turn of [0, 1]) {
-        const box = boxOf(buildObstacle(kind, turn));
+        const box = boxOf(buildObstacleModel(kind, turn));
         expect(box.min.y).toBeCloseTo(0, 3);
         expect(box.max.x - box.min.x).toBeLessThanOrEqual(1);
         expect(box.max.z - box.min.z).toBeLessThanOrEqual(1);
@@ -102,7 +166,7 @@ describe('garden obstacles fit one cell', () => {
     });
 
     it(`${kind}_stays_within_the_game_triangle_budget_in_at_most_two_draw_calls`, () => {
-      const o = buildObstacle(kind);
+      const o = buildObstacleModel(kind);
       let meshes = 0;
       o.traverse((m) => (m instanceof THREE.Mesh ? meshes++ : undefined));
       expect(triangles(o)).toBeLessThanOrEqual(GAME_TRIANGLE_BUDGET);
@@ -112,15 +176,15 @@ describe('garden obstacles fit one cell', () => {
 
   it('has_the_same_call_shape_as_the_robot_obstacle', () => {
     // No arguments works and gives a group on the floor, like the robot theme's block.
-    const garden = buildObstacle();
+    const garden = buildObstacleModel();
     const robot = buildRobotObstacle();
     expect(garden).toBeInstanceOf(THREE.Group);
     expect(boxOf(garden).min.y).toBeCloseTo(boxOf(robot).min.y, 2);
   });
 
   it('is_the_same_shape_every_time', () => {
-    const a = buildObstacle('bushPink');
-    const b = buildObstacle('bushPink');
+    const a = buildObstacleModel('bushPink');
+    const b = buildObstacleModel('bushPink');
     const pa = ((a.children[0] as THREE.Mesh).geometry as THREE.BufferGeometry).getAttribute('position').array;
     const pb = ((b.children[0] as THREE.Mesh).geometry as THREE.BufferGeometry).getAttribute('position').array;
     expect(Array.from(pa)).toEqual(Array.from(pb));

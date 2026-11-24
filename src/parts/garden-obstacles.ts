@@ -5,16 +5,23 @@ import { LEVELS } from '../levels';
 import { buildObstacle as buildRobotObstacle } from '../render/parts/board';
 import { buildFlockbot } from '../render/parts/flockbot';
 import { shadeByHeight, roundedBlock } from '../render/parts/shapes';
-import { buildObstacle, GARDEN_OBSTACLE_KINDS } from '../render/parts/garden/obstacles';
+import { buildObstacle, buildObstacleModel, GARDEN_OBSTACLE_KINDS, OBSTACLE_SPRITES, obstaclePicturesLoaded } from '../render/parts/garden/obstacles';
+import spriteData from '../../data/themes/garden/obstacle-sprites.json';
+import rockWebp from '../../assets/turnflock/garden/obstacles/rock.webp';
+import rockMossyWebp from '../../assets/turnflock/garden/obstacles/rock-mossy.webp';
+import stumpWebp from '../../assets/turnflock/garden/obstacles/stump.webp';
+import bushWhiteWebp from '../../assets/turnflock/garden/obstacles/bush-white.webp';
+import bushPinkWebp from '../../assets/turnflock/garden/obstacles/bush-pink.webp';
+import sprigWebp from '../../assets/turnflock/garden/obstacles/plant-sprig.webp';
+import grassWebp from '../../assets/turnflock/garden/obstacles/plant-grass.webp';
+import flowerWhiteWebp from '../../assets/turnflock/garden/obstacles/plant-flower-white.webp';
+import flowerPinkWebp from '../../assets/turnflock/garden/obstacles/plant-flower-pink.webp';
 import { chooseObstacles, type GardenObstacleKind } from '../render/parts/garden/obstacleChoice';
 import data from '../../data/themes/garden/obstacles.json';
-import { buildFlower, buildGrassTuft, buildLeaf, buildSprig } from '../render/parts/garden/plants';
 import refRock from './garden-ref/rock.webp';
 import refStump from './garden-ref/stump.webp';
 import refBush from './garden-ref/bush.webp';
 import refSheetRock from './garden-ref/sheet-rock.webp';
-import refSheetRockMossy from './garden-ref/sheet-rock-mossy.webp';
-import refSheetStump from './garden-ref/sheet-stump.webp';
 import refSheetPlants from './garden-ref/sheet-plants.webp';
 import './garden-obstacles.css';
 
@@ -183,21 +190,20 @@ const NAMES: Record<GardenObstacleKind, string> = {
   bushPink: 'Bosje met roze bloemen',
 };
 const NOTES: Record<GardenObstacleKind, string> = {
-  rock: 'Gladde, zacht gefacetteerde steen: één groot bovenvlak, een bovenste en onderste ring brokken, zachte randen en ondiepe barstjes tussen de brokken. Platte voet.',
-  rockMossy: 'Dezelfde steen met een dikke kap mos in ronde lobjes over de schouder, drie kleine mosplukjes lager en groen in een deel van de barstjes.',
-  stump: 'Stronk met verticale schorslijnen en een iets uitlopende voet. Bovenop jaarringen, een buitenring met tien inkepingen die als barsten de zijkant in lopen, blaadjes en spruitjes rond de voet.',
-  bushWhite: 'Rond bosje van ruim tachtig bolle blaadjes in schubben vanaf de top, licht bovenaan en donker onderaan, met drie witte bloemen.',
-  bushPink: 'Hetzelfde bosje met roze en lila bloemen en één klein wit bloemetje.',
+  rock: 'Uit 14-sheet-rock: de enige kale steen van de eigenaar, maar 96 px breed; op twee keer die grootte bewaard en daardoor iets zachter dan de andere.',
+  rockMossy: 'Uit 04-rock (1254 px): die steen heeft zelf al mos, dus hij is de steen met mos.',
+  stump: 'Uit 05-stump (1254 px), met de blaadjes en de ingebakken schaduw.',
+  bushWhite: 'Uit 06-bush-flowers (1254 px).',
+  bushPink: 'Uit 06-bush-flowers (1254 px) met de drie witte bloemen roze, lila en lichtroze bijgekleurd, zoals op 17-sheet-bushes-plants; het roze bosje bestaat daar alleen op 83 px.',
 };
 const REFS: Record<GardenObstacleKind, [string, string]> = {
-  rock: [refRock, refSheetRock],
-  rockMossy: [refRock, refSheetRockMossy],
-  stump: [refStump, refSheetStump],
-  bushWhite: [refBush, refSheetPlants],
-  bushPink: [refBush, refSheetPlants],
+  rock: [refSheetRock, '14-sheet-rock (96 px breed)'],
+  rockMossy: [refRock, '04-rock'],
+  stump: [refStump, '05-stump'],
+  bushWhite: [refBush, '06-bush-flowers'],
+  bushPink: [refSheetPlants, '17-sheet-bushes-plants (roze bosje: tweede van links)'],
 };
-
-const px = (cells: number): string => `${Math.round(cells * 56)} px`;
+const WEBP: Record<GardenObstacleKind, string> = { rock: rockWebp, rockMossy: rockMossyWebp, stump: stumpWebp, bushWhite: bushWhiteWebp, bushPink: bushPinkWebp };
 
 function figure(content: HTMLElement, caption: string, className = ''): HTMLElement {
   const f = document.createElement('figure');
@@ -207,36 +213,36 @@ function figure(content: HTMLElement, caption: string, className = ''): HTMLElem
   return f;
 }
 
-function img(src: string): HTMLImageElement {
+function img(src: string, className = ''): HTMLImageElement {
   const i = document.createElement('img');
   i.src = src;
   i.alt = '';
+  if (className) i.className = className;
   return i;
 }
 
+const kB = (bytes: number): string => `${(bytes / 1024).toLocaleString('nl', { maximumFractionDigits: 1 })} kB`;
+
 function obstacleCard(sheet: HTMLElement, kind: GardenObstacleKind): void {
-  const object = buildObstacle(kind, 0, data.detail.closeUp);
-  const size = new THREE.Box3().setFromObject(object).getSize(new THREE.Vector3());
-  const { triangles, draws } = cost(object);
-  const game = cost(buildObstacle(kind));
+  const s = OBSTACLE_SPRITES[kind];
   const el = document.createElement('section');
   el.className = 'card wide garden';
   el.id = `garden-${kind}`;
-  el.innerHTML = `<h2>Tuin · ${NAMES[kind]}</h2><p class="dims">breedte ${px(size.x)} · hoogte ${px(size.y)} · diepte ${px(size.z)} · ${triangles.toLocaleString('nl')} driehoeken van dichtbij, ${game.triangles.toLocaleString('nl')} in het spel · ${draws} tekenopdracht${draws > 1 ? 'en' : ''}</p>`;
-  const pair = document.createElement('div');
-  pair.className = 'garden-pair';
-  pair.append(figure(snapshot(object, 'ref'), 'Gebouwd (Three.js)'), figure(img(REFS[kind][0]), 'Voorbeeld van de eigenaar'));
-  el.appendChild(pair);
+  el.innerHTML = `<h2>Tuin · ${NAMES[kind]}</h2><p class="dims">beeld ${s.px[0]}×${s.px[1]} px · ${kB(s.bytes)} WebP · in het spel 2 driehoeken, 1 tekenopdracht</p>`;
   const row = document.createElement('div');
-  row.className = 'garden-row';
-  for (const view of ['quarter', 'front', 'side', 'top'] as const) row.appendChild(figure(snapshot(object, view), VIEWS[view].label));
-  row.appendChild(figure(img(REFS[kind][1]), 'Voorbeeld (sheet)', 'sheet'));
+  row.className = 'garden-row three';
+  row.append(
+    figure(img(REFS[kind][0]), `Origineel: ${REFS[kind][1]}`),
+    figure(img(WEBP[kind], 'checker'), 'Uitgesneden WebP (transparant)'),
+    figure(img(WEBP[kind], 'grass'), 'Dezelfde WebP op gras'),
+  );
   el.appendChild(row);
-  // At game size: the obstacle on a grass tile with a bot alongside, as the game camera sees it.
+  // At game size: the picture on its card on a grass tile, a bot alongside, as the game camera sees it.
   const shot = gameShot(field(3, 2, (x, y) => (x === 1 && y === 0 ? buildObstacle(kind) : x === 0 && y === 1 ? bot('yellow') : x === 2 && y === 1 ? buildObstacle(kind, 1) : null)), 3 * PITCH);
   const strip = document.createElement('div');
   strip.className = 'garden-game';
-  strip.append(figure(shot, `Spelcamera (${TILT}° gekanteld, perspectief), spelversie, met een Flockbot ter vergelijking; rechts een kwartslag gedraaid`, 'big'));
+  const mirrorNote = data.sprite.mirror[kind] ? 'rechts gespiegeld (oneven draai)' : 'rechts niet gespiegeld (licht komt van één kant)';
+  strip.append(figure(shot, `Spelcamera (${TILT}° gekanteld, perspectief), met een Flockbot ter vergelijking; ${mirrorNote}`, 'big'));
   for (const cell of [53, 42]) strip.append(figure(phoneSize(shot, Math.round(3.25 * cell)), `vak ${cell} px`));
   el.appendChild(strip);
   el.insertAdjacentHTML('beforeend', `<p class="note">${NOTES[kind]}</p>`);
@@ -247,25 +253,39 @@ function plantsCard(sheet: HTMLElement): void {
   const el = document.createElement('section');
   el.className = 'card wide garden';
   el.id = 'garden-plants';
-  el.innerHTML = '<h2>Tuin · losse plantjes</h2><p class="dims">Blaadje, takje met vier blaadjes, graspol, witte en roze bloem. Eén gedeeld materiaal; de bosjes, de stronk en de achtergrond kunnen ze hergebruiken.</p>';
+  const P = spriteData.plants;
+  const total = Object.values(P).reduce((sum, p) => sum + p.bytes, 0);
+  el.innerHTML = `<h2>Tuin · losse plantjes</h2><p class="dims">Uitgesneden WebP's, samen ${kB(total)}, voor de achtergrond en de rand. Takje en graspol uit 17-sheet-bushes-plants (klein, op twee keer de grootte); de bloemen uit het grote bosje (06), de roze bijgekleurd.</p>`;
   const row = document.createElement('div');
-  row.className = 'garden-row five';
-  const pieces: [THREE.Object3D, string][] = [
-    [buildLeaf(0.3), 'Blaadje'],
-    [buildSprig(0.32), 'Takje (4 blaadjes)'],
-    [buildGrassTuft(0.26), 'Graspol'],
-    [buildFlower('white', 0.26), 'Witte bloem'],
-    [buildFlower('pink', 0.26), 'Roze bloem'],
+  row.className = 'garden-row four';
+  const pieces: [string, string, number][] = [
+    [sprigWebp, 'Takje (4 blaadjes)', P['plant-sprig'].bytes],
+    [grassWebp, 'Graspol', P['plant-grass'].bytes],
+    [flowerWhiteWebp, 'Witte bloem', P['plant-flower-white'].bytes],
+    [flowerPinkWebp, 'Roze bloem', P['plant-flower-pink'].bytes],
   ];
-  for (const [piece, label] of pieces) {
-    const { triangles } = cost(piece);
-    row.appendChild(figure(snapshot(piece, 'ref'), `${label} · ${triangles} driehoeken`));
-  }
+  for (const [src, label, bytes] of pieces) row.appendChild(figure(img(src, 'checker'), `${label} · ${kB(bytes)}`));
   el.appendChild(row);
   const ref = document.createElement('div');
   ref.className = 'garden-strip';
-  ref.append(figure(img(refSheetPlants), 'Voorbeeld van de eigenaar (17-sheet-bushes-plants)'));
+  ref.append(figure(img(refSheetPlants), 'Origineel: 17-sheet-bushes-plants'));
   el.appendChild(ref);
+  sheet.appendChild(el);
+}
+
+/** The code-built versions, kept as an option. */
+function modelsCard(sheet: HTMLElement): void {
+  const el = document.createElement('section');
+  el.className = 'card wide garden';
+  el.id = 'garden-models';
+  el.innerHTML = '<h2>Tuin · codeversie (keuze, niet de standaard)</h2><p class="dims">Dezelfde obstakels in code nagebouwd (<code>buildObstacleModel</code>). Echt 3D en vrij te draaien, maar minder trouw aan de beelden; daarom is het beeld de standaard.</p>';
+  const row = document.createElement('div');
+  row.className = 'garden-row';
+  for (const kind of GARDEN_OBSTACLE_KINDS) {
+    const model = buildObstacleModel(kind, 0, data.detail.closeUp);
+    row.appendChild(figure(snapshot(model, 'ref'), `${NAMES[kind]} · ${cost(buildObstacleModel(kind)).triangles.toLocaleString('nl')} driehoeken`));
+  }
+  el.appendChild(row);
   sheet.appendChild(el);
 }
 
@@ -294,20 +314,24 @@ function boardsCard(sheet: HTMLElement): void {
     holder.append(figure(shot, `Level "${level.name}" (${width}×${height}), spelcamera; alleen muren en robots getekend (uitgang, poort en knop horen bij andere sessies)`, 'big'), figure(phoneSize(shot, Math.round((Math.max(width, height) + 0.3) * cell * 1.08)), `op ware grootte, vak ${cell} px`));
   }
   el.appendChild(holder);
-  // The cost against the robot theme's block.
   const robot = cost(buildRobotObstacle());
-  const lines = GARDEN_OBSTACLE_KINDS.map((k) => {
-    const c = cost(buildObstacle(k));
-    const close = cost(buildObstacle(k, 0, data.detail.closeUp));
-    return `<tr><td>${NAMES[k]}</td><td>${c.triangles.toLocaleString('nl')}</td><td>${close.triangles.toLocaleString('nl')}</td><td>${c.draws}</td></tr>`;
-  }).join('');
-  el.insertAdjacentHTML('beforeend', `<table class="garden-cost"><tr><th>Onderdeel</th><th>Driehoeken (spel)</th><th>Driehoeken (dichtbij)</th><th>Tekenopdrachten (los)</th></tr>${lines}<tr><td>Robotthema: obstakelblok</td><td>${robot.triangles.toLocaleString('nl')}</td><td>—</td><td>${robot.draws}</td></tr></table><p class="note">In het spel wordt het vaste bord samengevoegd per materiaal: alle tuinobstakels samen kosten dan hooguit drie tekenopdrachten (steen, hout, plant), hoeveel het er ook zijn.</p>`);
+  const lines = GARDEN_OBSTACLE_KINDS.map((k) => `<tr><td>${NAMES[k]}</td><td>${kB(OBSTACLE_SPRITES[k].bytes)}</td><td>2</td><td>1</td><td>${cost(buildObstacleModel(k)).triangles.toLocaleString('nl')}</td></tr>`).join('');
+  const total = GARDEN_OBSTACLE_KINDS.reduce((sum, k) => sum + OBSTACLE_SPRITES[k].bytes, 0);
+  el.insertAdjacentHTML('beforeend', `<table class="garden-cost"><tr><th>Onderdeel</th><th>WebP</th><th>Driehoeken</th><th>Tekenopdrachten</th><th>Codeversie: driehoeken</th></tr>${lines}<tr><td><b>Samen</b></td><td><b>${kB(total)}</b></td><td></td><td></td><td></td></tr><tr><td>Robotthema: obstakelblok</td><td>—</td><td>${robot.triangles.toLocaleString('nl')}</td><td>${robot.draws}</td><td></td></tr></table><p class="note">Elk soort beeld heeft één gedeeld materiaal: op een samengevoegd bord kosten alle tuinobstakels samen hooguit vijf tekenopdrachten. In het losse HTML-bestand komen de beelden als base64 erbij (ongeveer een derde groter dan de WebP's).</p>`);
   sheet.appendChild(el);
 }
 
-/** Add the garden-obstacle cards to the parts sheet. */
-export function addGardenObstacleCards(sheet: HTMLElement): void {
-  for (const kind of GARDEN_OBSTACLE_KINDS) obstacleCard(sheet, kind);
-  plantsCard(sheet);
-  boardsCard(sheet);
+/** Add the garden-obstacle cards to the parts sheet, once the obstacle pictures have loaded. */
+export async function addGardenObstacleCards(sheet: HTMLElement): Promise<void> {
+  // Placeholder first, so the cards keep their place among the other sections.
+  const anchor = document.createElement('div');
+  anchor.style.display = 'contents';
+  sheet.appendChild(anchor);
+  await obstaclePicturesLoaded();
+  const holder = document.createDocumentFragment() as unknown as HTMLElement;
+  for (const kind of GARDEN_OBSTACLE_KINDS) obstacleCard(holder, kind);
+  plantsCard(holder);
+  boardsCard(holder);
+  modelsCard(holder);
+  anchor.appendChild(holder);
 }

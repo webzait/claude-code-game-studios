@@ -1042,6 +1042,6 @@ addCoinCards(document.getElementById('sheet')!);
 
 // The settings screen and its controls (src/parts/settings.ts).
 addSettingsCards(document.getElementById('sheet')!);
-addGardenObstacleCards(document.getElementById('sheet')!);
+void addGardenObstacleCards(document.getElementById('sheet')!);
 
 document.body.dataset.ready = 'true';
