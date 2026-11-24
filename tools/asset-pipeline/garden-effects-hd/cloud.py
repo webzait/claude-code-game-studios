@@ -63,6 +63,9 @@ PARAMS = {
     # mix = clip(a + b * normal_y).
     'rim_w': 0.9, 'rim_pale': (205, 212, 236), 'rim_dark': (128, 142, 180),
     'rim_s_pale': 0.5, 'rim_s_dark': 1.0, 'rim_a': 0.45, 'rim_b': 0.8,
+    # Thin outline: width (sheet px), pale and dark colours and strengths, same mix.
+    'line_w': 0.6, 'line_pale': (200, 206, 230), 'line_dark': (120, 132, 170),
+    'line_s_pale': 0.4, 'line_s_dark': 0.9,
     # Shadow: offset (sheet px), blur sigma (sheet px), colour, opacity.
     'sh_dx': -0.6, 'sh_dy': 2.4, 'sh_sigma': 1.6, 'sh_col': (95, 100, 118), 'sh_op': 0.75,
 }
@@ -112,6 +115,7 @@ def paint(p: dict, w: float, h: float, ppu: float, names=None, shadow=True, orig
     px = 1.0 / ppu
     hx, hy = p['hl']
     pale, dark = np.array(p['rim_pale'], float), np.array(p['rim_dark'], float)
+    lpale, ldark = np.array(p['line_pale'], float), np.array(p['line_dark'], float)
     for name, (cx, cy, r) in p['balls'].items():
         if names is not None and name not in names:
             continue
@@ -126,6 +130,11 @@ def paint(p: dict, w: float, h: float, ppu: float, names=None, shadow=True, orig
         rim_col = pale + (dark - pale) * m[..., None]
         s = (p['rim_s_pale'] + (p['rim_s_dark'] - p['rim_s_pale']) * m) * t
         col = col + (rim_col - col) * s[..., None]
+        # The thin drawn outline: a crisp band line_w wide just inside the edge.
+        lt = np.clip((p['line_w'] - (r - dist)) / 0.3, 0, 1)
+        line_col = lpale + (ldark - lpale) * m[..., None]
+        ls = (p['line_s_pale'] + (p['line_s_dark'] - p['line_s_pale']) * m) * lt
+        col = col + (line_col - col) * np.clip(ls, 0, 1)[..., None]
         pre = col * cov[..., None] + pre * (1 - cov[..., None])
         alpha = cov + alpha * (1 - cov)
     if shadow:
