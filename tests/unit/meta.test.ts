@@ -313,7 +313,9 @@ describe('test lab', () => {
       else expect(result.capped, level.id).toBe(true);
     }
     expect(proven).toBeGreaterThanOrEqual(8);
-  });
+    // Its own time limit: this solves every level (100 since page 5) up to the certify cap, which
+    // takes about 65 s on the cloud machines, past the suite's 60 s default. The check is unchanged.
+  }, 180000);
 });
 
 describe('level selection main action', () => {
