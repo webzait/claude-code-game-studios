@@ -30,9 +30,22 @@ garden starts with a fresh path (level 21 at the bottom, no gazebo yet). The las
 at the gazebo too, even when it is shorter than 20.
 
 This matches the 3D gazebo goal on the board (another session): reaching the gazebo on the
-board ends a level; reaching the gazebo on the path ends a garden. Proposal for later, not
-built: a small celebration when a garden is finished, and the gazebo shown lit (glowing pad
-with check, as in `24-sheet-gazebo-goal`) on the path for completed gardens.
+board ends a level; reaching the gazebo on the path ends a garden. Approved by the owner
+(2026-11-24), together with the two pieces below.
+
+**The gazebo lit.** A completed garden's gazebo is drawn lit (after `24-sheet-gazebo-goal`):
+a green-gold glow behind it and a green check ball on its steps. It stands at the bottom of the
+path, below the first levels of the next garden (`.is-finish.is-reached`), until two levels of
+the new garden are completed and take its place. With everything completed the big lit gazebo
+is the "All levels completed" picture (`.is-done`).
+
+**The celebration.** Winning the last level of a garden shows "Garden N complete!" over the
+level screen (`src/ui/themes/garden/gardenDone.ts`, `tf-garden-done.css`): the lit gazebo half
+above a cream card, slowly turning rays, white, pink and yellow petals drifting down, the
+garden's stars ("52 of 60 stars") and one button, "Next garden" ("Levels" after the last
+garden, titled "All gardens complete!"). A dialog with focus on its button; under reduced motion
+nothing turns or falls. No coins or other reward: that is an economy decision for the owner.
+`chapterCompletedBy(index, total, 20)` tells which win completes a garden.
 
 Logic: `pathScene(total, current, ahead, chapter, behind)` in `src/ui/levelPath.ts`
 (tests: `tests/unit/garden-levels.test.ts`). With `chapter` and `behind` both 0 it is
@@ -70,6 +83,7 @@ path's height (container units); on 320×568 a locked ball is about 34 px, the c
 | `src/ui/themes/garden/levels-gazebo.webp` | The gazebo, 360×408, 32 KB (about 43 KB inlined) |
 | `data/themes/garden/levels.json` | Garden size, completed levels shown, colours, gazebo size |
 | `tools/asset-pipeline/build-garden-gazebo.py` | Cuts the gazebo out of `08-gazebo.png` (background and arch openings transparent, ground shadow made see-through; artwork not redrawn or recoloured) |
+| `src/ui/themes/garden/gardenDone.ts`, `tf-garden-done.css` | The "garden complete" celebration |
 | `src/parts/gardenLevels.ts` | The parts sheet section (the game's own screen and code, made-up progress) |
 
 ## For the theme session (wiring it in)
@@ -78,6 +92,9 @@ path's height (container units); on 320×568 a locked ball is about 34 px, the c
 2. Call `applyGardenLevels(el('map'))` once.
 3. In `drawMap`, pass `...gardenPathModel()` to `renderLevels` (adds `chapter: 20, behind: 2`).
 4. Let the level-path backdrop show on `#map` (see Mood).
+5. After a win, if `chapterCompletedBy(index, LEVELS.length, 20)` is not 0, open the level screen
+   with `showGardenDone(el('map'), { garden, last, ...gardenStars(stars, garden, 20) }, next)`
+   and import `tf-garden-done.css`.
 
 Cost: 2D only — no triangles or draw calls. Two pictures (97 KB + 32 KB, about 175 KB inlined), about 13 KB of CSS (uncompressed, comments included).
 
