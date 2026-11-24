@@ -4,14 +4,15 @@
  */
 import * as THREE from 'three';
 import TILE from '../../../../data/themes/garden/tile.json';
-import RIM from '../../../../data/themes/garden/rim.json';
 import UNDER from '../../../../data/themes/garden/underlay.json';
 import { Mesher, once, outlineRect, plainMaterial, shadowed } from './geometry';
 import { fur, mottle, painted } from './paint';
 import { boardFootprint, seeded } from './layout';
+import { imageTexture } from './rim';
+import bedUrl from '../../../../assets/turnflock/garden/board/rim/bed.webp';
 
 const T = TILE.tile;
-const G = { rim: RIM.rim, underlay: UNDER.underlay };
+const G = { underlay: UNDER.underlay };
 const C = UNDER.colors;
 
 /** The grass bed between the tiles, seen from above: deeper green, dense short blades; repeats every `bedRepeat` cells. */
@@ -26,8 +27,16 @@ export function bedTexture(): THREE.Texture | null {
   }, true);
 }
 
-/** The grass bed's material. */
-export const bedMaterial = new THREE.MeshStandardMaterial({ map: bedTexture(), roughness: 0.95 });
+const bed = imageTexture(bedUrl, true);
+
+/** Settles once the grass bed picture (`bed.webp`, cut from `01-board-full`) has loaded. */
+export const bedReady: Promise<void> = bed.ready;
+
+/**
+ * The grass bed's material: a repeating patch cut from `01-board-full` (`bed.webp`). Outside a
+ * browser, or before it loads in the tests, the painted bed (`bedTexture`) stands in.
+ */
+export const bedMaterial = new THREE.MeshStandardMaterial({ map: bed.texture ?? bedTexture(), roughness: 0.95, color: new THREE.Color(1, 1, 1).multiplyScalar(G.underlay.bedTone) });
 
 /**
  * Underlay: one plate under the whole board, `lip` wider than the rim all round, its top the
@@ -40,7 +49,7 @@ export function buildUnderlay(cols: number, rows: number, gap: number, pegs = fa
   const w = outerW + 2 * u.lip;
   const d = outerD + 2 * u.lip;
   // Its corners follow the braid's outside, so no bed shows past the twigs.
-  const radius = Math.min(G.rim.cornerRadius + G.rim.width / 2 + u.lip, Math.min(w, d) / 2);
+  const radius = Math.min(u.cornerRadius, Math.min(w, d) / 2);
   const plate = new THREE.Group();
 
   // The bed: a flat top textured in world units, so the blades are the same size on every board.

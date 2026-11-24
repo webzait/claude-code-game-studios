@@ -30,6 +30,23 @@
       "clearcoatRoughness": 0.16
     }
   },
+  "image": {
+    "$comment": "The rim as the owner's picture (buildRim): pieces of 03-rim-vines from rim-atlas.webp, laid flat at `height`. pxPerCell: source pixels (in 03-rim-vines) per cell. decorOrder: the decorated pieces, most important first; on a board too small for all of them the last ones are left out.",
+    "pxPerCell": 160,
+    "height": 0.3,
+    "layer": 0.002,
+    "alphaTest": 0.02,
+    "shadowAlpha": 0.5,
+    "decorOrder": [
+      "right-d",
+      "left-g",
+      "top-b",
+      "bottom-f",
+      "top-a",
+      "right-c",
+      "left-h"
+    ]
+  },
   "decor": {
     "leafLength": 0.46,
     "leafWidth": 0.3,
@@ -110,5 +127,260 @@
     "petalShade": "#E6E4EE",
     "heart": "#FFC21A",
     "heartDark": "#F08A0C"
+  },
+  "atlas": {
+    "$comment": "Written by assets/turnflock/garden/board/rim/build-rim.py. Source px are in 03-rim-vines (1254 px square); atlas px in rim-atlas.webp.",
+    "size": [
+      1024,
+      788
+    ],
+    "scale": 0.8,
+    "fade": 40,
+    "inner": [
+      173,
+      1070,
+      138,
+      1067
+    ],
+    "mirrorShift": 4.6,
+    "pieces": [
+      {
+        "name": "tl",
+        "kind": "corner",
+        "src": [
+          28,
+          30,
+          320,
+          320
+        ],
+        "atlas": [
+          6,
+          274,
+          234,
+          232
+        ]
+      },
+      {
+        "name": "tr",
+        "kind": "corner",
+        "src": [
+          970,
+          30,
+          1226,
+          320
+        ],
+        "atlas": [
+          252,
+          274,
+          205,
+          232
+        ]
+      },
+      {
+        "name": "bl",
+        "kind": "corner",
+        "src": [
+          28,
+          940,
+          420,
+          1232
+        ],
+        "atlas": [
+          292,
+          6,
+          314,
+          234
+        ]
+      },
+      {
+        "name": "br",
+        "kind": "corner",
+        "src": [
+          940,
+          940,
+          1226,
+          1232
+        ],
+        "atlas": [
+          618,
+          6,
+          229,
+          234
+        ]
+      },
+      {
+        "name": "top-a",
+        "kind": "decor",
+        "side": "top",
+        "src": [
+          280,
+          25,
+          505,
+          152
+        ],
+        "atlas": [
+          482,
+          518,
+          180,
+          102
+        ]
+      },
+      {
+        "name": "top-tile",
+        "kind": "tile",
+        "side": "top",
+        "src": [
+          505,
+          25,
+          745,
+          152
+        ],
+        "period": 200,
+        "atlas": [
+          674,
+          518,
+          160,
+          102
+        ]
+      },
+      {
+        "name": "top-b",
+        "kind": "decor",
+        "side": "top",
+        "src": [
+          735,
+          25,
+          1010,
+          152
+        ],
+        "atlas": [
+          6,
+          677,
+          220,
+          102
+        ]
+      },
+      {
+        "name": "bottom-tile",
+        "kind": "tile",
+        "side": "bottom",
+        "src": [
+          395,
+          1052,
+          680,
+          1236
+        ],
+        "period": 245,
+        "atlas": [
+          6,
+          518,
+          196,
+          147
+        ]
+      },
+      {
+        "name": "bottom-f",
+        "kind": "decor",
+        "side": "bottom",
+        "src": [
+          660,
+          1052,
+          980,
+          1236
+        ],
+        "atlas": [
+          214,
+          518,
+          256,
+          147
+        ]
+      },
+      {
+        "name": "left-g",
+        "kind": "decor",
+        "side": "left",
+        "src": [
+          24,
+          280,
+          188,
+          600
+        ],
+        "atlas": [
+          6,
+          6,
+          131,
+          256
+        ]
+      },
+      {
+        "name": "left-h",
+        "kind": "decor",
+        "side": "left",
+        "src": [
+          24,
+          670,
+          188,
+          980
+        ],
+        "atlas": [
+          149,
+          6,
+          131,
+          248
+        ]
+      },
+      {
+        "name": "right-c",
+        "kind": "decor",
+        "side": "right",
+        "src": [
+          1052,
+          280,
+          1230,
+          510
+        ],
+        "atlas": [
+          623,
+          274,
+          142,
+          184
+        ]
+      },
+      {
+        "name": "right-tile",
+        "kind": "tile",
+        "side": "right",
+        "src": [
+          1062,
+          505,
+          1230,
+          755
+        ],
+        "period": 210,
+        "atlas": [
+          777,
+          274,
+          134,
+          168
+        ]
+      },
+      {
+        "name": "right-d",
+        "kind": "decor",
+        "side": "right",
+        "src": [
+          1052,
+          740,
+          1230,
+          980
+        ],
+        "atlas": [
+          469,
+          274,
+          142,
+          192
+        ]
+      }
+    ]
   }
 }
