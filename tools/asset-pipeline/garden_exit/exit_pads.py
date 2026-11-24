@@ -159,8 +159,19 @@ def pad(look: str, factor: float = FACTOR) -> tuple[np.ndarray, tuple[float, flo
     solid = _draw([hull] + rays, (w, h), 1.0) > 0.5
     painted = ndimage.binary_fill_holes(cut[..., 3] > 115)
     core = solid & (ndimage.distance_transform_edt(painted) > 2.5)
+    # Along the base the sheet fades through a light drop shadow: there go 2 px in from where
+    # the pad is fully opaque instead.
+    opaque = ndimage.binary_fill_holes(cut[..., 3] > 235)
+    lower = (np.arange(h)[:, None] > rim_top[1]) & np.ones((1, w), bool)
+    core &= ~(lower & (ndimage.distance_transform_edt(opaque) <= 2))
+    # Outside the core: a smooth average of the nearby core colour (normalised blur), not the
+    # nearest pixel, so the bled band carries no streaks.
     _, (iy, ix) = ndimage.distance_transform_edt(~core, return_indices=True)
-    colour = np.where(core[..., None], rgb, rgb[iy, ix])
+    k = core.astype(float)
+    num = np.dstack([ndimage.gaussian_filter(rgb[..., c] * k, 2.0) for c in range(3)])
+    den = ndimage.gaussian_filter(k, 2.0)[..., None]
+    soft = np.where(den > 0.02, num / np.maximum(den, 1e-6), rgb[iy, ix])
+    colour = np.where(core[..., None], rgb, soft)
     big = enlarge(np.dstack([colour, np.full((h, w), 255.0)]), factor)
     rgba = np.dstack([big[..., :3], solid_big * 255])
 
