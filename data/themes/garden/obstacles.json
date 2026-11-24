@@ -4,8 +4,9 @@
     "_note": "The default obstacles: the owner's pictures on a flat card facing the game camera. width = the object's own width in cells (shadow not counted); footForward = how far towards the camera from the cell centre the object's foot line sits; lift = how far the card is moved towards the camera so a robot behind never cuts into it; mirror = may be flipped on odd turns (only pictures lit from the front).",
     "width": {
       "rock": 0.84,
+      "rockMossLight": 0.86,
       "rockMossy": 0.86,
-      "stump": 0.8,
+      "stump": 0.84,
       "bushWhite": 0.88,
       "bushPink": 0.88
     },
@@ -13,6 +14,7 @@
     "lift": 0.3,
     "mirror": {
       "rock": false,
+      "rockMossLight": false,
       "rockMossy": false,
       "stump": true,
       "bushWhite": true,
@@ -27,8 +29,9 @@
     },
     "variants": {
       "rock": {
-        "rock": 0.5,
-        "rockMossy": 0.5
+        "rock": 0.4,
+        "rockMossLight": 0.3,
+        "rockMossy": 0.3
       },
       "bush": {
         "bushWhite": 0.5,

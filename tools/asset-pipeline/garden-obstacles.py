@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Cut the garden-theme obstacles out of the owner's pictures.
 
-Reads  design/reference/turnflock/garden/04-rock.png, 05-stump.png,
-       06-bush-flowers.png, 14-sheet-rock.png, 17-sheet-bushes-plants.png
+Reads  design/reference/turnflock/garden/25-rock-hd.webp, 26-rock-moss-light-hd.webp,
+       27-rock-mossy-hd.webp, 28-stump-hd.webp (already cut out by the owner),
+       06-bush-flowers.png, 17-sheet-bushes-plants.png
 Writes assets/turnflock/garden/obstacles/*.webp   (transparent, baked shadow kept)
        data/themes/garden/obstacle-sprites.json   (size and foot of each picture)
 
@@ -16,8 +17,10 @@ The owner's picture is the part: nothing is drawn. Per picture:
    dark lavender, so the piece still sits on the tile.
 5. Cropped, scaled with premultiplied alpha (no dark fringe) and saved as WebP.
 
-The plain rock exists only on 14-sheet-rock (96 px wide) and is kept at twice
-that size. The pink bush is made from 06-bush-flowers by retinting its white
+The three rocks and the stump come already cut out (transparent, no shadow):
+their own edge is kept and a soft lavender contact shadow, in the colour and
+strength of the bushes' baked shadow, is added under them so they sit on the
+tile. The pink bush is made from 06-bush-flowers by retinting its white
 flowers pink and lilac, as on 17-sheet-bushes-plants, because the pink bush
 exists only at 83 px there; the smallest flower stays white, as on the sheet.
 
@@ -39,9 +42,10 @@ PLANT_FLOWER = 128     # px, longest side of a loose flower
 OBJECT_STEP = 40       # colour distance from the background that ends "background"
 SHADOW = np.array([92.0, 74.0, 124.0])   # colour the baked shadow is kept in
 QUALITY = 88
-SHADOW_LUM = 172       # for the grey rock: baked-shadow pixels are lighter than this; darker ones are rock
-DARK_FOOT = 80         # the rock's foot line is darker than this
-COLOURED_SHADOW_LUM = 60   # stump and bush are never grey, so every grey-lavender pixel low down is shadow
+SHADOW_LUM = 172       # for a grey object (default of cut()): baked-shadow pixels are lighter than this
+DARK_FOOT = 80         # ... and a grey object's foot line is darker than this
+COLOURED_SHADOW_LUM = 60   # bushes are never grey, so every grey-lavender pixel low down is shadow
+CONTACT_SHADOW = 0.5   # strength of the shadow added under the owner's ready cut-outs, at its centre
 
 
 def load(name):
@@ -219,6 +223,29 @@ def pink_flowers(rgb, obj, tints):
     return out
 
 
+def from_cutout(name):
+    """A picture the owner supplied already cut out: its own alpha, stray specks dropped, a soft contact shadow added."""
+    a = np.asarray(Image.open(SRC / name).convert('RGBA')).astype(np.float64)
+    rgb, alpha = a[..., :3], a[..., 3] / 255.0
+    # The owner's cut-outs top out just under full alpha (253): make the body solid.
+    alpha = np.clip(alpha / 0.98, 0, 1)
+    parts = components(alpha > 0.5, 200)
+    keep = max(parts, key=lambda m: m.sum())
+    big = [m for m in parts if m.sum() > 0.02 * keep.sum()]
+    near = morph(np.any(big, axis=0), 5, grow=True)
+    alpha = np.where(near, alpha, 0)
+    obj = alpha > 0.5
+    ys, xs = np.nonzero(obj)
+    foot, left, right = ys.max(), xs.min(), xs.max()
+    width = right - left
+    yy, xx = np.mgrid[0:alpha.shape[0], 0:alpha.shape[1]]
+    d = ((xx - (left + right) / 2) / (0.6 * width)) ** 2 + ((yy - foot + 0.02 * width) / (0.11 * width)) ** 2
+    shade = CONTACT_SHADOW * np.exp(-2.4 * d)
+    out_a = alpha + shade * (1 - alpha)
+    colour = (rgb * alpha[..., None] + SHADOW * (shade * (1 - alpha))[..., None]) / np.maximum(out_a, 1e-6)[..., None]
+    return colour, out_a, obj
+
+
 def save(colour, alpha, obj, name, longest=None, scale=None):
     ys, xs = np.nonzero(alpha > 0.02)
     y0, y1 = max(0, ys.min() - 4), min(alpha.shape[0], ys.max() + 5)
@@ -250,13 +277,10 @@ def save(colour, alpha, obj, name, longest=None, scale=None):
 
 def main():
     meta = {}
-    c, a, o = cut(load('04-rock.png'))
-    meta['rockMossy'] = save(c, a, o, 'rock-mossy', LONGEST)
-    # The plain rock exists only on the small sheet (96 px wide): kept at twice its size.
-    c, a, o = cut(load('14-sheet-rock.png'))
-    meta['rock'] = save(c, a, o, 'rock', scale=2)
-    c, a, o = cut(load('05-stump.png'), shadow_lum=COLOURED_SHADOW_LUM)
-    meta['stump'] = save(c, a, o, 'stump', LONGEST)
+    for kind, name, source in [('rock', 'rock', '25-rock-hd.webp'), ('rockMossLight', 'rock-moss-light', '26-rock-moss-light-hd.webp'),
+                               ('rockMossy', 'rock-mossy', '27-rock-mossy-hd.webp'), ('stump', 'stump', '28-stump-hd.webp')]:
+        c, a, o = from_cutout(source)
+        meta[kind] = save(c, a, o, name, LONGEST)
     bush = load('06-bush-flowers.png')
     c, a, o = cut(bush, shadow_lum=COLOURED_SHADOW_LUM)
     meta['bushWhite'] = save(c, a, o, 'bush-white', LONGEST)

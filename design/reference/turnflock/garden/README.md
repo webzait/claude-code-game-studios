@@ -18,6 +18,10 @@ compressed and the size is reported.
 | 13-sheet-tile-dirt | Dirt tile with a grass edge (possible new tile type) | Board |
 | 04-rock, 14-sheet-rock, 15-sheet-rock-mossy | Rock, plain and mossy | Obstacles |
 | 05-stump, 16-sheet-stump | Tree stump with leaves | Obstacles |
+| 25-rock-hd | Plain rock, high resolution, already cut out (transparent) — supplied later, replaces 14 | Obstacles |
+| 26-rock-moss-light-hd | Rock with a little moss (as 04), high resolution, cut out | Obstacles |
+| 27-rock-mossy-hd | Mossy rock (as 15), high resolution, cut out — replaces 15 | Obstacles |
+| 28-stump-hd | Tree stump with leaves (as 05), high resolution, cut out — replaces 05 | Obstacles |
 | 06-bush-flowers, 17-sheet-bushes-plants | Bushes with white or pink flowers; leaf, grass tuft, white and pink flower | Obstacles / decor |
 | 08-gazebo, 24-sheet-gazebo-goal | Gazebo with flag; as the goal with a glowing green pad and check | Exit |
 | 22-sheet-exit-pad-states | Exit pad: grey, green, green with rays | Exit |

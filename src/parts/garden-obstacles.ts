@@ -8,6 +8,7 @@ import { shadeByHeight, roundedBlock } from '../render/parts/shapes';
 import { buildObstacle, GARDEN_OBSTACLE_KINDS, OBSTACLE_SPRITES, obstaclePicturesLoaded } from '../render/parts/garden/obstacles';
 import spriteData from '../../data/themes/garden/obstacle-sprites.json';
 import rockWebp from '../../assets/turnflock/garden/obstacles/rock.webp';
+import rockMossLightWebp from '../../assets/turnflock/garden/obstacles/rock-moss-light.webp';
 import rockMossyWebp from '../../assets/turnflock/garden/obstacles/rock-mossy.webp';
 import stumpWebp from '../../assets/turnflock/garden/obstacles/stump.webp';
 import bushWhiteWebp from '../../assets/turnflock/garden/obstacles/bush-white.webp';
@@ -18,10 +19,11 @@ import flowerWhiteWebp from '../../assets/turnflock/garden/obstacles/plant-flowe
 import flowerPinkWebp from '../../assets/turnflock/garden/obstacles/plant-flower-pink.webp';
 import { chooseObstacles, type GardenObstacleKind } from '../render/parts/garden/obstacleChoice';
 import data from '../../data/themes/garden/obstacles.json';
-import refRock from './garden-ref/rock.webp';
-import refStump from './garden-ref/stump.webp';
+import refRockHd from './garden-ref/rock-hd.webp';
+import refRockMossLightHd from './garden-ref/rock-moss-light-hd.webp';
+import refRockMossyHd from './garden-ref/rock-mossy-hd.webp';
+import refStumpHd from './garden-ref/stump-hd.webp';
 import refBush from './garden-ref/bush.webp';
-import refSheetRock from './garden-ref/sheet-rock.webp';
 import refSheetPlants from './garden-ref/sheet-plants.webp';
 import './garden-obstacles.css';
 
@@ -150,26 +152,29 @@ function cost(o: THREE.Object3D): { triangles: number; draws: number } {
 
 const NAMES: Record<GardenObstacleKind, string> = {
   rock: 'Steen (kaal)',
+  rockMossLight: 'Steen met een beetje mos',
   rockMossy: 'Steen met mos',
   stump: 'Boomstronk',
   bushWhite: 'Bosje met witte bloemen',
   bushPink: 'Bosje met roze bloemen',
 };
 const NOTES: Record<GardenObstacleKind, string> = {
-  rock: 'Uit 14-sheet-rock: de enige kale steen van de eigenaar, maar 96 px breed; op twee keer die grootte bewaard en daardoor iets zachter dan de andere.',
-  rockMossy: 'Uit 04-rock (1254 px): die steen heeft zelf al mos, dus hij is de steen met mos.',
-  stump: 'Uit 05-stump (1254 px), met de blaadjes en de ingebakken schaduw.',
-  bushWhite: 'Uit 06-bush-flowers (1254 px).',
+  rock: 'Uit 25-rock-hd (1254 px, door de eigenaar al uitgesneden). De zachte contactschaduw eronder is toegevoegd.',
+  rockMossLight: 'Uit 26-rock-moss-light-hd (1254 px, al uitgesneden): de scherpe versie van 04-rock. Derde stenenvariant. Contactschaduw toegevoegd.',
+  rockMossy: 'Uit 27-rock-mossy-hd (1254 px, al uitgesneden): de scherpe versie van 15-sheet-rock-mossy. Contactschaduw toegevoegd.',
+  stump: 'Uit 28-stump-hd (1254 px, al uitgesneden), met de blaadjes. Contactschaduw toegevoegd.',
+  bushWhite: 'Uit 06-bush-flowers (1254 px), met de ingebakken schaduw.',
   bushPink: 'Uit 06-bush-flowers (1254 px) met de drie witte bloemen roze, lila en lichtroze bijgekleurd, zoals op 17-sheet-bushes-plants; het roze bosje bestaat daar alleen op 83 px.',
 };
 const REFS: Record<GardenObstacleKind, [string, string]> = {
-  rock: [refSheetRock, '14-sheet-rock (96 px breed)'],
-  rockMossy: [refRock, '04-rock'],
-  stump: [refStump, '05-stump'],
+  rock: [refRockHd, '25-rock-hd'],
+  rockMossLight: [refRockMossLightHd, '26-rock-moss-light-hd'],
+  rockMossy: [refRockMossyHd, '27-rock-mossy-hd'],
+  stump: [refStumpHd, '28-stump-hd'],
   bushWhite: [refBush, '06-bush-flowers'],
   bushPink: [refSheetPlants, '17-sheet-bushes-plants (roze bosje: tweede van links)'],
 };
-const WEBP: Record<GardenObstacleKind, string> = { rock: rockWebp, rockMossy: rockMossyWebp, stump: stumpWebp, bushWhite: bushWhiteWebp, bushPink: bushPinkWebp };
+const WEBP: Record<GardenObstacleKind, string> = { rock: rockWebp, rockMossLight: rockMossLightWebp, rockMossy: rockMossyWebp, stump: stumpWebp, bushWhite: bushWhiteWebp, bushPink: bushPinkWebp };
 
 function figure(content: HTMLElement, caption: string, className = ''): HTMLElement {
   const f = document.createElement('figure');
