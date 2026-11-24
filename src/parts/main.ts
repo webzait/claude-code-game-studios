@@ -24,6 +24,7 @@ import { addGardenObstacleCards } from './garden-obstacles';
 import { addGardenBoardCards } from './garden-board/index';
 import { addGardenBackdropCards } from './gardenBackdrop';
 import { addGardenLevelCards } from './gardenLevels';
+import { addGardenEffectCards } from './gardenEffects';
 
 /**
  * The parts sheet: every game element built on its own and shown from the
@@ -1053,5 +1054,8 @@ void addGardenObstacleCards(document.getElementById('sheet')!);
 // The garden theme's board (src/parts/garden-board/).
 addGardenBoardCards(document.getElementById('sheet')!);
 addGardenLevelCards(document.getElementById('sheet')!);
+
+// Garden theme: the board effects (src/parts/gardenEffects.ts).
+addGardenEffectCards(document.getElementById('sheet')!);
 
 document.body.dataset.ready = 'true';

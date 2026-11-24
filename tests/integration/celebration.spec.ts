@@ -12,7 +12,7 @@ interface LevelData {
 const levels: LevelData[] = JSON.parse(readFileSync('data/levels.json', 'utf8'));
 const config = JSON.parse(readFileSync('data/config.json', 'utf8'));
 const build = pathToFileURL(resolve('dist-single/index.html')).href;
-const VARIANTS = ['confetti', 'wave', 'hop'] as const;
+const VARIANTS = ['confetti', 'wave', 'hop', 'garden'] as const;
 
 /** Opens the build with a fresh save that has `lab` set, and collects every page error and console error. */
 async function open(page: Page, lab: Record<string, unknown> = {}): Promise<string[]> {
@@ -108,12 +108,12 @@ test('win celebration: with sound effects off it plans no sound', async ({ page 
   expect(errors).toEqual([]);
 });
 
-test('test lab: "Win celebration" offers the three variants by name and the choice is kept', async ({ page }) => {
+test('test lab: "Win celebration" offers the four variants (garden stars included) by name and the choice is kept', async ({ page }) => {
   const errors = await open(page);
   expect((await snap(page)).lab.celebration).toBe(config.celebration.variant);
   await page.click('#toSettings');
   await page.click('.tf-set-entry');
-  await expect(page.locator('[data-key=celebration] [role=radio]')).toHaveText(['Confetti', 'Light wave', 'Victory hop']);
+  await expect(page.locator('[data-key=celebration] [role=radio]')).toHaveText(['Confetti', 'Light wave', 'Victory hop', 'Garden stars']);
   await page.click('[data-key=celebration] [data-value=hop]');
   expect((await snap(page)).lab.celebration).toBe('hop');
   await page.reload();

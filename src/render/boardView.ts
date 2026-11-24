@@ -13,6 +13,7 @@ import { resolveTheme, type ResolvedTheme } from './themes';
 import { tileBeats } from './stepPlan';
 import type { CelebrationPlan } from '../game/celebration';
 import { CelebrationFx } from './celebration';
+import { GardenCelebrationFx } from './parts/garden/celebration';
 
 /** Which models the board is drawn with. */
 export interface BoardStyle {
@@ -100,7 +101,7 @@ export class BoardView {
   private tweens: Tween[] = [];
   private particles: Particle[] = [];
   /** The win celebration while it plays. */
-  private celebration: CelebrationFx | null = null;
+  private celebration: CelebrationFx | GardenCelebrationFx | null = null;
   /** One pad per exit, by cell. */
   private exitPads = new Map<number, THREE.Group>();
   private exitRings: THREE.Mesh[] = [];
@@ -934,7 +935,9 @@ export class BoardView {
     this.stopCelebration();
     if (!this.level) return;
     const { width, height, walls, exitX, exitY } = this.level.board;
-    this.celebration = new CelebrationFx(
+    // The garden's celebration takes the same stage and plan (design/themes/garden-effects.md).
+    const Fx = plan.variant === 'garden' ? GardenCelebrationFx : CelebrationFx;
+    this.celebration = new Fx(
       {
         group: this.boardGroup,
         width,

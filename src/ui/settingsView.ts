@@ -198,6 +198,7 @@ const CELEBRATION_HINTS: Record<CelebrationVariant, string> = {
   confetti: 'Paper flecks in the robot colours shoot up from the exit and flutter down.',
   wave: 'The tiles light up in a ring that runs from the exit across the board.',
   hop: 'The robots hop out of the exit once more, spin and dive back in.',
+  garden: 'Garden theme: a beam of light on the exit, stars burst out and twinkles run over the board.',
 };
 
 const LAB_KEYS = Object.keys(DEFAULT_LAB) as (keyof LabSettings)[];
