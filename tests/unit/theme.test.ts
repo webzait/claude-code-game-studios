@@ -73,10 +73,10 @@ describe('theme register', () => {
     expect(resolveSoundSet({ ...partial, data: { 'sounds.json': { set: 'no-such-set' } } })).toBeNull();
   });
 
-  it('buttons and icons are not theme slots; the level screen is (owner, 2026-11-24)', () => {
+  it('buttons and icons are not theme slots, except the coin; the level screen is (owner, 2026-11-24)', () => {
     const slots = THEME_SLOTS.map((s) => s.id);
     expect(slots).not.toContain('buttons');
-    expect(slots).toEqual(['robot', 'floorTile', 'rim', 'underlay', 'obstacle', 'exit', 'turnTile', 'plate', 'gate', 'backdrop', 'decor', 'levelScreen', 'colours', 'light', 'sounds']);
+    expect(slots).toEqual(['robot', 'floorTile', 'rim', 'underlay', 'obstacle', 'exit', 'turnTile', 'plate', 'gate', 'backdrop', 'decor', 'levelScreen', 'coin', 'colours', 'light', 'sounds']);
   });
 
   it('every 3D slot names a value the robot theme has', () => {
