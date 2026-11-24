@@ -5,7 +5,7 @@
  */
 
 /** Every theme, in the order the settings screen lists them. */
-export const THEME_IDS = ['robot', 'garden'] as const;
+export const THEME_IDS = ['garden', 'robot'] as const;
 /** One theme: `robot` (the harbour and its flock robots) or `garden` (a sunny garden with flock chicks). */
 export type ThemeId = (typeof THEME_IDS)[number];
 
@@ -18,8 +18,8 @@ export function isThemeId(value: unknown): value is ThemeId {
 }
 
 /**
- * The theme a new player starts in. The build decides it: `npm run build:single`
- * makes `robot`, `npm run build:single:garden` the same game with `garden`
- * (vite.config.ts defines `__TF_DEFAULT_THEME__`). Unknown values give `robot`.
+ * The theme a new player starts in, and every player who never picked one: the garden, the main
+ * theme (owner, 2026-11-24). vite.config.ts defines `__TF_DEFAULT_THEME__`; without it (tools run
+ * outside Vite) or with an unknown value it is the garden too.
  */
-export const DEFAULT_THEME: ThemeId = isThemeId(typeof __TF_DEFAULT_THEME__ === 'string' ? __TF_DEFAULT_THEME__ : undefined) ? (__TF_DEFAULT_THEME__ as ThemeId) : 'robot';
+export const DEFAULT_THEME: ThemeId = isThemeId(typeof __TF_DEFAULT_THEME__ === 'string' ? __TF_DEFAULT_THEME__ : undefined) ? (__TF_DEFAULT_THEME__ as ThemeId) : 'garden';

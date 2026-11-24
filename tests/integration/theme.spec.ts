@@ -1,5 +1,5 @@
-// The theme setting (design/themes.md): switching in the settings changes the page and the
-// board without a reload, is kept, and the garden build opens in the garden theme.
+// The theme setting (design/themes.md): the garden is the main theme; switching in the settings
+// changes the page and the board without a reload, and a picked theme is kept.
 import { expect, test, type Page } from '@playwright/test';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -20,32 +20,43 @@ async function open(page: Page, url: string): Promise<string[]> {
 }
 const theme = (page: Page) => page.evaluate(() => window.turnflock.snapshot().theme);
 
-test('theme: robot by default; Garden in the settings switches page and board at once, and is kept @boot', async ({ page }) => {
+test('theme: a fresh start opens in the garden; Robots in the settings switches page and board at once, and is kept @boot', async ({ page }) => {
   const errors = await open(page, build);
-  expect(await theme(page)).toEqual({ setting: 'robot', page: 'robot' });
+  expect(await theme(page)).toEqual({ setting: 'garden', page: 'garden' });
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--tf-theme-sky').trim())).not.toBe('');
   // Into level 1 and back, so a board is built before the switch.
   await page.click('#continue');
   await expect.poll(async () => (await page.evaluate(() => window.turnflock.snapshot().screen))).toBe('level');
   await page.click('#levelBack');
   await page.click('#toSettings');
   const row = page.locator('#settings [data-key="theme"]');
-  await expect(row.getByRole('radio', { name: 'Robots' })).toHaveAttribute('aria-checked', 'true');
-  await row.getByRole('radio', { name: 'Garden' }).click();
-  expect(await theme(page)).toEqual({ setting: 'garden', page: 'garden' });
-  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--tf-theme-sky').trim())).not.toBe('');
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('turnflock.save')!).settings.theme)).toBe('garden');
-  await page.reload();
-  await expect.poll(() => page.evaluate(() => typeof window.turnflock?.snapshot)).toBe('function');
-  expect(await theme(page)).toEqual({ setting: 'garden', page: 'garden' });
-  // Back to robots: the garden colours are gone again.
-  await page.click('#toSettings');
-  await page.locator('#settings [data-key="theme"]').getByRole('radio', { name: 'Robots' }).click();
+  await expect(row.getByRole('radio', { name: 'Garden' })).toHaveAttribute('aria-checked', 'true');
+  await row.getByRole('radio', { name: 'Robots' }).click();
   expect(await theme(page)).toEqual({ setting: 'robot', page: 'robot' });
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--tf-theme-sky').trim())).toBe('');
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('turnflock.save')!).settings)).toMatchObject({ theme: 'robot', themeChosen: true });
+  // A picked robot theme survives a reload.
+  await page.reload();
+  await expect.poll(() => page.evaluate(() => typeof window.turnflock?.snapshot)).toBe('function');
+  expect(await theme(page)).toEqual({ setting: 'robot', page: 'robot' });
+  // Back to the garden.
+  await page.click('#toSettings');
+  await page.locator('#settings [data-key="theme"]').getByRole('radio', { name: 'Garden' }).click();
+  expect(await theme(page)).toEqual({ setting: 'garden', page: 'garden' });
   expect(errors).toEqual([]);
 });
 
-test('theme: the garden build opens a new player in the garden, and a level plays there', async ({ page }) => {
+test('theme: a save from before the garden became the main theme opens in the garden, progress kept', async ({ page }) => {
+  await page.addInitScript(() => {
+    if (!localStorage.getItem('turnflock.save')) localStorage.setItem('turnflock.save', JSON.stringify({ version: 8, best: { 'first-steps': 3 }, coins: 73, paid: {}, settings: { theme: 'robot' }, lab: {} }));
+  });
+  const errors = await open(page, build);
+  expect(await theme(page)).toEqual({ setting: 'garden', page: 'garden' });
+  expect(await page.evaluate(() => window.turnflock.snapshot().coins)).toBe(73);
+  expect(errors).toEqual([]);
+});
+
+test('theme: the garden build (build:single:garden) is the same game, and a level plays there', async ({ page }) => {
   test.skip(!existsSync(gardenFile), 'run npm run build:single:garden first');
   const errors = await open(page, pathToFileURL(gardenFile).href);
   expect(await theme(page)).toEqual({ setting: 'garden', page: 'garden' });

@@ -493,7 +493,11 @@ class Game {
       setMusic: (on) => change(() => (this.save.settings.music = on)),
       setReduceMotion: (value) => change(() => (this.save.settings.reduceMotion = value)),
       theme: this.save.settings.theme,
-      setTheme: (theme) => change(() => (this.save.settings.theme = theme)),
+      setTheme: (theme) =>
+        change(() => {
+          this.save.settings.theme = theme;
+          this.save.settings.themeChosen = true;
+        }),
       colourShapes: this.save.settings.colourShapes,
       setColourShapes: (on) => change(() => (this.save.settings.colourShapes = on)),
       resetProgress: () =>

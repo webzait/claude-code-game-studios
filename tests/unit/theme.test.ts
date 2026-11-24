@@ -24,12 +24,12 @@ const partial: ThemeSources = {
 };
 
 describe('theme ids', () => {
-  it('knows robot and garden, and the tests run the robot build', () => {
-    expect(THEME_IDS).toEqual(['robot', 'garden']);
+  it('knows robot and garden, and the garden is the main theme', () => {
+    expect(THEME_IDS).toEqual(['garden', 'robot']);
     expect(isThemeId('garden')).toBe(true);
     expect(isThemeId('space')).toBe(false);
     expect(isThemeId(undefined)).toBe(false);
-    expect(DEFAULT_THEME).toBe('robot');
+    expect(DEFAULT_THEME).toBe('garden');
   });
 });
 
@@ -146,32 +146,43 @@ describe('effects and hint during play', () => {
 });
 
 describe('theme in the save', () => {
-  it('a fresh save starts in the build default', () => {
-    expect(SAVE_VERSION).toBe(8);
-    expect(defaultSave().settings.theme).toBe(DEFAULT_THEME);
+  it('a fresh save starts in the garden, not picked by the player', () => {
+    expect(SAVE_VERSION).toBe(9);
+    expect(defaultSave().settings.theme).toBe('garden');
+    expect(defaultSave().settings.themeChosen).toBe(false);
   });
 
-  it('a version 7 save keeps everything and gets the default theme', () => {
+  it('a version 7 save keeps everything and gets the garden', () => {
     const save = migrate({ version: 7, best: { [ids[0]]: 7 }, coins: 73, paid: { [ids[0]]: 26 }, economy: 2, settings: { mute: true, music: false, reduceMotion: true, colourShapes: true }, lab: { unlockAll: true } }, ids);
     expect(save.version).toBe(SAVE_VERSION);
     expect(save.best).toEqual({ [ids[0]]: 7 });
     expect(save.coins).toBe(73);
     expect(save.paid).toEqual({ [ids[0]]: 26 });
-    expect(save.settings).toEqual({ mute: true, music: false, reduceMotion: true, colourShapes: true, theme: 'robot' });
+    expect(save.settings).toEqual({ mute: true, music: false, reduceMotion: true, colourShapes: true, theme: 'garden', themeChosen: false });
     expect(save.lab.unlockAll).toBe(true);
   });
 
-  it('a chosen theme is kept; an unknown or damaged one gives the default', () => {
+  it('a version 8 save goes to the garden, robot included: whether robot was picked was not kept', () => {
+    const robot = migrate({ version: 8, best: { [ids[0]]: 7 }, coins: 73, settings: { theme: 'robot', mute: true }, lab: {} }, ids);
+    expect(robot.settings).toMatchObject({ theme: 'garden', themeChosen: false, mute: true });
+    expect(robot.best).toEqual({ [ids[0]]: 7 });
+    expect(robot.coins).toBe(73);
     expect(migrate({ version: 8, settings: { theme: 'garden' } }, ids).settings.theme).toBe('garden');
-    expect(migrate({ version: 8, settings: { theme: 'space' } }, ids).settings.theme).toBe('robot');
-    expect(migrate({ version: 8, settings: { theme: 3 } }, ids).settings.theme).toBe('robot');
   });
 
-  it('survives a write and a read', () => {
+  it('from version 9 a picked theme is kept, robot too; an unpicked one follows the default', () => {
+    expect(migrate({ version: 9, settings: { theme: 'robot', themeChosen: true } }, ids).settings).toMatchObject({ theme: 'robot', themeChosen: true });
+    expect(migrate({ version: 9, settings: { theme: 'robot', themeChosen: false } }, ids).settings).toMatchObject({ theme: 'garden', themeChosen: false });
+    expect(migrate({ version: 9, settings: { theme: 'space', themeChosen: true } }, ids).settings).toMatchObject({ theme: 'garden', themeChosen: false });
+    expect(migrate({ version: 9, settings: { theme: 3, themeChosen: true } }, ids).settings.theme).toBe('garden');
+  });
+
+  it('a picked robot theme survives a write and a read', () => {
     const store = memory();
     const save = defaultSave();
-    save.settings.theme = 'garden';
+    save.settings.theme = 'robot';
+    save.settings.themeChosen = true;
     writeSave(store, save);
-    expect(loadSave(store, ids).settings.theme).toBe('garden');
+    expect(loadSave(store, ids).settings).toMatchObject({ theme: 'robot', themeChosen: true });
   });
 });

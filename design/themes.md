@@ -5,24 +5,28 @@ looks**: levels, rules, moves, coins and progress are the same in every theme.
 
 | Theme id | Name in the settings | What it is |
 |---|---|---|
-| `robot` | Robots | The harbour and its flock robots. The base every other theme falls back to. Unchanged by the theme work. |
-| `garden` | Garden | A sunny garden with flock chicks. Reference pictures: `design/reference/turnflock/garden/` (see its README). |
+| `garden` | Garden | **The main theme** (owner, 2026-11-24): a sunny garden with flock chicks. Reference pictures: `design/reference/turnflock/garden/` (see its README). |
+| `robot` | Robots | The harbour and its flock robots, always one tap away. The base every theme part falls back to. Unchanged by the theme work. |
 
 ## How the player switches
 
-Settings → Game → **Theme** (Robots / Garden). The choice is saved
-(`settings.theme` in the save, format version 8) and takes effect at once: the page
-gets the theme's colours and the board is rebuilt, without a reload.
+Settings → Game → **Theme** (Garden / Robots). The choice is saved and takes effect at once:
+the page gets the theme's colours and the board is rebuilt, without a reload.
 
-A fresh save starts in the build's default theme:
+- A new player starts in the garden.
+- The save (format version 9) keeps `settings.theme` and `settings.themeChosen`. Only a theme
+  the player picked is kept; a player who never picked one follows the default, so a later
+  change of the main theme reaches them too.
+- Saves from before version 9 all open in the garden, robot included: version 8 stored a theme
+  but not whether it was picked, and robot was the default then (owner's rule: when the
+  difference cannot be told, the garden for everyone). Progress, coins and settings are kept.
 
 | Command | File | Starts in |
 |---|---|---|
-| `npm run build:single` | `dist-single/index.html` | `robot` |
-| `npm run build:single:garden` | `dist-single-garden/index.html` | `garden` |
+| `npm run build:single` | `dist-single/index.html` | `garden` |
+| `npm run build:single:garden` | `dist-single-garden/index.html` | `garden` (the same game; the name is kept for the published copy) |
 
-Both are the same code; only the default differs (`__TF_DEFAULT_THEME__`, set in
-`vite.config.ts`, read in `src/game/theme.ts`). A player of either can switch.
+The default is `__TF_DEFAULT_THEME__`, set in `vite.config.ts` and read in `src/game/theme.ts`.
 
 ## The register
 
