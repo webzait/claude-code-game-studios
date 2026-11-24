@@ -1,5 +1,6 @@
 // The garden theme's star coin (design/themes/garden-coin.md): every coin place in the game shows
-// the star coin in the garden build and the robot coin in the robot build. Every coin is an
+// the star coin in the garden theme and the robot coin in the robot theme (picked in the save; every
+// build opens in the garden since it became the main theme). Every coin is an
 // <i class="tf-coin-ico"> whose picture comes from the style sheet, so the check reads the picture
 // each one really draws (its computed background) and compares it with the file on disk.
 //
@@ -48,7 +49,8 @@ async function open(page: Page, theme: Theme, save: { coins: number; best?: Reco
     ([json]) => {
       if (!localStorage.getItem('turnflock.save')) localStorage.setItem('turnflock.save', json);
     },
-    [JSON.stringify({ version: 4, best: save.best ?? {}, coins: save.coins, paid: {}, settings: { mute: true, music: false, reduceMotion: save.reduceMotion ?? false }, lab: save.lab ?? {} })],
+    // Both builds open in the garden (the main theme); the theme is picked in the save as a player would.
+    [JSON.stringify({ version: 9, best: save.best ?? {}, coins: save.coins, paid: {}, economy: 2, settings: { mute: true, music: false, reduceMotion: save.reduceMotion ?? false, theme, themeChosen: true }, lab: save.lab ?? {} })],
   );
   await page.goto(pathToFileURL(BUILDS[theme]).href);
   await expect.poll(() => page.evaluate(() => typeof window.turnflock?.snapshot)).toBe('function');

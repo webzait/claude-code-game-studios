@@ -10,6 +10,7 @@ import './ui/tf-shop.css';
 import { applyPageTheme } from './ui/themes';
 import { applyGardenDecor } from './ui/themes/garden/gardenArt';
 import { applyGardenLevels, gardenPathModel } from './ui/themes/garden/levels';
+import { showGardenLogo, showRobotLogo } from './ui/themes/garden/logo';
 import { resolveTheme } from './render/themes';
 import { AudioHub, Sfx, type PlayedSound } from './audio';
 import { movePlan, soundSet } from './sound/sets';
@@ -132,6 +133,17 @@ function showDecor(theme: ThemeId): void {
     const src = art[img.dataset.art ?? ''] ?? '';
     if (img.getAttribute('src') !== src) img.src = src;
   }
+}
+
+/** index.html's robot logo, read before any theme changes it (the build may have inlined it). */
+const robotLogo = document.querySelector<HTMLImageElement>('.tf-levels-logo')?.getAttribute('src') ?? '';
+
+/** The level screen's logo for a theme: the owner's chick logo in the garden (design/themes/garden-logo.md). */
+function showLogo(theme: ThemeId): void {
+  const img = document.querySelector<HTMLImageElement>('.tf-levels-logo');
+  if (!img) return;
+  if (theme === 'garden') showGardenLogo(img, el('map'));
+  else if (img.getAttribute('src') !== robotLogo) showRobotLogo(img, robotLogo);
 }
 
 class Game {
@@ -380,6 +392,7 @@ class Game {
     const theme = resolveTheme(this.save.settings.theme);
     applyPageTheme(theme);
     showDecor(theme.id);
+    showLogo(theme.id);
     if (theme.id === 'garden') applyGardenLevels(el('map'));
     this.view.setTheme(theme, this.session.state);
   }
