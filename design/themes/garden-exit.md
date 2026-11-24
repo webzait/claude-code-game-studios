@@ -1,9 +1,65 @@
 # Garden theme — exit, gazebo goal and special tiles
 
 Part of the garden (chick) theme. Built on its own, not yet in the game: the theme
-session swaps these in for their robot counterparts. Owner's pictures:
+session swaps these in for their robot counterparts. The standard is the owner's pictures
+(next section); the modelled version after it is kept as an alternative. Owner's pictures:
 `design/reference/turnflock/garden/22-sheet-exit-pad-states`, `24-sheet-gazebo-goal`,
 `08-gazebo`.
+
+## Standard: the owner's pictures are the parts (2026-11-24, course change)
+
+The owner wants the garden parts to *be* their pictures, as the robot theme's backdrop,
+bushes and coin are. So the standard version is the cut-out picture, shown flat in the game;
+the modelled 3D version below stays as an alternative.
+
+| What | Where |
+|---|---|
+| Cut-outs (WebP, transparent) | `assets/turnflock/garden/exit/` — 14 files, 66 kB together |
+| Pipeline (re-runnable) | `tools/asset-pipeline/turnflock-garden-exit.py` (Pillow, numpy, scipy, opencv-python-headless) |
+| Sizes and anchors, written by the pipeline | `data/themes/garden/exit-sprites.json` |
+| Game parts (same names as `board.ts`) | `src/render/parts/garden/exitPictures.ts` — `buildExit`, `setExitLook`, `buildTurnTile`, `buildPlate`, `buildGate`, `gateDoorScale`, `buildGazebo`, `loadGardenExitPictures` |
+| Parts sheet | `src/parts/garden-exit-pictures.ts` (cut-out next to the original, then at game size) |
+
+**Cutting.** The background is found by flood fill from the picture's border (plus large
+enclosed areas, such as the sky seen through the gazebo's arches); the edge band is un-mixed
+from the background colour, so no white or grey halo is left; the painted soft shadow stays as
+half-transparent shadow.
+
+**In the game.** Each picture is a quad that faces the game camera exactly (leant back 90° minus
+`board.roomy.tilt`), on a grass tile, with its anchor (the pad's face centre) above the cell
+centre. It is slid towards the camera just enough to clear the grass, which keeps where it is
+seen. Under the game camera it therefore looks exactly as painted: not squashed or skewed.
+Lying flat on the tile was rejected: the pictures are already drawn in perspective, so lying
+flat would squash them twice. Each part is 2 triangles and one draw call on top of its tile
+(robot exit: 3,386 triangles).
+
+| Picture | Size | kB | Made from |
+|---|---|---|---|
+| `exit-grey`, `exit-green`, `exit-rays` | ~100×65 (rays 100×82) | 1.9–2.6 each | cut from `22-sheet-exit-pad-states` |
+| `exit-red`, `-blue`, `-yellow` | 103×65 | ~2.2 each | green pad, lit face and joint glow retoned; yellow gets the owner's tick in dark ochre |
+| `exit-shape-red`, `-blue`, `-yellow` | 103×65 | ~2 each | as above, tick painted out (inpaint), colour shape (`colourShapes`) stamped in |
+| `turn` | 103×65 | ~2 | green pad retoned cream, tick painted out, the clockwise arrow of the owner's turn button (`18-sheet-action-buttons`) in leaf green |
+| `plate` | 103×65 | ~2 | green pad, tick painted out, retoned lavender |
+| `gate` | 110×82 | ~2.9 | a stretch of the back balustrade of `08-gazebo`, retoned lavender |
+| `gazebo` | 320×359 | ~25 | `08-gazebo`, scaled down |
+| `gazebo-goal` | 310×213 | ~15 | `24-sheet-gazebo-goal`, full size |
+
+**Resolution.** The pad sheet is small: each pad is about 100 px wide in the owner's picture.
+On a phone a cell is 42–53 CSS px, so the cut-out is 1.9–2.4× the shown size in CSS px, but
+only 0.6–0.8× of the screen's device pixels at 3×. It does not look grainy at game size, but it
+is softer than the modelled pad. A larger picture of the pad from the owner would make it sharper.
+
+**What a picture cannot do, and what the code does instead.**
+- The turn tile's disc cannot turn with the chick (a painted picture has no back side):
+  `userData.disc` is an empty group, so the game's turning is harmless; the ring of light still flashes.
+- There is no picture of a lit pad in a chick colour with rays: a colour exit keeps its own
+  colour in the `rays` moment (only the shared exit shows the owner's rays).
+- The gate opens by squashing the picture down along its own height (`gateDoorScale(true)` 0.12),
+  leaving a low lavender line.
+- The glow on the grass round a lit exit is a code-drawn soft patch (as on the robot pad),
+  because the pad picture's own glow ends at the picture's edge.
+
+## Alternative: the modelled 3D version
 
 | What | Code | Robot counterpart |
 |---|---|---|
@@ -123,3 +179,14 @@ has one to three. Budgets are held by the unit tests (`budget` in the data file)
   `24-sheet-gazebo-goal`; no fence and trees round it (those are backdrop).
 - Special tiles: no reference. At 42 px the open and the shut gate differ less than the
   robot gate's solid block does; the plate's fence glyph is too small to read there.
+
+### Picture version: what differs from the owner's pictures
+
+- Exit pads and gazebos are the owner's pictures themselves. Only the cutting differs: the
+  thin white rim the painter left round each object is gone, and so is the soft white vignette
+  round `24-sheet-gazebo-goal`.
+- Colour exits, colour shapes, turn tile, plate and gate are new combinations of the owner's
+  pieces, not pictures the owner made: the retoned faces keep the owner's light pattern, but
+  the inpainted area where the tick was is a little smoother than the rest of the face.
+- The yellow exit's dark-ochre tick has less contrast than the white tick on the other colours.
+- The pads are softer than the modelled pad at game size (see Resolution).
