@@ -1,7 +1,7 @@
 import data from '../../../../data/themes/garden/obstacles.json';
 
 /** The garden obstacles a wall cell can show. */
-export type GardenObstacleKind = 'rock' | 'rockMossy' | 'stump' | 'bushWhite' | 'bushPink';
+export type GardenObstacleKind = 'rock' | 'rockMossLight' | 'rockMossy' | 'stump' | 'bushWhite' | 'bushPink';
 /** Obstacles that read as "the same thing": two of one family never sit side by side. */
 export type GardenObstacleFamily = 'rock' | 'stump' | 'bush';
 
@@ -23,6 +23,7 @@ export const DEFAULT_WEIGHTS: ChoiceWeights = data.choice as ChoiceWeights;
 /** Family of each kind. */
 export const FAMILY_OF: Readonly<Record<GardenObstacleKind, GardenObstacleFamily>> = {
   rock: 'rock',
+  rockMossLight: 'rock',
   rockMossy: 'rock',
   stump: 'stump',
   bushWhite: 'bush',
@@ -71,7 +72,7 @@ function weighted<T extends string>(options: readonly T[], weight: (o: T) => num
  * 2. The family (rock, bush, stump) is drawn by weight from the hash, leaving
  *    out the families of the wall directly to the left and directly above,
  *    which were chosen before. Two touching walls are never the same family.
- * 3. The variant within the family (plain or mossy rock, white or pink bush)
+ * 3. The variant within the family (plain, lightly mossy or mossy rock; white or pink bush)
  *    and the quarter turn come from other bits of the same hash.
  *
  * Nothing is random: the same level always looks the same. Returns one entry

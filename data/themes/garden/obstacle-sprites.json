@@ -1,41 +1,53 @@
 {
   "_note": "Written by tools/asset-pipeline/garden-obstacles.py; do not edit by hand.",
   "obstacles": {
+    "rock": {
+      "file": "rock.webp",
+      "px": [
+        224,
+        170
+      ],
+      "bytes": 8190,
+      "objectLeft": 0.118,
+      "objectRight": 0.882,
+      "objectTop": 0.0063,
+      "foot": 0.8889
+    },
+    "rockMossLight": {
+      "file": "rock-moss-light.webp",
+      "px": [
+        224,
+        157
+      ],
+      "bytes": 8540,
+      "objectLeft": 0.1292,
+      "objectRight": 0.8692,
+      "objectTop": 0.0068,
+      "foot": 0.8828
+    },
     "rockMossy": {
       "file": "rock-mossy.webp",
       "px": [
         224,
-        190
+        173
       ],
-      "bytes": 10542,
-      "objectLeft": 0.0682,
-      "objectRight": 0.9239,
-      "objectTop": 0.0066,
-      "foot": 0.8747
-    },
-    "rock": {
-      "file": "rock.webp",
-      "px": [
-        192,
-        166
-      ],
-      "bytes": 9630,
-      "objectLeft": 0.0312,
-      "objectRight": 0.9271,
-      "objectTop": 0.0723,
-      "foot": 0.9036
+      "bytes": 10474,
+      "objectLeft": 0.1013,
+      "objectRight": 0.8987,
+      "objectTop": 0.0052,
+      "foot": 0.8851
     },
     "stump": {
       "file": "stump.webp",
       "px": [
         224,
-        192
+        183
       ],
-      "bytes": 14056,
-      "objectLeft": 0.0586,
-      "objectRight": 0.9325,
-      "objectTop": 0.0052,
-      "foot": 0.8734
+      "bytes": 13332,
+      "objectLeft": 0.0726,
+      "objectRight": 0.9171,
+      "objectTop": 0.0049,
+      "foot": 0.886
     },
     "bushWhite": {
       "file": "bush-white.webp",

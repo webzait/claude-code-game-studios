@@ -3,6 +3,7 @@ import { CONFIG } from '../../../config';
 import data from '../../../../data/themes/garden/obstacles.json';
 import sprites from '../../../../data/themes/garden/obstacle-sprites.json';
 import rockUrl from '../../../../assets/turnflock/garden/obstacles/rock.webp';
+import rockMossLightUrl from '../../../../assets/turnflock/garden/obstacles/rock-moss-light.webp';
 import rockMossyUrl from '../../../../assets/turnflock/garden/obstacles/rock-mossy.webp';
 import stumpUrl from '../../../../assets/turnflock/garden/obstacles/stump.webp';
 import bushWhiteUrl from '../../../../assets/turnflock/garden/obstacles/bush-white.webp';
@@ -10,7 +11,7 @@ import bushPinkUrl from '../../../../assets/turnflock/garden/obstacles/bush-pink
 import type { GardenObstacleKind } from './obstacleChoice';
 
 /** Every garden obstacle kind, in the order the parts page shows them. */
-export const GARDEN_OBSTACLE_KINDS: readonly GardenObstacleKind[] = ['rock', 'rockMossy', 'stump', 'bushWhite', 'bushPink'];
+export const GARDEN_OBSTACLE_KINDS: readonly GardenObstacleKind[] = ['rock', 'rockMossLight', 'rockMossy', 'stump', 'bushWhite', 'bushPink'];
 
 /**
  * The garden theme's obstacles as the owner drew them: each one is the
@@ -22,6 +23,7 @@ export const GARDEN_OBSTACLE_KINDS: readonly GardenObstacleKind[] = ['rock', 'ro
 
 const URLS: Readonly<Record<GardenObstacleKind, string>> = {
   rock: rockUrl,
+  rockMossLight: rockMossLightUrl,
   rockMossy: rockMossyUrl,
   stump: stumpUrl,
   bushWhite: bushWhiteUrl,
