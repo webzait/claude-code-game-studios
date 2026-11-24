@@ -45,6 +45,11 @@ export interface PathScene extends PathSteps {
   readonly finish: 'end' | 'chapter' | null;
   /** The chapter the current level is in, counted from 1; 0 without chapters. */
   readonly chapter: number;
+  /**
+   * A chapter just completed: its end is drawn, reached, below the first steps of the next
+   * chapter (while the completed steps of the new chapter do not fill `behind` yet). Its number, or 0.
+   */
+  readonly reached: number;
 }
 
 /**
@@ -59,7 +64,7 @@ export interface PathScene extends PathSteps {
  */
 export function pathScene(total: number, current: number | null, ahead: number, chapter = 0, behind = 0): PathScene {
   const steps = pathSteps(total, current, ahead);
-  if (steps.current === null) return { ...steps, behind: [], finish: null, chapter: 0 };
+  if (steps.current === null) return { ...steps, behind: [], finish: null, chapter: 0, reached: 0 };
   const size = Math.max(0, Math.floor(chapter));
   const start = size > 0 ? Math.floor(steps.current / size) * size : 0;
   const end = size > 0 ? Math.min(total, start + size) - 1 : total - 1;
@@ -74,5 +79,19 @@ export function pathScene(total: number, current: number | null, ahead: number, 
     behind: Array.from({ length: back }, (_, i) => steps.current! - back + i),
     finish,
     chapter: size > 0 ? start / size + 1 : 0,
+    // Early in a chapter there is room below for the end of the one before it, reached.
+    reached: size > 0 && start > 0 && Math.floor(behind) > 0 && steps.current - start < Math.floor(behind) ? start / size : 0,
   };
+}
+
+/**
+ * The chapter that winning the level at `index` completes, counted from 1, or 0 when that
+ * level is not the last of its chapter. The last level of the game ends the last chapter,
+ * even when that chapter is shorter. Without chapters (`size` 0) it is always 0.
+ */
+export function chapterCompletedBy(index: number, total: number, size: number): number {
+  const n = Math.floor(size);
+  if (n <= 0 || index < 0 || index >= total) return 0;
+  const last = (index + 1) % n === 0 || index === total - 1;
+  return last ? Math.floor(index / n) + 1 : 0;
 }

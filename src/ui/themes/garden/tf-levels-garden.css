@@ -158,3 +158,24 @@
     linear-gradient(180deg, var(--tg-sky-0, #3f9ff0) 0, var(--tg-sky-1, #7cc6fb) 22%, var(--tg-sky-2, #cdeeff) 35%,
       var(--tg-lawn-0, #a6e060) 35%, var(--tg-lawn-1, #7fcd45) 65%, var(--tg-lawn-2, #5fb534) 100%);
 }
+
+/* ---- A garden completed: its gazebo lit (after 24-sheet-gazebo-goal): a warm green-gold glow behind it
+   and a green check ball on its steps. Below the first levels of the next garden (.is-reached), and large
+   when every level is completed (.is-done). ---- */
+[data-theme="garden"] .tf-levels-step.is-finish.is-reached, [data-theme="garden"] .tf-levels-step.is-done {
+  background:
+    url("./levels-gazebo.webp") center bottom / contain no-repeat,
+    radial-gradient(closest-side at 50% 62%, rgba(255, 252, 190, .95) 0, rgba(200, 255, 120, .7) 45%, rgba(160, 240, 90, 0) 100%);
+  box-shadow: none; border-radius: 0;
+}
+[data-theme="garden"] .tf-levels-step.is-done { width: calc(var(--s) * 1.7); height: calc(var(--s) * 1.7 * 408 / 360); margin: 0; }
+[data-theme="garden"] .tf-levels-step.is-done::before, [data-theme="garden"] .tf-levels-step.is-done svg { display: none; }
+[data-theme="garden"] .tf-levels-step.is-reached::after, [data-theme="garden"] .tf-levels-step.is-done::after {
+  content: ""; position: absolute; left: 50%; bottom: 4%; width: 30%; aspect-ratio: 1; translate: -50% 0; border-radius: 50%;
+  background:
+    center / 62% no-repeat url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M5.5 12.5l4.4 4.4 8.8-9.4' fill='none' stroke='%23fff' stroke-width='3.8' stroke-linecap='round' stroke-linejoin='round'/></svg>"),
+    radial-gradient(circle at 50% 28%, var(--tg-done-top, #c4f792) 0, var(--tg-done-face, #4fcb2f) 58%, var(--tg-done-deep, #2a8f18) 100%);
+  box-shadow: 0 0 0 max(2px, calc(var(--s) * .03)) #fff, 0 0 0 calc(max(2px, calc(var(--s) * .03)) + 1.5px) var(--tg-outline, #4b5d72), 0 3px 6px rgba(30, 80, 20, .35);
+}
+/* The reached gazebo lies behind the player: a little smaller than the one ahead. */
+[data-theme="garden"] .tf-levels-step.is-finish.is-reached { width: calc(var(--s) * 1.55); height: calc(var(--s) * 1.55 * 408 / 360); }

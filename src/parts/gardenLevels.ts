@@ -6,6 +6,8 @@ import { improvableLevels } from '../ui/levelPath';
 import { applyGardenLevels, GARDEN_LEVELS } from '../ui/themes/garden/levels';
 import '../ui/themes/garden/tf-levels-garden.css';
 import './gardenLevels.css';
+import '../ui/themes/garden/tf-garden-done.css';
+import { gardenStars, showGardenDone, type GardenDoneView } from '../ui/themes/garden/gardenDone';
 
 /**
  * The garden theme's level selection on the parts sheet. Every phone is the game's own screen:
@@ -75,7 +77,7 @@ const phones: HTMLElement[] = [];
  * One phone: the game's screen at `w`×`h`, rendered by the game's own code, then its ids
  * renamed so the next phone can be rendered the same way.
  */
-function phone(host: HTMLElement, s: Situation, w: number, h: number): void {
+function phone(host: HTMLElement, s: Situation, w: number, h: number): HTMLElement {
   host.insertAdjacentHTML('beforeend', SCREEN);
   const screen = host.lastElementChild as HTMLElement;
   screen.classList.remove('screen');
@@ -91,6 +93,7 @@ function phone(host: HTMLElement, s: Situation, w: number, h: number): void {
   for (const node of Array.from(screen.querySelectorAll<HTMLElement>('[id]'))) node.id = `garden-${made}-${node.id}`;
   screen.id = `garden-levels-${made}`;
   phones.push(screen);
+  return screen;
 }
 
 /** Draw every phone's rail again once the page has its final layout. */
@@ -112,12 +115,13 @@ export function addGardenLevelCards(sheet: HTMLElement): void {
     sheet.appendChild(el);
     return el.querySelector('.tf-levels-row')!;
   };
-  const fig = (row: HTMLElement, caption: string, s: Situation, w = 390, h = 844): void => {
+  const fig = (row: HTMLElement, caption: string, s: Situation, w = 390, h = 844): HTMLElement => {
     const figure = document.createElement('figure');
     figure.className = 'tf-levels-fig';
     row.appendChild(figure);
-    phone(figure, s, w, h);
+    const screen = phone(figure, s, w, h);
     figure.insertAdjacentHTML('beforeend', `<figcaption>${caption}</figcaption>`);
+    return screen;
   };
 
   const states = card('garden-levels', 'Tuinthema · levelscherm (het pad)', 'tuinen van 20 levels · huidig + 5 vooruit · 2 gehaalde levels eronder · prieel aan het eind van een tuin',
@@ -137,6 +141,15 @@ export function addGardenLevelCards(sheet: HTMLElement): void {
   const sizes = card('garden-levels-sizes', 'Tuinthema · levelscherm op vier schermmaten', '320×568 · 390×844 · 430×932 · 768×1024',
     'De bolletjes volgen de schermhoogte; op het kleinste scherm worden ze kleiner, maar het gele bolletje blijft ruim boven 44 px.');
   for (const [w, h] of [[320, 568], [390, 844], [430, 932], [768, 1024]]) fig(sizes, `${w}×${h} · level 17`, { view: 'path', solved: 16, coins: 485 }, w, h);
+
+  const done = card('garden-levels-done', 'Tuinthema · een tuin gehaald', 'verlicht prieel op het pad · feestscherm na het laatste level van een tuin',
+    'Na level 20 van een tuin verschijnt het feestscherm over het levelscherm: het prieel licht op (naar 24-sheet-gazebo-goal), stralen draaien erachter, blaadjes dwarrelen, met de sterren van die tuin en één knop. Daarna staat het verlichte prieel van de gehaalde tuin onderaan het pad, tot twee levels van de nieuwe tuin gehaald zijn. Bij minder beweging staat alles meteen stil.');
+  const stars = Array.from({ length: TOTAL }, (_, i) => starsFor(i));
+  const view = (garden: number, last = false): GardenDoneView => ({ garden, last, ...gardenStars(stars, garden, GARDEN_LEVELS.chapter) });
+  showGardenDone(fig(done, 'Feestscherm · tuin 1 gehaald', { view: 'path', solved: 20, coins: 610 }), view(1), () => undefined);
+  fig(done, 'Daarna · level 21, prieel verlicht', { view: 'path', solved: 20, coins: 610 });
+  fig(done, 'Level 22 · prieel en één vinkje', { view: 'path', solved: 21, coins: 655 });
+  showGardenDone(fig(done, 'Laatste tuin gehaald', { view: 'path', solved: TOTAL, coins: 2640 }), view(5, true), () => undefined);
 
   // Every phone was drawn during building; the rails follow once fonts and pictures are in.
   window.addEventListener('load', redrawTrails);

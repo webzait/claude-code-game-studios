@@ -120,8 +120,9 @@ function renderPath(model: LevelsModel, solved: number): void {
   const list = el('steps');
   list.replaceChildren();
   list.style.setProperty('--n', String(Math.max(1, model.ahead)));
-  // Only a path with completed steps sets this, so the robot theme's markup is unchanged.
-  if (steps.behind.length > 0) list.style.setProperty('--b', String(steps.behind.length));
+  // Only a path with completed steps sets this, so the robot theme's markup is unchanged. A reached end counts as about three and a half completed steps.
+  const below = steps.behind.length + (steps.reached > 0 ? 3.4 : 0);
+  if (below > 0) list.style.setProperty('--b', String(below));
   else list.style.removeProperty('--b');
   list.setAttribute('aria-label', steps.ahead.length > 0 ? `Level ${current.number} and the next ${steps.ahead.length}` : `Level ${current.number}, the last level`);
   const item = (step: number, content: HTMLElement): void => {
@@ -131,6 +132,13 @@ function renderPath(model: LevelsModel, solved: number): void {
     li.appendChild(content);
     list.appendChild(li);
   };
+  // The end of the chapter just completed, lit: where the player came from.
+  if (steps.reached > 0) {
+    const reached = document.createElement('span');
+    reached.className = 'tf-levels-step is-finish is-reached';
+    reached.innerHTML = `${FLAG}<span class="tf-levels-vh">Chapter ${steps.reached} completed</span>`;
+    item(-steps.behind.length - 1, reached);
+  }
   // Completed levels, oldest first: the list runs bottom-up, so they sit below the current level.
   steps.behind.forEach((index, i) => {
     const node = nodes[index];
