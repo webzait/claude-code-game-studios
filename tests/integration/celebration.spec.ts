@@ -14,8 +14,12 @@ const config = JSON.parse(readFileSync('data/config.json', 'utf8'));
 const build = pathToFileURL(resolve('dist-single/index.html')).href;
 const VARIANTS = ['confetti', 'wave', 'hop', 'garden'] as const;
 
-/** Opens the build with a fresh save that has `lab` set, and collects every page error and console error. */
-async function open(page: Page, lab: Record<string, unknown> = {}): Promise<string[]> {
+/**
+ * Opens the build with a fresh save that has `lab` set, and collects every page error and console error.
+ * The robot celebrations are checked in the robot theme, picked as a player would (the garden, the
+ * main theme, plays its own celebration unless the lab picks another: see the garden test below).
+ */
+async function open(page: Page, lab: Record<string, unknown> = {}, theme: 'robot' | 'garden' = 'robot'): Promise<string[]> {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => {
@@ -25,7 +29,7 @@ async function open(page: Page, lab: Record<string, unknown> = {}): Promise<stri
     ([save]) => {
       if (!localStorage.getItem('turnflock.save')) localStorage.setItem('turnflock.save', save);
     },
-    [JSON.stringify({ version: 5, best: {}, coins: config.coins.start, paid: {}, settings: {}, lab })],
+    [JSON.stringify({ version: 9, best: {}, coins: config.coins.start, paid: {}, economy: 2, settings: { theme, themeChosen: true }, lab })],
   );
   await page.goto(build);
   await expect.poll(() => page.evaluate(() => typeof window.turnflock?.snapshot)).toBe('function');
@@ -119,5 +123,19 @@ test('test lab: "Win celebration" offers the four variants (garden stars include
   await page.reload();
   await expect.poll(() => page.evaluate(() => typeof window.turnflock?.snapshot)).toBe('function');
   expect((await snap(page)).lab.celebration).toBe('hop');
+  expect(errors).toEqual([]);
+});
+
+test('win celebration: the garden plays its own celebration by default, and the lab still overrides it', async ({ page }) => {
+  const errors = await open(page, {}, 'garden');
+  await winLevelOne(page);
+  await expect.poll(async () => (await snap(page)).celebration, { timeout: 15000 }).toMatchObject({ variant: 'garden', perfect: true });
+  expect(errors).toEqual([]);
+});
+
+test('win celebration: in the garden a celebration picked in the lab plays instead', async ({ page }) => {
+  const errors = await open(page, { celebration: 'hop' }, 'garden');
+  await winLevelOne(page);
+  await expect.poll(async () => (await snap(page)).celebration, { timeout: 15000 }).toMatchObject({ variant: 'hop' });
   expect(errors).toEqual([]);
 });

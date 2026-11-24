@@ -125,8 +125,8 @@ test('Levels, Level, Win, Next: no dead ends, and progress survives a reload', a
   await expect(page.locator('#levelName')).toHaveText(levels[1].name);
   await expect(page.locator('#levelCoins .tf-coin-amount')).toHaveText(String(config.coins.start + perfectWin));
   await page.click('#levelBack');
-  // The completed level is gone from the path; the next one is the current step.
-  await expect(page.locator('#node-1')).toHaveCount(0);
+  // The garden's path (the main theme) keeps the completed level below as a done step; the next one is the current step.
+  await expect(page.locator('#node-1')).toHaveClass(/is-passed/);
   await expect(page.locator('#node-2')).toHaveClass(/is-current/);
   await expect(page.locator('#node-2')).toBeEnabled();
   await expect(page.locator('#node-3')).toHaveClass(/is-locked/);
