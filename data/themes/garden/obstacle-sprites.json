@@ -1,0 +1,115 @@
+{
+  "_note": "Written by tools/asset-pipeline/garden-obstacles.py; do not edit by hand.",
+  "obstacles": {
+    "rockMossy": {
+      "file": "rock-mossy.webp",
+      "px": [
+        224,
+        190
+      ],
+      "bytes": 10542,
+      "objectLeft": 0.0682,
+      "objectRight": 0.9239,
+      "objectTop": 0.0066,
+      "foot": 0.8747
+    },
+    "rock": {
+      "file": "rock.webp",
+      "px": [
+        192,
+        166
+      ],
+      "bytes": 9630,
+      "objectLeft": 0.0312,
+      "objectRight": 0.9271,
+      "objectTop": 0.0723,
+      "foot": 0.9036
+    },
+    "stump": {
+      "file": "stump.webp",
+      "px": [
+        224,
+        192
+      ],
+      "bytes": 14056,
+      "objectLeft": 0.0586,
+      "objectRight": 0.9325,
+      "objectTop": 0.0052,
+      "foot": 0.8734
+    },
+    "bushWhite": {
+      "file": "bush-white.webp",
+      "px": [
+        224,
+        222
+      ],
+      "bytes": 17134,
+      "objectLeft": 0.0171,
+      "objectRight": 0.9853,
+      "objectTop": 0.0062,
+      "foot": 0.9162
+    },
+    "bushPink": {
+      "file": "bush-pink.webp",
+      "px": [
+        224,
+        222
+      ],
+      "bytes": 17116,
+      "objectLeft": 0.0171,
+      "objectRight": 0.9853,
+      "objectTop": 0.0062,
+      "foot": 0.9162
+    }
+  },
+  "plants": {
+    "plant-sprig": {
+      "file": "plant-sprig.webp",
+      "px": [
+        118,
+        100
+      ],
+      "bytes": 6696,
+      "objectLeft": 0.0847,
+      "objectRight": 0.9153,
+      "objectTop": 0.1,
+      "foot": 0.92
+    },
+    "plant-grass": {
+      "file": "plant-grass.webp",
+      "px": [
+        120,
+        104
+      ],
+      "bytes": 6346,
+      "objectLeft": 0.0167,
+      "objectRight": 0.9167,
+      "objectTop": 0.0962,
+      "foot": 0.9231
+    },
+    "plant-flower-white": {
+      "file": "plant-flower-white.webp",
+      "px": [
+        128,
+        114
+      ],
+      "bytes": 5934,
+      "objectLeft": 0.0165,
+      "objectRight": 0.9794,
+      "objectTop": 0.023,
+      "foot": 0.9816
+    },
+    "plant-flower-pink": {
+      "file": "plant-flower-pink.webp",
+      "px": [
+        128,
+        114
+      ],
+      "bytes": 6694,
+      "objectLeft": 0.0165,
+      "objectRight": 0.9794,
+      "objectTop": 0.023,
+      "foot": 0.9816
+    }
+  }
+}
