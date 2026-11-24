@@ -34,7 +34,7 @@
   .tf-logo-band .tf-levels-brand { flex: 0 0 100%; justify-content: center; }
   .tf-logo-band .tf-levels-logo { width: auto; height: var(--tl-logo-h); }
   .tf-logo-band .tf-levels-brand + * { margin-right: auto; }
-  .tf-levels-a.tf-logo-band .tf-levels-grid { --tl-tile-h: clamp(56px, calc((100cqh - var(--tl-chrome) + var(--tl-logo-give) - var(--tl-logo-h) - var(--tl-logo-gap)) / var(--tl-rows) - var(--tl-gap) - var(--tl-d)), var(--tl-tile-max, 92px)); }
+  .tf-levels-a.tf-logo-band > .tf-levels-body { --tl-tile-want: clamp(56px, calc((100cqh - var(--tl-chrome) + var(--tl-logo-give) - var(--tl-logo-h) - var(--tl-logo-gap)) / var(--tl-rows) - var(--tl-gap) - var(--tl-d)), var(--tl-tile-max, 92px)); }
 }
 /* Band on a wide screen: there is room beside the logo, so it stays centred with the coins to its left and progress and settings to its right, all on one line. */
 @container tl (min-width: 600px) and (min-height: 562px) {
@@ -61,7 +61,7 @@
 .tf-levels-progress .tf-levels-star { width: 12px; height: 12px; }
 
 /* The tray the tiles sit in: the same periwinkle frame as the game board. */
-.tf-levels-tray { margin: 0 var(--tl-pad) 6px; padding: 11px; border-radius: 24px; background: linear-gradient(180deg, #c8d5fb, #b7c8f7); box-shadow: inset 0 2px 0 rgba(255, 255, 255, .6), inset 0 0 0 2px rgba(143, 167, 230, .55), 0 6px 0 #718ad2, 0 12px 12px rgba(36, 70, 150, .22); }
+.tf-levels-tray { margin: 0 var(--tl-pad) 6px; padding: var(--tl-tray-pad, 11px); border-radius: 24px; background: linear-gradient(180deg, #c8d5fb, #b7c8f7); box-shadow: inset 0 2px 0 rgba(255, 255, 255, .6), inset 0 0 0 2px rgba(143, 167, 230, .55), 0 6px 0 #718ad2, 0 12px 12px rgba(36, 70, 150, .22); }
 .tf-levels-grid { display: grid; grid-template-columns: repeat(var(--tl-cols), minmax(0, 1fr)); gap: var(--tl-gap); }
 
 /* The level tile: a low pillow with a real side wall. No blur and no filter, so 200 of them scroll cheaply. */
@@ -102,7 +102,20 @@
 /* The paged grid. Tile height follows the screen height so one page always fits without scrolling. */
 .tf-levels-body { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; }
 .tf-levels-a { --tl-num: 30px; }
-.tf-levels-a .tf-levels-grid { --tl-tile-h: clamp(56px, calc((100cqh - var(--tl-chrome)) / var(--tl-rows) - var(--tl-gap) - var(--tl-d)), var(--tl-tile-max, 92px)); }
+/* The tile height the screen's measures ask for (--tl-tile-want, worked out on the body against the screen),
+   but never more than the body has room for (finding B13): the body is a size container in the grid views,
+   and the tray, its tab above it and its wall below must fit inside it, so the grid never runs under the
+   header or the dock, whatever the notch or a host page takes from the screen. Where the old measure fitted,
+   the tiles are as high and in the same place as before. The body keeps room for the tab above the tray, and
+   as much below so the tray stays centred where it was (the tray's own margin holds its wall). On a screen
+   too short for five rows of the smallest tiles the tray scrolls inside the body. */
+@property --tl-tile-want { syntax: "<length>"; inherits: true; initial-value: 64px; }
+.tf-levels-a > .tf-levels-body { container: tlb / size; justify-content: safe center; overflow-y: auto; overscroll-behavior: contain; padding-block: var(--tl-note-room, 12px);--tl-tile-want: clamp(56px, calc((100cqh - var(--tl-chrome)) / var(--tl-rows) - var(--tl-gap) - var(--tl-d)), var(--tl-tile-max, 92px)); }
+.tf-levels-a .tf-levels-grid {
+  --tl-tile-fit: calc((100cqh - 2 * var(--tl-tray-pad, 11px) - 6px + var(--tl-gap)) / var(--tl-rows) - var(--tl-gap) - var(--tl-d));
+  --tl-tile-h: max(var(--tl-tile-least, 40px), min(var(--tl-tile-want), var(--tl-tile-fit)));
+}
+.tf-levels-a .tf-levels-tile { min-height: var(--tl-tile-least, 40px); }
 .tf-levels-a .tf-levels-stars, .tf-levels-a .tf-levels-mark { width: 57px; height: 21px; }
 .tf-levels-a .tf-levels-tray { align-self: center; width: calc(100% - 2 * var(--tl-pad)); max-width: 620px; }
 
@@ -119,7 +132,7 @@
   .tf-levels-head { gap: 5px; }
   .tf-levels-title { letter-spacing: 0; }
   .tf-levels-pill { padding: 0 7px; }
-  .tf-levels-tray { padding: 9px; }
+  .tf-levels-phone > * { --tl-tray-pad: 9px; }
 }
 /* Short screens: slimmer header and dock, smaller numbers. */
 @container tl (max-height: 620px) {
@@ -225,6 +238,7 @@
 @container tl (max-height: 620px) {
   /* No room above the tray on a short screen: the tab hangs from its bottom edge. */
   .tf-levels-testnote { top: auto; bottom: -6px; }
+  .tf-levels-phone > * { --tl-note-room: 2px; }
   /* A full page leaves no room for the title of the levels to play again: it stays for screen readers, and the lit star total and Back say where the player is. */
   .tf-levels-i .tf-levels-testnote { width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); box-shadow: none; }
   .tf-levels-wheretext { font-size: 14px; }
