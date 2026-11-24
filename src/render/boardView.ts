@@ -355,7 +355,8 @@ export class BoardView {
    */
   private buildPartsBoard(level: Level): void {
     const { width, height, walls } = level.board;
-    const { buildUnderlay, buildRim, buildExit, buildTurnTile, buildPlate, buildGate, buildFloorTile, buildObstacle } = this.theme.builders;
+    const { buildUnderlay, buildRim, buildExit, buildTurnTile, buildPlate, buildGate, buildFloorTile, obstaclesFor } = this.theme.builders;
+    const obstacleAt = obstaclesFor(level);
     const exitAt = new Map(exitsOf(level.board).map((e) => [e.y * width + e.x, e] as const));
     // Everything that never moves goes into one group and is fused into a few meshes.
     const fixed = new THREE.Group();
@@ -409,7 +410,7 @@ export class BoardView {
         tile.position.set(cx, 0, cz);
         fixed.add(tile);
         if (walls[y * width + x]) {
-          const block = buildObstacle();
+          const block = obstacleAt(x, y);
           block.position.set(cx, PARTS.floorTile.height, cz);
           fixed.add(block);
         }

@@ -12,7 +12,9 @@
  * - Data: `data/themes/<theme>/<slot>.json`.
  * A 3D part may be a picture instead of a model: src/render/parts/sprite.ts.
  */
+import * as THREE from 'three';
 import { CONFIG } from '../config';
+import type { Level } from '../levels/parse';
 import type { ThemeId } from '../game/theme';
 import { isSoundSet } from '../sound/sets';
 import { buildExit, buildFloorTile, buildGate, buildObstacle, buildPlate, buildRim, buildTurnTile, buildUnderlay, gateDoorScale } from './parts/board';
@@ -34,6 +36,17 @@ export interface ThemeBuilders {
   readonly buildGate: typeof buildGate;
   /** How far the gate's barrier is scaled when open or shut; belongs with `buildGate`. */
   readonly gateDoorScale: typeof gateDoorScale;
+  /**
+   * The obstacles of one level: returns the build for the obstacle on cell (x, y). The robot
+   * theme puts the same block everywhere; a theme may vary its obstacles per cell (the garden
+   * mixes rocks, stumps and bushes). A returned object marked `userData.keepApart` is not fused.
+   */
+  readonly obstaclesFor: (level: Level) => (x: number, y: number) => THREE.Object3D;
+}
+
+/** The robot theme's obstacles: the one block on every wall cell. */
+function robotObstaclesFor(): (x: number, y: number) => THREE.Object3D {
+  return () => buildObstacle();
 }
 
 /** The robot theme's parts: the game as it has always looked. */
@@ -49,6 +62,7 @@ export const ROBOT_BUILDERS: ThemeBuilders = {
   buildPlate,
   buildGate,
   gateDoorScale,
+  obstaclesFor: robotObstaclesFor,
 };
 
 /** Light on the 3D board. `sky`, `ground`, `ambient`, `sun`, `reflections` and `shadow` mean what they mean in `config.light`. */
@@ -90,7 +104,7 @@ export const THEME_SLOTS: readonly ThemeSlot[] = [
   { id: 'floorTile', kind: '3d', supplies: ['buildFloorTile'], robot: 'src/render/parts/board.ts' },
   { id: 'rim', kind: '3d', supplies: ['buildRim'], robot: 'src/render/parts/board.ts' },
   { id: 'underlay', kind: '3d', supplies: ['buildUnderlay'], robot: 'src/render/parts/board.ts' },
-  { id: 'obstacle', kind: '3d', supplies: ['buildObstacle'], robot: 'src/render/parts/board.ts' },
+  { id: 'obstacle', kind: '3d', supplies: ['buildObstacle', 'obstaclesFor'], robot: 'src/render/parts/board.ts' },
   { id: 'exit', kind: '3d', supplies: ['buildExit'], robot: 'src/render/parts/board.ts' },
   { id: 'turnTile', kind: '3d', supplies: ['buildTurnTile'], robot: 'src/render/parts/board.ts' },
   { id: 'plate', kind: '3d', supplies: ['buildPlate'], robot: 'src/render/parts/board.ts' },
