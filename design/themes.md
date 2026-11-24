@@ -44,19 +44,26 @@ to update when a part is added:
 | `gate` — gate | 3D | `buildGate`, `gateDoorScale` | `src/render/parts/board.ts` |
 | `backdrop` — background | 2D | `src/ui/themes/garden/backdrop.css` | `src/ui/tf-scene.css` |
 | `decor` — foreground decor | 2D | `src/ui/themes/garden/decor.css` | `.tf-decor-*` in `src/ui/style.css` |
-| `buttons` — buttons and icons | 2D | `src/ui/themes/garden/buttons.css` | `src/ui/tf-buttons.css` |
-| `levelScreen` — level screen | 2D | `src/ui/themes/garden/level-screen.css` | `src/ui/tf-levels.css` |
 | `colours` — base colours | data | `data/themes/garden/colours.json` | — |
 | `light` — light on the board | data | `data/themes/garden/light.json` | `light` in `data/config.json` |
+| `sounds` — button and move sounds | data | `data/themes/garden/sounds.json`: `{ "set": "<id>" }`, a set in `data/sound-sets.json` | the set chosen in the test lab |
+
+**Not theme slots.** By the owner's decision (2026-11-24) the garden theme changes
+only the board, the backdrop, the sounds and the chicks. Buttons, icons and the
+screens around the board (level screen, settings, pop-ups) are the robot theme's in
+every theme; the register has no slot for them, so no session builds them.
+
+While a theme has its own sound set, that set plays and the test lab's
+"Button sounds" choice applies only in the robot theme.
 
 `slotStatus()` in the register tells, per slot, whether a theme supplies it (`own`)
 or shows the robot part (`robot`); `tests/unit/theme.test.ts` checks the fallback.
 
 **Effects** (win celebration, sparkles) are not a slot yet: the robot effects live in
 `src/render/celebration.ts` and in `BoardView`, and are not split into build
-functions. The effects session delivers its parts in `src/render/parts/garden/`
-and `src/ui/themes/garden/effects.css`; the theme session wires them into the
-register when it merges that branch.
+functions. The effects session delivers its pictures in
+`assets/turnflock/garden/effects/` and its code in `src/render/parts/garden/`; the
+theme session wires them into the register when it merges that branch.
 
 ## The contract, for a part session
 
@@ -78,12 +85,50 @@ whose name is in the table above; other exports are ignored. In detail:
 - Do not change the robot part, `BoardView` or the register to make a part fit;
   if the contract is missing something, say so to the theme session.
 
+**Picture parts (the garden's way).** The owner wants the garden parts to use the
+owner's own pictures, like the robot theme does: cut-out WebP files with
+transparency, not models rebuilt in code. A 3D slot's build function may therefore
+return a picture instead of a model. `src/render/parts/sprite.ts` is the shared way
+to do it; use it rather than a home-made version:
+
+- **Files:** `assets/turnflock/garden/<part>/<name>.webp` (for example
+  `assets/turnflock/garden/obstacles/rock.webp`), cut out with a transparent
+  background, imported in the code (`import rock from '…/rock.webp'`) so the single
+  file inlines it. Report each picture's size.
+- **`spriteTexture(url)`** — one shared texture per picture: sRGB colour space,
+  mipmaps with trilinear filtering and the device's best anisotropy (sharp up close,
+  calm when small), clamped edges. It appears as soon as it has decoded.
+- **`buildBillboard(texture, { width, height | aspect, foot, uv, facing, castShadow, lit })`**
+  — an upright picture whose **foot stands on the tile** (the group's origin; `foot`
+  pushes transparent space under the foot below the tile). It faces the camera every
+  frame, pivoting on the foot (`facing: 'camera'`, the default; `'upright'` turns only
+  around the vertical and looks squashed under the steep board camera). It casts a
+  shadow shaped like the picture. It is marked `userData.keepApart`, so the board does
+  not fuse it into the still geometry. Obstacles, the exit's gazebo, decor on the board.
+- **`buildDecal(texture, { width, depth, y, uv, quarterTurns, lit })`** — a picture lying
+  flat (tile faces, a pad under the exit). `uv` cuts part of one picture, and
+  `quarterTurns` turns it, so **the rim is put together from corner and edge pieces of
+  one picture**: one corner piece turned four times, one edge piece repeated per cell.
+  Decals are still geometry and are fused per picture into one mesh.
+- **Drawing order and edges:** every picture is a cut-out (`alphaTest` 0.5 with alpha
+  to coverage, depth written, no blending). Pixels under the cut are not drawn at all,
+  so chicks, robots and pictures overlap correctly by depth with no sorting, and there
+  is no light seam around a picture; the renderer's antialiasing smooths the cut edge.
+- **Light:** pictures are unlit by default (the light is painted in them); pass
+  `lit: true` for one that should take the scene's light and shadows.
+- **The chicks stay 3D**, because they turn to four headings; `buildPartsRobot` for the
+  garden is a model, not a picture.
+- `production/qa/evidence/garden-theme/sprite-probe-billboard.png` shows a probe
+  obstacle drawn this way (an uncut reference picture, hence the white square; the probe
+  is not in the code).
+
 **2D part.** A style sheet `src/ui/themes/garden/<slot>.css` (file name from the
 table). Every rule starts with `[data-theme="garden"]` — the attribute sits on the
 root element (`<html>`) — so nothing changes in the robot theme. The sheet is loaded
 automatically after the robot sheets, so equal specificity plus the attribute wins.
-Pictures go in `src/ui/themes/garden/` and are referenced from the sheet
-(`url('./backdrop.webp')`), so the single-file build inlines them. Base colours are
+Pictures go in `assets/turnflock/garden/<part>/` and are referenced from the sheet
+(`url('../../../../assets/turnflock/garden/backdrop/garden.webp')`), so the single-file
+build inlines them. Base colours are
 available as `var(--tf-theme-<key>)` from `data/themes/garden/colours.json`.
 
 **Data.** `data/themes/garden/<part>.json`. Keys starting with `_` are notes.

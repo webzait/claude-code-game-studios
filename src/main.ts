@@ -120,7 +120,7 @@ class Game {
   private metrics = new MemorySink();
   /** One audio context for effects and music. */
   private audio = new AudioHub();
-  private sfx = new Sfx(() => this.save.settings.mute, () => this.save.lab.soundSet, this.audio);
+  private sfx = new Sfx(() => this.save.settings.mute, () => this.soundSetId, this.audio);
   private musicOut = new WebAudioMusic(this.audio, renderInBackground);
   private music = new MusicController(this.musicOut, CONFIG.music.screens, { enabled: this.save.settings.music, variant: this.save.lab.music, screen: 'map', visible: !document.hidden });
   private solver = new SolverClient();
@@ -331,6 +331,11 @@ class Game {
     if (this.screen !== 'level') return;
     if (this.session.status === 'lost' && !el('card').hidden && this.lastRescue) this.showLost(this.lastRescue, false);
     this.refresh();
+  }
+
+  /** The sound set that plays: the theme's own when it has one, else the one chosen in the test lab. */
+  private get soundSetId(): string {
+    return resolveTheme(this.save.settings.theme).soundSet ?? this.save.lab.soundSet;
   }
 
   private get reduced(): boolean {
@@ -658,7 +663,7 @@ class Game {
     this.refresh();
     this.track({ type: 'command', level: this.level.id, command });
     // The button answers at the touch; with a `motion` set the turn and the step sound when the robots make them.
-    const sounds = movePlan(command, result.events.map((e) => e.outcome), result.events.some((e) => e.turned), soundSet(this.save.lab.soundSet).timing);
+    const sounds = movePlan(command, result.events.map((e) => e.outcome), result.events.some((e) => e.turned), soundSet(this.soundSetId).timing);
     for (const name of sounds.tap) this.sfx.play(name);
     const generation = this.generation;
     this.pending++;

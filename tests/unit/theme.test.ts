@@ -5,7 +5,7 @@ import { CONFIG } from '../../src/config';
 import { DEFAULT_THEME, isThemeId, THEME_IDS } from '../../src/game/theme';
 import { defaultSave, loadSave, migrate, SAVE_VERSION, writeSave, type KeyValueStore } from '../../src/game/save';
 import { LEVELS } from '../../src/levels/index';
-import { resolveBuilders, resolveColours, resolveLight, resolveTheme, ROBOT_BUILDERS, ROBOT_LIGHT, slotStatus, THEME_SLOTS, themeSources, type ThemeSources } from '../../src/render/themes';
+import { resolveBuilders, resolveColours, resolveLight, resolveSoundSet, resolveTheme, ROBOT_BUILDERS, ROBOT_LIGHT, slotStatus, THEME_SLOTS, themeSources, type ThemeSources } from '../../src/render/themes';
 
 const ids = LEVELS.map((l) => l.id);
 const memory = (): KeyValueStore => {
@@ -65,6 +65,19 @@ describe('theme register', () => {
     expect(status.colours).toBe('own');
     expect(status.robot).toBe('robot');
     expect(Object.keys(status)).toEqual(THEME_SLOTS.map((s) => s.id));
+  });
+
+  it('a theme sound set is used only when it names a set that exists', () => {
+    expect(resolveSoundSet(partial)).toBeNull();
+    expect(resolveSoundSet({ ...partial, data: { 'sounds.json': { set: CONFIG.audio.set } } })).toBe(CONFIG.audio.set);
+    expect(resolveSoundSet({ ...partial, data: { 'sounds.json': { set: 'no-such-set' } } })).toBeNull();
+  });
+
+  it('buttons, icons and the screens around the board are not theme slots (owner, 2026-11-24)', () => {
+    const slots = THEME_SLOTS.map((s) => s.id);
+    expect(slots).not.toContain('buttons');
+    expect(slots).not.toContain('levelScreen');
+    expect(slots).toEqual(['robot', 'floorTile', 'rim', 'underlay', 'obstacle', 'exit', 'turnTile', 'plate', 'gate', 'backdrop', 'decor', 'colours', 'light', 'sounds']);
   });
 
   it('every 3D slot names a function the robot theme has', () => {

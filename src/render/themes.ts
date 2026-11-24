@@ -10,9 +10,11 @@
  * - 2D: `src/ui/themes/<theme>/<slot>.css`, written under `[data-theme="<theme>"]`
  *   (loaded by src/ui/themes.ts).
  * - Data: `data/themes/<theme>/<slot>.json`.
+ * A 3D part may be a picture instead of a model: src/render/parts/sprite.ts.
  */
 import { CONFIG } from '../config';
 import type { ThemeId } from '../game/theme';
+import { isSoundSet } from '../sound/sets';
 import { buildExit, buildFloorTile, buildGate, buildObstacle, buildPlate, buildRim, buildTurnTile, buildUnderlay, gateDoorScale } from './parts/board';
 import { buildPartsRobot, buildRobot } from './robot';
 
@@ -79,7 +81,11 @@ export interface ThemeSlot {
   readonly robot: string;
 }
 
-/** Every part of the look, in the order of design/themes.md. */
+/**
+ * Every part of the look a theme may change, in the order of design/themes.md. Buttons, icons and
+ * the screens around the board are not here: by the owner's decision (2026-11-24) they are the
+ * robot theme's in every theme.
+ */
 export const THEME_SLOTS: readonly ThemeSlot[] = [
   { id: 'robot', kind: '3d', supplies: ['buildPartsRobot', 'buildRobot'], robot: 'src/render/robot.ts' },
   { id: 'floorTile', kind: '3d', supplies: ['buildFloorTile'], robot: 'src/render/parts/board.ts' },
@@ -92,10 +98,9 @@ export const THEME_SLOTS: readonly ThemeSlot[] = [
   { id: 'gate', kind: '3d', supplies: ['buildGate', 'gateDoorScale'], robot: 'src/render/parts/board.ts' },
   { id: 'backdrop', kind: '2d', supplies: ['backdrop.css'], robot: 'src/ui/tf-scene.css' },
   { id: 'decor', kind: '2d', supplies: ['decor.css'], robot: 'src/ui/style.css (.tf-decor-*)' },
-  { id: 'buttons', kind: '2d', supplies: ['buttons.css'], robot: 'src/ui/tf-buttons.css' },
-  { id: 'levelScreen', kind: '2d', supplies: ['level-screen.css'], robot: 'src/ui/tf-levels.css' },
   { id: 'colours', kind: 'data', supplies: ['colours.json'], robot: '(none: the robot theme sets no theme colours)' },
   { id: 'light', kind: 'data', supplies: ['light.json'], robot: 'data/config.json (light)' },
+  { id: 'sounds', kind: 'data', supplies: ['sounds.json'], robot: 'the sound set chosen in the test lab (data/sound-sets.json)' },
 ];
 
 /** What a theme's folders hold: the exports of its 3D part files, and the names of its style and data files. */
@@ -160,6 +165,16 @@ export function resolveColours(sources: ThemeSources): Record<string, string> {
   return Object.fromEntries(Object.entries(own).filter(([key, value]) => !key.startsWith('_') && typeof value === 'string').map(([key, value]) => [`--tf-theme-${key}`, value as string]));
 }
 
+/**
+ * The sound set a theme plays, from its `sounds.json` (`{ "set": "<id in data/sound-sets.json>" }`),
+ * or null when it has none (or names a set that does not exist): then the test lab's choice plays.
+ */
+export function resolveSoundSet(sources: ThemeSources): string | null {
+  const own = sources.data['sounds.json'];
+  const set = own && typeof own === 'object' ? (own as Record<string, unknown>).set : undefined;
+  return isSoundSet(set) ? set : null;
+}
+
 /** For each slot, whether the theme supplies it itself (`own`) or shows the robot part (`robot`). */
 export function slotStatus(sources: ThemeSources): Record<string, 'own' | 'robot'> {
   const has = (slot: ThemeSlot): boolean => {
@@ -176,9 +191,11 @@ export interface ResolvedTheme {
   readonly builders: ThemeBuilders;
   readonly light: ThemeLight;
   readonly colours: Record<string, string>;
+  /** The theme's own sound set, or null to play the one chosen in the test lab. */
+  readonly soundSet: string | null;
 }
 
 /** The register's answer for one theme. */
 export function resolveTheme(theme: ThemeId, sources: ThemeSources = themeSources(theme)): ResolvedTheme {
-  return { id: theme, builders: resolveBuilders(sources), light: resolveLight(sources), colours: resolveColours(sources) };
+  return { id: theme, builders: resolveBuilders(sources), light: resolveLight(sources), colours: resolveColours(sources), soundSet: resolveSoundSet(sources) };
 }

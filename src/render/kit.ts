@@ -23,22 +23,33 @@ export interface Kit {
 /**
  * Fuse every mesh under `source` that shares a material into one mesh. The
  * kit's pieces are many small parts; drawn one by one they cost a phone far
- * more than their triangle count suggests.
+ * more than their triangle count suggests. A node marked `userData.keepApart`
+ * (a picture that turns to the camera, src/render/parts/sprite.ts) is not merged:
+ * it moves over as it is, in the same place.
  */
 export function fuse(source: THREE.Object3D): THREE.Group {
   source.updateMatrixWorld(true);
   const inverse = new THREE.Matrix4().copy(source.matrixWorld).invert();
   const byMaterial = new Map<THREE.Material, THREE.BufferGeometry[]>();
-  source.traverse((node) => {
-    if (!(node instanceof THREE.Mesh)) return;
-    const source = node.geometry as THREE.BufferGeometry;
-    // Merging needs like with like: every part is made non-indexed first.
-    const geometry = source.index ? source.toNonIndexed() : source.clone();
-    geometry.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inverse, node.matrixWorld));
-    const list = byMaterial.get(node.material as THREE.Material) ?? [];
-    list.push(geometry);
-    byMaterial.set(node.material as THREE.Material, list);
-  });
+  const apart: { node: THREE.Object3D; matrix: THREE.Matrix4 }[] = [];
+  const visit = (node: THREE.Object3D): void => {
+    if (node !== source && node.userData.keepApart === true) {
+      apart.push({ node, matrix: new THREE.Matrix4().multiplyMatrices(inverse, node.matrixWorld) });
+      return;
+    }
+    // Same order as Object3D.traverse: the node, then its children.
+    if (node instanceof THREE.Mesh) {
+      const source = node.geometry as THREE.BufferGeometry;
+      // Merging needs like with like: every part is made non-indexed first.
+      const geometry = source.index ? source.toNonIndexed() : source.clone();
+      geometry.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inverse, node.matrixWorld));
+      const list = byMaterial.get(node.material as THREE.Material) ?? [];
+      list.push(geometry);
+      byMaterial.set(node.material as THREE.Material, list);
+    }
+    for (const child of node.children) visit(child);
+  };
+  visit(source);
   const fused = new THREE.Group();
   for (const [material, geometries] of byMaterial) {
     // Parts drawn with one material may carry different extras (texture coordinates, vertex colours);
@@ -54,6 +65,11 @@ export function fuse(source: THREE.Object3D): THREE.Group {
       mesh.receiveShadow = true;
       fused.add(mesh);
     }
+  }
+  for (const { node, matrix } of apart) {
+    node.removeFromParent();
+    matrix.decompose(node.position, node.quaternion, node.scale);
+    fused.add(node);
   }
   return fused;
 }
