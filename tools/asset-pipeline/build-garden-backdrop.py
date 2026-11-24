@@ -46,10 +46,24 @@ def save_rgb(px: np.ndarray, name: str, quality: int) -> None:
     print(f'{name:34s} {img.size[0]}x{img.size[1]}  {(OUT / name).stat().st_size / 1024:6.1f} kB')
 
 
+def resize_premultiplied(px: np.ndarray, width: int) -> np.ndarray:
+    """Scale RGBA with the colour weighted by its alpha, so transparent pixels never bleed
+    their colour into the edge (no dark or coloured fringe)."""
+    h, w, _ = px.shape
+    size = (width, round(h * width / w))
+    a = np.clip(px[..., 3], 0, 255) / 255
+    def scaled(ch: np.ndarray) -> np.ndarray:
+        return np.asarray(Image.fromarray(ch.astype(np.float32), 'F').resize(size, Image.LANCZOS), float)
+    alpha = np.clip(scaled(a), 0, 1)
+    rgb = np.stack([scaled(px[..., c] * a) for c in range(3)], axis=-1)
+    rgb = np.where(alpha[..., None] > 1 / 255, rgb / np.maximum(alpha, 1e-6)[..., None], 0)
+    return np.dstack([np.clip(rgb, 0, 255), alpha * 255])
+
+
 def save_rgba(px: np.ndarray, name: str, width: int, quality: int) -> None:
-    img = Image.fromarray(np.clip(px, 0, 255).astype(np.uint8), 'RGBA')
-    if img.width > width:
-        img = img.resize((width, round(img.height * width / img.width)), Image.LANCZOS)
+    if px.shape[1] > width:
+        px = resize_premultiplied(px, width)
+    img = Image.fromarray(np.clip(np.round(px), 0, 255).astype(np.uint8), 'RGBA')
     img.save(OUT / name, 'WEBP', quality=quality, alpha_quality=80, method=6)
     print(f'{name:34s} {img.size[0]}x{img.size[1]}  {(OUT / name).stat().st_size / 1024:6.1f} kB')
 

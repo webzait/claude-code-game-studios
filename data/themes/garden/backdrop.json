@@ -25,7 +25,7 @@
     "bottom": "#159CFD"
   },
   "decor": {
-    "_doc": "Foreground pieces cut from the owner's single-object pictures (white background removed, wooden posts removed from the plant bases). width = output width in pixels. erase = polygons in the source picture's pixels cleared by hand: bits of vine and post left at the crop's top edge.",
+    "_doc": "Foreground pieces cut from the owner's single-object pictures (white background removed, wooden posts removed from the plant bases). width = output width in pixels. erase = polygons in the source picture's pixels cleared by hand: bits of vine and post left at the crop's top edge. Scaled with premultiplied alpha to about twice the largest size shown (corner growth: 330 CSS px on a tablet, 212 on a 390 phone).",
     "pieces": {
       "garden-bush-white": {
         "from": "06-bush-flowers",
@@ -257,7 +257,7 @@
           1170,
           860
         ],
-        "width": 560
+        "width": 660
       }
     },
     "quality": 82

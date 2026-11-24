@@ -72,7 +72,7 @@ a garden picture of its own shape (`GARDEN_DECOR_ART`):
 | `sprig-tl` top-left corner | tree branch | top-left of 10, sky removed |
 | `tuft-tr` above the board, right | flower bed (white and pink flowers, grass), small and mirrored | foot of 07, post removed |
 
-Six pictures, 140 kB together (the corner growth is 36 kB). The white studio background and the painted floor shadow are
+Six pictures, 147 kB together (the corner growth is 43.5 kB: 660 × 577, about twice the 325 px it is shown at on a tablet). All pieces are scaled with premultiplied alpha, so no colour from transparent pixels bleeds into the edge. The white studio background and the painted floor shadow are
 removed; a soft contact shadow is baked under each piece. `17-sheet-bushes-plants` is only
 83 px high, too small to use sharp; it served as the reference for the kinds of plants.
 
