@@ -28,6 +28,7 @@ import { addGardenEffectCards } from './gardenEffects';
 import { addGardenExitCards } from './garden-exit';
 import { addGardenLogoCards } from './gardenLogo';
 import { addGardenIconCards } from './gardenIcon';
+import { addGardenIconCards as addGardenGemHeartCards } from './gardenIcons';
 
 /**
  * The parts sheet: every game element built on its own and shown from the
@@ -1065,5 +1066,8 @@ addGardenEffectCards(document.getElementById('sheet')!);
 
 // Garden theme: exit, gazebo goal and special tiles (src/parts/garden-exit.ts).
 void addGardenExitCards(document.getElementById('sheet')!);
+
+// The garden theme's loose gem and heart (src/parts/gardenIcons.ts).
+addGardenGemHeartCards(document.getElementById('sheet')!);
 
 document.body.dataset.ready = 'true';
