@@ -39,7 +39,7 @@ from lib import CONFIG, TONES, hue_sat_val, write_part
 SS = 8                      # supersampling of drawn shapes
 HOLE_PX = 26                # tick painted out this far around it (source px): covers its glow
 RING_PX = 22                # ring around the hole the fill is fitted to
-SHAPE_BOX = 0.36            # shape box width as a share of the face ellipse width
+SHAPE_BOX = 0.33            # shape box width as a share of the face ellipse width
 SQUASH_POWER = 0.55         # shape squash = (face height / width) ** this; 1 would be the face's own
 DEEP_DARKEN = 0.72          # yellow tick: lightness of colors.robots.yellow.deep times this
 KEEP_LIGHT = 0.85           # share of the lime face's own light and shade the retoned face keeps
