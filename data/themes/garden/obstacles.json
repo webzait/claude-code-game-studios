@@ -1,0 +1,432 @@
+{
+  "_note": "Garden-theme obstacles. Sizes in cells (1 cell = 1 unit = 56 px on the asset sheet), angles in degrees. See design/themes/garden-obstacles.md.",
+  "detail": {
+    "game": 0.5,
+    "closeUp": 1
+  },
+  "choice": {
+    "families": {
+      "rock": 0.4,
+      "bush": 0.35,
+      "stump": 0.25
+    },
+    "variants": {
+      "rock": {
+        "rock": 0.5,
+        "rockMossy": 0.5
+      },
+      "bush": {
+        "bushWhite": 0.5,
+        "bushPink": 0.5
+      },
+      "stump": {
+        "stump": 1
+      }
+    }
+  },
+  "materials": {
+    "stone": {
+      "roughness": 0.58,
+      "clearcoat": 0.18,
+      "clearcoatRoughness": 0.45
+    },
+    "wood": {
+      "roughness": 0.5,
+      "clearcoat": 0.22,
+      "clearcoatRoughness": 0.4
+    },
+    "plant": {
+      "roughness": 0.4,
+      "clearcoat": 0.35,
+      "clearcoatRoughness": 0.3
+    }
+  },
+  "rock": {
+    "seed": 3,
+    "halfWidth": 0.43,
+    "halfDepth": 0.4,
+    "height": 0.7,
+    "centre": 0.27,
+    "below": 2.6,
+    "softness": 260,
+    "around": 200,
+    "rows": 84,
+    "top": {
+      "tiltX": 0.08,
+      "tiltZ": 0.3,
+      "cut": 0.84
+    },
+    "rings": [
+      {
+        "count": 6,
+        "elevation": 30,
+        "jitter": 10,
+        "cut": 0.89
+      },
+      {
+        "count": 7,
+        "elevation": 5,
+        "jitter": 7,
+        "cut": 0.92
+      },
+      {
+        "count": 5,
+        "elevation": -14,
+        "jitter": 5,
+        "cut": 0.95
+      }
+    ],
+    "groove": {
+      "depth": 0.011,
+      "width": 0.013
+    },
+    "colors": {
+      "low": "#9F99A0",
+      "high": "#CFCACA",
+      "top": "#DAD5D3",
+      "groove": "#6E6675",
+      "foot": "#857E8A",
+      "facetJitter": 0.05
+    },
+    "moss": {
+      "azimuth": -35,
+      "elevation": 56,
+      "reach": 36,
+      "thickness": 0.028,
+      "petals": 15,
+      "scallop": 0.22,
+      "around": 120,
+      "rows": 16,
+      "colors": {
+        "centre": "#DDF65A",
+        "mid": "#BCE62C",
+        "edge": "#93C81C",
+        "vein": "#E9FA86"
+      },
+      "crackTint": "#86B52A",
+      "crackShare": 0.45,
+      "tufts": [
+        {
+          "azimuth": 125,
+          "elevation": 14,
+          "size": 0.045,
+          "count": 7
+        },
+        {
+          "azimuth": 140,
+          "elevation": -4,
+          "size": 0.022,
+          "count": 3
+        },
+        {
+          "azimuth": 50,
+          "elevation": 2,
+          "size": 0.03,
+          "count": 4
+        }
+      ]
+    },
+    "cutJitter": 0.05
+  },
+  "stump": {
+    "seed": 11,
+    "radiusTop": 0.33,
+    "radiusBottom": 0.355,
+    "flare": 0.06,
+    "height": 0.56,
+    "edgeRound": 0.035,
+    "around": 160,
+    "sideRows": 18,
+    "edgeRows": 6,
+    "topRows": 34,
+    "dome": 0.012,
+    "band": 0.075,
+    "bandGroove": {
+      "depth": 0.012,
+      "width": 0.009
+    },
+    "rings": [
+      0.035,
+      0.1,
+      0.165
+    ],
+    "ringGroove": {
+      "depth": 0.008,
+      "width": 0.0075
+    },
+    "notches": {
+      "count": 10,
+      "jitter": 0.3,
+      "width": 0.028,
+      "depthTop": 0.03,
+      "depthSide": 0.02,
+      "reach": 0.55
+    },
+    "bark": {
+      "lines": 26,
+      "depth": 0.007,
+      "sharp": 5,
+      "wobble": 0.6
+    },
+    "colors": {
+      "sideTop": "#EC9440",
+      "sideLow": "#D47A30",
+      "barkGroove": "#AE5E22",
+      "edge": "#F2B66C",
+      "top": "#FCD796",
+      "band": "#F5C27A",
+      "ring": "#E5893A",
+      "notch": "#D98A3E",
+      "foot": "#9A5320"
+    },
+    "leaves": [
+      {
+        "azimuth": 150,
+        "swing": 15,
+        "size": 0.3,
+        "lift": 68,
+        "twist": 10
+      },
+      {
+        "azimuth": 112,
+        "swing": -21,
+        "size": 0.24,
+        "lift": 68,
+        "twist": -15
+      },
+      {
+        "azimuth": 68,
+        "swing": 18,
+        "size": 0.28,
+        "lift": 68,
+        "twist": 12
+      },
+      {
+        "azimuth": 30,
+        "swing": -12,
+        "size": 0.3,
+        "lift": 68,
+        "twist": -8
+      },
+      {
+        "azimuth": 200,
+        "swing": 15,
+        "size": 0.24,
+        "lift": 68,
+        "twist": 6
+      },
+      {
+        "azimuth": 300,
+        "swing": -15,
+        "size": 0.22,
+        "lift": 68,
+        "twist": -10
+      },
+      {
+        "azimuth": 250,
+        "swing": 18,
+        "size": 0.2,
+        "lift": 68,
+        "twist": 14
+      },
+      {
+        "azimuth": 90,
+        "swing": 24,
+        "size": 0.2,
+        "lift": 68,
+        "twist": 0
+      }
+    ],
+    "sprouts": [
+      {
+        "azimuth": 100,
+        "size": 0.08
+      },
+      {
+        "azimuth": 75,
+        "size": 0.07
+      },
+      {
+        "azimuth": 170,
+        "size": 0.075
+      },
+      {
+        "azimuth": 330,
+        "size": 0.065
+      }
+    ],
+    "leafColors": {
+      "body": "#7ED63A",
+      "light": "#B9EE55",
+      "dark": "#4FAE22"
+    }
+  },
+  "bush": {
+    "seed": 23,
+    "halfWidth": 0.4,
+    "height": 0.54,
+    "rows": [
+      {
+        "elevation": 88,
+        "count": 4,
+        "size": 0.24
+      },
+      {
+        "elevation": 66,
+        "count": 8,
+        "size": 0.27
+      },
+      {
+        "elevation": 44,
+        "count": 10,
+        "size": 0.28
+      },
+      {
+        "elevation": 24,
+        "count": 12,
+        "size": 0.28
+      },
+      {
+        "elevation": 8,
+        "count": 13,
+        "size": 0.26
+      },
+      {
+        "elevation": -2,
+        "count": 12,
+        "size": 0.2
+      }
+    ],
+    "lift": {
+      "bottom": 6,
+      "top": 34
+    },
+    "jitter": {
+      "azimuth": 0.25,
+      "size": 0.12,
+      "twist": 14
+    },
+    "colors": {
+      "top": "#B4E842",
+      "mid": "#74CF2E",
+      "low": "#3E9C1F",
+      "core": "#245F14"
+    },
+    "flowers": {
+      "white": [
+        {
+          "azimuth": 120,
+          "elevation": 36,
+          "size": 0.21,
+          "color": "white"
+        },
+        {
+          "azimuth": 62,
+          "elevation": 58,
+          "size": 0.15,
+          "color": "white"
+        },
+        {
+          "azimuth": 55,
+          "elevation": 26,
+          "size": 0.15,
+          "color": "white"
+        }
+      ],
+      "pink": [
+        {
+          "azimuth": 135,
+          "elevation": 20,
+          "size": 0.2,
+          "color": "lilac"
+        },
+        {
+          "azimuth": 110,
+          "elevation": 58,
+          "size": 0.19,
+          "color": "pink"
+        },
+        {
+          "azimuth": 58,
+          "elevation": 30,
+          "size": 0.18,
+          "color": "pink"
+        },
+        {
+          "azimuth": 40,
+          "elevation": 64,
+          "size": 0.12,
+          "color": "white"
+        }
+      ]
+    },
+    "leaf": {
+      "width": 0.78,
+      "curl": -0.12,
+      "base": 0.8,
+      "round": 0.55
+    }
+  },
+  "plants": {
+    "leaf": {
+      "length": 1,
+      "width": 0.7,
+      "cup": 0.05,
+      "curl": 0.05,
+      "puff": 0.1,
+      "along": 12,
+      "across": 10,
+      "base": 0.78,
+      "round": 0.62
+    },
+    "flower": {
+      "petals": 5,
+      "reach": 0.3,
+      "petal": [
+        0.36,
+        0.13,
+        0.31
+      ],
+      "cup": 12,
+      "centre": 0.17,
+      "colors": {
+        "white": [
+          "#FFFFFF",
+          "#E9ECF2"
+        ],
+        "pink": [
+          "#FF74AE",
+          "#EE4A8C"
+        ],
+        "lilac": [
+          "#E39BF0",
+          "#C36FD8"
+        ],
+        "centre": [
+          "#FFD43A",
+          "#F5A300"
+        ]
+      }
+    },
+    "grass": {
+      "blades": 7,
+      "height": 1,
+      "width": 0.13,
+      "lean": 22,
+      "colors": {
+        "tip": "#9BDD3B",
+        "base": "#4EAA22"
+      }
+    },
+    "sprig": {
+      "leaves": 4,
+      "lift": 22,
+      "bud": 0.09
+    },
+    "colors": {
+      "leaf": "#78CF2E",
+      "leafLight": "#A9E447",
+      "leafDark": "#4FA820"
+    }
+  }
+}

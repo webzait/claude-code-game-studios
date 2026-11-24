@@ -20,6 +20,7 @@ import { addCoinCards, toolButton, toolTray, type ToolName } from './coins';
 import coinIcon from '../../assets/turnflock/ui/coin.webp';
 import extraMovesIcon from '../../assets/turnflock/ui/extra-moves.webp';
 import { addSettingsCards } from './settings';
+import { addGardenObstacleCards } from './garden-obstacles';
 
 /**
  * The parts sheet: every game element built on its own and shown from the
@@ -1041,5 +1042,6 @@ addCoinCards(document.getElementById('sheet')!);
 
 // The settings screen and its controls (src/parts/settings.ts).
 addSettingsCards(document.getElementById('sheet')!);
+addGardenObstacleCards(document.getElementById('sheet')!);
 
 document.body.dataset.ready = 'true';
