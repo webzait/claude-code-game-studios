@@ -1,0 +1,191 @@
+{
+  "$comment": "Garden theme board: grass tiles, the dirt tile, the highlight glow, the braided-twig rim, the underlay and its grass bed. Sizes in cells (1 cell = 56 px on the asset sheet), the same units as data/parts.json. Design: design/themes/garden-board.md. References: design/reference/turnflock/garden/01, 02, 03, 11, 12, 13.",
+  "tile": {
+    "size": 1,
+    "body": 0.9,
+    "height": 0.2,
+    "radius": 0.21,
+    "bevel": 0.1,
+    "bevelSteps": 3,
+    "cornerSteps": 4,
+    "peg": 0.12,
+    "pegHeight": 0.06,
+    "pegSpread": 0.28,
+    "fur": {
+      "reach": 0.03,
+      "inset": 0.06,
+      "droop": 0.07,
+      "blade": 0.18
+    },
+    "side": {
+      "low": 0.01,
+      "reach": 0.01
+    },
+    "texture": 512,
+    "clovers": 6,
+    "seed": 11
+  },
+  "dirt": {
+    "texture": 512,
+    "seed": 5,
+    "fringe": {
+      "height": 0.085,
+      "reach": 0.02,
+      "blade": 0.2
+    },
+    "tufts": 5,
+    "tuftSize": 0.14,
+    "radius": 0.13,
+    "recess": 0.045,
+    "frame": 0.16,
+    "blockGap": 0.014,
+    "blockRound": 0.032,
+    "cornerRound": 0.05,
+    "perSide": 3
+  },
+  "glow": {
+    "reach": 0.16,
+    "line": 0.035,
+    "inner": 0.1,
+    "lift": 0.012,
+    "brighten": 0.18,
+    "pulse": {
+      "seconds": 1.1,
+      "low": 0.55,
+      "high": 1.0
+    }
+  },
+  "rim": {
+    "margin": 0.13,
+    "width": 0.58,
+    "cornerRadius": 0.6,
+    "strands": 3,
+    "strandRadius": 0.13,
+    "twist": 0.16,
+    "flatten": 0.7,
+    "centreY": 0.255,
+    "pitch": 1.6,
+    "wobble": 0.01,
+    "core": 0.135,
+    "perUnit": 7,
+    "radial": 6,
+    "barkRepeat": 0.9,
+    "texture": 256,
+    "seed": 3
+  },
+  "underlay": {
+    "height": 0.22,
+    "lip": -0.12,
+    "bedRepeat": 1.0,
+    "texture": 256,
+    "seed": 7,
+    "edgeGrass": 0.06
+  },
+  "decor": {
+    "leafLength": 0.46,
+    "leafWidth": 0.3,
+    "leafSteps": 7,
+    "petal": 0.2,
+    "petalWidth": 0.14,
+    "heart": 0.07,
+    "vineRadius": 0.016,
+    "vineLength": 0.95,
+    "vineTurns": 1.1,
+    "minGap": 0.45,
+    "clusters": [
+      {
+        "side": "top",
+        "at": 0.22,
+        "kind": "leaves",
+        "flip": false
+      },
+      {
+        "side": "top",
+        "at": 0.8,
+        "kind": "leaves",
+        "flip": true
+      },
+      {
+        "side": "left",
+        "at": 0.08,
+        "kind": "leaf",
+        "flip": false
+      },
+      {
+        "side": "left",
+        "at": 0.24,
+        "kind": "flower",
+        "flip": false
+      },
+      {
+        "side": "left",
+        "at": 0.66,
+        "kind": "leaves",
+        "flip": true
+      },
+      {
+        "side": "right",
+        "at": 0.3,
+        "kind": "leaves",
+        "flip": false
+      },
+      {
+        "side": "right",
+        "at": 0.78,
+        "kind": "flower",
+        "flip": true
+      },
+      {
+        "side": "bottom",
+        "at": 0.18,
+        "kind": "leaves",
+        "flip": true
+      },
+      {
+        "side": "bottom",
+        "at": 0.68,
+        "kind": "leaves",
+        "flip": false
+      }
+    ]
+  },
+  "colors": {
+    "grassTop": "#BDE426",
+    "grassLight": "#D3F04C",
+    "grassDark": "#9FCC1E",
+    "grassSide": "#8CBF18",
+    "grassShade": "#4E8A10",
+    "altShade": 0.9,
+    "clover": "#D8F55C",
+    "blade": "#96CB1A",
+    "bladeTip": "#DDF66A",
+    "bladeBase": "#4F8E12",
+    "bed": "#5E9E10",
+    "bedDark": "#3E7A06",
+    "bedLight": "#8CC428",
+    "dirt": "#C08548",
+    "dirtLight": "#D9A066",
+    "dirtDark": "#94602F",
+    "dirtSide": "#7A4B22",
+    "bark": "#DE8A30",
+    "barkLight": "#FFC463",
+    "barkDark": "#B0621A",
+    "core": "#86461D",
+    "soil": "#6B4220",
+    "soilDark": "#4A2C14",
+    "leaf": "#92D62A",
+    "leafLight": "#D2F46E",
+    "leafDark": "#4E9A14",
+    "vine": "#7CC229",
+    "petal": "#FFFFFF",
+    "petalShade": "#E6E4EE",
+    "heart": "#FFC21A",
+    "heartDark": "#F08A0C",
+    "glow": "#E9FF5C",
+    "glowCore": "#FFFFE0",
+    "highlightTop": "#C6F03E",
+    "clay": "#EE9E5C",
+    "clayLight": "#FFC48A",
+    "clayDark": "#B9692F"
+  }
+}
