@@ -19,7 +19,7 @@ import { previewStep, witnessNext, type RescueResult, type ScanResult } from './
 import { CelebrationRun, planCelebration, type CelebrationPlan, type CelebrationVariant } from './game/celebration';
 import { extraMovesPrice, hintPrice, payout, rewardFor, settlePaid, undoQuote, type UndoQuote } from './game/coins';
 import type { ThemeId } from './game/theme';
-import { applyLab, levelScreenView, rulesFor, usesCertifiedRules, type LabSettings } from './game/lab';
+import { applyLab, DEFAULT_LAB, levelScreenView, rulesFor, usesCertifiedRules, type LabSettings } from './game/lab';
 import { emptyLedger, record, type LedgerEntry } from './game/ledger';
 import { MemorySink, type MetricsEvent } from './game/metrics';
 import { isUnlocked, mainAction, starsFor, starsOfBest } from './game/progress';
@@ -749,7 +749,9 @@ class Game {
    */
   private celebrate(stars: 1 | 2 | 3, showCard: () => void): void {
     this.run?.cancel();
-    const plan = planCelebration({ variant: this.save.lab.celebration, stars, reduced: this.reduced, muted: this.save.settings.mute });
+    // In the garden the garden's own celebration plays, unless the test lab picked another one (owner, 2026-11-24).
+    const variant = this.save.settings.theme === 'garden' && this.save.lab.celebration === DEFAULT_LAB.celebration ? 'garden' : this.save.lab.celebration;
+    const plan = planCelebration({ variant, stars, reduced: this.reduced, muted: this.save.settings.mute });
     const generation = this.generation;
     this.run = new CelebrationRun(
       plan,

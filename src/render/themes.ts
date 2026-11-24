@@ -50,6 +50,30 @@ export interface ThemeBuilders {
   readonly boardFootprint: typeof boardFootprint;
   /** How far the underlay reaches past the rim's outside (negative: it sits under the rim). */
   readonly underlayLip: number;
+  /**
+   * Effects the theme plays during a move, built once per level in the board's group: `exit` when a
+   * flock member goes in (in place of the robot theme's flecks), `bump` where one runs into something.
+   * null: the robot theme's own (flecks on the exit, nothing on a bump).
+   */
+  readonly playEffects: (parent: THREE.Object3D, frame: { readonly pitch: number; readonly floorY: number }) => PlayEffects | null;
+  /**
+   * The hint as light on the cells the flock will step onto, in place of the robot theme's arrows
+   * (turn arcs and bump marks stay). Returns one glow for a cell, placed at the cell's centre on the
+   * floor (y = 0); null: the robot theme's arrows.
+   */
+  readonly hintGlow: () => THREE.Mesh | null;
+}
+
+/** A theme's effects during play (`playEffects`). Positions are world x and z. */
+export interface PlayEffects {
+  exit(x: number, z: number): void;
+  bump(x: number, z: number): void;
+  /** Move the effects on by `dt` seconds; called every frame. */
+  update(dt: number): void;
+  /** Calm versions only (reduced motion). */
+  reduced: boolean;
+  /** Stop everything and free it. */
+  dispose(): void;
 }
 
 /** The robot theme's obstacles: the one block on every wall cell. */
@@ -73,6 +97,8 @@ export const ROBOT_BUILDERS: ThemeBuilders = {
   obstaclesFor: robotObstaclesFor,
   boardFootprint,
   underlayLip: PARTS.underlay.lip,
+  playEffects: () => null,
+  hintGlow: () => null,
 };
 
 /** Light on the 3D board. `sky`, `ground`, `ambient`, `sun`, `reflections` and `shadow` mean what they mean in `config.light`. */
@@ -119,6 +145,8 @@ export const THEME_SLOTS: readonly ThemeSlot[] = [
   { id: 'turnTile', kind: '3d', supplies: ['buildTurnTile'], robot: 'src/render/parts/board.ts' },
   { id: 'plate', kind: '3d', supplies: ['buildPlate'], robot: 'src/render/parts/board.ts' },
   { id: 'gate', kind: '3d', supplies: ['buildGate', 'gateDoorScale'], robot: 'src/render/parts/board.ts' },
+  { id: 'effects', kind: '3d', supplies: ['playEffects'], robot: 'src/render/boardView.ts (burst, pulseExit)' },
+  { id: 'hint', kind: '3d', supplies: ['hintGlow'], robot: 'src/render/boardView.ts (showHint arrows)' },
   { id: 'backdrop', kind: '2d', supplies: ['backdrop.css', 'garden-scene.css'], robot: 'src/ui/tf-scene.css' },
   { id: 'decor', kind: '2d', supplies: ['decor.css', 'garden-scene.css'], robot: 'src/ui/style.css (.tf-decor-*)' },
   { id: 'levelScreen', kind: '2d', supplies: ['level-screen.css', 'tf-levels-garden.css'], robot: 'src/ui/tf-levels.css' },

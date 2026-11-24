@@ -42,6 +42,8 @@ to update when a part is added:
 | `turnTile` — turn tile | 3D | `buildTurnTile` | `src/render/parts/board.ts` |
 | `plate` — pressure plate | 3D | `buildPlate` | `src/render/parts/board.ts` |
 | `gate` — gate | 3D | `buildGate`, `gateDoorScale` | `src/render/parts/board.ts` |
+| `effects` — effects during play | 3D | `playEffects` (beam on the exit, cloud on a bump) | flecks in `BoardView.burst` |
+| `hint` — the hint's picture | 3D | `hintGlow` (light on the cells stepped onto) | arrows in `BoardView.showHint` |
 | `backdrop` — background | 2D | `src/ui/themes/garden/garden-scene.css` (or `backdrop.css`) | `src/ui/tf-scene.css` |
 | `decor` — foreground decor | 2D | `garden-scene.css` + `applyGardenDecor` (a picture per place) | `.tf-decor-*` in `src/ui/style.css` |
 | `levelScreen` — level screen (the path) | 2D | `src/ui/themes/garden/tf-levels-garden.css` + `gardenPathModel()` | `src/ui/tf-levels.css` |
@@ -69,8 +71,12 @@ different functions, `src/render/parts/<theme>/register.ts` decides: its exports
 `register.ts` picks the grass tile from the owner's picture and the picture exit, turn tile,
 plate and gate, and keeps their flat pictures out of the fused board.
 
-**Effects.** The garden celebration is a choice in the test lab (Win celebration → Garden stars),
-next to the existing ones in every theme. Beam and cloud during play are not wired yet.
+**Effects and hint during play** (owner, 2026-11-24). Two register hooks, both empty in the robot
+theme so it keeps its own: `playEffects` (garden: a beam of light when a chick goes into the exit,
+in place of the robot flecks, and a cloud puff where one bumps) and `hintGlow` (garden: the hint
+lights the cells the flock will step onto instead of drawing arrows; turn arcs and bump marks stay).
+In the garden the garden celebration plays by default; the test lab's Win celebration still
+overrides it, and "Garden stars" can be picked in the robot theme too.
 
 
 ## The contract, for a part session

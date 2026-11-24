@@ -1,5 +1,6 @@
 // The theme register (src/render/themes.ts), the theme setting in the save, and the
 // fallback that keeps every theme playable. Contract: design/themes.md.
+import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { CONFIG } from '../../src/config';
 import { DEFAULT_THEME, isThemeId, THEME_IDS } from '../../src/game/theme';
@@ -76,7 +77,7 @@ describe('theme register', () => {
   it('buttons and icons are not theme slots; the level screen is (owner, 2026-11-24)', () => {
     const slots = THEME_SLOTS.map((s) => s.id);
     expect(slots).not.toContain('buttons');
-    expect(slots).toEqual(['robot', 'floorTile', 'rim', 'underlay', 'obstacle', 'exit', 'turnTile', 'plate', 'gate', 'backdrop', 'decor', 'levelScreen', 'colours', 'light', 'sounds']);
+    expect(slots).toEqual(['robot', 'floorTile', 'rim', 'underlay', 'obstacle', 'exit', 'turnTile', 'plate', 'gate', 'effects', 'hint', 'backdrop', 'decor', 'levelScreen', 'colours', 'light', 'sounds']);
   });
 
   it('every 3D slot names a value the robot theme has', () => {
@@ -117,6 +118,30 @@ describe('two versions of a part', () => {
     expect(garden.builders.buildFloorTile).toBe(grass.buildFloorTile);
     expect(garden.builders.buildExit).toBe(pictures.buildExit);
     expect(garden.builders.gateDoorScale).toBe(pictures.gateDoorScale);
+  });
+});
+
+describe('effects and hint during play', () => {
+  it('the robot theme keeps its own: no theme effects, arrows for the hint', () => {
+    expect(ROBOT_BUILDERS.playEffects(new THREE.Group(), { pitch: 1, floorY: 0.2 })).toBeNull();
+    expect(ROBOT_BUILDERS.hintGlow()).toBeNull();
+  });
+
+  // Playing them loads the owner's pictures, which needs a browser: shown in production/qa/evidence/garden-theme/step8-play-*.
+  it('the garden lights hint cells and supplies effects for the exit and a bump', () => {
+    const garden = resolveTheme('garden');
+    const glow = garden.builders.hintGlow();
+    expect(glow).toBeInstanceOf(THREE.Mesh);
+    const parent = new THREE.Group();
+    const fx = garden.builders.playEffects(parent, { pitch: 1, floorY: 0.2 })!;
+    expect(fx).not.toBeNull();
+    expect(typeof fx.exit).toBe('function');
+    expect(typeof fx.bump).toBe('function');
+    fx.reduced = true;
+    expect(fx.reduced).toBe(true);
+    fx.update(0.1);
+    fx.dispose();
+    expect(parent.children).toHaveLength(0);
   });
 });
 

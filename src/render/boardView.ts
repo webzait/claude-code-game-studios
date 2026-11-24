@@ -9,7 +9,7 @@ import type { Level } from '../levels/parse';
 import { QUARTER, headingAngle, nearestAngle, squashScale, turnAngle, type HeadingStyle } from './heading';
 import { fuse, type Kit } from './kit';
 import type { RobotView } from './robot';
-import { resolveTheme, type ResolvedTheme } from './themes';
+import { resolveTheme, type PlayEffects, type ResolvedTheme } from './themes';
 import { tileBeats } from './stepPlan';
 import type { CelebrationPlan } from '../game/celebration';
 import { CelebrationFx } from './celebration';
@@ -136,6 +136,10 @@ export class BoardView {
   /** The hint picture: one group of flat marks per robot, lying on the tiles. */
   private hintGroup = new THREE.Group();
   private hintMarks: { group: THREE.Group; dx: number; dz: number; materials: THREE.MeshBasicMaterial[] }[] = [];
+  /** The theme's hint light on cells (garden), with each glow's full opacity; empty in the robot theme. */
+  private hintGlows: { mesh: THREE.Mesh; opacity: number }[] = [];
+  /** The theme's effects during play (garden: beam on the exit, cloud on a bump); null in the robot theme. */
+  private playFx: PlayEffects | null = null;
 
   constructor(private canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -289,6 +293,7 @@ export class BoardView {
   setMotion(speed: number, reduced: boolean): void {
     this.speedScale = speed;
     this.reduced = reduced;
+    if (this.playFx) this.playFx.reduced = reduced;
   }
 
   /** Build the diorama for a level and show its start state. */
@@ -313,6 +318,9 @@ export class BoardView {
     this.floorY = this.modular ? PARTS.floorTile.height : 0.06;
     if (this.modular) this.buildPartsBoard(level);
     else this.buildPlainBoard(level);
+    this.playFx?.dispose();
+    this.playFx = this.theme.builders.playEffects(this.boardGroup, { pitch: this.pitch, floorY: this.floorY });
+    if (this.playFx) this.playFx.reduced = this.reduced;
     this.showExitShapes();
 
     for (const r of level.start.robots) {
@@ -743,7 +751,9 @@ export class BoardView {
           if (e.outcome === 'moved') return walk;
           // Collected: pop, spin and sink into the pad while confetti flies.
           return walk.then(() => {
-            this.burst(tx, tz, view.color);
+            // The theme's own effect (garden: a beam of light), or the robot theme's flecks.
+            if (this.playFx) this.playFx.exit(tx, tz);
+            else this.burst(tx, tz, view.color);
             this.pulseExit(e.toY * width + e.toX);
             void this.addTween(a.exitTime / speed, (k) => {
               const s = k < 0.25 ? 1 + k * 0.9 : 1.225 * (1 - easeInOut((k - 0.25) / 0.75));
@@ -755,8 +765,13 @@ export class BoardView {
             });
           });
         }
-        // Blocked: lunge, squash against the obstacle, spring back.
+        // Blocked: lunge, squash against the obstacle, spring back. A theme may mark the contact (garden: a cloud puff).
+        let bumped = false;
         return this.addTween((a.moveTime * 1.05) / speed, (k) => {
+          if (this.playFx && !bumped && k >= 0.35) {
+            bumped = true;
+            this.playFx.bump(fx + (dx * this.pitch) / 2, fz + (dz * this.pitch) / 2);
+          }
           const lunge = k < 0.35 ? easeOut(k / 0.35) : 1 - easeOutBack((k - 0.35) / 0.65);
           const off = lunge * a.bumpDistance * (this.reduced ? 0.5 : 1);
           view.root.position.x = fx + dx * off;
@@ -808,6 +823,15 @@ export class BoardView {
     this.clearHint();
     if (!events || !this.level) return;
     const p = this.pitch;
+    // A theme that lights cells (garden) gives a glow per cell; the robot theme gives none and draws arrows.
+    let spare = this.theme.builders.hintGlow();
+    const glowing = spare !== null;
+    const nextGlow = (): THREE.Mesh | null => {
+      const g = spare ?? this.theme.builders.hintGlow();
+      spare = null;
+      return g;
+    };
+    const lit = new Set<number>();
     for (const e of events) {
       const color = this.level.start.robots.find((r) => r.id === e.id)?.color;
       if (!color) continue;
@@ -818,7 +842,18 @@ export class BoardView {
       /** A point `along` the heading and `side` to its right, in cells from the robot's centre. */
       const at = (along: number, side: number): THREE.Vector2 => new THREE.Vector2((dx * along - dz * side) * p, (dz * along + dx * side) * p);
       const shapes: THREE.Vector2[][] = [];
-      if (e.outcome === 'moved' || e.outcome === 'exited') {
+      const glow = glowing && (e.outcome === 'moved' || e.outcome === 'exited') && !lit.has(e.toY * this.level.board.width + e.toX) ? nextGlow() : null;
+      if (glow) {
+        // The theme lights the cell the flock member steps onto instead of drawing an arrow.
+        lit.add(e.toY * this.level.board.width + e.toX);
+        glow.position.x += this.cellX(e.toX);
+        glow.position.z += this.cellZ(e.toY);
+        glow.renderOrder = 19;
+        this.hintGroup.add(glow);
+        this.hintGlows.push({ mesh: glow, opacity: (glow.material as THREE.MeshBasicMaterial).opacity });
+      } else if (glowing && (e.outcome === 'moved' || e.outcome === 'exited')) {
+        // The cell is already lit for another member of the flock.
+      } else if (e.outcome === 'moved' || e.outcome === 'exited') {
         const a = HINT.arrow;
         shapes.push([at(a.from, -a.shaft), at(a.neck, -a.shaft), at(a.neck, -a.head), at(a.tip, 0), at(a.neck, a.head), at(a.neck, a.shaft), at(a.from, a.shaft)]);
       } else {
@@ -868,6 +903,11 @@ export class BoardView {
       this.hintGroup.add(group);
       this.hintMarks.push({ group, dx, dz, materials: [tint, white] });
     }
+    // A glow made to find out whether the theme lights cells, but not used (no one steps this time).
+    if (spare) {
+      spare.geometry.dispose();
+      (spare.material as THREE.Material).dispose();
+    }
   }
 
   /** A closed outline of `points` widened by `grow` on every side, lying flat. */
@@ -897,6 +937,11 @@ export class BoardView {
       for (const material of mark.materials) material.dispose();
     }
     this.hintMarks = [];
+    for (const { mesh } of this.hintGlows) {
+      mesh.geometry.dispose();
+      (mesh.material as THREE.Material).dispose();
+    }
+    this.hintGlows = [];
     this.hintGroup.clear();
   }
 
@@ -1031,6 +1076,12 @@ export class BoardView {
         for (const material of mark.materials) material.opacity = HINT.opacity * (1 - HINT.pulse.fade * swing);
       }
     }
+    // The theme's hint light breathes with the same rhythm as the marks.
+    if (this.hintGlows.length) {
+      const swing = this.reduced ? 0 : 0.5 - 0.5 * Math.cos((this.time / HINT.pulse.seconds) * Math.PI * 2);
+      for (const { mesh, opacity } of this.hintGlows) (mesh.material as THREE.MeshBasicMaterial).opacity = opacity * (1 - HINT.pulse.fade * swing);
+    }
+    this.playFx?.update(dt);
     for (const ring of this.exitRings) {
       const beat = (this.time * 0.7) % 1;
       ring.scale.setScalar(0.9 + beat * 0.55);
