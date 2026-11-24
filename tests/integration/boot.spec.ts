@@ -698,7 +698,9 @@ test('on a turn-tile level the hint shows the tile\'s extra turn, and following 
 });
 
 test('on a turn-tile level, out of moves one step from home: extra moves are offered and really win', async ({ page }) => {
-  await solvedUpTo(page, TURNTABLE);
+  // Since finding B12 the opening balance does not buy the extra moves: this player has saved up for them.
+  const saved = config.coins.extraMovesCost;
+  await solvedUpTo(page, TURNTABLE, {}, saved);
   await open(page);
   await page.click(`#node-${TURNTABLE + 1}`);
   // Four reds walk the robot round the corner and back to the top row, one cell on; then the
@@ -716,5 +718,5 @@ test('on a turn-tile level, out of moves one step from home: extra moves are off
   await expect(page.locator('#end-title')).toContainText('extra moves', { timeout: 15000 });
   await expect(page.locator('#card .tf-coin-sum')).toHaveText(`+${config.coins.win}`);
   // A helped win pays the base amount only, on a tile level as on any other.
-  expect((await snap(page)).coins).toBe(config.coins.start - config.coins.extraMovesCost + config.coins.win);
+  expect((await snap(page)).coins).toBe(saved - config.coins.extraMovesCost + config.coins.win);
 });
