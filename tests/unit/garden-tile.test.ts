@@ -58,6 +58,13 @@ describe('garden grass tile from the owner picture', () => {
     expect(meshes[0].material).toBe((buildFloorTile(false, false).children[0] as THREE.Mesh).material);
   });
 
+  it('gives every tile the same picture unless the checkerboard tint is switched on (owner, 2026-11-24)', () => {
+    expect(I.checker).toBe(false);
+    const light = (buildFloorTile(false, false).children[0] as THREE.Mesh).geometry;
+    const alt = (buildFloorTile(true, false).children[0] as THREE.Mesh).geometry;
+    expect(Array.from(alt.getAttribute('color').array)).toEqual(Array.from(light.getAttribute('color').array));
+  });
+
   it('keeps the side inside the fuzzy outline of the top, seen from above', () => {
     // The picture's fur tips reach 0.962 of the top's width (cut.py); the side must not show past them.
     expect(I.wall).toBeLessThan(I.top * 0.962);

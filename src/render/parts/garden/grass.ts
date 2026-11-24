@@ -344,13 +344,16 @@ export function grassImageGeometry(tint = '#FFFFFF'): THREE.BufferGeometry {
 /**
  * 1. Grass tile: one cell, the owner's picture `02-tile-grass` cut out and laid on top of a thin
  * body, its fuzzy outline on a transparent ground; the body's side wears the picture's own side
- * fur. `alt` is the slightly darker tile of the checkerboard: the same picture with a tint. Same
- * contract as the robot tile: one cell, floor at y = 0, top at 0.2; pegs only on loose parts.
+ * fur. `alt` is the checkerboard's second tile: by default (`image.checker` false, the owner's
+ * choice) it is the very same tile, as on `01-board-full`; with `checker` true it is the same
+ * picture with a darker tint. Same contract as the robot tile: one cell, floor at y = 0, top at
+ * 0.2; pegs only on loose parts.
  */
 export function buildFloorTile(alt = false, pegs = true): THREE.Group {
-  const tint = alt ? altTint() : '#FFFFFF';
+  const dark = alt && I.checker;
+  const tint = dark ? altTint() : '#FFFFFF';
   const tile = new THREE.Group();
-  const mesh = new THREE.Mesh(once(`grass-image-${alt ? 'alt' : 'main'}`, () => grassImageGeometry(tint)), grassImageMaterial);
+  const mesh = new THREE.Mesh(once(`grass-image-${dark ? 'alt' : 'main'}`, () => grassImageGeometry(tint)), grassImageMaterial);
   mesh.customDepthMaterial = grassImageDepth;
   tile.add(mesh);
   if (pegs) addPegs(tile, plainMaterial);

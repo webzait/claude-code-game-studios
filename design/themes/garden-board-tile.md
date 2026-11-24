@@ -23,7 +23,10 @@ In 3D: a rounded square 0.98 wide at the tile height (0.2) carries the top; unde
 whole number of times round the outline. 92 triangles, one material, so the whole board's tiles fuse
 into one draw call (the robot tile: 216 triangles, one draw).
 
-The dark checkerboard tile is the same picture tinted (`altTint`, about 10% darker, a touch deeper green).
+Every tile is the same, as on `01-board-full`: the owner chose this on 2026-11-24 (no light/dark
+checkerboard). `buildFloorTile(alt, …)` keeps its `alt` parameter for the contract; with
+`image.checker` set to true the alt tile is the same picture tinted (`altTint`, about 10% darker).
+The owner also chose to keep the thin body with its side fur.
 
 ## Why a thin body and not a flat picture
 
@@ -61,7 +64,7 @@ use them.
 - The side's fur strip has a smoother band in its middle (as on the picture) that, repeated round the
   tile, shows as a faint horizontal streak close up; at game size it is 1–2 px.
 - `01-board-full` draws the tiles a touch flatter and less fuzzy than `02-tile-grass`; we follow
-  `02-tile-grass`, as asked.
+  `02-tile-grass`, and the owner chose to keep the side.
 - The game's hemisphere light adds a little blue: the rendered top is about 3% darker and slightly less
   saturated than the picture (`image.light` is set to 1.04 to make up most of it).
 
