@@ -8,28 +8,28 @@ theme session swaps it in. Reference pictures: `design/reference/turnflock/garde
 ## Default: the owner's pictures (decision 2026-11-24)
 
 The owner's picture is the part. The rocks and the stump were supplied already cut
-out at 1254 px (`25`–`28` in the reference folder); they keep their own edge and get a
-soft lavender contact shadow (`CONTACT_SHADOW`, the colour of the bushes' baked shadow)
-so they sit on the tile. The bushes are cut by `tools/asset-pipeline/garden-obstacles.py`
-out of the reference picture (background made transparent with an un-mixed edge,
-no halo; the baked soft shadow kept as semi-transparent lavender), scales it with
-premultiplied alpha and saves a WebP in `assets/turnflock/garden/obstacles/`. It also
+out at 1254 px (`25`–`28` in the reference folder) and keep their own edge. The bushes
+are cut by `tools/asset-pipeline/garden-obstacles.py` out of the reference picture
+(background made transparent with an un-mixed edge, no halo; their wide baked shadow
+dropped). Every obstacle gets the same small, tight lavender shadow right under its foot
+(`CONTACT` in the tool), so it reads as part of its tile. The tool scales each picture
+with premultiplied alpha, saves a WebP in `assets/turnflock/garden/obstacles/` and
 writes `data/themes/garden/obstacle-sprites.json` (picture size, where the object and
 its foot sit in the picture). Rerun the tool after changing a source picture.
 
 | Kind | Source | Picture | Size |
 |---|---|---|---|
-| `rock` | `25-rock-hd` (1254 px, cut out by the owner) + contact shadow | 224×170 | 8.0 kB |
-| `rockMossLight` | `26-rock-moss-light-hd` (sharp version of `04-rock`) + contact shadow | 224×157 | 8.3 kB |
-| `rockMossy` | `27-rock-mossy-hd` (sharp version of `15-sheet-rock-mossy`) + contact shadow | 224×173 | 10.2 kB |
-| `stump` | `28-stump-hd` (sharp version of `05-stump`) + contact shadow | 224×183 | 13.0 kB |
-| `bushWhite` | `06-bush-flowers` (1254 px), baked shadow kept | 224×222 | 16.7 kB |
-| `bushPink` | `06-bush-flowers`, white flowers retinted pink / lilac / light pink as on `17-sheet-bushes-plants` (whose pink bush is only 83 px) | 224×222 | 16.7 kB |
-| **Obstacles together** | | | **73.0 kB** |
+| `rock` | `25-rock-hd` (1254 px, cut out by the owner) | 224×194 | 8.4 kB |
+| `rockMossLight` | `26-rock-moss-light-hd` (sharp version of `04-rock`) | 224×184 | 9.2 kB |
+| `rockMossy` | `27-rock-mossy-hd` (sharp version of `15-sheet-rock-mossy`) | 224×188 | 10.8 kB |
+| `stump` | `28-stump-hd` (sharp version of `05-stump`) | 224×189 | 13.2 kB |
+| `bushWhite` | `06-bush-flowers` (1254 px) | 224×199 | 14.7 kB |
+| `bushPink` | `06-bush-flowers`, white flowers retinted pink / lilac / light pink as on `17-sheet-bushes-plants` (whose pink bush is only 83 px) | 224×199 | 14.8 kB |
+| **Obstacles together** | | | **71.2 kB** |
 | `plant-sprig`, `plant-grass` | `17-sheet-bushes-plants`, 2x | ~120×102 | 6.5 / 6.2 kB |
 | `plant-flower-white`, `plant-flower-pink` | biggest flower of `06-bush-flowers` (pink: retinted) | 128×114 | 5.8 / 6.5 kB |
 
-The game shows an obstacle about 45–50 CSS px wide; 224 px is about 1.5x that on a
+The game shows an obstacle about 32–40 CSS px wide; 224 px is about 2x that on a
 3x phone screen, so it stays sharp.
 
 ### In the game: a card facing the camera
@@ -39,8 +39,8 @@ with one quad (2 triangles) carrying the picture: unlit, not tone-mapped (the ow
 colours exactly), alpha-tested and blended, one shared material per kind. The card is
 square to the game camera (30° from straight down, looking towards -z;
 `CONFIG.board.roomy.tilt`), so the picture is seen undistorted. Its object width is
-`sprite.width[kind]` cells (0.80–0.88); the object's foot line lies on the floor
-`sprite.footForward` (0.26) towards the camera from the cell centre; the whole card is
+`sprite.width[kind]` cells (0.74–0.76, well inside the 0.96 tile); the object's foot line
+lies on the floor `sprite.footForward` (0.20) towards the camera from the cell centre; the whole card is
 then moved `sprite.lift` (0.3) along the view towards the camera, which changes nothing
 on screen but keeps a robot standing behind from cutting into the top of the picture.
 An odd `turn` mirrors the stump and bushes (lit from the front); the rocks are never
@@ -74,12 +74,12 @@ over all shipped levels and an all-wall board.
 
 ## Known differences of the pictures from the originals
 
-- Rocks and stump: the contact shadow under them is added (the supplied cut-outs have
-  none); everything else is the owner's picture, scaled down.
+- Shadow: every obstacle has the same small added shadow under its foot (owner's wish,
+  2026-11-24: obstacles should look part of their tile); the supplied rocks and stump
+  had none, and the bushes' wide baked shadow is dropped. Everything else is the owner's
+  picture, scaled down.
 - Pink bush: retinted from the white bush, so it is the same bush with pink, lilac and
   light-pink flowers rather than the sheet's slightly different pink bush.
-- The bushes' baked shadow is kept but slightly lighter and more lavender than in the
-  original, so it reads on green grass.
 - A picture always shows the object from the front, while the board is seen from above:
   usual for this style, but the stump's top and the bush's crown are seen less from above
   than the tiles around them.
