@@ -121,7 +121,7 @@ export const THEME_SLOTS: readonly ThemeSlot[] = [
   { id: 'gate', kind: '3d', supplies: ['buildGate', 'gateDoorScale'], robot: 'src/render/parts/board.ts' },
   { id: 'backdrop', kind: '2d', supplies: ['backdrop.css', 'garden-scene.css'], robot: 'src/ui/tf-scene.css' },
   { id: 'decor', kind: '2d', supplies: ['decor.css', 'garden-scene.css'], robot: 'src/ui/style.css (.tf-decor-*)' },
-  { id: 'levelScreen', kind: '2d', supplies: ['level-screen.css'], robot: 'src/ui/tf-levels.css' },
+  { id: 'levelScreen', kind: '2d', supplies: ['level-screen.css', 'tf-levels-garden.css'], robot: 'src/ui/tf-levels.css' },
   { id: 'colours', kind: 'data', supplies: ['colours.json'], robot: '(none: the robot theme sets no theme colours)' },
   { id: 'light', kind: 'data', supplies: ['light.json'], robot: 'data/config.json (light)' },
   { id: 'sounds', kind: 'data', supplies: ['sounds.json'], robot: 'the sound set chosen in the test lab (data/sound-sets.json)' },

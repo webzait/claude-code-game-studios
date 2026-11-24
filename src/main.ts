@@ -9,6 +9,7 @@ import './ui/tf-shop.css';
 // After the robot theme's sheets, so a theme's rules win over them (design/themes.md).
 import { applyPageTheme } from './ui/themes';
 import { applyGardenDecor } from './ui/themes/garden/gardenArt';
+import { applyGardenLevels, gardenPathModel } from './ui/themes/garden/levels';
 import { resolveTheme } from './render/themes';
 import { AudioHub, Sfx, type PlayedSound } from './audio';
 import { movePlan, soundSet } from './sound/sets';
@@ -379,6 +380,7 @@ class Game {
     const theme = resolveTheme(this.save.settings.theme);
     applyPageTheme(theme);
     showDecor(theme.id);
+    if (theme.id === 'garden') applyGardenLevels(el('map'));
     this.view.setTheme(theme, this.session.state);
   }
 
@@ -457,6 +459,8 @@ class Game {
       replayAll,
       current: complete ? null : main.index,
       ahead: CONFIG.levelsAhead,
+      // The garden's path runs in gardens of 20 that end at a gazebo, with the last completed levels below (design/themes/garden-levels.md).
+      ...(this.save.settings.theme === 'garden' ? gardenPathModel() : {}),
       layout: CONFIG.levelPath.layout,
       page: this.page,
       pageSize,

@@ -1,0 +1,160 @@
+/* Garden theme for the level selection (tf-levels-*). Applies only under [data-theme="garden"] on a parent,
+   normally the page's root element. Same HTML and behaviour as the robot screen (src/ui/tf-levels.css);
+   this file only restyles it after the owner's 23-sheet-level-path: glossy balls on a rail, green with a
+   check for completed levels, yellow for the current one, grey for the locked ones, and a gazebo at the
+   end of each garden of 20 levels. Values: data/themes/garden/levels.json (put on the screen by
+   applyGardenLevels); the fallbacks below are the same values. Design: design/themes/garden-levels.md. */
+
+/* ---- The screen: the owner's level-path backdrop (25-backdrop-level-path): sky, fence and hedge on the
+   horizon, a calm lawn in the middle for the path, flowers at the edges. It covers the screen, anchored a
+   little above the middle so the horizon stays under the header on phones and tablets alike. Underneath,
+   the same sky and lawn in plain colours, for the moment before the picture is decoded. Another picture
+   can take its place through --tg-backdrop (a full background value, e.g. url(...)). ---- */
+[data-theme="garden"] .tf-levels-phone {
+  color: var(--tg-ink, #2f4a1e);
+  background:
+    var(--tg-backdrop, url("./levels-backdrop.webp")) 50% 40% / cover no-repeat,
+    linear-gradient(180deg, var(--tg-sky-0, #3f9ff0) 0, var(--tg-sky-1, #7cc6fb) 22%, var(--tg-sky-2, #cdeeff) 35%,
+      var(--tg-lawn-0, #a6e060) 35%, var(--tg-lawn-1, #7fcd45) 65%, var(--tg-lawn-2, #5fb534) 100%);
+}
+
+/* ---- Header: the logo on the sky, white pills with a leaf-green edge. ---- */
+[data-theme="garden"] .tf-levels-logo { filter: drop-shadow(0 4px 6px rgba(30, 90, 40, .28)); }
+[data-theme="garden"] .tf-levels-pill { color: var(--tg-ink, #2f4a1e); background: linear-gradient(180deg, #fff, #f6fbef); box-shadow: inset 0 0 0 1.5px rgba(47, 74, 30, .12), 0 3px 0 rgba(48, 120, 36, .45); }
+[data-theme="garden"] .tf-levels-starbtn small, [data-theme="garden"] .tf-levels-progress small { color: #5f7550; }
+[data-theme="garden"] .tf-levels-starbtn:active:not(:disabled) { box-shadow: inset 0 0 0 1.5px rgba(47, 74, 30, .18), 0 1px 0 rgba(48, 120, 36, .45); }
+[data-theme="garden"] .tf-levels-starbtn[aria-pressed="true"] { background: linear-gradient(180deg, #fff6d6, #ffe9a3); box-shadow: inset 0 0 0 2px #e8b422, 0 3px 0 rgba(48, 120, 36, .45); }
+[data-theme="garden"] .tf-levels-starbtn:focus-visible { outline-color: var(--tg-ink, #2f4a1e); }
+
+/* ---- The rail: a rounded grey tube under the balls, as on the sheet. ---- */
+[data-theme="garden"] .tf-levels-trail-shade { stroke: var(--tg-rail-edge, #8a97a8); stroke-width: 15; stroke-dasharray: none; transform: none; filter: drop-shadow(0 3px 0 rgba(30, 80, 20, .28)); }
+[data-theme="garden"] .tf-levels-trail-dots { stroke: var(--tg-rail-fill, #e4e9f0); stroke-width: 9; stroke-dasharray: none; }
+
+/* ---- The layout: a zigzag. Every step after (and before) the current one sits alternately right and
+   left of the middle, so neighbours are always far apart sideways and may overlap in height. That gives
+   eight balls the room of five, so they stay large like on the sheet. The current level stays in the middle. ---- */
+[data-theme="garden"] .tf-levels-steps {
+  --amp: min(24cqw, 120px);
+  --cur: clamp(70px, min(21cqh, 32cqw), 120px);
+  /* A locked ball: the height the current one leaves, shared by the locked balls (each overlapping its neighbour
+     by --tg-overlap), the completed ones (--pass of a locked one) and the gazebo. */
+  --lock: clamp(34px, calc((100cqh - var(--cur) - 56px) / (var(--n, 5) * (1 - var(--tg-overlap, .32)) + var(--b, 0) * .8 * (1 - var(--tg-overlap, .32)) + 1.1)), 68px);
+  --pass: calc(var(--lock) * .8);
+  --gap: 2px;
+  padding-bottom: 14px;
+}
+[data-theme="garden"] .tf-levels-steps > li { translate: calc((2 * mod(var(--i, 1), 2) - 1) * .62 * var(--amp)) 0; }
+[data-theme="garden"] .tf-levels-steps > li:has(> .is-locked, > .is-passed) { margin-block: calc(-.5 * var(--tg-overlap, .32) * var(--lock)); }
+[data-theme="garden"] .tf-levels-steps > li:has(> .is-current) { translate: 0 0; margin-block: 4px; }
+[data-theme="garden"] .tf-levels-steps > li:has(> .is-finish) { translate: calc((2 * mod(var(--i, 1), 2) - 1) * .45 * var(--amp)) 0; }
+[data-theme="garden"].tf-levels-straight .tf-levels-steps > li, [data-theme="garden"] .tf-levels-straight .tf-levels-steps > li { translate: 0 0; }
+
+/* ---- A ball: glossy, a white rim and a thin dark outline, a soft shadow on the lawn. No side wall. ---- */
+[data-theme="garden"] .tf-levels-step {
+  --d: 0px; --rim: max(3px, calc(var(--s) * .075)); --top: var(--tg-lock-top, #f1f4f8); --face: var(--tg-lock-face, #bcc5d1); --deep: var(--tg-lock-deep, #8f9aab); --ink: var(--tg-lock-ink, #5b6676);
+  margin: var(--rim);
+  background: radial-gradient(circle at 50% 28%, var(--top) 0, var(--face) 58%, var(--deep) 100%);
+  box-shadow:
+    inset 0 calc(var(--s) * -.06) calc(var(--s) * .08) rgba(0, 0, 0, .14),
+    inset 0 0 0 1.5px rgba(0, 0, 0, .18),
+    0 0 0 var(--rim) #fff,
+    0 0 0 calc(var(--rim) + 1.5px) var(--tg-outline, #4b5d72),
+    0 calc(var(--rim) + 3px) 6px rgba(30, 80, 20, .35);
+}
+/* The gloss: a soft white highlight in the top half. */
+[data-theme="garden"] .tf-levels-step::before {
+  content: ""; position: absolute; left: 22%; right: 22%; top: 7%; height: 32%; border-radius: 50%; pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .85), rgba(255, 255, 255, 0));
+}
+[data-theme="garden"] .tf-levels-step > * { position: relative; }
+[data-theme="garden"] .tf-levels-lock { background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 15'><path d='M3.6 6.4V4.4a3.4 3.4 0 0 1 6.8 0v2' fill='none' stroke='%235b6676' stroke-width='2.2' stroke-linecap='round'/><rect x='1' y='6' width='12' height='8.6' rx='2.6' fill='%235b6676'/></svg>"); opacity: .7; }
+[data-theme="garden"] .tf-levels-step.is-locked { font-size: calc(var(--s) * .36); gap: 0; }
+[data-theme="garden"] .tf-levels-step.is-locked > span[aria-hidden] { opacity: .8; }
+
+/* Completed: green with a white check. */
+[data-theme="garden"] .tf-levels-step.is-passed { --s: var(--pass); --top: var(--tg-done-top, #c4f792); --face: var(--tg-done-face, #4fcb2f); --deep: var(--tg-done-deep, #2a8f18); color: #fff; }
+[data-theme="garden"] .tf-levels-step.is-passed svg { width: 58%; height: 58%; filter: drop-shadow(0 1.5px 0 rgba(20, 90, 10, .55)); }
+/* The robot theme never draws completed steps; should one be drawn there, it is a quiet small ball. */
+.tf-levels-step.is-passed { --s: 40px; }
+.tf-levels-step.is-passed svg { width: 56%; height: 56%; }
+
+/* Current: the yellow ball, the one thing on the path that can be pressed. A warm halo breathes around it. */
+[data-theme="garden"] .tf-levels-step.is-current {
+  --top: var(--tg-cur-top, #fff7b0); --face: var(--tg-cur-face, #ffd21f); --deep: var(--tg-cur-deep, #eba400); --ink: var(--tg-cur-ink, #6b4300);
+  box-shadow:
+    inset 0 calc(var(--s) * -.06) calc(var(--s) * .08) rgba(150, 80, 0, .22),
+    inset 0 0 0 1.5px rgba(120, 70, 0, .25),
+    0 0 0 var(--rim) #fff,
+    0 0 0 calc(var(--rim) + 2px) var(--tg-outline, #4b5d72),
+    0 calc(var(--rim) + 5px) 10px rgba(30, 80, 20, .4);
+}
+[data-theme="garden"] .tf-levels-step.is-current small { letter-spacing: .12em; opacity: .75; }
+[data-theme="garden"] .tf-levels-step.is-current > span { text-shadow: 0 1.5px 0 rgba(255, 255, 255, .6); }
+[data-theme="garden"] .tf-levels-step.is-current::after {
+  inset: calc(-1 * var(--rim) - 12px); border: 0; border-radius: 50%;
+  background: radial-gradient(closest-side, transparent 72%, color-mix(in srgb, var(--tg-cur-glow, #fff3a0) 90%, transparent) 80%, transparent 100%);
+}
+[data-theme="garden"] .tf-levels-step.is-current:active, [data-theme="garden"] .tf-levels-step.is-current.is-pressed {
+  transform: translateY(2px) scale(.97);
+  box-shadow:
+    inset 0 calc(var(--s) * -.04) calc(var(--s) * .06) rgba(150, 80, 0, .3),
+    inset 0 0 0 1.5px rgba(120, 70, 0, .3),
+    0 0 0 var(--rim) #fff,
+    0 0 0 calc(var(--rim) + 2px) var(--tg-outline, #4b5d72),
+    0 calc(var(--rim) + 2px) 4px rgba(30, 80, 20, .4);
+}
+[data-theme="garden"] .tf-levels-step.is-current:focus-visible { outline-color: var(--tg-ink, #2f4a1e); outline-offset: calc(var(--rim) + 6px); }
+
+/* The end of a garden (and of the game): the gazebo, the owner's picture cut out. Wider than a ball and
+   standing on its base, so the rail runs into its steps. */
+[data-theme="garden"] .tf-levels-step.is-finish {
+  width: calc(var(--s) * var(--tg-gazebo-w, 2)); height: calc(var(--s) * var(--tg-gazebo-w, 2) * 408 / 360); margin: 0;
+  border-radius: 0; background: url("./levels-gazebo.webp") center bottom / contain no-repeat; box-shadow: none;
+}
+[data-theme="garden"] .tf-levels-step.is-finish::before, [data-theme="garden"] .tf-levels-step.is-finish svg { display: none; }
+
+/* ---- Everything completed: the big green check, the same ball as on the path. ---- */
+[data-theme="garden"] .tf-levels-step.is-done { --d: 0px; --top: var(--tg-done-top, #c4f792); --face: var(--tg-done-face, #4fcb2f); --deep: var(--tg-done-deep, #2a8f18); color: #fff; }
+[data-theme="garden"] .tf-levels-step.is-done svg { filter: drop-shadow(0 2px 0 rgba(20, 90, 10, .55)); }
+[data-theme="garden"] .tf-levels-donecard { background: var(--tg-dock, #fffaf0); box-shadow: inset 0 1.5px 0 #fff, 0 4px 0 rgba(48, 120, 36, .45), 0 10px 14px rgba(30, 80, 20, .2); }
+[data-theme="garden"] .tf-levels-donetext { color: #5f7550; }
+
+/* ---- Dock: warm cream, a leaf-green edge on top. ---- */
+[data-theme="garden"] .tf-levels-dock { background: var(--tg-dock, #fffaf0); box-shadow: inset 0 1.5px 0 #fff, 0 -3px 0 rgba(48, 120, 36, .5); }
+[data-theme="garden"] .tf-levels-bar { background: #e8eadb; box-shadow: inset 0 1px 0 rgba(47, 74, 30, .14); }
+[data-theme="garden"] .tf-levels-bar i { background: linear-gradient(180deg, #8fe25a, #4fbb2c); }
+[data-theme="garden"] .tf-levels-dots i { background: #d6dccb; }
+[data-theme="garden"] .tf-levels-dots i.on { background: var(--tg-ink, #2f4a1e); }
+
+/* ---- The grid (levels to improve, and the test view): a lawn tray with cream tiles. ---- */
+[data-theme="garden"] .tf-levels-tray { background: linear-gradient(180deg, #b4e57c, #94d45a); box-shadow: inset 0 2px 0 rgba(255, 255, 255, .5), inset 0 0 0 2px rgba(70, 140, 40, .45), 0 6px 0 #4f9a2c, 0 12px 12px rgba(30, 80, 20, .25); }
+[data-theme="garden"] .tf-levels-tile { --tl-top: #fffdf6; --tl-face: #f7f2e4; --tl-wall: #c9b98f; --tl-ink: var(--tg-ink, #2f4a1e); }
+[data-theme="garden"] .tf-levels-tile.s3 { --tl-top: #fffef6; --tl-face: #fff6d6; --tl-wall: #e8b422; }
+[data-theme="garden"] .tf-levels-tile.is-next { --tl-top: #fff7b0; --tl-face: #ffd21f; --tl-wall: #d39200; --tl-ink: #6b4300; }
+[data-theme="garden"] .tf-levels-tile.is-next .tf-levels-mark { background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 46 17'><path d='M18.5 3.2v10.6l9.4-5.3z' fill='%236b4300' stroke='%236b4300' stroke-width='2.6' stroke-linejoin='round'/></svg>"); }
+[data-theme="garden"] .tf-levels-tile.is-next::after { border-color: rgba(255, 243, 160, .95); }
+[data-theme="garden"] .tf-levels-tile.is-target { box-shadow: inset 0 0 0 1.5px rgba(47, 74, 30, .1), inset 0 2px 0 rgba(255, 255, 255, .9), 0 var(--tl-d) 0 var(--tl-wall), 0 0 0 3px #fff, 0 var(--tl-d) 0 3px #fff, 0 0 0 6px #4fbb2c, 0 var(--tl-d) 0 6px #4fbb2c; }
+[data-theme="garden"] .tf-levels-tile.is-locked { --tl-top: #86c74e; --tl-face: #8fcd56; --tl-ink: #3d6a22; box-shadow: inset 0 3px 0 rgba(50, 110, 30, .45), inset 0 0 0 1.5px rgba(50, 110, 30, .3); }
+[data-theme="garden"] .tf-levels-tile.is-locked .tf-levels-mark { background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 46 17'><path d='M19.6 7.6V5.4a3.4 3.4 0 0 1 6.8 0v2.2' fill='none' stroke='%233d6a22' stroke-width='2.2' stroke-linecap='round'/><rect x='17' y='7.4' width='12' height='8.6' rx='2.6' fill='%233d6a22'/></svg>"); }
+[data-theme="garden"] .tf-levels-tile:focus-visible, [data-theme="garden"] .tf-levels-tile.is-focus { outline-color: var(--tg-ink, #2f4a1e); }
+[data-theme="garden"] .tf-levels-testnote { background: var(--tg-ink, #2f4a1e); color: #fff; }
+[data-theme="garden"] .tf-levels-i .tf-levels-testnote { background: var(--tg-cur-face, #ffd21f); color: var(--tg-cur-ink, #6b4300); box-shadow: 0 2px 0 var(--tg-cur-deep, #eba400); }
+
+/* ---- Short screens: smaller balls and less room around them. ---- */
+@container tl (max-height: 620px) {
+  [data-theme="garden"] .tf-levels-steps { --cur: clamp(62px, min(20cqh, 30cqw), 96px); padding-bottom: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-theme="garden"] .tf-levels-step.is-current::after { animation: none; opacity: .8; }
+}
+.reduce-motion [data-theme="garden"] .tf-levels-step.is-current::after, [data-theme="garden"].reduce-motion .tf-levels-step.is-current::after { animation: none; opacity: .8; }
+
+/* In the game (theme session): style.css clears #map's background so the game's backdrop shows through;
+   on the garden level screen the level-path backdrop above shows instead (design/themes/garden-levels.md). */
+[data-theme="garden"] #map.tf-levels-phone {
+  background:
+    var(--tg-backdrop, url("./levels-backdrop.webp")) 50% 40% / cover no-repeat,
+    linear-gradient(180deg, var(--tg-sky-0, #3f9ff0) 0, var(--tg-sky-1, #7cc6fb) 22%, var(--tg-sky-2, #cdeeff) 35%,
+      var(--tg-lawn-0, #a6e060) 35%, var(--tg-lawn-1, #7fcd45) 65%, var(--tg-lawn-2, #5fb534) 100%);
+}

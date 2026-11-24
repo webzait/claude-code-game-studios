@@ -1,5 +1,5 @@
 import { el } from './hud';
-import { pathSteps, pathSway } from './levelPath';
+import { pathScene, pathSway } from './levelPath';
 
 /** One level on the selection screen. */
 export interface MapNode {
@@ -36,6 +36,13 @@ export interface LevelsModel {
   current: number | null;
   /** Locked levels shown after the current one on the path. */
   ahead: number;
+  /**
+   * Levels per chapter; the path stops at the end of the current chapter and draws that end
+   * as its finish (the garden theme: a garden of 20 that ends at a gazebo). 0 or absent: no chapters.
+   */
+  chapter?: number;
+  /** Completed levels drawn before the current one on the path (garden theme). 0 or absent: none. */
+  behind?: number;
   /** `winding`: the steps sway left and right. Anything else: one straight column. */
   layout: string;
   page: number;
@@ -105,7 +112,7 @@ export function renderLevels(model: LevelsModel): void {
 /** The path: the current level as a large button, then the locked steps, nearest first. */
 function renderPath(model: LevelsModel, solved: number): void {
   const { nodes } = model;
-  const steps = pathSteps(nodes.length, model.current, model.ahead);
+  const steps = pathScene(nodes.length, model.current, model.ahead, model.chapter ?? 0, model.behind ?? 0);
   if (steps.current === null) return;
   const current = nodes[steps.current];
   el('pathWhere').textContent = `Level ${current.number} of ${nodes.length}`;
@@ -113,6 +120,9 @@ function renderPath(model: LevelsModel, solved: number): void {
   const list = el('steps');
   list.replaceChildren();
   list.style.setProperty('--n', String(Math.max(1, model.ahead)));
+  // Only a path with completed steps sets this, so the robot theme's markup is unchanged.
+  if (steps.behind.length > 0) list.style.setProperty('--b', String(steps.behind.length));
+  else list.style.removeProperty('--b');
   list.setAttribute('aria-label', steps.ahead.length > 0 ? `Level ${current.number} and the next ${steps.ahead.length}` : `Level ${current.number}, the last level`);
   const item = (step: number, content: HTMLElement): void => {
     const li = document.createElement('li');
@@ -121,6 +131,15 @@ function renderPath(model: LevelsModel, solved: number): void {
     li.appendChild(content);
     list.appendChild(li);
   };
+  // Completed levels, oldest first: the list runs bottom-up, so they sit below the current level.
+  steps.behind.forEach((index, i) => {
+    const node = nodes[index];
+    const step = document.createElement('span');
+    step.id = `node-${node.number}`;
+    step.className = 'tf-levels-step is-passed';
+    step.innerHTML = `${CHECK}<span class="tf-levels-vh">Level ${node.number}, completed</span>`;
+    item(i - steps.behind.length, step);
+  });
   const button = document.createElement('button');
   button.type = 'button';
   button.id = `node-${current.number}`;
@@ -139,17 +158,18 @@ function renderPath(model: LevelsModel, solved: number): void {
     step.innerHTML = `<span aria-hidden="true">${node.number}</span><i class="tf-levels-lock" aria-hidden="true"></i><span class="tf-levels-vh">Level ${node.number}, locked</span>`;
     item(i + 1, step);
   });
-  // The last level is in sight: the path ends in a finish, so a short path still reads as a whole.
-  if (steps.ahead.length < model.ahead) {
+  // The end is in sight: the path ends in a finish, so a short path still reads as a whole.
+  if (steps.finish !== null) {
     const finish = document.createElement('span');
-    finish.className = 'tf-levels-step is-finish';
-    finish.innerHTML = `${FLAG}<span class="tf-levels-vh">End of the levels</span>`;
+    finish.className = steps.finish === 'chapter' ? 'tf-levels-step is-finish is-chapter-end' : 'tf-levels-step is-finish';
+    finish.innerHTML = `${FLAG}<span class="tf-levels-vh">${steps.finish === 'chapter' ? `End of chapter ${steps.chapter}` : 'End of the levels'}</span>`;
     item(steps.ahead.length + 1, finish);
   }
   watchTrail();
   drawTrail();
 }
 
+const CHECK = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 12.5l4.4 4.4 8.8-9.4" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>`;
 const FLAG = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 21V4" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"></path><path d="M7 5h10.5l-2.6 3.6 2.6 3.6H7z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path></svg>`;
 
 let trailWatch: ResizeObserver | null = null;
@@ -161,10 +181,20 @@ function watchTrail(): void {
   trailWatch.observe(el('pathView'));
 }
 
-/** The dotted trail: one smooth line through the middle of every step, from the current level onwards. */
+/** The game's trail: the one path view on the level selection. */
 function drawTrail(): void {
-  const box = el('pathView').getBoundingClientRect();
-  const points = Array.from(el('steps').children, (li) => {
+  const view = document.getElementById('pathView');
+  if (view) drawTrailIn(view);
+}
+
+/**
+ * The dotted trail: one smooth line through the middle of every step, from the first step onwards.
+ * `view` is a path view (`.tf-levels-path`) holding the trail's svg and the list of steps.
+ */
+export function drawTrailIn(view: HTMLElement): void {
+  const box = view.getBoundingClientRect();
+  const list = view.querySelector('.tf-levels-steps');
+  const points = Array.from(list?.children ?? [], (li) => {
     const r = li.getBoundingClientRect();
     return { x: r.left + r.width / 2 - box.left, y: r.top + r.height / 2 - box.top };
   });
@@ -176,7 +206,7 @@ function drawTrail(): void {
       d += ` C${points[i - 1].x.toFixed(1)} ${mid} ${p.x.toFixed(1)} ${mid} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
     }
   });
-  for (const path of Array.from(el('pathTrail').querySelectorAll('path'))) path.setAttribute('d', box.height > 0 && points.length > 1 ? d : '');
+  for (const path of Array.from(view.querySelectorAll('.tf-levels-trail path'))) path.setAttribute('d', box.height > 0 && points.length > 1 ? d : '');
 }
 
 /** The grid: one page of level tiles and the pager. Pages keep it usable with hundreds of levels. */
