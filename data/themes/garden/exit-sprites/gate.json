@@ -1,0 +1,13 @@
+{
+  "_about": "Written by tools/asset-pipeline/garden_exit/gate.py: size in cells and anchor (fractions from the top left) of each picture.",
+  "sprites": {
+    "gate": {
+      "width": 0.84,
+      "height": 0.6272,
+      "anchor": [
+        0.5,
+        0.97
+      ]
+    }
+  }
+}

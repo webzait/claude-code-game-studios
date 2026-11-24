@@ -2,25 +2,14 @@ import * as THREE from 'three';
 import { CONFIG } from '../../../config';
 import type { Color } from '../../../engine/types';
 import garden from '../../../../data/themes/garden/exit.json';
-import sheet from '../../../../data/themes/garden/exit-sprites.json';
 import { radialGlowTexture } from './common';
 import { EXIT_MOMENT_LOOKS } from './exit';
 import type { ExitLook } from './exitMoments';
 import { buildFloorTile } from './specials';
-import exitGrey from '../../../../assets/turnflock/garden/exit/exit-grey.webp';
-import exitGreen from '../../../../assets/turnflock/garden/exit/exit-green.webp';
-import exitRays from '../../../../assets/turnflock/garden/exit/exit-rays.webp';
-import exitRed from '../../../../assets/turnflock/garden/exit/exit-red.webp';
-import exitBlue from '../../../../assets/turnflock/garden/exit/exit-blue.webp';
-import exitYellow from '../../../../assets/turnflock/garden/exit/exit-yellow.webp';
-import shapeRed from '../../../../assets/turnflock/garden/exit/exit-shape-red.webp';
-import shapeBlue from '../../../../assets/turnflock/garden/exit/exit-shape-blue.webp';
-import shapeYellow from '../../../../assets/turnflock/garden/exit/exit-shape-yellow.webp';
-import turnPicture from '../../../../assets/turnflock/garden/exit/turn.webp';
-import platePicture from '../../../../assets/turnflock/garden/exit/plate.webp';
-import gatePicture from '../../../../assets/turnflock/garden/exit/gate.webp';
-import gazeboPicture from '../../../../assets/turnflock/garden/exit/gazebo.webp';
-import goalPicture from '../../../../assets/turnflock/garden/exit/gazebo-goal.webp';
+/** Size fragments, one per part, written by tools/asset-pipeline/garden_exit/<part>.py. */
+const FRAGMENTS = import.meta.glob<{ sprites: Record<string, Sprite> }>('../../../../data/themes/garden/exit-sprites/*.json', { eager: true, import: 'default' });
+/** The pictures themselves. */
+const FILES = import.meta.glob<string>('../../../../assets/turnflock/garden/exit/*.webp', { eager: true, query: '?url', import: 'default' });
 
 /**
  * Garden theme, the standard version: the owner's own pictures are the parts. Each is a cut-out
@@ -33,30 +22,16 @@ import goalPicture from '../../../../assets/turnflock/garden/exit/gazebo-goal.we
  * Call `loadGardenExitPictures()` once and wait for it before the first frame that shows them.
  */
 
-type SpriteName = keyof typeof sheet.sprites;
+/** Name of a picture: its file name without `.webp`. */
+type SpriteName = string;
+/** One picture's size in cells and the point (fractions from its top left) put over the cell centre. */
 interface Sprite {
   width: number;
   height: number;
   anchor: number[];
 }
-const SPRITES = sheet.sprites as Record<SpriteName, Sprite>;
-
-const URLS: Record<SpriteName, string> = {
-  'exit-grey': exitGrey,
-  'exit-green': exitGreen,
-  'exit-rays': exitRays,
-  'exit-red': exitRed,
-  'exit-blue': exitBlue,
-  'exit-yellow': exitYellow,
-  'exit-shape-red': shapeRed,
-  'exit-shape-blue': shapeBlue,
-  'exit-shape-yellow': shapeYellow,
-  turn: turnPicture,
-  plate: platePicture,
-  gate: gatePicture,
-  gazebo: gazeboPicture,
-  'gazebo-goal': goalPicture,
-};
+const SPRITES: Record<SpriteName, Sprite> = Object.assign({}, ...Object.values(FRAGMENTS).map((f) => f.sprites));
+const URLS: Record<SpriteName, string> = Object.fromEntries(Object.entries(FILES).map(([path, url]) => [path.replace(/^.*\/(.+)\.webp$/, '$1'), url]));
 
 /** Tilt of the game camera from straight down: the quads lean back by 90° minus this, so they face it. */
 const TILT = THREE.MathUtils.degToRad(CONFIG.board.roomy.tilt);
@@ -73,6 +48,7 @@ const canLoad = typeof document !== 'undefined';
 
 /** The texture of one picture, made once. Outside a browser (unit tests) it stays empty. */
 function texture(name: SpriteName): THREE.Texture {
+  if (!(name in URLS)) throw new Error(`garden exit picture "${name}" is missing: run tools/asset-pipeline/garden_exit/build.py`);
   let t = textures.get(name);
   if (!t) {
     if (canLoad) {
@@ -95,7 +71,7 @@ function texture(name: SpriteName): THREE.Texture {
 
 /** Start loading every picture; resolves when all are in. */
 export function loadGardenExitPictures(): Promise<void> {
-  for (const name of Object.keys(URLS) as SpriteName[]) texture(name);
+  for (const name of Object.keys(URLS)) texture(name);
   return Promise.all(pending).then(() => undefined);
 }
 

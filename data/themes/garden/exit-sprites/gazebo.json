@@ -1,0 +1,21 @@
+{
+  "_about": "Written by tools/asset-pipeline/garden_exit/gazebo.py: size in cells and anchor (fractions from the top left) of each picture.",
+  "sprites": {
+    "gazebo": {
+      "width": 3.0,
+      "height": 3.3703,
+      "anchor": [
+        0.5,
+        0.93
+      ]
+    },
+    "gazebo-goal": {
+      "width": 3.6,
+      "height": 2.4735,
+      "anchor": [
+        0.5,
+        0.93
+      ]
+    }
+  }
+}

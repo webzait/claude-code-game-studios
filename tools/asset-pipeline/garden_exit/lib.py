@@ -1,26 +1,10 @@
-#!/usr/bin/env python3
-"""Cut the garden exit, gazebo and special tiles out of the owner's pictures.
+"""Shared helpers for the garden exit pictures (one module per part next to this one).
 
-Reads  design/reference/turnflock/garden/{22-sheet-exit-pad-states,08-gazebo,
-       24-sheet-gazebo-goal,18-sheet-action-buttons}.png
-Writes assets/turnflock/garden/exit/*.webp (transparent)
-
-The owner's picture is the part. Each piece is cut from the white background with
-a clean edge: the background is found by flood fill from the picture's border, the
-edge band is un-mixed from the background colour (so no white or grey halo is
-left) and the soft painted shadow is kept as half-transparent shadow.
-
-Pieces with no picture of their own are made from pieces of the pictures:
-- exit-red / -blue / -yellow: the green pad, its lit face and glow retoned;
-- exit-shape-<colour>: the same with the tick painted out and the colour's shape
-  (data/config.json colourShapes) in its place;
-- turn: the green pad retoned sky blue, tick painted out, the clockwise arrow of
-  the owner's "turn" button (18-sheet-action-buttons) in its place;
-- plate: the green pad retoned lavender, tick painted out;
-- gate: a stretch of balustrade cut from 08-gazebo, retoned lavender.
-Design: design/themes/garden-exit.md. Needs Pillow, numpy, scipy, opencv-python-headless.
-
-Run from the repo root:  python3 tools/asset-pipeline/turnflock-garden-exit.py
+Every part is cut from the owner's own pictures in design/reference/turnflock/garden/; nothing is
+drawn or brought in from outside except glyph outlines the game already defines (colour shapes).
+Each part module has `run()`, which writes its WebP files to assets/turnflock/garden/exit/ and its
+sizes to data/themes/garden/exit-sprites/<part>.json through `write_part`. build.py runs them.
+Needs Pillow, numpy, scipy, opencv-python-headless.
 """
 from __future__ import annotations
 
@@ -33,7 +17,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 from scipy import ndimage
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 REF = ROOT / "design/reference/turnflock/garden"
 OUT = ROOT / "assets/turnflock/garden/exit"
 CONFIG = json.loads((ROOT / "data/config.json").read_text())
@@ -254,97 +238,52 @@ def turn_glyph(height: int) -> np.ndarray:
     return np.asarray(Image.fromarray((g * 255).astype(np.uint8)).resize((w, height), Image.LANCZOS), dtype=float) / 255
 
 
-def pads() -> dict[str, np.ndarray]:
-    """The three pads of 22-sheet-exit-pad-states, cut out (the small red mark under the third is left out)."""
-    rgba = cut_out(load("22-sheet-exit-pad-states"))
-    return {
-        "grey": crop(rgba, (5, 0, 108, 88)),
-        "green": crop(rgba, (117, 0, 224, 88)),
-        "rays": crop(rgba, (236, 0, 342, 86)),
-    }
-
-
-MANIFEST = ROOT / "data/themes/garden/exit-sprites.json"
-SHEET: dict[str, dict] = {}
-
-
-def record(name: str, rgba: np.ndarray, anchor: tuple[float, float], cells_per_px: float) -> None:
-    """Note a sprite's size in cells and where in it the pad's centre on the floor is, for the game."""
-    h, w = rgba.shape[:2]
-    SHEET[name] = {"width": round(w * cells_per_px, 4), "height": round(h * cells_per_px, 4), "anchor": [round(anchor[0] / w, 4), round(anchor[1] / h, 4)]}
-
-
 def bottom(rgba: np.ndarray) -> int:
     ys = np.nonzero((rgba[..., 3] > 128).any(axis=1))[0]
     return int(ys.max())
 
 
-def main() -> None:
-    p = pads()
-    for look in ("grey", "green", "rays"):
-        save(to_image(p[look]), f"exit-{look}")
-    green = p["green"]
-    # Scale: the grey pad's stone fills the cell (1 cell wide).
-    stone = np.nonzero((p["grey"][..., 3] > 128).any(axis=0))[0]
-    cells_per_px = 1.0 / (stone.max() - stone.min() + 1)
-    # The lit part, full strength a little inside its soft edge, so the glow in the joints is retoned too.
-    lit = np.clip(lit_mask(green) * 1.6, 0, 1)
-    tick = tick_mask(green)
-    cx, cy, face_w = face_centre(green)
-    mark, mark_at = tick_alpha(green)
-    # Where the pad's centre is, as a distance up from its lowest solid row: the same for every pad.
-    rise = bottom(green) - cy
-    for look in ("grey", "green", "rays"):
-        img = p[look]
-        xs = np.nonzero((img[..., 3] > 128).any(axis=0))[0]
-        record(f"exit-{look}", img, ((xs.min() + xs.max()) / 2, bottom(img) - rise), cells_per_px)
-    derived = ((cx, cy), cells_per_px)
 
-    for colour, tone in TONES.items():
-        blank = paint_out(retone(green, lit, tone, keep_light=0.9), tick)
-        ink = (255, 255, 255) if colour != "yellow" else tuple(int(CONFIG["colors"]["robots"]["yellow"]["deep"][i:i + 2], 16) for i in (1, 3, 5))
-        if colour == "yellow":
-            # White does not read on yellow: the owner's tick, in the colour's darkest tone, as on the robot pad.
-            pad = stamp(blank, mark, 0, 0, ink, corner=mark_at)
-        else:
-            pad = retone(green, lit, tone, keep_light=0.9)
-        save(to_image(pad), f"exit-{colour}")
-        record(f"exit-{colour}", pad, *derived)
-        glyph = shape_glyph(CONFIG["colourShapes"][colour], int(face_w * 0.42))
-        # The face is seen at an angle: squash the shape as the tick is.
-        glyph = np.asarray(Image.fromarray((glyph * 255).astype(np.uint8)).resize((glyph.shape[1], int(glyph.shape[0] * 0.62)), Image.LANCZOS), dtype=float) / 255
-        save(to_image(stamp(blank, glyph, cx, cy, ink)), f"exit-shape-{colour}")
-        record(f"exit-shape-{colour}", blank, *derived)
+FRAGMENTS = ROOT / "data/themes/garden/exit-sprites"
 
-    turn = paint_out(retone(green, lit, CREAM, keep_light=0.45), tick)
-    arrow = turn_glyph(int(face_w * 0.3))
-    arrow = np.asarray(Image.fromarray((arrow * 255).astype(np.uint8)).resize((int(arrow.shape[1] * 1.45), arrow.shape[0]), Image.LANCZOS), dtype=float) / 255
-    save(to_image(stamp(turn, arrow, cx, cy, LEAF, shade=0.12)), "turn")
-    record("turn", turn, *derived)
+# Scale. The owner's pad sheet has the grey pad's stone 94 px wide; in the game the stone fills a
+# cell. Every pad-derived picture keeps that scale: cells per source pixel.
+PAD_STONE_SOURCE_PX = 94
+CELLS_PER_SOURCE_PX = 1.0 / PAD_STONE_SOURCE_PX
 
-    blank_green = paint_out(green, tick)
-    plate = retone(blank_green, np.clip(lit_mask(blank_green) * 1.6, 0, 1), "#A77DF2", keep_light=0.75)
-    save(to_image(plate), "plate")
-    record("plate", plate, *derived)
-
-    gazebo = cut_out(load("08-gazebo"))
-    save(to_image(crop(gazebo)), "gazebo", width=320)
-    # The back balustrade between the two middle columns, retoned lavender: the gate.
-    whole = load("08-gazebo")
-    rail = cut_out(whole[800:912, 553:703], enclosed=True, bg=np.median(whole[0], axis=0))
-    save(to_image(retone(rail, np.clip((rail[..., 3] / 255) * 0.95, 0, 1), LAVENDER, keep_light=1.0)), "gate", width=110)
-    # The gate stands 0.84 cells wide (gate.size), its foot on the cell's centre line.
-    SHEET["gate"] = {"width": 0.84, "height": round(0.84 * rail.shape[0] / rail.shape[1], 4), "anchor": [0.5, 0.97]}
-
-    goal = cut_out(load("24-sheet-gazebo-goal"))
-    save(to_image(crop(goal)), "gazebo-goal")
-    g1 = crop(gazebo)
-    g2 = crop(goal)
-    # The gazebo pictures are about three cells across (see design/themes/garden-exit.md).
-    SHEET["gazebo"] = {"width": 3.0, "height": round(3.0 * g1.shape[0] / g1.shape[1], 4), "anchor": [0.5, 0.93]}
-    SHEET["gazebo-goal"] = {"width": 3.6, "height": round(3.6 * g2.shape[0] / g2.shape[1], 4), "anchor": [0.5, 0.9]}
-    MANIFEST.write_text(json.dumps({"_about": "Written by tools/asset-pipeline/turnflock-garden-exit.py: each sprite in assets/turnflock/garden/exit/ with its size in cells and its anchor (the pad's centre on the floor, as fractions of the picture from the top left).", "sprites": SHEET}, indent=2) + "\n")
+# Target resolution: a cell is at most 53 CSS px on a phone, 3 device px per CSS px, so a pad needs
+# about 160 device px; pads are written at UPSCALE times their source size (~300 px wide).
+UPSCALE = 3
 
 
-if __name__ == "__main__":
-    main()
+def upscale(rgba: np.ndarray, factor: float, sharpen: float = 0.9, radius: float = 2.2) -> np.ndarray:
+    """Enlarge an RGBA cut-out without fringes: Lanczos on premultiplied colour, then an unsharp mask
+    on the colour (radius in output px) so painted edges stay crisp. Alpha gets a mild unsharp too."""
+    h, w = rgba.shape[:2]
+    size = (round(w * factor), round(h * factor))
+    a = rgba[..., 3:4] / 255
+    pre = np.dstack([rgba[..., :3] * a, rgba[..., 3:4]]).astype(np.float32)
+    big = cv2.resize(pre, size, interpolation=cv2.INTER_LANCZOS4)
+    alpha = np.clip(big[..., 3], 0, 255)
+    rgb = np.where(alpha[..., None] > 0.5, big[..., :3] / np.maximum(alpha[..., None] / 255, 1e-3), 0)
+    rgb = np.clip(rgb, 0, 255)
+    if sharpen > 0:
+        blur = cv2.GaussianBlur(rgb, (0, 0), radius)
+        rgb = np.clip(rgb + (rgb - blur) * sharpen, 0, 255)
+        ab = cv2.GaussianBlur(alpha, (0, 0), radius)
+        alpha = np.clip(alpha + (alpha - ab) * sharpen * 0.6, 0, 255)
+    return np.dstack([rgb, alpha])
+
+
+def write_part(part: str, sprites: dict[str, tuple[np.ndarray, tuple[float, float], float]]) -> None:
+    """Write each sprite (rgba, anchor in px, cells per px) as WebP and the part's size fragment.
+
+    The anchor is the point the game puts over the cell centre (for pads: the face centre); the
+    fragment gives each sprite's width and height in cells and the anchor as fractions."""
+    entries = {}
+    for name, (rgba, anchor, cells_per_px) in sprites.items():
+        save(to_image(rgba), name)
+        h, w = rgba.shape[:2]
+        entries[name] = {"width": round(w * cells_per_px, 4), "height": round(h * cells_per_px, 4), "anchor": [round(anchor[0] / w, 4), round(anchor[1] / h, 4)]}
+    FRAGMENTS.mkdir(parents=True, exist_ok=True)
+    (FRAGMENTS / f"{part}.json").write_text(json.dumps({"_about": f"Written by tools/asset-pipeline/garden_exit/{part}.py: size in cells and anchor (fractions from the top left) of each picture.", "sprites": entries}, indent=2) + "\n")

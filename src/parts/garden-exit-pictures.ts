@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import type { Color } from '../engine/types';
-import sheetData from '../../data/themes/garden/exit-sprites.json';
 import * as pic from '../render/parts/garden/exitPictures';
 import type { ExitLook } from '../render/parts/garden/exitMoments';
 
@@ -27,11 +26,11 @@ export interface Kit {
   refGazebo: string;
 }
 
-type SpriteName = keyof typeof sheetData.sprites;
+type SpriteName = string;
 const LOOK_NAMES: Record<ExitLook, string> = { grey: 'Grijs', green: 'Groen', rays: 'Groen met stralen' };
 
 /** The cut-out shown enlarged `zoom` times on a checkerboard (so the transparent edge is visible), with its size. */
-function cutout(k: Kit, name: SpriteName, caption: string, zoom = 3): HTMLElement {
+function cutout(k: Kit, name: SpriteName, caption: string, zoom = 1): HTMLElement {
   const i = k.img(pic.pictureUrl(name), caption);
   i.className = 'ge-cutout';
   i.decoding = 'sync';
@@ -57,7 +56,7 @@ export function addPictureCards(sheet: HTMLElement, k: Kit): void {
     const ref = k.row(el, 'ref');
     ref.appendChild(k.figure(k.img(k.refPads, 'Origineel'), 'Origineel van de eigenaar (22-sheet-exit-pad-states)'));
     const cuts = k.row(el, 'cutouts');
-    for (const look of ['grey', 'green', 'rays'] as ExitLook[]) cuts.appendChild(cutout(k, `exit-${look}` as SpriteName, `${LOOK_NAMES[look]} · WebP, 3× vergroot`));
+    for (const look of ['grey', 'green', 'rays'] as ExitLook[]) cuts.appendChild(cutout(k, `exit-${look}` as SpriteName, `${LOOK_NAMES[look]} · WebP`));
     el.insertAdjacentHTML('beforeend', '<h3>Op spelgrootte, onder de spelcamera</h3>');
     for (const cellPx of [53, 42]) {
       const game = k.row(el, 'game');
@@ -74,8 +73,8 @@ export function addPictureCards(sheet: HTMLElement, k: Kit): void {
   {
     const el = k.section('garden-exit-colours', 'Tuin · Uitgangen per kleur (levels 61 tot 80): uit het beeld', 'Er is geen beeld per kleur: het groene plateau van de eigenaar is omgekleurd (alleen het verlichte vlak en de gloed in de voegen; steen en vinkje blijven). Geel krijgt het vinkje van de eigenaar in donker oker, zoals bij de robotuitgang. Voor "Kleurvormen" is het vinkje weggeschilderd en de vorm erin gezet.');
     const cuts = k.row(el, 'cutouts');
-    for (const c of ['red', 'blue', 'yellow'] as Color[]) cuts.appendChild(cutout(k, `exit-${c}` as SpriteName, c === 'red' ? 'Rood' : c === 'blue' ? 'Blauw' : 'Geel', 2));
-    for (const c of ['red', 'blue', 'yellow'] as Color[]) cuts.appendChild(cutout(k, `exit-shape-${c}` as SpriteName, 'met kleurvorm', 2));
+    for (const c of ['red', 'blue', 'yellow'] as Color[]) cuts.appendChild(cutout(k, `exit-${c}` as SpriteName, c === 'red' ? 'Rood' : c === 'blue' ? 'Blauw' : 'Geel', 0.5));
+    for (const c of ['red', 'blue', 'yellow'] as Color[]) cuts.appendChild(cutout(k, `exit-shape-${c}` as SpriteName, 'met kleurvorm', 0.5));
     const game = k.row(el, 'game');
     for (const cellPx of [53, 42]) {
       const f = k.field(null, cells([[-1, 0, pic.buildExit('red')], [0, 0, pic.buildExit('blue')], [1, 0, pic.buildExit('yellow')]]).concat([[-1, 1, k.bot('red', 0)], [1, -1, k.bot('yellow', 2)]]));
@@ -102,8 +101,8 @@ export function addPictureCards(sheet: HTMLElement, k: Kit): void {
   {
     const el = k.section('garden-specials', 'Tuin · Draaitegel, drukplaat en poort: uit stukken van de beelden', 'De eigenaar heeft hier geen beelden van; ze zijn gemaakt uit stukken van zijn beelden, zodat ze dezelfde geschilderde stijl hebben. Draaitegel: het plateau met een crèmekleurig vlak en de draaipijl van de draaiknop (18-sheet-action-buttons), groen gekleurd. Drukplaat: het plateau in lavendel, zonder vinkje. Poort: een stuk balustrade uit 08-gazebo, in lavendel.');
     const cuts = k.row(el, 'cutouts');
-    cuts.appendChild(cutout(k, 'turn', 'Draaitegel', 2));
-    cuts.appendChild(cutout(k, 'plate', 'Drukplaat', 2));
+    cuts.appendChild(cutout(k, 'turn', 'Draaitegel'));
+    cuts.appendChild(cutout(k, 'plate', 'Drukplaat'));
     cuts.appendChild(cutout(k, 'gate', 'Poort', 2));
     el.insertAdjacentHTML('beforeend', '<h3>Op spelgrootte</h3>');
     for (const cellPx of [53, 42]) {
@@ -125,7 +124,7 @@ export function addPictureCards(sheet: HTMLElement, k: Kit): void {
     const el = k.section('garden-gazebo', 'Tuin · Het prieel: het beeld van de eigenaar', 'Uitgesneden uit 08-gazebo (verkleind naar 320 px breed) en 24-sheet-gazebo-goal (op ware grootte, 310 px). Voorstel: het beeld bij "level gehaald" en het eindpunt van het levelpad, niet op een vak van het bord.');
     const ref = k.row(el, 'two');
     ref.appendChild(k.figure(k.img(k.refGazebo, 'Origineel 08-gazebo'), 'Origineel (08-gazebo)'));
-    ref.appendChild(cutout(k, 'gazebo', 'WebP', 1));
+    ref.appendChild(cutout(k, 'gazebo', 'WebP', 0.5));
     const ref2 = k.row(el, 'two');
     ref2.appendChild(k.figure(k.img(k.refGoal, 'Origineel 24-sheet-gazebo-goal'), 'Origineel (24-sheet-gazebo-goal)'));
     ref2.appendChild(cutout(k, 'gazebo-goal', 'WebP', 1));
