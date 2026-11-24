@@ -27,7 +27,7 @@ const mats = {
   dirt: new THREE.MeshStandardMaterial({ map: dirtTileTexture(), vertexColors: true, roughness: 0.95 }),
   fur: new THREE.MeshStandardMaterial({ map: bladeTexture(), vertexColors: true, roughness: 0.9, alphaTest: 0.5, side: THREE.DoubleSide }),
   bed: new THREE.MeshStandardMaterial({ map: bedTexture(), roughness: 0.95 }),
-  bark: new THREE.MeshPhysicalMaterial({ map: barkTexture(), vertexColors: true, roughness: 0.48, clearcoat: 0.35, clearcoatRoughness: 0.4 }),
+  bark: new THREE.MeshPhysicalMaterial({ map: barkTexture(), vertexColors: true, roughness: G.rim.gloss.roughness, clearcoat: G.rim.gloss.clearcoat, clearcoatRoughness: G.rim.gloss.clearcoatRoughness }),
   decor: new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.42, clearcoat: 0.4, clearcoatRoughness: 0.3, side: THREE.DoubleSide }),
 };
 /** Shadows of the fur follow its blades, not its square cards. */
@@ -436,34 +436,68 @@ function braidCentre(path: RoundedPath, s: number): { p: THREE.Vector3; out: THR
   return { p: new THREE.Vector3(q.x, G.rim.centreY, q.z), out: new THREE.Vector3(q.nx, 0, q.nz) };
 }
 
+/** How far the braid reaches from its centre line: the bundles' twist plus a bundle's own reach. */
+const BRAID_REACH = G.rim.twist + G.rim.bundleRadius + G.rim.twigRadius;
+
+/** A fixed pseudo-random number in [0, 1) for twig `k`, so every twig has its own, unchanging thickness. */
+const twigJitter = (k: number): number => {
+  const x = Math.sin(k * 127.1 + 311.7) * 43758.5453;
+  return x - Math.floor(x);
+};
+
 /**
- * The braid: `strands` twigs twisted round the rim's centre line, and a darker core between them
- * so no light shows through. The number of twists is whole, so the braid closes without a seam on
- * every board size.
+ * The braid, after `03-rim-vines`: `strands` bundles twisted round the rim's centre line, each a
+ * bundle of `twigsPerBundle` thin twigs twisting round the bundle's own centre, `fineTwigs` very
+ * thin twigs winding the other way over the whole braid, and a core of the same bark so no gap
+ * shows through. Every twist count round the rim is a whole number, so the braid closes without a seam
+ * on every board size. Vertex colours brighten the upper side of each twig, which with the glossy
+ * bark material gives the shine of the reference.
  */
 function braidGeometry(path: RoundedPath): THREE.BufferGeometry {
   const r = G.rim;
   const m = new Mesher();
   const L = path.length;
   const twists = braidTwists(L);
+  const twigTurns = Math.max(1, Math.round(L / r.twigPitch));
+  const fineTurns = Math.max(1, Math.round(L / r.finePitch));
   const samples = Math.ceil(L * r.perUnit);
   const bark = Math.max(1, Math.round(L / r.barkRepeat));
+  const up = new THREE.Vector3(0, 1, 0);
+  const tone = (around: number): THREE.Color => shade(0.74 + 0.34 * Math.max(0, around) ** 0.8);
+  let twig = 0;
   for (let k = 0; k < r.strands; k++) {
-    const points: THREE.Vector3[] = [];
-    const radii: number[] = [];
-    for (let i = 0; i < samples; i++) {
-      const s = (L * i) / samples;
-      const { p, out } = braidCentre(path, s);
-      const theta = Math.PI * 2 * ((twists * i) / samples + k / r.strands);
-      points.push(p.addScaledVector(out, Math.cos(theta) * r.twist).add(new THREE.Vector3(0, Math.sin(theta) * r.twist * r.flatten, 0)));
-      radii.push(r.strandRadius + r.wobble * Math.sin(Math.PI * 2 * (13 * i / samples) + k * 2.1));
+    for (let j = 0; j < r.twigsPerBundle; j++) {
+      const points: THREE.Vector3[] = [];
+      const radii: number[] = [];
+      const own = twigJitter(twig);
+      for (let i = 0; i < samples; i++) {
+        const { p, out } = braidCentre(path, (L * i) / samples);
+        const theta = Math.PI * 2 * ((twists * i) / samples + k / r.strands);
+        const phi = Math.PI * 2 * ((twigTurns * i) / samples + j / r.twigsPerBundle + k * 0.17);
+        const bundle = p.addScaledVector(out, Math.cos(theta) * r.twist).addScaledVector(up, Math.sin(theta) * r.twist * r.flatten);
+        points.push(bundle.addScaledVector(out, Math.cos(phi) * r.bundleRadius).addScaledVector(up, Math.sin(phi) * r.bundleRadius * 0.9));
+        radii.push(r.twigRadius * (0.86 + 0.28 * own) * (1 + 0.07 * Math.sin(Math.PI * 2 * ((7 + j) * i / samples) + own * 6)));
+      }
+      tube(m, points, radii, r.radial, (i) => (i / samples) * bark, own, (_, around) => tone(around), true);
+      twig++;
     }
-    tube(m, points, radii, r.radial, (i) => (i / samples) * bark, k / r.strands, (_, around) => shade(0.82 + 0.18 * Math.max(0, around)), true);
+  }
+  // Fine twigs, winding the other way over the outside of the braid.
+  for (let f = 0; f < r.fineTwigs; f++) {
+    const points: THREE.Vector3[] = [];
+    for (let i = 0; i < samples; i++) {
+      const { p, out } = braidCentre(path, (L * i) / samples);
+      const psi = Math.PI * 2 * (-(fineTurns * i) / samples + f / r.fineTwigs);
+      // Keep them to the visible upper half, where the reference shows its fine twigs.
+      const a = Math.PI / 2 + 0.95 * Math.sin(psi);
+      points.push(p.addScaledVector(out, Math.cos(a) * r.fineReach).addScaledVector(up, Math.sin(a) * r.fineReach * r.flatten * 1.05));
+    }
+    tube(m, points, points.map(() => r.fineRadius), r.fineRadial, (i) => (i / samples) * bark, f * 0.31, (_, around) => tone(around), true);
   }
   const core: THREE.Vector3[] = [];
   const coreSamples = Math.ceil(samples / 3);
   for (let i = 0; i < coreSamples; i++) core.push(braidCentre(path, (L * i) / coreSamples).p);
-  tube(m, core, core.map(() => r.core), 6, (i) => (i / coreSamples) * bark * 0.5, 0, () => shade(1, C.core).multiply(new THREE.Color('#BBBBBB')), true);
+  tube(m, core, core.map(() => r.core), 6, (i) => (i / coreSamples) * bark * 0.5, 0, () => shade(0.78), true);
   return m.build();
 }
 
@@ -581,7 +615,7 @@ function vinePoints(place: DecorPlace, path: RoundedPath): THREE.Vector3[] {
   const t = along ? place.x : place.z;
   const from = Math.max(-half, t - d.vineLength / 2);
   const to = Math.min(half, t + d.vineLength / 2);
-  const reach = r.twist + r.strandRadius + 0.006;
+  const reach = BRAID_REACH + 0.004;
   const points: THREE.Vector3[] = [];
   const steps = 36;
   for (let i = 0; i <= steps; i++) {
@@ -606,7 +640,7 @@ function decoration(place: DecorPlace): THREE.Group {
   const along = new THREE.Vector3(place.ax, 0, place.az).multiplyScalar(place.flip ? -1 : 1);
   const basis = new THREE.Matrix4().makeBasis(out, new THREE.Vector3(0, 1, 0), along);
   group.quaternion.setFromRotationMatrix(basis);
-  group.position.set(place.x, r.centreY + r.twist * r.flatten + r.strandRadius * 0.6, place.z).addScaledVector(out, r.twist * 0.35);
+  group.position.set(place.x, r.centreY + (r.twist + r.bundleRadius) * r.flatten + r.twigRadius * 0.6, place.z).addScaledVector(out, r.twist * 0.35);
   const leaf = once('garden-leaf', leafGeometry);
   /** A leaf pointing `angle` degrees from outward towards "along", tipped up by `lift` degrees, scaled by `size`. */
   const addLeaf = (angle: number, lift: number, size: number, dx = 0, dz = 0): void => {

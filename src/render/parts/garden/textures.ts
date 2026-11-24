@@ -197,7 +197,7 @@ export function dirtTileTexture(): THREE.Texture | null {
  * sideways without a seam.
  */
 export function bladeTexture(): THREE.Texture | null {
-  return painted('blades', 512, 128, (g, w, h) => {
+  return painted('blades', 1024, 256, (g, w, h) => {
     const rand = seeded(19);
     const grad = g.createLinearGradient(0, h, 0, 0);
     grad.addColorStop(0, C.blade);
@@ -208,8 +208,8 @@ export function bladeTexture(): THREE.Texture | null {
     for (let i = 0; i < 1400; i++) {
       const x = rand() * w;
       const tall = h * (0.5 + rand() * 0.5);
-      const width = 2 + rand() * 3;
-      const lean = (rand() - 0.5) * 10;
+      const width = (2 + rand() * 3) * (w / 512);
+      const lean = (rand() - 0.5) * 10 * (w / 512);
       const blade = (bx: number): void => {
         g.beginPath();
         g.moveTo(bx - width / 2, h);
@@ -264,21 +264,23 @@ export function barkTexture(): THREE.Texture | null {
     g.fillStyle = grad;
     g.fillRect(0, 0, n, n);
     g.lineCap = 'round';
-    for (let i = 0; i < 34; i++) {
+    // Sizes below are drawn for a 256 px texture and scaled, so a larger texture is sharper, not finer.
+    const k = n / 256;
+    for (let i = 0; i < 46; i++) {
       const y = rand() * n;
-      const amp = 1 + rand() * 4;
+      const amp = (1 + rand() * 4) * k;
       const waves = 1 + Math.floor(rand() * 3);
       const phase = rand() * Math.PI * 2;
       const dark = rand() < 0.6;
       g.strokeStyle = dark ? C.barkDark : C.barkLight;
       g.globalAlpha = dark ? 0.35 + rand() * 0.35 : 0.45 + rand() * 0.35;
-      g.lineWidth = dark ? 1.2 + rand() * 2.6 : 1 + rand() * 2;
+      g.lineWidth = (dark ? 1.2 + rand() * 2.6 : 1 + rand() * 2) * k;
       // A grain line may stop part-way, as the grain does where two fibres meet.
       const from = rand() < 0.4 ? rand() * n : 0;
       const to = from > 0 ? from + n * (0.25 + rand() * 0.5) : n;
       for (const dy of [-n, 0, n]) {
         g.beginPath();
-        for (let x = from; x <= to; x += 4) {
+        for (let x = from; x <= to; x += 2 * k) {
           const yy = y + dy + Math.sin((x / n) * Math.PI * 2 * waves + phase) * amp;
           if (x === from) g.moveTo(x, yy);
           else g.lineTo(x, yy);
@@ -286,7 +288,7 @@ export function barkTexture(): THREE.Texture | null {
         g.stroke();
         if (to > n) {
           g.beginPath();
-          for (let x = 0; x <= to - n; x += 4) {
+          for (let x = 0; x <= to - n; x += 2 * k) {
             const yy = y + dy + Math.sin(((x + n) / n) * Math.PI * 2 * waves + phase) * amp;
             if (x === 0) g.moveTo(x, yy);
             else g.lineTo(x, yy);
@@ -306,7 +308,7 @@ export function barkTexture(): THREE.Texture | null {
 export function glowTexture(): THREE.Texture | null {
   const t = G.tile;
   const w = G.glow;
-  return painted('glow', 256, 256, (g, n) => {
+  return painted('glow', 512, 512, (g, n) => {
     const span = t.body + 2 * w.reach;
     const image = g.createImageData(n, n);
     const core = bytes(C.glowCore);

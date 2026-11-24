@@ -180,7 +180,7 @@ export function addGardenBoardCards(sheet: HTMLElement): void {
   head.innerHTML = `<h2>Tuinthema · het bord</h2><p class="note">Grastegel (licht en donker), gloeiende tegel, zandtegel, de rand van gevlochten takken met blaadjes en bloemetjes, de onderplaat met het grasbed. Steeds naast het voorbeeld van de eigenaar. Code: <code>src/render/parts/garden/</code>, maten en kleuren: <code>data/themes/garden/board.json</code>. Nog niet in het spel.</p>`;
   sheet.appendChild(head);
 
-  const PX = 640;
+  const PX = 1000;
   const tileCost = cost(buildFloorTile(false, false));
   const robotTileCost = cost(robot.buildFloorTile(false, false));
 
@@ -221,10 +221,10 @@ export function addGardenBoardCards(sheet: HTMLElement): void {
   const robotRimCost = cost(robot.buildRim(6, 6, GAP));
   section(sheet, 'garden-rim', 'Rand van gevlochten takken', `<div class="gb-row two">
       ${figure(img(refRim, 'Voorbeeld rand'), 'Voorbeeld 03-rim-vines', 'ref')}
-      ${figure(still(rim6, VIEWS.top, 900), 'Rand 6×6 · bovenaanzicht')}
+      ${figure(still(rim6, VIEWS.top, 1400), 'Rand 6×6 · bovenaanzicht')}
     </div><div class="gb-row two">
-      ${figure(still(buildRim(6, 6, GAP), VIEWS.quarter, 900), 'Driekwart')}
-      ${figure(still(buildRim(6, 6, GAP), VIEWS.front, 900), 'Voorkant')}
+      ${figure(still(buildRim(6, 6, GAP), VIEWS.quarter, 1400), 'Driekwart')}
+      ${figure(still(buildRim(6, 6, GAP), VIEWS.front, 1400), 'Voorkant')}
     </div>`,
   `Drie takken in elkaar gedraaid langs een afgeronde rechthoek, met een donkere kern ertussen. Het aantal slagen is altijd een heel getal, zodat de vlecht op elk bordformaat naadloos sluit. Blaadjes, ranken en witte bloemetjes staan op vaste plekken: een vast deel van elke zijde (zie <code>decor.clusters</code>), nooit willekeurig. Langs de binnenkant groeit gras tegen de takken op. Kosten (6×6): ${fmt(rimCost.tris)} driehoeken, ${rimCost.draws} tekenopdrachten (robotrand: ${fmt(robotRimCost.tris)} en ${robotRimCost.draws}).`);
 
@@ -232,7 +232,7 @@ export function addGardenBoardCards(sheet: HTMLElement): void {
   const lit = [7, 8];
   section(sheet, 'garden-board-full', 'Het hele bord, naast het voorbeeld', `<div class="gb-row two">
       ${figure(img(refBoard, 'Voorbeeld bord'), 'Voorbeeld 01-board-full', 'ref')}
-      ${figure(still(gardenBoard(6, 6), VIEWS.top, 1000), 'Tuinbord 6×6 · bovenaanzicht')}
+      ${figure(still(gardenBoard(6, 6), VIEWS.top, 1400), 'Tuinbord 6×6 · bovenaanzicht')}
     </div>`,
   'Zelfde opzet als het voorbeeld: 6×6 grastegels in een gevlochten rand, het grasbed ertussen. Het voorbeeld heeft overal dezelfde tegel; hier staat het dambord van licht en donker, zoals bij de robottegels.');
 
@@ -243,11 +243,11 @@ export function addGardenBoardCards(sheet: HTMLElement): void {
     const c = cost(board);
     const r = cost(robotBoard(cols, rows));
     const phone = boardPixels(cols, rows, GAP, 390 - 2 * CONFIG.camera.marginX);
-    const game = gameView(gardenBoard(cols, rows, cols === 6 ? lit : [], cols === 5 ? [rows * cols - 3, 12] : []), cols, rows, 390, Math.round(390 * (rows / cols) * 0.95 + 40), 2);
+    const game = gameView(gardenBoard(cols, rows, cols === 6 ? lit : [], cols === 5 ? [rows * cols - 3, 12] : []), cols, rows, 390, Math.round(390 * (rows / cols) * 0.95 + 40), 3);
     game.style.width = '390px';
     game.className = 'gb-phone';
     section(sheet, `garden-board-${cols}x${rows}`, `Tuinbord ${cols}×${rows}`, `<div class="gb-row two">
-        ${figure(still(board, VIEWS.top, 900), 'Bovenaanzicht')}
+        ${figure(still(board, VIEWS.top, 1400), 'Bovenaanzicht')}
         ${figure(game, `Spelcamera (${CONFIG.board.roomy.tilt}° gekanteld, perspectief) op een telefoon van 390 px, echte grootte`, 'game')}
       </div>`,
     `${cols * rows} tegels${cols === 6 ? ', twee gloeiend (hint)' : ''}${cols === 5 ? ', twee zandtegels' : ''}. Tegel ${phone.tile.toFixed(1)} px, rand ${phone.frame.toFixed(1)} px op de telefoon. Bord samengevoegd: ${fmt(c.tris)} driehoeken, ${c.draws} tekenopdrachten (robotbord: ${fmt(r.tris)} en ${r.draws}).`);

@@ -102,9 +102,9 @@ describe('garden board parts', () => {
       const braid = (buildRim(cols, rows, GAP).children[0] as THREE.Mesh).geometry;
       braid.computeBoundingBox();
       const box = braid.boundingBox!;
-      // The braid stays within the outside of the footprint, give or take its wobble.
-      expect(box.max.x).toBeLessThanOrEqual(outerW / 2 + G.rim.wobble + 1e-3);
-      expect(box.max.z).toBeLessThanOrEqual(outerD / 2 + G.rim.wobble + 1e-3);
+      // The braid stays within the outside of the footprint.
+      expect(box.max.x).toBeLessThanOrEqual(outerW / 2 + 1e-3);
+      expect(box.max.z).toBeLessThanOrEqual(outerD / 2 + 1e-3);
       // ...and keeps clear of the tiles.
       const pos = braid.getAttribute('position');
       for (let i = 0; i < pos.count; i++) {
@@ -205,8 +205,9 @@ describe('garden board parts', () => {
     board.traverse((n) => {
       if (n instanceof THREE.Mesh) tris += (n.geometry.index ? n.geometry.index.count : n.geometry.getAttribute('position').count) / 3;
     });
-    // The robot board of this size has about 19,600; the fur, braid and leaves cost less than twice that.
-    expect(tris).toBeLessThan(36000);
+    // The robot board of this size has about 19,600. The full braid of thin twigs (asked for by the owner)
+    // costs most of the difference; it is one draw call, which a phone handles easily.
+    expect(tris).toBeLessThan(70000);
   });
 });
 
