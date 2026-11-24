@@ -231,6 +231,6 @@ small sheet and the enlargement work above are superseded for the pads.
 | Gate, gazebo, gazebo goal | unchanged | | no new picture for these |
 
 All derived pads line up exactly with the green pad (same size and anchor). The grey picture is
-drawn slightly flatter than the green: swapping looks moves the base edge ~0.03 cell; the face stays put.
+drawn slightly flatter than the green; at the owner's request ("trek recht als dat mooier is") it is stretched vertically by ~7 % (`LEVEL_GREY` in exit_pads.py) so its base lines up with the green and rays pads when the look changes (evidence: `elements/grey-levelled.png`).
 The other elements (portals, stars, cloud) went to the effects session; gem, heart, star coin and the
 corner growth are listed for the lead session.

@@ -85,9 +85,38 @@ def _hires(look: str) -> tuple[np.ndarray, tuple[float, float]]:
     return rgba, ((cx + 0.5) * sx - 0.5, (cy + 0.5) * sy - 0.5)
 
 
+def _depth(rgba: np.ndarray, at: tuple[float, float]) -> float:
+    """From the face centre down to the base's lowest solid row, in px."""
+    rows = np.nonzero((rgba[..., 3] > 128).any(axis=1))[0]
+    return rows.max() - at[1]
+
+
+def _stretch_y(rgba: np.ndarray, factor: float) -> np.ndarray:
+    """Stretch a picture vertically by `factor` on premultiplied colour (no fringes)."""
+    h, w = rgba.shape[:2]
+    a = rgba[..., 3:4] / 255
+    pre = np.dstack([rgba[..., :3] * a, rgba[..., 3:4]]).astype(np.float32)
+    out = cv2.resize(pre, (w, round(h * factor)), interpolation=cv2.INTER_CUBIC)
+    alpha = np.clip(out[..., 3], 0, 255)
+    rgb = np.where(alpha[..., None] > 0.5, out[..., :3] / np.maximum(alpha[..., None] / 255, 1e-3), 0)
+    return np.dstack([np.clip(rgb, 0, 255), alpha])
+
+
+# The owner's grey pad is drawn a little flatter than the green and rays pads (face centre to base
+# ~125 px against ~134 px at output size), so swapping looks made the base jump. With this on, the
+# grey pad is stretched vertically to the green pad's depth (about 7 %); its face and stone width
+# stay where they are. The owner chose this (2026-11-24: "trek recht als dat mooier is").
+LEVEL_GREY = True
+
+
 def hires_pad(look: str) -> tuple[np.ndarray, tuple[float, float]]:
     """One look at output size (stone `PAD_STONE_OUT_PX` wide = 1 cell) and its anchor in px."""
     rgba, at = _hires(look)
+    if look == "grey" and LEVEL_GREY:
+        green, gat = _hires("green")
+        factor = _depth(green, gat) / _depth(rgba, at)
+        rgba = _stretch_y(rgba, factor)
+        at = (at[0], (at[1] + 0.5) * rgba.shape[0] / _hires(look)[0].shape[0] - 0.5)
     return rgba.copy(), at
 
 
