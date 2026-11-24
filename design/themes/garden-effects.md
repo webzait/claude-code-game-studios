@@ -117,15 +117,32 @@ rate little (−20 % against the bare board in software rendering); the 70 calls
 are the stand-in lawn, not the effects. The pictures add 75 kB to the single HTML file
 (about 100 kB as base64).
 
-## Proposal: portals (blue ring) — not built
+## Owner's decisions (2026-11-24)
 
-The blue ring looks like a place where something disappears and reappears. Proposal for the
-owner: **portal pairs**. Two blue rings on the board are linked; a chick that steps onto one
-leaves through the other, keeping its heading, in the same step. Effect: the ring closes on the
-chick at the entry (the ring's closing half) and opens at the exit (its opening half).
-Questions for the owner: may a portal exit be blocked (then the chick bumps: cloud)? Do several
-pairs need colours? Does a chick count as "moved" for the step counter?
-The core rules are not changed: this needs the owner's decision.
+1. **Portal pairs: later**, when more levels are added; the rules are left to our judgement
+   (proposal below). Not built now; the core rules are unchanged.
+2. **Cloud breaking into loose balls: approved** as it is.
+3. **Celebration in the garden theme: the garden celebration** (`GardenCelebrationFx` with
+   `planGardenCelebration`) is the default there, instead of the robot confetti. The robot
+   theme keeps its own default. To be wired in by the theme session.
+
+## Portal pairs (blue ring) — for later
+
+The blue ring is a place where a chick disappears and reappears. Proposed rules, to be built
+when more levels come (owner: "naar eigen inzicht"):
+
+- **Pairs.** Two blue rings on the board are linked. A chick that steps onto one comes out of
+  the other in the same step, keeping its heading, and goes on from there with the next command.
+- **Blocked exit.** If the cell the chick would come out on is taken (another chick or an
+  obstacle at the exit portal itself is impossible by level design), the chick does not enter:
+  it bumps at the entry portal (cloud puff), like bumping into an obstacle. Simple to read and
+  keeps the solver deterministic.
+- **Moves.** Going through counts as one ordinary step; no extra moves.
+- **Several pairs.** At most two pairs per level, told apart by colour (blue and a second
+  colour) and, with *Colour shapes* on, by a small shape on the ring.
+- **Effect.** At the entry the ring plays its closing half (the chick shrinks into it), at the
+  exit its opening half (the chick grows out of it). Calm: the chick fades out and in.
+- **Introduction.** First in a level of its own with a single pair, after the current levels.
 
 ## Where it deviates from the sheet (honest)
 
