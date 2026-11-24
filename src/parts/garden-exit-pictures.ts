@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import type { Color } from '../engine/types';
 import * as pic from '../render/parts/garden/exitPictures';
+import refGrey from './ref/garden/checkpoint-inactief.webp';
+import refGreen from './ref/garden/checkpoint-actief.webp';
+import refRays from './ref/garden/checkpoint-opgelicht.webp';
 import type { ExitLook } from '../render/parts/garden/exitMoments';
 
 /**
@@ -52,9 +55,13 @@ function cells(extras: [number, number, THREE.Object3D][]): [number, number, THR
 export function addPictureCards(sheet: HTMLElement, k: Kit): void {
   // ---- Exit pad ----
   {
-    const el = k.section('garden-exit', 'Tuin · Uitgang: het beeld van de eigenaar', 'Standaard. Uitgesneden uit 22-sheet-exit-pad-states en 3× vergroot (ca. 300 px breed): omtrek, vinkje en stralen scherp nagetrokken van het beeld, de vlakken zijn het geschilderde beeld zelf. In het spel een plat vlak dat recht naar de spelcamera kijkt (30° gekanteld, perspectief), op een grastegel.');
-    const ref = k.row(el, 'ref');
-    ref.appendChild(k.figure(k.img(k.refPads, 'Origineel'), 'Origineel van de eigenaar (22-sheet-exit-pad-states)'));
+    const el = k.section('garden-exit', 'Tuin · Uitgang: het beeld van de eigenaar', 'Standaard. De drie checkpoint-beelden van de eigenaar (losse spelelementen, ca. 800 px), alleen netjes verkleind: de steen is 320 px breed (twee keer de grootste weergave op een telefoon). In het spel een plat vlak dat recht naar de spelcamera kijkt (30° gekanteld, perspectief), op een grastegel.');
+    const ref = k.row(el, 'cutouts');
+    for (const [src, name] of [[refGrey, 'checkpoint-inactief'], [refGreen, 'checkpoint-actief'], [refRays, 'checkpoint-opgelicht']]) {
+      const i = k.img(src, name);
+      i.className = 'ge-cutout';
+      ref.appendChild(k.figure(i, `Origineel van de eigenaar (${name}, hier verkleind)`));
+    }
     const cuts = k.row(el, 'cutouts');
     for (const look of ['grey', 'green', 'rays'] as ExitLook[]) cuts.appendChild(cutout(k, `exit-${look}` as SpriteName, `${LOOK_NAMES[look]} · WebP`));
     el.insertAdjacentHTML('beforeend', '<h3>Op spelgrootte, onder de spelcamera</h3>');
@@ -99,7 +106,7 @@ export function addPictureCards(sheet: HTMLElement, k: Kit): void {
 
   // ---- Special tiles ----
   {
-    const el = k.section('garden-specials', 'Tuin · Draaitegel, drukplaat en poort: uit stukken van de beelden', 'De eigenaar heeft hier geen beelden van; ze zijn gemaakt uit stukken van zijn beelden, zodat ze dezelfde geschilderde stijl hebben. Draaitegel: het plateau met een crèmekleurig vlak en de draaipijl van de draaiknop (18-sheet-action-buttons), groen gekleurd. Drukplaat: het plateau in lavendel met een verhoogde knop in de stijl van de knoppen van de eigenaar. Poort: de balustrade uit 08-gazebo tussen twee stenen zuilen, in dezelfde lavendel. Alles op 3× (ca. 300 px breed).');
+    const el = k.section('garden-specials', 'Tuin · Draaitegel, drukplaat en poort: uit stukken van de beelden', 'De eigenaar heeft hier geen beelden van; ze zijn gemaakt uit stukken van de beelden van de eigenaar, zodat ze dezelfde geschilderde stijl hebben. Draaitegel: het groene checkpoint-plateau met een crèmekleurig vlak en de draaipijl van de draaiknop (18-sheet-action-buttons), groen gekleurd. Drukplaat: hetzelfde plateau in lavendel met een verhoogde knop in de stijl van de knoppen van de eigenaar. Poort: de balustrade uit 08-gazebo tussen twee stenen zuilen, in dezelfde lavendel. Plateaus gemaakt op volle grootte en daarna verkleind tot een steen van 320 px.');
     const cuts = k.row(el, 'cutouts');
     cuts.appendChild(cutout(k, 'turn', 'Draaitegel'));
     cuts.appendChild(cutout(k, 'plate', 'Drukplaat'));

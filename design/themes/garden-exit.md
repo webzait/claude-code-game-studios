@@ -214,3 +214,23 @@ part: `production/qa/evidence/garden-exit/hires/`.
 All pictures together: about 300 kB (the single-file game embeds them as base64, about a third
 more). The source pad sheet is ~100 px per pad, so the pads are faithful enlargements: no detail
 finer than the sheet's own pixels was invented.
+
+## The owner's high-resolution elements (2026-11-24, later)
+
+The owner then supplied loose elements as transparent PNGs (`design/reference/turnflock/garden/elements/`,
+README there), among them the exit pad in its three looks at ~800 px ("checkpoint" inactief /
+actief / opgelicht). Every pad-based part was redone from those, each in its own session; the
+small sheet and the enlargement work above are superseded for the pads.
+
+| Part | Output | kB | How |
+|---|---|---|---|
+| Exit pads | 326×209 / 327×215 / 328×318 | 7.6 / 9.8 / 18.7 | the owner's pictures, only downscaled (`checkpoints.shrink`); each look scaled on its own stone to 320 px; anchor on the fitted face centre |
+| Colour exits and shapes | 327×215 each | 8.9–10.5 | green pad at full size: tick separated, painted out, face and joint glow retoned; shapes drawn at 8× on the face; yellow tick dark amber (2.9:1) |
+| Turn tile | 327×215 | 8.5 | green pad at full size, face cream, the owner's traced turn arrow drawn crisp |
+| Pressure plate | 327×215 | 8.6 | green pad at full size, tick painted out, lavender in CIE Lab, raised button drawn in the owner's button style |
+| Gate, gazebo, gazebo goal | unchanged | | no new picture for these |
+
+All derived pads line up exactly with the green pad (same size and anchor). The grey picture is
+drawn slightly flatter than the green: swapping looks moves the base edge ~0.03 cell; the face stays put.
+The other elements (portals, stars, cloud) went to the effects session; gem, heart, star coin and the
+corner growth are listed for the lead session.
