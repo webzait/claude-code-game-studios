@@ -1047,6 +1047,6 @@ addCoinCards(document.getElementById('sheet')!);
 addSettingsCards(document.getElementById('sheet')!);
 
 // Garden theme: exit, gazebo goal and special tiles (src/parts/garden-exit.ts).
-addGardenExitCards(document.getElementById('sheet')!);
+void addGardenExitCards(document.getElementById('sheet')!);
 
 document.body.dataset.ready = 'true';

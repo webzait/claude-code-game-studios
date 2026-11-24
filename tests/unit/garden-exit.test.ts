@@ -7,6 +7,8 @@ import { exitLook, exitMoment, type ExitSituation } from '../../src/render/parts
 import { buildGazebo } from '../../src/render/parts/garden/gazebo';
 import { buildFloorTile, buildGate, buildPlate, buildStandInTile, buildTurnTile, gateDoorScale, useGardenFloorTile } from '../../src/render/parts/garden/specials';
 import { triangleCount } from '../../src/render/parts/garden/common';
+import * as pic from '../../src/render/parts/garden/exitPictures';
+import config from '../../data/config.json';
 
 const sizeOf = (o: THREE.Object3D): THREE.Vector3 => new THREE.Box3().setFromObject(o).getSize(new THREE.Vector3());
 const FLASH = garden.exit.flashSeconds;
@@ -148,5 +150,68 @@ describe('garden parts stay within their triangle budgets', () => {
     expect(size.x).toBeGreaterThan(2.5);
     expect(size.x).toBeLessThan(3.5);
     expect(size.y).toBeGreaterThan(2.5);
+  });
+});
+
+describe('garden picture parts (the standard version) keep the robot contract', () => {
+  const spriteOf = (o: THREE.Object3D): string => o.userData.sprite as string;
+
+  it('picture exit shows the owner pad for each look', () => {
+    const pad = pic.buildExit(undefined, 'grey');
+    expect(spriteOf(pad.userData.check)).toBe('exit-grey');
+    expect((pad.userData.glow as THREE.Object3D).visible).toBe(false);
+    pic.setExitLook(pad, 'green');
+    expect(spriteOf(pad.userData.check)).toBe('exit-green');
+    pic.setExitLook(pad, 'rays');
+    expect(spriteOf(pad.userData.check)).toBe('exit-rays');
+    expect((pad.userData.glow as THREE.Object3D).visible).toBe(true);
+  });
+
+  it('picture colour exit carries its retoned pad and a hidden shape version', () => {
+    const pad = pic.buildExit('yellow');
+    expect(spriteOf(pad.userData.check)).toBe('exit-yellow');
+    expect(spriteOf(pad.userData.shape)).toBe('exit-shape-yellow');
+    expect((pad.userData.shape as THREE.Object3D).visible).toBe(false);
+  });
+
+  it('picture quads face the game camera', () => {
+    const pad = pic.buildExit();
+    const holder = pad.userData.check as THREE.Object3D;
+    const normal = new THREE.Vector3(0, 0, 1).applyEuler(holder.rotation);
+    const tilt = THREE.MathUtils.degToRad(config.board.roomy.tilt);
+    expect(normal.y).toBeCloseTo(Math.cos(tilt), 5);
+    expect(normal.z).toBeCloseTo(Math.sin(tilt), 5);
+  });
+
+  it('picture quads stay above the grass', () => {
+    for (const part of [pic.buildExit(undefined, 'rays'), pic.buildTurnTile(false, false), pic.buildPlate(false, false)]) {
+      part.updateMatrixWorld(true);
+      let lowest = Infinity;
+      part.traverse((n) => {
+        if (n instanceof THREE.Mesh && n.userData.sprite === undefined && n.parent?.userData.sprite) {
+          const box = new THREE.Box3().setFromObject(n);
+          lowest = Math.min(lowest, box.min.y);
+        }
+      });
+      expect(lowest).toBeLessThan(1);
+      expect(lowest).toBeGreaterThanOrEqual(garden.floorStandIn.height - 1e-6);
+    }
+  });
+
+  it('picture special tiles move the same children as the robot tiles', () => {
+    const turn = pic.buildTurnTile(false, false);
+    expect((turn.userData.disc as THREE.Object3D).name).toBe('turn-disc');
+    expect(((turn.userData.glow as THREE.Mesh).material as THREE.MeshBasicMaterial).opacity).toBe(0);
+    const plate = pic.buildPlate(false, false);
+    expect((plate.userData.button as THREE.Object3D).userData.restY).toBeCloseTo((plate.userData.button as THREE.Object3D).position.y, 6);
+    const gate = pic.buildGate(false, false);
+    expect(spriteOf(gate.userData.door)).toBe('gate');
+    expect(pic.gateDoorScale(false)).toBe(1);
+    expect(pic.gateDoorScale(true)).toBeLessThan(0.2);
+  });
+
+  it('picture parts are cheap', () => {
+    expect(triangleCount(pic.buildExit(undefined, 'rays'))).toBeLessThan(400);
+    expect(triangleCount(pic.buildGazebo(true))).toBe(2);
   });
 });

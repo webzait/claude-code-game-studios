@@ -14,6 +14,8 @@ import { drawCount, triangleCount } from '../render/parts/garden/common';
 import refPads from './ref/garden/22-sheet-exit-pad-states.webp';
 import refGoal from './ref/garden/24-sheet-gazebo-goal.webp';
 import refGazebo from './ref/garden/08-gazebo.webp';
+import * as pic from '../render/parts/garden/exitPictures';
+import { addPictureCards } from './garden-exit-pictures';
 import './garden-exit.css';
 
 /**
@@ -204,10 +206,11 @@ function cost(o: THREE.Object3D): string {
 }
 
 /** Add every garden-exit card to `sheet`. */
-export function addGardenExitCards(sheet: HTMLElement): void {
+function addModelledCards(sheet: HTMLElement): void {
+  sheet.insertAdjacentHTML('beforeend', '<section class="card wide garden-exit" id="garden-modelled"><h2>Tuin · Alternatief: in code nagebouwd</h2><p class="dims">De eerste versie, nagebouwd in 3D. Blijft als keuze bestaan; de standaard is nu het beeld van de eigenaar (hierboven).</p></section>');
   // ---- 1. The exit pad, three looks ----
   {
-    const el = section('garden-exit', 'Tuin · Uitgang: stenen plateau in drie standen', `Eén vak breed (${Math.round(garden.exit.radius * 2 * parts.unitPx)} px bij een vak van ${parts.unitPx} px), plateau ${Math.round(garden.exit.capTop * parts.unitPx)} px hoog: een kuiken stapt erop zoals op de robotuitgang.`);
+    const el = section('garden-code-exit', 'Alternatief (code) · Uitgang: stenen plateau in drie standen', `Eén vak breed (${Math.round(garden.exit.radius * 2 * parts.unitPx)} px bij een vak van ${parts.unitPx} px), plateau ${Math.round(garden.exit.capTop * parts.unitPx)} px hoog: een kuiken stapt erop zoals op de robotuitgang.`);
     const ref = row(el, 'ref');
     ref.appendChild(figure(img(refPads, 'Voorbeeld van de eigenaar: drie standen van het plateau'), 'Voorbeeld van de eigenaar (22-sheet-exit-pad-states)'));
     const big = row(el, 'three');
@@ -253,7 +256,7 @@ export function addGardenExitCards(sheet: HTMLElement): void {
 
   // ---- 2. Colour exits ----
   {
-    const el = section('garden-exit-colours', 'Tuin · Uitgangen per kleur (levels 61 tot 80)', 'Dezelfde steen; het vlak licht op in de kleur van de kuikens die erdoor mogen. Met "Kleurvormen" aan staat de vorm van de kleur op de plaats van het vinkje.');
+    const el = section('garden-code-colours', 'Alternatief (code) · Uitgangen per kleur', 'Dezelfde steen; het vlak licht op in de kleur van de kuikens die erdoor mogen. Met "Kleurvormen" aan staat de vorm van de kleur op de plaats van het vinkje.');
     const big = row(el, 'four');
     const colors: Color[] = ['red', 'blue', 'yellow'];
     for (const c of colors) big.appendChild(figure(large(buildExit(c, 'green'), DIRS.quarter, 0.8, 600), c === 'red' ? 'Rood' : c === 'blue' ? 'Blauw' : 'Geel'));
@@ -283,7 +286,7 @@ export function addGardenExitCards(sheet: HTMLElement): void {
 
   // ---- 3. The gazebo goal ----
   {
-    const el = section('garden-gazebo', 'Tuin · Het prieel als doel', 'Los onderdeel: het prieel met vlaggetje, bloemen en het groene plateau met vinkje. Voorstel: het beeld van "level gehaald" en het eindpunt van het levelpad.');
+    const el = section('garden-code-gazebo', 'Alternatief (code) · Het prieel als doel', 'Los onderdeel: het prieel met vlaggetje, bloemen en het groene plateau met vinkje. Voorstel: het beeld van "level gehaald" en het eindpunt van het levelpad.');
     const ref = row(el, 'two');
     ref.appendChild(figure(img(refGoal, 'Voorbeeld: prieel als doel'), 'Voorbeeld (24-sheet-gazebo-goal)'));
     ref.appendChild(figure(img(refGazebo, 'Voorbeeld: prieel'), 'Voorbeeld (08-gazebo)'));
@@ -302,7 +305,7 @@ export function addGardenExitCards(sheet: HTMLElement): void {
 
   // ---- 4. Special tiles ----
   {
-    const el = section('garden-specials', 'Tuin · Draaitegel, drukplaat en poort', 'Geen voorbeelden van de eigenaar: ontworpen bij de beelden. Zelfde werking en zelfde onderdelen (schijf, knop, deur) als de robotversies; plaat en poort delen één lavendelkleur die verder nergens in de tuin voorkomt.');
+    const el = section('garden-code-specials', 'Alternatief (code) · Draaitegel, drukplaat en poort', 'Geen voorbeelden van de eigenaar: ontworpen bij de beelden. Zelfde werking en zelfde onderdelen (schijf, knop, deur) als de robotversies; plaat en poort delen één lavendelkleur die verder nergens in de tuin voorkomt.');
     const big = row(el, 'four');
     big.appendChild(figure(large(buildTurnTile(), DIRS.quarter, 0.86, 600), 'Draaitegel'));
     big.appendChild(figure(large(buildPlate(), DIRS.quarter, 0.86, 600), 'Drukplaat'));
@@ -357,4 +360,16 @@ export function addGardenExitCards(sheet: HTMLElement): void {
     note(el, 'De tegels hieronder zijn een eenvoudige grastegel als stand-in; in het spel komt de grastegel van de bordsessie eronder (<code>useGardenFloorTile</code>). De kosten tellen de tegel mee.');
     sheet.appendChild(el);
   }
+}
+
+/**
+ * Add the garden exit section to `sheet`: first the standard version made from the owner's own
+ * pictures (src/parts/garden-exit-pictures.ts), then the modelled alternative. Sets
+ * `data-garden-ready` on the body when everything is drawn.
+ */
+export async function addGardenExitCards(sheet: HTMLElement): Promise<void> {
+  await pic.loadGardenExitPictures();
+  addPictureCards(sheet, { large, inGame, field, bot, figure, img, section, row, note, cost, refPads, refGoal, refGazebo });
+  addModelledCards(sheet);
+  document.body.dataset.gardenReady = 'true';
 }
