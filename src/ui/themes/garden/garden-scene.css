@@ -64,8 +64,14 @@
     radial-gradient(ellipse 46% 100% at 0% 100%, rgba(70, 60, 40, .26), rgba(70, 60, 40, 0) 72%),
     radial-gradient(ellipse 40% 86% at 100% 100%, rgba(70, 60, 40, .22), rgba(70, 60, 40, 0) 72%);
 }
-/* Near, bottom left: the flower bed from the birdhouse's foot (white and pink flowers, grass). */
-[data-theme="garden"] .tf-decor-front-l { --w: calc(var(--tf-decor-bottom) * 1.5 + var(--tf-decor-side) * .5); width: var(--w); left: calc(var(--w) * -.3 + var(--tf-decor-side) * .12); bottom: calc(var(--w) * -.07); transform: none; }
+/* Near, bottom left: the owner's corner growth (elements/hoekbegroeiing): leaves and yellow flowers
+   climbing the left edge and running along the bottom. Its climbing arm rises into the strip under
+   the board, but never wider than the free edge beside the hint line. */
+[data-theme="garden"] .tf-decor-front-l {
+  --rise: clamp(0px, var(--tf-decor-band) - 16px, 96px);
+  --w: min((var(--tf-decor-bottom) + var(--rise)) / .83, var(--tf-decor-edge) / .34);
+  width: var(--w); left: calc(var(--w) * -.05); bottom: calc(var(--w) * -.04); transform: none;
+}
 /* Near, bottom right: the round bush with white flowers, lower than the left side. */
 [data-theme="garden"] .tf-decor-front-r { --w: calc(var(--tf-decor-bottom) * .95 + var(--tf-decor-side) * .55); width: var(--w); right: calc(var(--w) * -.4 + var(--tf-decor-side) * .1); bottom: calc(var(--w) * -.12); left: auto; transform: none; }
 /* Further back, left: the rocks with a pink flower, rising into the strip under the board. */

@@ -65,14 +65,14 @@ a garden picture of its own shape (`GARDEN_DECOR_ART`):
 
 | Place | Picture | Source |
 |---|---|---|
-| `front-l` near, bottom left | flower bed (white and pink flowers, grass) | foot of 07, post removed |
+| `front-l` near, bottom left | corner growth: leaves and yellow flowers climbing the left edge and running along the bottom; its climbing arm stays left of the hint line (`min(…, edge / .34)`) | owner's `elements/hoekbegroeiing.png` (already transparent: cropped and scaled only) |
 | `front-r` near, bottom right | round bush with white flowers | 06 |
 | `back-l` under the board, left | rocks with a pink flower | left foot of 09, posts removed |
 | `back-r` under the board, right | rocks with a pink flower | right foot of 09, posts removed |
 | `sprig-tl` top-left corner | tree branch | top-left of 10, sky removed |
-| `tuft-tr` above the board, right | flower bed, small and mirrored | foot of 07 |
+| `tuft-tr` above the board, right | flower bed (white and pink flowers, grass), small and mirrored | foot of 07, post removed |
 
-Five pictures, 104 kB together. The white studio background and the painted floor shadow are
+Six pictures, 147 kB together (the corner growth is 43.5 kB: 660 × 577, about twice the 325 px it is shown at on a tablet). All pieces are scaled with premultiplied alpha, so no colour from transparent pixels bleeds into the edge. The white studio background and the painted floor shadow are
 removed; a soft contact shadow is baked under each piece. `17-sheet-bushes-plants` is only
 83 px high, too small to use sharp; it served as the reference for the kinds of plants.
 
@@ -80,6 +80,12 @@ removed; a soft contact shadow is baked under each piece. `17-sheet-bushes-plant
 on 320×568, 353×768, 390×844, 430×932 and 768×1024 no decor pixel is drawn over any control,
 none lies behind the board or behind loose text, and taps go through. Pieces do stand behind
 the buttons (by design: they show in the gaps and corners).
+
+**Corner growth, where it pays off most.** On a phone the near bottom-left place sits mostly
+behind the action buttons, so only the climbing arm and a few flowers show; on the tablet it
+shows in full. The picture is an L made to hug a right angle: it would read better on the
+board's corners (outside the rim, two diagonal corners, mirrored) than on the screen's. The board
+rim belongs to another part; the picture is ready for it (`garden-corner-growth.webp`).
 
 ## Motion
 
@@ -104,3 +110,11 @@ they are already in the picture, and a separate layer only pays off if they have
   viewer as in the reference; the corner flowers of the reference are replaced by the decor.
 - On 320×568 the gazebo stands behind the top bar; only the arch and the birdhouse roofs show.
 - Landscape screens are not tuned (the picture follows the width and gets very large).
+
+## Owner's decisions (2026-11-24)
+
+Agreed by the owner:
+- Backdrop stays at 118 kB (full sharpness, quality 74); no smaller version.
+- Flower arch: frame of the win pop-up and gate at the end of the level path. Birdhouse: marker
+  of the current step on the level screen. For the sessions that own those screens.
+- Motion stays off by default (calm variant); the option remains available.

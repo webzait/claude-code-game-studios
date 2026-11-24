@@ -7,6 +7,7 @@ import { DECOR_PLACES, GARDEN_DECOR_ART, GARDEN_DECOR_PIECES, GARDEN_PROPS } fro
 import { sceneLayout } from '../ui/themes/garden/backdropLayout';
 import scenePic from '../ui/themes/garden/garden-scene.webp';
 import pavingPic from '../ui/themes/garden/garden-paving.webp';
+import cornerOriginal from '../../design/reference/turnflock/garden/elements/hoekbegroeiing.png';
 
 const SCREENS: [number, number][] = [[320, 568], [353, 768], [390, 844], [430, 932], [768, 1024]];
 /** A decoration pixel counts from this opacity up (5%). */
@@ -142,15 +143,24 @@ export function addGardenBackdropCards(sheet: HTMLElement): void {
   // Decor: the pieces, the props, and the safety check.
   const pieces: [string, string, string][] = [
     [GARDEN_DECOR_PIECES.bushWhite, 'Ronde struik met witte bloemen', 'uit 06 · dichtbij, rechtsonder'],
-    [GARDEN_DECOR_PIECES.clumpBirdhouse, 'Bloemenperkje', 'voet van 07 zonder paal · dichtbij, linksonder; klein rechtsboven'],
+    [GARDEN_DECOR_PIECES.cornerGrowth, 'Hoekbegroeiing', 'elements/hoekbegroeiing van de eigenaar · dichtbij, linksonder, klimt langs de rand omhoog'],
+    [GARDEN_DECOR_PIECES.clumpBirdhouse, 'Bloemenperkje', 'voet van 07 zonder paal · klein, rechtsboven boven het bord'],
     [GARDEN_DECOR_PIECES.rocksLeft, 'Stenen met roze bloem', 'voet van 09 links zonder palen · verder weg, links onder het bord'],
     [GARDEN_DECOR_PIECES.rocksRight, 'Stenen met roze bloem (2)', 'voet van 09 rechts zonder palen · verder weg, rechts'],
     [GARDEN_DECOR_PIECES.branch, 'Boomtak', 'linksboven uit 10 · hangt in de bovenhoek'],
   ];
   const decorBytes = pieces.reduce((n, [src]) => n + bytes(src), 0);
-  card(sheet, 'garden-decor-pieces', 'Tuinthema · losse randstukken', `5 stukken, samen ${kb(decorBytes)} (WebP met transparantie)`,
+  card(sheet, 'garden-decor-pieces', 'Tuinthema · losse randstukken', `6 stukken, samen ${kb(decorBytes)} (WebP met transparantie)`,
     `<div class="tf-decor-pieces tf-garden-pieces">${pieces.map(([src, name, role]) => `<figure><img src="${src}" alt="" /><figcaption><b>${name}</b><br />${role}<br />${kb(bytes(src))}</figcaption></figure>`).join('')}</div>`,
-    'Alles uit de eigen beelden van de eigenaar: witte achtergrond en de geschilderde vloerschaduw weg, de houten paal van vogelhuisje en boog weggehaald, een zachte schaduw onder elk stuk ingebakken (zoals bij de struiken van het robotthema). Grassprietjes zitten in de perkjes zelf.');
+    'Alles uit de eigen beelden van de eigenaar. De hoekbegroeiing kwam al los en transparant aan en is alleen bijgesneden en verkleind. Bij de andere: witte achtergrond en de geschilderde vloerschaduw weg, de houten paal van vogelhuisje en boog weggehaald, een zachte schaduw onder elk stuk ingebakken (zoals bij de struiken van het robotthema). Grassprietjes zitten in de perkjes zelf.');
+  // The owner's corner growth: the original beside the game picture, and at the sizes the game shows it.
+  const corner = GARDEN_DECOR_PIECES.cornerGrowth;
+  const onPath = (w: number, label: string): string => `<figure><div class="tf-garden-onpath" style="width:${Math.round(w * 1.15)}px;background-image:url(${pavingPic})"><img src="${corner}" alt="" style="width:${w}px" /></div><figcaption>${label}</figcaption></figure>`;
+  card(sheet, 'garden-corner', 'Tuinthema · hoekbegroeiing (beeld van de eigenaar)', `origineel 1536 × 1024 PNG · in het spel 660 × 577 WebP, ${kb(bytes(corner))}`,
+    `<div class="tf-garden-pics tf-garden-corner"><figure class="tf-garden-dark"><img src="${cornerOriginal}" alt="" /><figcaption>origineel (elements/hoekbegroeiing.png)</figcaption></figure><figure class="tf-garden-dark"><img src="${corner}" alt="" /><figcaption>spelbeeld: bijgesneden, verkleind met premultiplied alpha, zachte schaduw</figcaption></figure></div>
+    <h3 class="btn-title">Op spelgrootte, op het pad</h3><div class="tf-garden-pics tf-garden-corner">${onPath(212, '212 px breed: 390 × 844 en 430 × 932')}${onPath(171, '171 px: 320 × 568')}${onPath(325, '325 px: 768 × 1024 (tablet)')}</div>`,
+    'Het beeld van de eigenaar is het onderdeel: alleen de lege rand eraf, verkleind naar twee keer de grootste getoonde maat (325 px op de tablet), zodat het op een scherm met 2× pixels scherp blijft. Het staat linksonder, klimt langs de rand omhoog tot naast de hintregel en loopt onderlangs achter de actieknoppen. Op de telefoon valt het grootste deel achter de knoppen; als L-vorm past het beter op twee schuin tegenoverliggende hoeken van het bord (de bordrand is een ander onderdeel).');
+
   const propBytes = bytes(GARDEN_PROPS.birdhouse) + bytes(GARDEN_PROPS.flowerArch);
   card(sheet, 'garden-props', 'Tuinthema · vogelhuisje en bloemenboog los', `2 stukken, samen ${kb(propBytes)}`,
     `<div class="tf-decor-pieces tf-garden-pieces"><figure><img src="${GARDEN_PROPS.birdhouse}" alt="" /><figcaption><b>Vogelhuisje</b> (07) · ${kb(bytes(GARDEN_PROPS.birdhouse))}</figcaption></figure><figure><img src="${GARDEN_PROPS.flowerArch}" alt="" /><figcaption><b>Bloemenboog</b> (09) · ${kb(bytes(GARDEN_PROPS.flowerArch))}</figcaption></figure></div>`,

@@ -4,6 +4,7 @@
 // robot theme's bushes (index.html .tf-decor-layer), chosen by place, not by data-art,
 // because the garden gives every place its own picture.
 import branch from './garden-branch.webp';
+import cornerGrowth from './garden-corner-growth.webp';
 import bushWhite from './garden-bush-white.webp';
 import clumpBirdhouse from './garden-clump-birdhouse.webp';
 import rocksLeft from './garden-clump-rocks-left.webp';
@@ -22,12 +23,12 @@ export const GARDEN_DECOR_ART: Readonly<Record<DecorPlace, string>> = {
   'tuft-tr': clumpBirdhouse,
   'back-l': rocksLeft,
   'back-r': rocksRight,
-  'front-l': clumpBirdhouse,
+  'front-l': cornerGrowth,
   'front-r': bushWhite,
 };
 
 /** The decoration pictures by name, for the parts sheet. */
-export const GARDEN_DECOR_PIECES = { branch, bushWhite, clumpBirdhouse, rocksLeft, rocksRight } as const;
+export const GARDEN_DECOR_PIECES = { branch, bushWhite, clumpBirdhouse, cornerGrowth, rocksLeft, rocksRight } as const;
 
 /** The two backdrop props as loose pictures: for a layered backdrop or other screens. */
 export const GARDEN_PROPS = { birdhouse, flowerArch } as const;

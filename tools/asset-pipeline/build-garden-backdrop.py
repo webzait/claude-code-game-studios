@@ -2,7 +2,7 @@
 """Build the garden backdrop, its foreground decor and its two props from the owner's pictures.
 
 Reads  data/themes/garden/backdrop.json (every crop, row and quality used here)
-       design/reference/turnflock/garden/{06,07,09,10}-*.png
+       design/reference/turnflock/garden/{06,07,09,10}-*.png, elements/hoekbegroeiing.png
 Writes src/ui/themes/garden/garden-scene.webp    rows 0..sceneRows of the backdrop, unchanged
        src/ui/themes/garden/garden-paving.webp   three rows of paving stones that repeat downwards
        src/ui/themes/garden/garden-*.webp        decor pieces and props, transparent
@@ -35,16 +35,35 @@ def load(name: str) -> np.ndarray:
     return np.asarray(Image.open(path).convert('RGB')).astype(float)
 
 
+def load_rgba(name: str) -> np.ndarray:
+    path = next(REF.glob(name + '*.png'))
+    return np.asarray(Image.open(path).convert('RGBA')).astype(float)
+
+
 def save_rgb(px: np.ndarray, name: str, quality: int) -> None:
     img = Image.fromarray(np.clip(px, 0, 255).astype(np.uint8), 'RGB')
     img.save(OUT / name, 'WEBP', quality=quality, method=6)
     print(f'{name:34s} {img.size[0]}x{img.size[1]}  {(OUT / name).stat().st_size / 1024:6.1f} kB')
 
 
+def resize_premultiplied(px: np.ndarray, width: int) -> np.ndarray:
+    """Scale RGBA with the colour weighted by its alpha, so transparent pixels never bleed
+    their colour into the edge (no dark or coloured fringe)."""
+    h, w, _ = px.shape
+    size = (width, round(h * width / w))
+    a = np.clip(px[..., 3], 0, 255) / 255
+    def scaled(ch: np.ndarray) -> np.ndarray:
+        return np.asarray(Image.fromarray(ch.astype(np.float32), 'F').resize(size, Image.LANCZOS), float)
+    alpha = np.clip(scaled(a), 0, 1)
+    rgb = np.stack([scaled(px[..., c] * a) for c in range(3)], axis=-1)
+    rgb = np.where(alpha[..., None] > 1 / 255, rgb / np.maximum(alpha, 1e-6)[..., None], 0)
+    return np.dstack([np.clip(rgb, 0, 255), alpha * 255])
+
+
 def save_rgba(px: np.ndarray, name: str, width: int, quality: int) -> None:
-    img = Image.fromarray(np.clip(px, 0, 255).astype(np.uint8), 'RGBA')
-    if img.width > width:
-        img = img.resize((width, round(img.height * width / img.width)), Image.LANCZOS)
+    if px.shape[1] > width:
+        px = resize_premultiplied(px, width)
+    img = Image.fromarray(np.clip(np.round(px), 0, 255).astype(np.uint8), 'RGBA')
     img.save(OUT / name, 'WEBP', quality=quality, alpha_quality=80, method=6)
     print(f'{name:34s} {img.size[0]}x{img.size[1]}  {(OUT / name).stat().st_size / 1024:6.1f} kB')
 
@@ -237,6 +256,12 @@ def pieces() -> None:
     dec = CFG['decor']
     for name, p in dec['pieces'].items():
         x0, y0, x1, y1 = p['box']
+        if p['from'].startswith('elements/'):
+            # Already a transparent picture from the owner: crop, shade the foot, nothing else.
+            rgba = load_rgba(p['from'])[y0:y1, x0:x1]
+            rgba = with_shadow(trim(rgba, 14), blur=8, drop=6, opacity=0.3, squash=0.5, foot_rows=0.3)
+            save_rgba(rgba, name + '.webp', p['width'], dec['quality'])
+            continue
         px = load(p['from'])[y0:y1, x0:x1]
         if p['from'].startswith('10-'):
             rgba = trim(sky_cutout(px), 0)
