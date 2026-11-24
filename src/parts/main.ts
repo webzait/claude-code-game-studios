@@ -22,6 +22,7 @@ import extraMovesIcon from '../../assets/turnflock/ui/extra-moves.webp';
 import { addSettingsCards } from './settings';
 import { addGardenObstacleCards } from './garden-obstacles';
 import { addGardenBoardCards } from './garden-board/index';
+import { addGardenBackdropCards } from './gardenBackdrop';
 
 /**
  * The parts sheet: every game element built on its own and shown from the
@@ -619,6 +620,9 @@ for (const [cols, rows] of [[5, 5], [6, 6], [8, 8], [4, 7]] as const) {
     document.body.dataset.decorReady = 'true';
   });
 }
+
+// Garden theme: backdrop, edge decor and the loose birdhouse and arch (src/parts/gardenBackdrop.ts).
+addGardenBackdropCards(document.getElementById('sheet')!);
 
 // Coin controls: counter, plus button, price tags, reward and the icon at small sizes.
 addCoinCards(document.getElementById('sheet')!);

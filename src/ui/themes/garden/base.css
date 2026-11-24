@@ -1,15 +1,6 @@
-/* Garden theme: the base colours only, the first garden feel the theme foundation gives.
-   Every rule starts with [data-theme="garden"]; the colours come from data/themes/garden/colours.json
-   as --tf-theme-* (design/themes.md). The backdrop session's backdrop.css replaces the sky and lawn
-   below with the real garden; until then the harbour pictures are hidden, since they belong to the
-   robot theme, and a plain sky over a lawn stands in. */
-[data-theme="garden"] .tf-bg {
-  background:
-    radial-gradient(circle at 86% 4%, var(--tf-theme-sun) 0, rgba(255, 244, 184, .55) 9%, rgba(255, 244, 184, 0) 30%),
-    linear-gradient(180deg, var(--tf-theme-sky) 0, var(--tf-theme-skyLow) 26%, var(--tf-theme-haze) 33%,
-      var(--tf-theme-grassLight) 33.5%, var(--tf-theme-grass) 55%, var(--tf-theme-grassDeep) 100%);
-}
-[data-theme="garden"] .tf-bg-scene { display: none; }
+/* Garden theme: the base colours, from data/themes/garden/colours.json as --tf-theme-* (design/themes.md).
+   The backdrop itself is garden-scene.css (backdrop session); what is left here is the plain colour
+   behind the screens when the test lab switches the backdrop off. Every rule starts with [data-theme="garden"]. */
 /* Backdrop switched off in the test lab: the plain colour behind the screens. */
 [data-theme="garden"].no-decor #map.tf-levels-phone,
 [data-theme="garden"].no-decor #settings.tf-set-frame,

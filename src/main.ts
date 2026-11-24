@@ -8,6 +8,7 @@ import './ui/tf-scene.css';
 import './ui/tf-shop.css';
 // After the robot theme's sheets, so a theme's rules win over them (design/themes.md).
 import { applyPageTheme } from './ui/themes';
+import { applyGardenDecor } from './ui/themes/garden/gardenArt';
 import { resolveTheme } from './render/themes';
 import { AudioHub, Sfx, type PlayedSound } from './audio';
 import { movePlan, soundSet } from './sound/sets';
@@ -114,6 +115,24 @@ function storage(): KeyValueStore {
 }
 
 /** Glue between screens, session (logic), board view (3D), solver and save. */
+/**
+ * The decor pictures around the board for a theme: the robot theme's bushes by their `data-art`
+ * name, the garden's own picture per place (design/themes/garden-backdrop.md).
+ */
+function showDecor(theme: ThemeId): void {
+  const layer = document.querySelector('.tf-decor-layer');
+  if (!layer) return;
+  if (theme === 'garden') {
+    applyGardenDecor(layer);
+    return;
+  }
+  const art: Record<string, string> = { 'decor-large': decorLarge, 'decor-small': decorSmall, 'decor-clover': decorClover, 'decor-sprig': decorSprig };
+  for (const img of Array.from(layer.querySelectorAll<HTMLImageElement>('img[data-art]'))) {
+    const src = art[img.dataset.art ?? ''] ?? '';
+    if (img.getAttribute('src') !== src) img.src = src;
+  }
+}
+
 class Game {
   private store = storage();
   private save: SaveData = settled(loadSave(this.store, LEVEL_IDS));
@@ -225,11 +244,7 @@ class Game {
     window.addEventListener('pointerdown', () => this.run?.skip(), true);
     el('toSettings').addEventListener('click', () => this.tap(() => this.show('settings')));
     new ResizeObserver(() => this.view.resize()).observe(document.querySelector('.stage') as HTMLElement);
-    // Kit artwork: images are bundled; the page sets them here so one build works from any folder.
-    for (const img of Array.from(document.querySelectorAll<HTMLImageElement>('img[data-art]'))) {
-      const art: Record<string, string> = { 'decor-large': decorLarge, 'decor-small': decorSmall, 'decor-clover': decorClover, 'decor-sprig': decorSprig };
-      img.src = art[img.dataset.art ?? ''] ?? '';
-    }
+    // Kit artwork: images are bundled; the page sets them in applySettings (per theme) so one build works from any folder.
     this.listenForSound();
     this.applySettings();
     setupLogo(el('map'), CONFIG.logo, { reducedMotion: this.reduced });
@@ -363,6 +378,7 @@ class Game {
     // A theme switch rebuilds the board on show; no reload.
     const theme = resolveTheme(this.save.settings.theme);
     applyPageTheme(theme);
+    showDecor(theme.id);
     this.view.setTheme(theme, this.session.state);
   }
 
