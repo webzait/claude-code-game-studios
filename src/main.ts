@@ -32,6 +32,7 @@ import { MusicController, WebAudioMusic } from './music/player';
 import { LEVELS, TEST_BOARDS, type GameLevel } from './levels/index';
 import { BoardView } from './render/boardView';
 import { loadKit } from './render/kit';
+import { loadChickMaster } from './render/parts/garden/chickMaster';
 import decorLarge from '../assets/turnflock/decor/decor-bush-large.webp';
 import decorSmall from '../assets/turnflock/decor/decor-bush-small.webp';
 import decorClover from '../assets/turnflock/decor/decor-tuft-clover.webp';
@@ -276,6 +277,15 @@ class Game {
         // The built-in shapes stay in use; nothing else depends on the kit.
         this.kitReady = false;
       });
+    // The garden's chicks come from the owner's 3D master model; a level already on show is redrawn with them.
+    loadChickMaster()
+      .then(() => {
+        if (this.screen === 'level' && this.session.commands.length === 0) {
+          this.view.loadLevel(this.level);
+          this.view.resize();
+        }
+      })
+      .catch((error) => console.warn('Chick master model not loaded; the code-built chick stays.', error));
   }
 
   /**
