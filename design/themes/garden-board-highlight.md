@@ -6,6 +6,16 @@ Picture and the script that makes it: `assets/turnflock/garden/board/highlight/`
 Parts page: `src/parts/garden-board/highlight.ts`. Tests: `tests/unit/garden-highlight.test.ts`.
 Evidence: `production/qa/evidence/garden-board/highlight/`.
 
+## Decisions (owner, 2026-11-24: "akkoord naar eigen inzicht")
+
+1. **The hint lights cells, no arrows.** In the garden the cells the chicks will walk to glow,
+   in place of the robot theme's arrows. The rule of the hint is unchanged.
+2. **A blocked chick gets no mark.** No glow, and no bump bar: a chick whose cell does not
+   glow is one that stays put. One kind of mark keeps the hint calm on a full board. If
+   playtests show players miss it, the robot bump bar can come back for the garden.
+3. **The picture is the default.** `glow.style` stays `picture`; the painted glow stays as an
+   option (`'painted'`) and is not used unless asked for.
+
 ## Approach: the owner's picture is the part
 
 The glow is the owner's own picture, cut out and laid on the tile as a texture. A version painted
@@ -70,17 +80,17 @@ on light and dark tiles; the yellow halo is subtle on light tiles and clearer on
 grass bed. On 8×8 the glow is small but still the brightest thing on the board. The pulse (never
 below 0.6) keeps the line visible at its lowest point and adds motion, which is what draws the eye.
 
-## Hint in the garden (proposal)
+## Hint in the garden (decided)
 
 The robot hint (`boardView.showHint`) draws, per robot, an arrow along its way (moved or exited),
 a bump bar (blocked), and quarter arcs for turns.
 
-Proposal for the garden: **the cells the chicks will walk to glow**, instead of arrows.
+The garden hint: **the cells the chicks will walk to glow**, instead of arrows.
 
 - Each chick that moves or exits: its destination cell gets `buildTileGlow()` (`hintGlowCells`
   gives the cells from the engine's preview events, each cell once).
-- A chick that is blocked lights nothing: it stays where it is. (The bump bar could stay; owner's
-  call. Without it, "nothing lights" itself says "this one does not move".)
+- A chick that is blocked lights nothing and gets no other mark: it stays where it is
+  (decision 2 above).
 - Turns: keep the turn arcs for chicks that turn, so a turn without a step is still shown.
 - All glows pulse together (`glowPulse`) from when the hint appears until it is cleared.
 

@@ -125,7 +125,7 @@ export function addHighlightCards(sheet: HTMLElement): void {
     };
   });
 
-  later(sheet, 'garden-hint', 'Hint in de tuin (voorstel)', () => {
+  later(sheet, 'garden-hint', 'Hint in de tuin', () => {
     const lit = hintGlowCells(HINT_CHICKS.map((c) => c.step), 6);
     const hintBoard = (): THREE.Group => {
       const board = gardenBoard(6, 6, lit);
