@@ -13,14 +13,14 @@ function stubs(): { img: { attrs: Record<string, string>; setAttribute(n: string
 }
 
 describe('garden logo', () => {
-  it('the config matches the picture the build script writes (560x300) and the robot logo (768x360)', () => {
-    expect(garden.picture).toEqual({ width: 560, height: 300 });
+  it('the config matches the picture the build script writes (560x299) and the robot logo (768x360)', () => {
+    expect(garden.picture).toEqual({ width: 560, height: 299 });
     expect(garden.robot).toEqual({ width: 768, height: 360 });
   });
   it('grows by the ratio of the two shapes, so at the same width the word is as large as the robot one', () => {
-    expect(logoGrow()).toBeCloseTo(8 / 7, 6);
+    expect(logoGrow()).toBeCloseTo((768 / 360) / (560 / 299), 6);
     const robotHeightAt265 = 265 * 360 / 768;
-    expect(robotHeightAt265 * logoGrow()).toBeCloseTo(265 * 300 / 560, 6);
+    expect(robotHeightAt265 * logoGrow()).toBeCloseTo(265 * 299 / 560, 6);
   });
   it('a shape like the robot logo does not grow; widthVsRobot scales it', () => {
     const same: GardenLogo = { ...garden, picture: { width: 768, height: 360 } };
@@ -28,13 +28,13 @@ describe('garden logo', () => {
     expect(logoGrow({ ...same, widthVsRobot: 1.2 })).toBeCloseTo(1.2, 6);
   });
   it('the style values carry the growth, the width factor and the shadow', () => {
-    expect(gardenLogoVars()).toEqual({ '--tg-logo-grow': '1.1429', '--tg-logo-wide': '1', '--tg-logo-shadow': garden.shadow });
+    expect(gardenLogoVars()).toEqual({ '--tg-logo-grow': '1.1390', '--tg-logo-wide': '1', '--tg-logo-shadow': garden.shadow });
   });
   it('shows the garden picture with its own size, and puts the robot one back', () => {
     const { img, screen } = stubs();
     showGardenLogo(img, screen, garden, 'garden.webp');
-    expect(img.attrs).toEqual({ src: 'garden.webp', width: '560', height: '300' });
-    expect(screen.props['--tg-logo-grow']).toBe('1.1429');
+    expect(img.attrs).toEqual({ src: 'garden.webp', width: '560', height: '299' });
+    expect(screen.props['--tg-logo-grow']).toBe('1.1390');
     showRobotLogo(img, 'logo.webp');
     expect(img.attrs).toEqual({ src: 'logo.webp', width: '768', height: '360' });
   });

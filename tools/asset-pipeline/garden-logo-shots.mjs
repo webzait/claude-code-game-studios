@@ -56,7 +56,6 @@ const cards = [
   ['#garden-logo', 'logo-on-backgrounds.png'],
   ['#garden-logo-screens', 'levels-all-sizes.png'],
   ['#garden-logo-compare', 'compare-robot-logo-and-grid.png'],
-  ['#garden-logo-icons', 'icon-proposals-sheet.png'],
 ];
 for (const [id, file] of cards) await (await page.$(id)).screenshot({ path: resolve(OUT, file) });
 for (const ph of await page.$$('#garden-logo-screens .tf-levels-phone')) {

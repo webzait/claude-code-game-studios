@@ -1,5 +1,5 @@
 {
-  "picture": { "width": 560, "height": 300 },
+  "picture": { "width": 560, "height": 299 },
   "robot": { "width": 768, "height": 360 },
   "widthVsRobot": 1,
   "shadow": "rgba(30, 90, 40, .28)"

@@ -1,12 +1,11 @@
 /* Parts sheet only: the garden logo cards (src/parts/gardenLogo.ts). */
 .tf-garden-logo .tf-levels-pager[hidden] { display: none; }
-.tg-logo-row, .tg-icons { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
-.tg-logo-row figure, .tg-icons figure { margin: 0; text-align: center; font-size: 12px; color: #5b6676; }
+.tg-logo-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
+.tg-logo-row figure { margin: 0; text-align: center; font-size: 12px; color: #5b6676; }
 .tg-logo-bg { width: 300px; padding: 14px; border-radius: 14px; }
 .tg-logo-bg img { display: block; width: 100%; height: auto; }
 .tg-logo-bg.tg-small { width: auto; display: flex; gap: 14px; align-items: flex-end; }
 .tg-check { background: repeating-conic-gradient(#e4e7ec 0 25%, #fff 0 50%) 0 0 / 16px 16px; }
 .tg-sky { background: linear-gradient(180deg, #3f9ff0, #cdeeff); }
 .tg-lawn { background: linear-gradient(180deg, #7fcd45, #5fb534); }
-.tg-touch { display: block; border-radius: 40px; }
-.tg-favs { display: flex; gap: 10px; align-items: flex-end; justify-content: center; margin: 10px 0 4px; }
+

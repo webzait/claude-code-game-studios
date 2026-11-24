@@ -1,11 +1,5 @@
 import indexHtml from '../../index.html?raw';
 import robotLogoUrl from '../../assets/turnflock/brand/logo.webp';
-import robotIcon from '../../assets/turnflock/brand/icon-180.png';
-import robotFavicon from '../../assets/turnflock/brand/favicon-64.png';
-import iconSky from '../../assets/turnflock/garden/logo/proposal-icon-180-sky.png';
-import faviconSky from '../../assets/turnflock/garden/logo/proposal-favicon-64-sky.png';
-import iconLawn from '../../assets/turnflock/garden/logo/proposal-icon-180-lawn.png';
-import faviconLawn from '../../assets/turnflock/garden/logo/proposal-favicon-64-lawn.png';
 import { CoinCounters } from '../ui/coins';
 import { drawTrailIn, renderLevels, type LevelsModel, type MapNode } from '../ui/screens';
 import { improvableLevels } from '../ui/levelPath';
@@ -17,8 +11,8 @@ import './gardenLogo.css';
 
 /**
  * The garden logo on the parts sheet: the picture itself, the garden level screen with it on
- * every phone size (the game's own #map markup and renderLevels, as in gardenLevels.ts), and
- * the proposed garden app icons next to the current ones. Nothing here is wired into the game.
+ * every phone size (the game's own #map markup and renderLevels, as in gardenLevels.ts).
+ * Nothing here is wired into the game.
  */
 
 const TOTAL = 100;
@@ -104,7 +98,7 @@ export function addGardenLogoCards(sheet: HTMLElement): void {
       <figure><div class="tg-logo-bg tg-lawn"><img src="${GARDEN_LOGO_URL}" alt="" width="${width}" height="${height}"></div><figcaption>Op het gras (rand: geen halo)</figcaption></figure>
       <figure><div class="tg-logo-bg tg-sky tg-small"><img src="${GARDEN_LOGO_URL}" alt="" style="width:107px"><img src="${robotLogoUrl}" alt="" style="width:107px"></div><figcaption>Kleinste maat (320×568), naast het robotlogo</figcaption></figure>
     </div>`,
-    `Jouw logo, niet hertekend: alleen de waas en 274 losse puntjes rond de uitsnede weg, de 99%-dekking van het beeld naar 100%, de lege rand eraf en verkleind. Gemaakt met assets/turnflock/garden/logo/build-logo-garden.py. Het logo is overal even breed als het robotlogo, dus het woord is even groot; door de kuikentjes is het ${Math.round((logoGrow() - 1) * 100)}% hoger.`);
+    `Jouw logo, niet hertekend: alleen de waas en 186 losse puntjes rond de uitsnede weg, de 99%-dekking van het beeld naar 100%, de lege rand eraf en verkleind. Gemaakt met assets/turnflock/garden/logo/build-logo-garden.py. Het logo is overal even breed als het robotlogo, dus het woord is even groot; door de kuikentjes is het ${Math.round((logoGrow() - 1) * 100)}% hoger.`);
 
   const screens = card('garden-logo-screens', 'Tuinthema · logo op het levelscherm', '320×568 · 390×844 · 430×932 · 768×1024 · level 17',
     '<div class="tf-levels-row" id="garden-logo-sizes"></div>',
@@ -126,11 +120,6 @@ export function addGardenLogoCards(sheet: HTMLElement): void {
   fig(crow, '390×844 · tuinlogo', { view: 'path', solved: 16, coins: 485 }, 390, 844);
   fig(crow, '390×844 · robotlogo', { view: 'path', solved: 16, coins: 485 }, 390, 844, false);
   fig(crow, '320×568 · sterren verbeteren', { view: 'improve', solved: 37, coins: 885 }, 320, 568);
-
-  const icons: [string, string, string][] = [['Nu (robot)', robotIcon, robotFavicon], ['Voorstel A · rood kuiken op de lucht', iconSky, faviconSky], ['Voorstel B · rood kuiken in de tuin', iconLawn, faviconLawn]];
-  card('garden-logo-icons', 'Tuinthema · voorstel app-pictogram en favicon', 'app-pictogram 180 px · tabblad 64, 32 en 16 px · alleen een voorstel',
-    `<div class="tg-icons">${icons.map(([name, touch, fav]) => `<figure><img class="tg-touch" src="${touch}" alt="" width="180" height="180"><div class="tg-favs"><img src="${fav}" alt="" width="64" height="64"><img src="${fav}" alt="" width="32" height="32"><img src="${fav}" alt="" width="16" height="16"></div><figcaption>${name}</figcaption></figure>`).join('')}</div>`,
-    'Uitsnede van het rode kuiken met de gouden ring, net boven de letters, zoals het robotpictogram de robot laat zien. De bestaande pictogrammen blijven staan; kies A, B of geen van beide.');
 
   window.addEventListener('load', redrawTrails);
   void document.fonts?.ready.then(redrawTrails);
