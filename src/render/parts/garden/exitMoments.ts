@@ -4,13 +4,17 @@
  *
  * The pad has three looks, after the owner's sheet `22-sheet-exit-pad-states`:
  * `grey` (a plain stone pad), `green` (the lit pad) and `rays` (the lit pad with
- * yellow rays above it). Which look belongs to which moment of play is data
+ * yellow rays above it), and since the owner's corrected pictures `portal` (a beam of light). Which look belongs to which moment of play is data
  * (`moments` in data/themes/garden/exit.json), so it can be changed without
  * touching code. Design: design/themes/garden-exit.md.
  */
 
-/** The three looks of the pad on the owner's sheet. */
-export type ExitLook = 'grey' | 'green' | 'rays';
+/**
+ * The looks of the pad: the three of the owner's sheet, plus `portal` (the owner's corrected
+ * pictures, 2026-11-24: the stone frame with a green ring and a beam of light rising from it,
+ * no tick). The modelled pad (exit.ts) has no portal of its own and shows it as `green`.
+ */
+export type ExitLook = 'grey' | 'green' | 'rays' | 'portal';
 
 /**
  * The moments of play an exit can be in.

@@ -192,7 +192,7 @@ function note(el: HTMLElement, html: string): void {
   el.insertAdjacentHTML('beforeend', `<p class="note">${html}</p>`);
 }
 
-const LOOK_NAMES: Record<ExitLook, string> = { grey: 'Grijs', green: 'Groen', rays: 'Groen met stralen' };
+const LOOK_NAMES: Record<ExitLook, string> = { grey: 'Grijs', green: 'Groen', rays: 'Groen met stralen', portal: 'Portaal (nagebouwd: als groen)' };
 const MOMENT_NAMES: Record<ExitMoment, string> = {
   waiting: 'Wachten: er moeten nog kuikens door deze uitgang',
   entered: `Net binnen: een kuiken ging zojuist door deze uitgang (${garden.exit.flashSeconds} s)`,

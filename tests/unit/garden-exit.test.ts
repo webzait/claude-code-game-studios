@@ -20,11 +20,11 @@ describe('garden exit: which look at which moment', () => {
     expect(exitLook(situation({}), EXIT_MOMENT_LOOKS)).toBe('green');
   });
 
-  it('exit_shows_rays_just_after_a_chick_went_in', () => {
+  it('exit_shows_the_portal_just_after_a_chick_went_in', () => {
     expect(exitMoment(situation({ sinceEntry: 0 }))).toBe('entered');
     expect(exitMoment(situation({ sinceEntry: FLASH * 0.99 }))).toBe('entered');
     expect(exitMoment(situation({ sinceEntry: FLASH }))).toBe('waiting');
-    expect(exitLook(situation({ sinceEntry: 0 }), EXIT_MOMENT_LOOKS)).toBe('rays');
+    expect(exitLook(situation({ sinceEntry: 0 }), EXIT_MOMENT_LOOKS)).toBe('portal');
   });
 
   it('exit_keeps_rays_when_every_chick_is_in', () => {
@@ -165,6 +165,13 @@ describe('garden picture parts (the standard version) keep the robot contract', 
     pic.setExitLook(pad, 'rays');
     expect(spriteOf(pad.userData.check)).toBe('exit-rays');
     expect((pad.userData.glow as THREE.Object3D).visible).toBe(true);
+    pic.setExitLook(pad, 'portal');
+    expect(spriteOf(pad.userData.check)).toBe('exit-portal');
+  });
+
+  it('picture colour exit keeps its own colour in the portal moment', () => {
+    const pad = pic.buildExit('red', 'portal');
+    expect(spriteOf(pad.userData.check)).toBe('exit-red');
   });
 
   it('picture colour exit carries its retoned pad and a hidden shape version', () => {
@@ -184,7 +191,7 @@ describe('garden picture parts (the standard version) keep the robot contract', 
   });
 
   it('picture quads stay above the grass', () => {
-    for (const part of [pic.buildExit(undefined, 'rays'), pic.buildTurnTile(false, false), pic.buildPlate(false, false)]) {
+    for (const part of [pic.buildExit(undefined, 'rays'), pic.buildExit(undefined, 'portal'), pic.buildTurnTile(false, false), pic.buildPlate(false, false)]) {
       part.updateMatrixWorld(true);
       let lowest = Infinity;
       part.traverse((n) => {

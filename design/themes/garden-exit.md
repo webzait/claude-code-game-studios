@@ -96,7 +96,7 @@ Three looks, as on the sheet:
 | Moment (`exitMoment`) | When | Look |
 |---|---|---|
 | `waiting` | chicks this exit takes are still out | green |
-| `entered` | a chick went in through this exit less than `flashSeconds` (0.9 s) ago | rays |
+| `entered` | a chick went in through this exit less than `flashSeconds` (0.9 s) ago | portal (picture version; proposal 2026-11-24, was rays) |
 | `complete` | every chick is in — level won | rays (stays) |
 | `spent` | this exit takes no one any more (colour exit whose chicks are all in), others still out | grey |
 
@@ -234,3 +234,58 @@ All derived pads line up exactly with the green pad (same size and anchor). The 
 drawn slightly flatter than the green; at the owner's request ("trek recht als dat mooier is") it is stretched vertically by ~7 % (`LEVEL_GREY` in exit_pads.py) so its base lines up with the green and rays pads when the look changes (evidence: `elements/grey-levelled.png`).
 The other elements (portals, stars, cloud) went to the effects session; gem, heart, star coin and the
 corner growth are listed for the lead session.
+
+## The owner's corrected exit pads (2026-11-24, exit-pads-v2)
+
+The owner corrected the exit pad ("Ik heb een fout gemaakt bij het aanleveren. De eindtegel moet
+worden bijgewerkt."): `design/reference/turnflock/garden/exit-pads-v2/` (README there). The pad is
+now a square stone tile seen nearly from above, in four pictures; the round checkpoint pictures in
+`elements/` are superseded. Every pad-based part is rebuilt from these.
+
+**Cutting** (`checkpoints.py`). The pictures are 1254x1254 on white, not transparent:
+- the body (stone tile, the rays' solid cores) is everything inside a sharp outline: the white is
+  flood-filled from the border through every pixel that is not on a colour step (Sobel > 8 per
+  px); shadow and light are smooth and let the flood through, the stone's outline stops it. The
+  body is opened with a 25 px disc so the thin beam above the portal is light, not body. Opaque.
+- outside the body, colour-to-alpha against the white: the glow round the rays and the beam stay
+  half-transparent light. The painted soft shadow is dropped (owner, 2026-11-24: "geen schaduw",
+  like the tile it replaces): after un-mixing, the shadow has a near-black colour and light a bright
+  one, so only pixels whose brightest channel is above 60 (fully from 180) are kept. The white core of the portal's beam cannot be told from the white
+  background; gaps up to 21 px across in the light are closed with the light either side.
+- the 2 px band round the outline is un-mixed between the body colour just inside and the outside
+  layer just outside: no white or grey rim on dark or on grass (#8BCB4F); checked in
+  `production/qa/evidence/garden-exit/elements/exit-pads-v2-cut.png`.
+
+**Size and lining up** (`exit_pads.py`). Each look is scaled so its stone tile is 320 px wide (one
+cell, twice the largest phone cell at 3x), then stretched vertically to the green tile's height
+(grey +3 %, portal +6 %, rays +9 %: the owner drew them in slightly different perspective), as the
+owner chose for the first pads. The anchor is the green face's centre as a fraction of the tile
+box, used for all four, so the stone does not move when the look changes (all four within 1 px).
+
+| Picture | px | kB | Made from |
+|---|---|---|---|
+| `exit-grey` | 326×323 | 8.3 | checkpoint-inactief |
+| `exit-green` | 325×322 | 10.2 | checkpoint-actief |
+| `exit-rays` | 326×462 | 23.5 | checkpoint-opgelicht |
+| `exit-portal` | 325×369 | 14.2 | checkpoint-portaal (new look) |
+| `exit-red`, `-blue`, `-yellow` | 325×322 | 9.5–11.0 | green tile, same steps as before (`colour_exits.py`) |
+| `exit-shape-red`, `-blue`, `-yellow` | 325×322 | 9.2–10.5 | as above, shape for the tick |
+| `turn` | 325×322 | 9.1 | green tile, cream, the owner's turn arrow |
+| `plate` | 325×322 | 9.3 | green tile, lavender, raised button |
+
+All exit pictures together (with gate and gazebos, unchanged): 316 kB. The owner approved the portal
+for `entered` and the levelling (2026-11-24).
+
+**Portal: a fourth look.** `ExitLook` is now `grey | green | rays | portal`. Proposal: `entered`
+(a chick has just gone in, 0.9 s) shows the portal; `complete` keeps the rays (celebrating). It is one
+edit in `moments` (data/themes/garden/exit.json) to put it elsewhere. A colour exit has no portal
+or rays in its own colour and keeps its colour at those moments. The modelled alternative has no
+portal and shows it as green.
+
+**What still differs.**
+- The derived parts (colour exits, turn tile, plate) are new combinations of the owner's green
+  tile, not pictures the owner made; the yellow exit's dark amber tick is 2.9:1 on the face.
+- The four originals are not drawn identically (stone shapes and chips differ a little); after
+  levelling the outline lines up but the stones inside can shift slightly when the look changes.
+- The colour-to-alpha light is the least light that gives the picture over white: over dark it is
+  a little dimmer than an additive glow would be.

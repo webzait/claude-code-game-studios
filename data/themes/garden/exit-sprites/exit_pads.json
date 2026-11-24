@@ -3,26 +3,34 @@
   "sprites": {
     "exit-grey": {
       "width": 1.0188,
-      "height": 0.7031,
+      "height": 1.0094,
       "anchor": [
-        0.4981,
-        0.3907
+        0.4968,
+        0.4123
       ]
     },
     "exit-green": {
-      "width": 1.0219,
-      "height": 0.6719,
+      "width": 1.0156,
+      "height": 1.0063,
       "anchor": [
-        0.4983,
-        0.3599
+        0.4968,
+        0.4121
       ]
     },
     "exit-rays": {
-      "width": 1.025,
-      "height": 0.9938,
+      "width": 1.0188,
+      "height": 1.4438,
       "anchor": [
-        0.4986,
-        0.5717
+        0.4968,
+        0.5892
+      ]
+    },
+    "exit-portal": {
+      "width": 1.0156,
+      "height": 1.1531,
+      "anchor": [
+        0.4968,
+        0.4866
       ]
     }
   }

@@ -117,6 +117,7 @@ function clearance(name: SpriteName, height: number): number {
 function exitSpriteName(look: ExitLook, color?: Color): SpriteName {
   if (look === 'grey') return 'exit-grey';
   if (look === 'rays') return 'exit-rays';
+  if (look === 'portal') return 'exit-portal';
   return color ? (`exit-${color}` as SpriteName) : 'exit-green';
 }
 
@@ -133,7 +134,7 @@ function glowMap(color?: Color): THREE.Texture {
 }
 
 /**
- * The exit: the owner's painted stone pad on a grass tile, in one of its three looks. `color`
+ * The exit: the owner's painted stone pad on a grass tile, in one of its four looks. `color`
  * makes it an exit for one chick colour (the green pad retoned). `userData.check` is the pad picture,
  * `userData.shape` (colour exits) the same pad with the colour's shape for the tick, hidden;
  * `userData.glow` a soft patch of light on the grass to pulse as the robot glow is. The rays
@@ -159,14 +160,15 @@ export function buildExit(color?: Color, look: ExitLook = EXIT_MOMENT_LOOKS.wait
   return pad;
 }
 
-/** Put a picture exit into one of its three looks. */
+/** Put a picture exit into one of its four looks (grey, green, rays, portal). */
 export function setExitLook(pad: THREE.Group, look: ExitLook): void {
   const color = pad.userData.color as Color | undefined;
   for (const key of ['check', 'shape'] as const) {
     const old = pad.userData[key] as THREE.Object3D | undefined;
     if (old) pad.remove(old);
   }
-  const name = color && look === 'rays' ? exitSpriteName('green', color) : exitSpriteName(look, color);
+  // Rays and portal exist only in the owner's green: a colour exit keeps its own colour then.
+  const name = color && (look === 'rays' || look === 'portal') ? exitSpriteName('green', color) : exitSpriteName(look, color);
   const main = sprite(name, clearance(name, TOP + FACE));
   main.position.y += TOP + FACE;
   pad.add(main);
