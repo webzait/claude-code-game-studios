@@ -1,0 +1,20 @@
+{
+  "$comment": "Garden theme board. Sizes in cells (1 cell = 56 px on the asset sheet), the same units as data/parts.json. Overview: design/themes/garden-board.md. Glowing tile and the hint glow. Reference: 12-sheet-tile-highlight. Owner: the glowing tile session.",
+  "glow": {
+    "reach": 0.16,
+    "line": 0.035,
+    "inner": 0.1,
+    "lift": 0.012,
+    "brighten": 0.18,
+    "pulse": {
+      "seconds": 1.1,
+      "low": 0.55,
+      "high": 1.0
+    }
+  },
+  "colors": {
+    "glow": "#E9FF5C",
+    "glowCore": "#FFFFE0",
+    "highlightTop": "#C6F03E"
+  }
+}
