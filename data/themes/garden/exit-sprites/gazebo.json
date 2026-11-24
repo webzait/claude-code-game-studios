@@ -3,10 +3,10 @@
   "sprites": {
     "gazebo": {
       "width": 3.0,
-      "height": 3.3703,
+      "height": 3.3401,
       "anchor": [
         0.5,
-        0.93
+        0.9741
       ]
     },
     "gazebo-goal": {
@@ -14,7 +14,15 @@
       "height": 2.4735,
       "anchor": [
         0.5,
-        0.93
+        0.9859
+      ]
+    },
+    "gazebo-goal-small-original": {
+      "width": 3.6,
+      "height": 2.4735,
+      "anchor": [
+        0.5,
+        0.9859
       ]
     }
   }

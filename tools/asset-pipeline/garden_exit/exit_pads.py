@@ -154,8 +154,11 @@ def pad(look: str, factor: float = FACTOR) -> tuple[np.ndarray, tuple[float, flo
     solid_big = _draw([hull] + rays, size, factor)
 
     # The owner's colour inside the shapes, bled outward from pixels well inside, enlarged.
+    # Colour is taken only more than 2.5 sheet px in from the pad's painted edge: the edge pixels
+    # are mixed with the sheet's white and its drop shadow. Further in it is the painting as is.
     solid = _draw([hull] + rays, (w, h), 1.0) > 0.5
-    core = ndimage.distance_transform_edt(solid) > 1.5
+    painted = ndimage.binary_fill_holes(cut[..., 3] > 115)
+    core = solid & (ndimage.distance_transform_edt(painted) > 2.5)
     _, (iy, ix) = ndimage.distance_transform_edt(~core, return_indices=True)
     colour = np.where(core[..., None], rgb, rgb[iy, ix])
     big = enlarge(np.dstack([colour, np.full((h, w), 255.0)]), factor)
@@ -168,7 +171,8 @@ def pad(look: str, factor: float = FACTOR) -> tuple[np.ndarray, tuple[float, flo
         pre = np.dstack([cut[..., :3] * a, cut[..., 3:4]]).astype(np.float32)
         g = cv2.resize(pre, size, interpolation=cv2.INTER_CUBIC)
         rows = (np.arange(size[1])[:, None] + 0.5) / factor
-        g = g * np.clip(rim_top[1] - rows, 0, 1)[..., None]
+        # Glow only above the top of the rim (it fades out over 2 sheet px there).
+        g = g * np.clip((rim_top[1] - rim_top[3] + 2 - rows) / 2, 0, 1)[..., None]
         ga = np.clip(g[..., 3], 0, 255) / 255
         grgb = np.clip(g[..., :3] / np.maximum(ga[..., None] * 255, 1e-3) * 255, 0, 255)
         sa = solid_big[..., None]
