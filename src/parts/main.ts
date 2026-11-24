@@ -25,6 +25,7 @@ import { addGardenBoardCards } from './garden-board/index';
 import { addGardenBackdropCards } from './gardenBackdrop';
 import { addGardenLevelCards } from './gardenLevels';
 import { addGardenEffectCards } from './gardenEffects';
+import { addGardenExitCards } from './garden-exit';
 
 /**
  * The parts sheet: every game element built on its own and shown from the
@@ -1057,5 +1058,8 @@ addGardenLevelCards(document.getElementById('sheet')!);
 
 // Garden theme: the board effects (src/parts/gardenEffects.ts).
 addGardenEffectCards(document.getElementById('sheet')!);
+
+// Garden theme: exit, gazebo goal and special tiles (src/parts/garden-exit.ts).
+void addGardenExitCards(document.getElementById('sheet')!);
 
 document.body.dataset.ready = 'true';

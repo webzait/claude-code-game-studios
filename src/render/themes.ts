@@ -137,17 +137,37 @@ export interface ThemeSources {
 const NONE: ThemeSources = { exports: {}, styles: [], data: {} };
 
 const fileName = (path: string): string => path.slice(path.lastIndexOf('/') + 1);
-/** Exports of every module, merged; a later file wins a name clash. */
-function mergeExports(modules: Record<string, unknown>): Record<string, unknown> {
+/**
+ * Exports of every module, merged. Where two files export the same name, `register.ts` decides:
+ * its exports are laid over all others. Names two or more other files export differently are listed, so a
+ * test can insist that `register.ts` settles each of them (`exportClashes`).
+ */
+export function mergeExports(modules: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
-  for (const mod of Object.values(modules)) if (mod && typeof mod === 'object') Object.assign(out, mod);
+  const isRegister = (path: string): boolean => fileName(path) === 'register.ts';
+  const entries = Object.entries(modules).sort(([a], [b]) => Number(isRegister(a)) - Number(isRegister(b)));
+  for (const [, mod] of entries) if (mod && typeof mod === 'object') Object.assign(out, mod);
   return out;
 }
+
+/** Names that files other than `register.ts` export with different values (a re-export of the same function is no clash). */
+export function exportClashes(modules: Record<string, unknown>): string[] {
+  const seen = new Map<string, Set<unknown>>();
+  for (const [path, mod] of Object.entries(modules)) {
+    if (fileName(path) === 'register.ts' || !mod || typeof mod !== 'object') continue;
+    for (const [name, value] of Object.entries(mod)) seen.set(name, (seen.get(name) ?? new Set()).add(value));
+  }
+  return [...seen].filter(([, values]) => values.size > 1).map(([name]) => name).sort();
+}
+
 const byFileName = (modules: Record<string, unknown>): Record<string, unknown> => Object.fromEntries(Object.entries(modules).map(([path, value]) => [fileName(path), value]));
 
 /** The garden theme's folders, read at build time. An empty folder simply means: nothing of its own yet. */
+/** The garden's 3D part files, by path. */
+export const GARDEN_MODULES: Record<string, unknown> = import.meta.glob('./parts/garden/*.ts', { eager: true });
+
 const GARDEN: ThemeSources = {
-  exports: mergeExports(import.meta.glob('./parts/garden/*.ts', { eager: true })),
+  exports: mergeExports(GARDEN_MODULES),
   styles: Object.keys(import.meta.glob('../ui/themes/garden/*.css')).map(fileName),
   data: byFileName(import.meta.glob('../../data/themes/garden/*.json', { eager: true, import: 'default' })),
 };

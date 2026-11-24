@@ -35,16 +35,16 @@ to update when a part is added:
 |---|---|---|---|
 | `robot` — flock member (robot / chick) | 3D | `buildPartsRobot`, `buildRobot` | `src/render/robot.ts` |
 | `floorTile` — floor tile | 3D | `buildFloorTile` | `src/render/parts/board.ts` |
-| `rim` — rim | 3D | `buildRim` | `src/render/parts/board.ts` |
-| `underlay` — base plate under the board | 3D | `buildUnderlay` | `src/render/parts/board.ts` |
-| `obstacle` — obstacle | 3D | `buildObstacle` | `src/render/parts/board.ts` |
+| `rim` — rim | 3D | `buildRim`, `boardFootprint` (the camera frames on its outside) | `src/render/parts/board.ts` |
+| `underlay` — base plate under the board | 3D | `buildUnderlay`, `underlayLip` (negative: under the rim) | `src/render/parts/board.ts` |
+| `obstacle` — obstacle | 3D | `buildObstacle`, `obstaclesFor(level)` (a different obstacle per cell) | `src/render/parts/board.ts` |
 | `exit` — exit | 3D | `buildExit` | `src/render/parts/board.ts` |
 | `turnTile` — turn tile | 3D | `buildTurnTile` | `src/render/parts/board.ts` |
 | `plate` — pressure plate | 3D | `buildPlate` | `src/render/parts/board.ts` |
 | `gate` — gate | 3D | `buildGate`, `gateDoorScale` | `src/render/parts/board.ts` |
-| `backdrop` — background | 2D | `src/ui/themes/garden/backdrop.css` | `src/ui/tf-scene.css` |
-| `decor` — foreground decor | 2D | `src/ui/themes/garden/decor.css` | `.tf-decor-*` in `src/ui/style.css` |
-| `levelScreen` — level screen (the path) | 2D | `src/ui/themes/garden/level-screen.css` | `src/ui/tf-levels.css` |
+| `backdrop` — background | 2D | `src/ui/themes/garden/garden-scene.css` (or `backdrop.css`) | `src/ui/tf-scene.css` |
+| `decor` — foreground decor | 2D | `garden-scene.css` + `applyGardenDecor` (a picture per place) | `.tf-decor-*` in `src/ui/style.css` |
+| `levelScreen` — level screen (the path) | 2D | `src/ui/themes/garden/tf-levels-garden.css` + `gardenPathModel()` | `src/ui/tf-levels.css` |
 | `colours` — base colours | data | `data/themes/garden/colours.json` | — |
 | `light` — light on the board | data | `data/themes/garden/light.json` | `light` in `data/config.json` |
 | `sounds` — button and move sounds | data | `data/themes/garden/sounds.json`: `{ "set": "<id>" }`, a set in `data/sound-sets.json` | the set chosen in the test lab |
@@ -62,11 +62,16 @@ in the test lab (owner, 2026-11-24).
 `slotStatus()` in the register tells, per slot, whether a theme supplies it (`own`)
 or shows the robot part (`robot`); `tests/unit/theme.test.ts` checks the fallback.
 
-**Effects** (win celebration, sparkles) are not a slot yet: the robot effects live in
-`src/render/celebration.ts` and in `BoardView`, and are not split into build
-functions. The effects session delivers its pictures in
-`assets/turnflock/garden/effects/` and its code in `src/render/parts/garden/`; the
-theme session wires them into the register when it merges that branch.
+**Two versions of a part.** A theme folder may hold alternatives (the garden keeps modelled
+versions next to the picture versions). When two files export the same register name with
+different functions, `src/render/parts/<theme>/register.ts` decides: its exports win. A unit test
+(`tests/unit/theme.test.ts`) fails while such a clash is not settled there. The garden's
+`register.ts` picks the grass tile from the owner's picture and the picture exit, turn tile,
+plate and gate, and keeps their flat pictures out of the fused board.
+
+**Effects.** The garden celebration is a choice in the test lab (Win celebration → Garden stars),
+next to the existing ones in every theme. Beam and cloud during play are not wired yet.
+
 
 ## The contract, for a part session
 

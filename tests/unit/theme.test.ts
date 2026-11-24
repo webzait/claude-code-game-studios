@@ -5,7 +5,7 @@ import { CONFIG } from '../../src/config';
 import { DEFAULT_THEME, isThemeId, THEME_IDS } from '../../src/game/theme';
 import { defaultSave, loadSave, migrate, SAVE_VERSION, writeSave, type KeyValueStore } from '../../src/game/save';
 import { LEVELS } from '../../src/levels/index';
-import { resolveBuilders, resolveColours, resolveLight, resolveSoundSet, resolveTheme, ROBOT_BUILDERS, ROBOT_LIGHT, slotStatus, THEME_SLOTS, themeSources, type ThemeSources } from '../../src/render/themes';
+import { exportClashes, GARDEN_MODULES, mergeExports, resolveBuilders, resolveColours, resolveLight, resolveSoundSet, resolveTheme, ROBOT_BUILDERS, ROBOT_LIGHT, slotStatus, THEME_SLOTS, themeSources, type ThemeSources } from '../../src/render/themes';
 
 const ids = LEVELS.map((l) => l.id);
 const memory = (): KeyValueStore => {
@@ -92,6 +92,31 @@ describe('theme register', () => {
     const status = slotStatus(themeSources('garden'));
     expect(status.light).toBe('own');
     expect(status.colours).toBe('own');
+  });
+});
+
+describe('two versions of a part', () => {
+  it('register.ts decides a name two files export, whatever the file order', () => {
+    const a = (): number => 1;
+    const b = (): number => 2;
+    const chosen = (): number => 3;
+    expect(mergeExports({ './z.ts': { buildExit: a }, './register.ts': { buildExit: chosen }, './a.ts': { buildExit: b } }).buildExit).toBe(chosen);
+    expect(exportClashes({ './z.ts': { buildExit: a }, './a.ts': { buildExit: b, other: a } })).toEqual(['buildExit']);
+  });
+
+  it('every register name the garden folder exports twice is settled in its register.ts', () => {
+    const settled = Object.keys((GARDEN_MODULES['./parts/garden/register.ts'] ?? {}) as object);
+    const registerNames = Object.keys(ROBOT_BUILDERS);
+    for (const name of exportClashes(GARDEN_MODULES).filter((n) => registerNames.includes(n))) expect(settled, name).toContain(name);
+  });
+
+  it('the garden board uses the grass tile and the picture exit, not the stand-ins', async () => {
+    const garden = resolveTheme('garden');
+    const grass = await import('../../src/render/parts/garden/grass');
+    const pictures = await import('../../src/render/parts/garden/exitPictures');
+    expect(garden.builders.buildFloorTile).toBe(grass.buildFloorTile);
+    expect(garden.builders.buildExit).toBe(pictures.buildExit);
+    expect(garden.builders.gateDoorScale).toBe(pictures.gateDoorScale);
   });
 });
 
