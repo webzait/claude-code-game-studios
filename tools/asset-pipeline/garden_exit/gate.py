@@ -15,10 +15,14 @@ from __future__ import annotations
 
 import numpy as np
 
-from lib import LAVENDER, cut_out, load, retone, upscale, write_part
+from scipy import ndimage
+
+from lib import cut_out, load, retone, upscale, write_part
 
 WIDTH_CELLS = 0.84
 OUT_WIDTH = 300
+# Lavender of the plate face (plate.py FACE), so plate and gate are one colour.
+FACE = "#A77DF2"
 
 # Measured in 08-gazebo.png (source px; edges are where the colour changes, half-pixel accurate).
 TOP, BOTTOM = 801, 913          # rows taken: top of the columns' bands .. just below the plinths
@@ -28,7 +32,7 @@ RAIL_FOOT = 907.3               # bottom of the lower rail (floor below)
 # Mirror axes (half-pixel): left post uses the pixels right of 528.5, right post those left of
 # 729.5; nearer the columns' centres the vine leaves cast a dark line on the right column.
 AXES = (528.5, 729.5)
-BAND_HALF, PLINTH_HALF = 24.0, 33.0     # inner band edge 552.5 / 705.5, plinth edge 561.5 / 696.5
+BAND_HALF, PLINTH_HALF = 23.5, 32.5     # inner band edge 552.5 / 705.5, plinth edge 561.5 / 696.5
 CAP_OVERLAP = 4                 # the cap (a copy of the plinth) covers the cut top of the band
 CORNER = 3.5                    # rounding of the plinth's corners and the band's top corners
 CUT = (636, 686)                # removed: mid-gap .. mid-gap, the second full baluster
@@ -75,6 +79,17 @@ def _strip() -> tuple[np.ndarray, float, float]:
     return rgb, cl, cr
 
 
+def _bleed(rgba: np.ndarray, reach: float = 3.0) -> np.ndarray:
+    """Edge pixels (not fully opaque) take the colour of the nearest solid pixel inside, so no sky
+    light or neighbouring wood shows as a halo along the outline; their alpha stays as keyed."""
+    solid = ndimage.binary_erosion(rgba[..., 3] > 250, iterations=1)
+    dist, (iy, ix) = ndimage.distance_transform_edt(~solid, return_indices=True)
+    out = rgba.copy()
+    edge = (~solid) & (dist <= reach)
+    out[..., :3][edge] = rgba[..., :3][iy[edge], ix[edge]]
+    return out
+
+
 def _capped(rgba: np.ndarray, posts: np.ndarray) -> np.ndarray:
     """Put a copy of each post's plinth on top of it as a cap: the band's top is a cut through the
     column, the cap closes it so each post reads as a gate pillar."""
@@ -106,7 +121,8 @@ def run() -> None:
     rgba[..., 3] = np.minimum(rgba[..., 3], shape * 255)
     rgba = _capped(rgba, posts)
     h = rgba.shape[0]
-    rgba = retone(rgba, np.clip(rgba[..., 3] / 255, 0, 1) * 0.95, LAVENDER, keep_light=1.0)
+    rgba = _bleed(rgba)
+    rgba = retone(rgba, np.clip(rgba[..., 3] / 255, 0, 1) * 0.95, FACE, keep_light=1.0)
     # Enlarge to the target width (crisp edges: premultiplied Lanczos + mild unsharp).
     factor = OUT_WIDTH / w
     big = upscale(rgba, factor, sharpen=0.6, radius=1.6)
