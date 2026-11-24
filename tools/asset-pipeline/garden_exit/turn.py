@@ -1,4 +1,4 @@
-"""Turn tile: the owner's high-resolution green pad (checkpoint-actief) retoned cream, the tick
+"""Turn tile: the owner's green pad (corrected checkpoint-actief, exit-pads-v2) retoned cream, the tick
 painted out, and the clockwise arrow of the owner's turn button (18-sheet-action-buttons) in leaf
 green in its place.
 

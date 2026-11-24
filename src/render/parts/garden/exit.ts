@@ -270,7 +270,8 @@ export function buildExit(color?: Color, look: ExitLook = EXIT_MOMENT_LOOKS.wait
 export function setExitLook(pad: THREE.Group, look: ExitLook): void {
   const color = pad.userData.color as Color | undefined;
   const lit = look !== 'grey';
-  const m = materialsFor(look, color);
+  // No modelled portal: it is shown as the lit pad.
+  const m = materialsFor(look === 'portal' ? 'green' : look, color);
   const cap = pad.getObjectByName('exit-cap') as THREE.Mesh;
   const face = pad.getObjectByName('exit-face') as THREE.Mesh;
   cap.geometry = lit ? once(`garden-exit-cap-lit-${color ?? 'all'}`, () => capGeometry(true, color)) : once('garden-exit-cap', () => capGeometry(false));

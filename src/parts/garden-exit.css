@@ -25,3 +25,9 @@
   background-size: 16px 16px; background-position: 0 0, 0 8px, 8px -8px, -8px 0; }
 .garden-exit .ge-row.two img.ge-cutout { width: auto; }
 .garden-exit .ge-row.game img { border-radius: 0; }
+/* The same cut-out on dark and on the grass colour, to check the edge for a white or grey halo. */
+.garden-exit img.ge-cutout.on-dark { background: #141820; }
+.garden-exit img.ge-cutout.on-grass { background: #8BCB4F; }
+.garden-exit .ge-look { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; align-items: end; margin: 8px 0 14px; }
+.garden-exit .ge-look img { width: 100%; }
+@media (max-width: 700px) { .garden-exit .ge-look { grid-template-columns: 1fr 1fr; } }

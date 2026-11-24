@@ -82,9 +82,9 @@
     }
   },
   "moments": {
-    "_about": "Which look the pad wears at each moment of play. waiting: chicks this exit takes are still out. entered: a chick has just gone in (for flashSeconds). complete: every chick is in, the level is won. spent: this exit takes no one any more (a colour exit whose chicks are all in) while others are still out.",
+    "_about": "Which look the pad wears at each moment of play. waiting: chicks this exit takes are still out. entered: a chick has just gone in (for flashSeconds). complete: every chick is in, the level is won. spent: this exit takes no one any more (a colour exit whose chicks are all in) while others are still out. Looks: grey, green, rays, portal (portal: the owner's beam picture; proposal 2026-11-24 for 'entered', the moment a chick goes in).",
     "waiting": "green",
-    "entered": "rays",
+    "entered": "portal",
     "complete": "rays",
     "spent": "grey"
   },

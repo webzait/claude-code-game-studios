@@ -1,4 +1,4 @@
-"""Pressure plate: the owner's high-resolution green exit pad (checkpoint-actief) with the tick painted
+"""Pressure plate: the owner's green exit pad (corrected checkpoint-actief, exit-pads-v2) with the tick painted
 out, the face and the joint glow retoned lavender (shared with the gate), and a raised round lavender
 button on the face so it reads as something to stand on and press, not as an exit.
 
