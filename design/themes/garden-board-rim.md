@@ -109,3 +109,12 @@ picture's round corners or its thin far side. `bedTone` 1.2 brightens it against
   and lists `bark` in `gardenBoardMaterials` (the code braid's); adding `rim: rimMaterial` there would
   help the theme session. `garden-board.md`'s cost table and "How it is made" still describe the code
   braid; this file supersedes them for the rim, underlay and board.
+
+## Owner's decisions (2026-11-24)
+
+- **Rim as it is now: accepted.** The joins between pieces are good enough; no further refinement.
+- **Grass bed between the tiles: open.** With one tile colour for every cell the bed separates the
+  cells; the owner does not know yet whether it needs a sharper or lighter bed or a picture of its
+  own. Leave it as it is.
+- **Thicker rim on large boards (8×8): not now, ask again later.** It would change the board's
+  footprint. Ask the owner again when the theme goes into the game.
