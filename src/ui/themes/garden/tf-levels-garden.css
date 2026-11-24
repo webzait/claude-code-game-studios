@@ -5,38 +5,17 @@
    end of each garden of 20 levels. Values: data/themes/garden/levels.json (put on the screen by
    applyGardenLevels); the fallbacks below are the same values. Design: design/themes/garden-levels.md. */
 
-/* ---- The screen: a sunny sky over a lawn, a hedge on the horizon. A full backdrop picture, when there is
-   one, comes in through --tg-backdrop (an image layer above these colours). ---- */
+/* ---- The screen: the owner's level-path backdrop (25-backdrop-level-path): sky, fence and hedge on the
+   horizon, a calm lawn in the middle for the path, flowers at the edges. It covers the screen, anchored a
+   little above the middle so the horizon stays under the header on phones and tablets alike. Underneath,
+   the same sky and lawn in plain colours, for the moment before the picture is decoded. Another picture
+   can take its place through --tg-backdrop (a full background value, e.g. url(...)). ---- */
 [data-theme="garden"] .tf-levels-phone {
   color: var(--tg-ink, #2f4a1e);
   background:
-    var(--tg-backdrop, none) center / cover no-repeat,
-    /* sun, top right */
-    radial-gradient(150px 150px at 92% 3%, rgba(255, 252, 214, .95) 0, rgba(255, 246, 190, .45) 32%, rgba(255, 246, 190, 0) 72%),
-    /* clouds */
-    radial-gradient(70px 22px at 18% 10%, rgba(255, 255, 255, .95), rgba(255, 255, 255, 0) 75%),
-    radial-gradient(46px 18px at 25% 8.6%, rgba(255, 255, 255, .9), rgba(255, 255, 255, 0) 75%),
-    radial-gradient(90px 24px at 80% 20%, rgba(255, 255, 255, .85), rgba(255, 255, 255, 0) 75%),
-    /* the hedge on the horizon: overlapping round bushes, sized by the screen so it never breaks up */
-    radial-gradient(16% 4.2% at 4% 31.6%, var(--tg-hedge, #3f9a32) 97%, transparent 100%),
-    radial-gradient(18% 5% at 22% 31.4%, color-mix(in srgb, var(--tg-hedge, #3f9a32) 86%, #fff) 97%, transparent 100%),
-    radial-gradient(17% 4.4% at 41% 31.7%, var(--tg-hedge, #3f9a32) 97%, transparent 100%),
-    radial-gradient(19% 5.2% at 60% 31.4%, color-mix(in srgb, var(--tg-hedge, #3f9a32) 86%, #fff) 97%, transparent 100%),
-    radial-gradient(16% 4.4% at 79% 31.7%, var(--tg-hedge, #3f9a32) 97%, transparent 100%),
-    radial-gradient(18% 5% at 98% 31.4%, color-mix(in srgb, var(--tg-hedge, #3f9a32) 86%, #fff) 97%, transparent 100%),
-    /* sky down to the horizon, then the lawn: light at the horizon, deeper near the player */
-    linear-gradient(180deg, var(--tg-sky-0, #3f9ff0) 0, var(--tg-sky-1, #7cc6fb) 20%, var(--tg-sky-2, #cdeeff) 31%,
-      var(--tg-lawn-0, #a6e060) 31%, var(--tg-lawn-1, #7fcd45) 60%, var(--tg-lawn-2, #5fb534) 100%);
-}
-/* The lawn's soft mowing stripes and a few daisies, as a layer of its own so the path stays readable. */
-[data-theme="garden"] .tf-levels-body { position: relative; }
-[data-theme="garden"] .tf-levels-body::before {
-  content: ""; position: absolute; inset: 0; pointer-events: none;
-  background:
-    radial-gradient(3px 3px at 12% 72%, #fff 90%, transparent), radial-gradient(3px 3px at 13.4% 73.2%, #fff 90%, transparent),
-    radial-gradient(3px 3px at 86% 58%, #fff 90%, transparent), radial-gradient(3px 3px at 87.4% 59.4%, #fff 90%, transparent),
-    radial-gradient(3px 3px at 8% 40%, #fff 90%, transparent), radial-gradient(3px 3px at 91% 86%, #fff 90%, transparent),
-    repeating-linear-gradient(100deg, rgba(255, 255, 255, .07) 0 26px, rgba(255, 255, 255, 0) 26px 52px);
+    var(--tg-backdrop, url("./levels-backdrop.webp")) 50% 40% / cover no-repeat,
+    linear-gradient(180deg, var(--tg-sky-0, #3f9ff0) 0, var(--tg-sky-1, #7cc6fb) 22%, var(--tg-sky-2, #cdeeff) 35%,
+      var(--tg-lawn-0, #a6e060) 35%, var(--tg-lawn-1, #7fcd45) 65%, var(--tg-lawn-2, #5fb534) 100%);
 }
 
 /* ---- Header: the logo on the sky, white pills with a leaf-green edge. ---- */
