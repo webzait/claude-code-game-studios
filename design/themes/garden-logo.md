@@ -52,3 +52,8 @@ The Play button is unchanged on every size.
 
 Not part of this session: the owner makes the garden app icon in a separate session. The robot icons
 (`assets/turnflock/brand/icon-180.png`, `favicon-64.png`) are unchanged.
+
+## Decisions
+
+- 2026-11-24, owner: the garden logo stays **as wide as the robot logo** (`widthVsRobot: 1`), also on the
+  smallest screen (320×568, 107 CSS px wide).
