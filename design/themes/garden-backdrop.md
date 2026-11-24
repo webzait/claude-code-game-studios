@@ -110,3 +110,11 @@ they are already in the picture, and a separate layer only pays off if they have
   viewer as in the reference; the corner flowers of the reference are replaced by the decor.
 - On 320×568 the gazebo stands behind the top bar; only the arch and the birdhouse roofs show.
 - Landscape screens are not tuned (the picture follows the width and gets very large).
+
+## Owner's decisions (2026-11-24)
+
+Agreed by the owner:
+- Backdrop stays at 118 kB (full sharpness, quality 74); no smaller version.
+- Flower arch: frame of the win pop-up and gate at the end of the level path. Birdhouse: marker
+  of the current step on the level screen. For the sessions that own those screens.
+- Motion stays off by default (calm variant); the option remains available.
