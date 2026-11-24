@@ -19,13 +19,13 @@ its foot sit in the picture). Rerun the tool after changing a source picture.
 
 | Kind | Source | Picture | Size |
 |---|---|---|---|
-| `rock` | `25-rock-hd` (1254 px, cut out by the owner) | 224×194 | 8.4 kB |
-| `rockMossLight` | `26-rock-moss-light-hd` (sharp version of `04-rock`) | 224×184 | 9.2 kB |
-| `rockMossy` | `27-rock-mossy-hd` (sharp version of `15-sheet-rock-mossy`) | 224×188 | 10.8 kB |
-| `stump` | `28-stump-hd` (sharp version of `05-stump`) | 224×189 | 13.2 kB |
-| `bushWhite` | `06-bush-flowers` (1254 px) | 224×199 | 14.7 kB |
-| `bushPink` | `06-bush-flowers`, white flowers retinted pink / lilac / light pink as on `17-sheet-bushes-plants` (whose pink bush is only 83 px) | 224×199 | 14.8 kB |
-| **Obstacles together** | | | **71.2 kB** |
+| `rock` | `25-rock-hd` (1254 px, cut out by the owner) | 224×177 | 7.8 kB |
+| `rockMossLight` | `26-rock-moss-light-hd` (sharp version of `04-rock`) | 224×168 | 8.6 kB |
+| `rockMossy` | `27-rock-mossy-hd` (sharp version of `15-sheet-rock-mossy`) | 224×171 | 9.9 kB |
+| `stump` | `28-stump-hd` (sharp version of `05-stump`) | 224×174 | 12.0 kB |
+| `bushWhite` | `06-bush-flowers` (1254 px) | 224×181 | 13.2 kB |
+| `bushPink` | `06-bush-flowers`, white flowers retinted pink / lilac / light pink as on `17-sheet-bushes-plants` (whose pink bush is only 83 px) | 224×181 | 13.2 kB |
+| **Obstacles together** | | | **64.7 kB** |
 | `plant-sprig`, `plant-grass` | `17-sheet-bushes-plants`, 2x | ~120×102 | 6.5 / 6.2 kB |
 | `plant-flower-white`, `plant-flower-pink` | biggest flower of `06-bush-flowers` (pink: retinted) | 128×114 | 5.8 / 6.5 kB |
 
@@ -39,17 +39,25 @@ with one quad (2 triangles) carrying the picture: unlit, not tone-mapped (the ow
 colours exactly), alpha-tested and blended, one shared material per kind. The card is
 square to the game camera (30° from straight down, looking towards -z;
 `CONFIG.board.roomy.tilt`), so the picture is seen undistorted. Its object width is
-`sprite.width[kind]` cells (0.74–0.76, well inside the 0.96 tile); the object's foot line
-lies on the floor `sprite.footForward` (0.20) towards the camera from the cell centre; the whole card is
+`sprite.width[kind]` cells (0.84–0.88, inside the 0.96 tile); the object's foot line
+lies on the floor `sprite.footForward` (0.26) towards the camera from the cell centre; the whole card is
 then moved `sprite.lift` (0.3) along the view towards the camera, which changes nothing
 on screen but keeps a robot standing behind from cutting into the top of the picture.
 An odd `turn` mirrors the stump and bushes (lit from the front); the rocks are never
 mirrored (their light comes from one side).
 
+**Square shadow on the tile.** Under every card lies a second, flat quad just on the tile
+top (`sprite.ground`): a soft rounded-square shadow the shape of the tile (0.92 cells,
+corner radius 0.16), darkest in the middle and fading out before the tile edge. The
+object is round, but the darker square makes the whole tile read as taken (owner's
+wish, 2026-11-24: obstacles should feel part of the square tile). It is computed in
+code (a 128 px DataTexture), shared by every obstacle, unlit, and does not write depth.
+
 **For the theme session:** place it exactly like the robot block. The card casts no
 shadow (the shadow is in the picture): `fuse()` in `kit.ts` sets `castShadow` on every
 merged mesh, so either add the obstacle groups to `boardGroup` outside the fused group,
-or set `castShadow = false` on the fused meshes that use a `garden-obstacle-*` material.
+or set `castShadow = false` on the fused meshes that use a `garden-obstacle-*` material
+(the ground patch included).
 Add them row by row from the back (as `boardView` does), so overlapping cards blend in
 the right order. Per level: `chooseObstacles(level.id, width, height, walls)` from
 `obstacleChoice.ts`, then `buildObstacle(choice.kind, choice.turn)` per wall cell.

@@ -3,14 +3,14 @@
   "sprite": {
     "_note": "The default obstacles: the owner's pictures on a flat card facing the game camera. width = the object's own width in cells (shadow not counted), kept well inside the tile (0.96) so the obstacle sits on its own tile; footForward = how far towards the camera from the cell centre the object's foot line sits; lift = how far the card is moved towards the camera so a robot behind never cuts into it; mirror = may be flipped on odd turns (only pictures lit from the front).",
     "width": {
-      "rock": 0.74,
-      "rockMossLight": 0.76,
-      "rockMossy": 0.76,
-      "stump": 0.74,
-      "bushWhite": 0.76,
-      "bushPink": 0.76
+      "rock": 0.86,
+      "rockMossLight": 0.88,
+      "rockMossy": 0.88,
+      "stump": 0.84,
+      "bushWhite": 0.88,
+      "bushPink": 0.88
     },
-    "footForward": 0.2,
+    "footForward": 0.26,
     "lift": 0.3,
     "mirror": {
       "rock": false,
@@ -19,6 +19,15 @@
       "stump": true,
       "bushWhite": true,
       "bushPink": true
+    },
+    "ground": {
+      "_note": "Soft square shadow under every obstacle, the shape of the tile (tile 0.96 wide, corner radius 0.15): size and corner radius in cells, how far in from its edge it reaches full strength (shares of its size), strength at the centre, colour, and height above the tile top.",
+      "size": 0.92,
+      "radius": 0.16,
+      "softness": 0.2,
+      "strength": 0.5,
+      "color": "#3E2F5C",
+      "lift": 0.003
     }
   },
   "choice": {
