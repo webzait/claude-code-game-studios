@@ -248,8 +248,9 @@ now a square stone tile seen nearly from above, in four pictures; the round chec
   px); shadow and light are smooth and let the flood through, the stone's outline stops it. The
   body is opened with a 25 px disc so the thin beam above the portal is light, not body. Opaque.
 - outside the body, colour-to-alpha against the white: the glow round the rays and the beam stay
-  half-transparent light, the soft shadow becomes a half-transparent dark shadow (kept: it reads
-  as shadow on the grass). The white core of the portal's beam cannot be told from the white
+  half-transparent light. The painted soft shadow is dropped (owner, 2026-11-24: "geen schaduw",
+  like the tile it replaces): after un-mixing, the shadow has a near-black colour and light a bright
+  one, so only pixels whose brightest channel is above 60 (fully from 180) are kept. The white core of the portal's beam cannot be told from the white
   background; gaps up to 21 px across in the light are closed with the light either side.
 - the 2 px band round the outline is un-mixed between the body colour just inside and the outside
   layer just outside: no white or grey rim on dark or on grass (#8BCB4F); checked in
@@ -263,17 +264,17 @@ box, used for all four, so the stone does not move when the look changes (all fo
 
 | Picture | px | kB | Made from |
 |---|---|---|---|
-| `exit-grey` | 349×352 | 11.3 | checkpoint-inactief |
-| `exit-green` | 362×362 | 14.9 | checkpoint-actief |
-| `exit-rays` | 356×504 | 28.2 | checkpoint-opgelicht |
-| `exit-portal` | 355×410 | 18.5 | checkpoint-portaal (new look) |
-| `exit-red`, `-blue`, `-yellow` | 362×362 | 14.6–16.1 | green tile, same steps as before (`colour_exits.py`) |
-| `exit-shape-red`, `-blue`, `-yellow` | 362×362 | 14.2–15.5 | as above, shape for the tick |
-| `turn` | 362×362 | 13.8 | green tile, cream, the owner's turn arrow |
-| `plate` | 362×362 | 14.0 | green tile, lavender, raised button |
+| `exit-grey` | 326×323 | 8.3 | checkpoint-inactief |
+| `exit-green` | 325×322 | 10.2 | checkpoint-actief |
+| `exit-rays` | 326×462 | 23.5 | checkpoint-opgelicht |
+| `exit-portal` | 325×369 | 14.2 | checkpoint-portaal (new look) |
+| `exit-red`, `-blue`, `-yellow` | 325×322 | 9.5–11.0 | green tile, same steps as before (`colour_exits.py`) |
+| `exit-shape-red`, `-blue`, `-yellow` | 325×322 | 9.2–10.5 | as above, shape for the tick |
+| `turn` | 325×322 | 9.1 | green tile, cream, the owner's turn arrow |
+| `plate` | 325×322 | 9.3 | green tile, lavender, raised button |
 
-All exit pictures together (with gate and gazebos, unchanged): 368 kB. The pictures are wider than
-the stone because the soft shadow spreads past it.
+All exit pictures together (with gate and gazebos, unchanged): 316 kB. The owner approved the portal
+for `entered` and the levelling (2026-11-24).
 
 **Portal: a fourth look.** `ExitLook` is now `grey | green | rays | portal`. Proposal: `entered`
 (a chick has just gone in, 0.9 s) shows the portal; `complete` keeps the rays (celebrating). It is one

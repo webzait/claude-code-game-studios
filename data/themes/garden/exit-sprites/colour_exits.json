@@ -2,51 +2,51 @@
   "_about": "Written by tools/asset-pipeline/garden_exit/colour_exits.py: size in cells and anchor (fractions from the top left) of each picture.",
   "sprites": {
     "exit-red": {
-      "width": 1.1313,
-      "height": 1.1313,
+      "width": 1.0156,
+      "height": 1.0063,
       "anchor": [
-        0.5022,
-        0.3666
+        0.4968,
+        0.4121
       ]
     },
     "exit-shape-red": {
-      "width": 1.1313,
-      "height": 1.1313,
+      "width": 1.0156,
+      "height": 1.0063,
       "anchor": [
-        0.5022,
-        0.3666
+        0.4968,
+        0.4121
       ]
     },
     "exit-blue": {
-      "width": 1.1313,
-      "height": 1.1313,
+      "width": 1.0156,
+      "height": 1.0063,
       "anchor": [
-        0.5022,
-        0.3666
+        0.4968,
+        0.4121
       ]
     },
     "exit-shape-blue": {
-      "width": 1.1313,
-      "height": 1.1313,
+      "width": 1.0156,
+      "height": 1.0063,
       "anchor": [
-        0.5022,
-        0.3666
+        0.4968,
+        0.4121
       ]
     },
     "exit-yellow": {
-      "width": 1.1313,
-      "height": 1.1313,
+      "width": 1.0156,
+      "height": 1.0063,
       "anchor": [
-        0.5022,
-        0.3666
+        0.4968,
+        0.4121
       ]
     },
     "exit-shape-yellow": {
-      "width": 1.1313,
-      "height": 1.1313,
+      "width": 1.0156,
+      "height": 1.0063,
       "anchor": [
-        0.5022,
-        0.3666
+        0.4968,
+        0.4121
       ]
     }
   }
