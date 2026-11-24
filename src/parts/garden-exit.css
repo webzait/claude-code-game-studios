@@ -1,0 +1,20 @@
+/* Garden exit section of the parts sheet (src/parts/garden-exit.ts). */
+.garden-exit h3 { margin: 14px 0 6px; font-size: 14px; }
+.garden-exit .ge-row { display: grid; gap: 8px; align-items: end; margin: 6px 0; }
+.garden-exit .ge-row.ref { grid-template-columns: 1fr; }
+.garden-exit .ge-row.two { grid-template-columns: 1fr 1fr; }
+.garden-exit .ge-row.three { grid-template-columns: repeat(3, 1fr); }
+.garden-exit .ge-row.four { grid-template-columns: repeat(4, 1fr); }
+.garden-exit .ge-row.game { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: flex-end; padding: 10px; border-radius: 12px; background: linear-gradient(180deg, #cdeeb4, #a9db84); }
+.garden-exit figure { margin: 0; text-align: center; }
+.garden-exit canvas, .garden-exit img { display: block; max-width: 100%; height: auto; margin: 0 auto; border-radius: 12px; }
+.garden-exit .ge-row:not(.game) canvas { width: 100%; background: linear-gradient(180deg, #fbfdf7, #e8f4dc); }
+.garden-exit .ge-row.ref img, .garden-exit .ge-row.two img { width: 100%; background: #fff; }
+.garden-exit .ge-row.game canvas { max-width: none; }
+.garden-exit figcaption { font-size: 11px; color: var(--muted); margin-top: 3px; max-width: 360px; margin-inline: auto; }
+.garden-exit .ge-table { border-collapse: collapse; font-size: 12.5px; margin: 6px 0; width: 100%; }
+.garden-exit .ge-table th, .garden-exit .ge-table td { border-bottom: 1px solid var(--line); padding: 5px 8px; text-align: left; vertical-align: top; }
+@media (max-width: 700px) {
+  .garden-exit .ge-row.three, .garden-exit .ge-row.four { grid-template-columns: 1fr 1fr; }
+  .garden-exit .ge-row.two { grid-template-columns: 1fr; }
+}
