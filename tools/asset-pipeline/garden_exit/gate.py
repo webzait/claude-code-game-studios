@@ -25,8 +25,11 @@ TOP, BOTTOM = 801, 913          # rows taken: top of the columns' bands .. just 
 PLINTH_TOP = 879.5              # band above, plinth below
 PLINTH_FOOT = 912.6             # bottom of the plinths
 RAIL_FOOT = 907.3               # bottom of the lower rail (floor below)
-CENTRES = (526, 732)            # column centre lines (left, right)
-BAND_HALF, PLINTH_HALF = 26.5, 35.5
+# Mirror axes (half-pixel): left post uses the pixels right of 528.5, right post those left of
+# 729.5; nearer the columns' centres the vine leaves cast a dark line on the right column.
+AXES = (528.5, 729.5)
+BAND_HALF, PLINTH_HALF = 24.0, 33.0     # inner band edge 552.5 / 705.5, plinth edge 561.5 / 696.5
+CAP_OVERLAP = 4                 # the cap (a copy of the plinth) covers the cut top of the band
 CORNER = 3.5                    # rounding of the plinth's corners and the band's top corners
 CUT = (636, 686)                # removed: mid-gap .. mid-gap, the second full baluster
 BLEND = 4                       # cross-fade of the rails across the cut (px)
@@ -55,11 +58,11 @@ def _post_mask(h: int, w: int, centre: float, ss: int = 4) -> np.ndarray:
 def _strip() -> tuple[np.ndarray, float, float]:
     """RGB strip post-rail-post (one baluster removed) and the two post centres in strip x."""
     whole = load("08-gazebo")[TOP:BOTTOM]
-    left, right = CENTRES
-    lh, rh = int(np.ceil(PLINTH_HALF)) + 1, int(np.ceil(PLINTH_HALF)) + 1
-    # Each post: its clean inner half, mirrored outward about the centre line.
-    outer_l = whole[:, left + 1:left + lh][:, ::-1]
-    outer_r = whole[:, right - rh + 1:right][:, ::-1]
+    left, right = int(AXES[0] + 0.5), int(AXES[1] - 0.5)   # first / last pixel kept as painted
+    n = int(np.ceil(PLINTH_HALF)) + 1
+    # Each post: its clean inner half, mirrored outward about the axis.
+    outer_l = whole[:, left:left + n][:, ::-1]
+    outer_r = whole[:, right - n + 1:right + 1][:, ::-1]
     a, b = CUT
     first = whole[:, left:a + BLEND]
     second = whole[:, b - BLEND:right + 1]
@@ -67,9 +70,27 @@ def _strip() -> tuple[np.ndarray, float, float]:
     t = np.linspace(0, 1, 2 * BLEND)[None, :, None]
     joint = first[:, -2 * BLEND:] * (1 - t) + second[:, :2 * BLEND] * t
     rgb = np.concatenate([outer_l, first[:, :-2 * BLEND], joint, second[:, 2 * BLEND:], outer_r], axis=1)
-    cl = float(outer_l.shape[1])
-    cr = float(rgb.shape[1] - outer_r.shape[1] - 1)
+    cl = outer_l.shape[1] - 0.5
+    cr = rgb.shape[1] - outer_r.shape[1] - 0.5
     return rgb, cl, cr
+
+
+def _capped(rgba: np.ndarray, posts: np.ndarray) -> np.ndarray:
+    """Put a copy of each post's plinth on top of it as a cap: the band's top is a cut through the
+    column, the cap closes it so each post reads as a gate pillar."""
+    p0, p1 = int(PLINTH_TOP - TOP), int(np.ceil(PLINTH_FOOT - TOP)) + 1
+    cap = rgba[p0:p1].copy()
+    cap[..., 3] = np.minimum(cap[..., 3], posts[p0:p1] * 255)
+    ch = cap.shape[0]
+    out = np.zeros((rgba.shape[0] + ch - CAP_OVERLAP, rgba.shape[1], 4))
+    out[ch - CAP_OVERLAP:] = rgba
+    # "over" compositing, straight alpha.
+    top = out[:ch]
+    a1, a0 = cap[..., 3:4] / 255, top[..., 3:4] / 255
+    a = a1 + a0 * (1 - a1)
+    rgb = (cap[..., :3] * a1 + top[..., :3] * a0 * (1 - a1)) / np.maximum(a, 1e-6)
+    out[:ch] = np.dstack([rgb, a * 255])
+    return out
 
 
 def run() -> None:
@@ -83,11 +104,13 @@ def run() -> None:
     rail = np.clip(RAIL_FOOT - rows + 0.5, 0, 1) * ((np.arange(w)[None, :] > cl) & (np.arange(w)[None, :] < cr))
     shape = np.maximum(posts, rail)
     rgba[..., 3] = np.minimum(rgba[..., 3], shape * 255)
+    rgba = _capped(rgba, posts)
+    h = rgba.shape[0]
     rgba = retone(rgba, np.clip(rgba[..., 3] / 255, 0, 1) * 0.95, LAVENDER, keep_light=1.0)
     # Enlarge to the target width (crisp edges: premultiplied Lanczos + mild unsharp).
     factor = OUT_WIDTH / w
     big = upscale(rgba, factor, sharpen=0.6, radius=1.6)
     big[..., 3] = np.where(big[..., 3] < 4, 0, big[..., 3])
     bh, bw = big.shape[:2]
-    foot = (PLINTH_FOOT - TOP + 0.5) * factor
+    foot = (h - (BOTTOM - PLINTH_FOOT) + 0.5) * factor
     write_part("gate", {"gate": (big, (bw / 2, foot), WIDTH_CELLS / bw)})
