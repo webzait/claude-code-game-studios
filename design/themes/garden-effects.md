@@ -31,18 +31,32 @@ The blue ring is deliberately not in the celebration: it is kept for the element
 
 ## Look: the owner's pictures (standard) or code
 
-Owner's direction (2026-11-24): **the picture is the effect.** The four effects are the owner's own
-pictures, cut out with a transparent background (`assets/turnflock/garden/effects/*.webp`):
-`beam`, `star` (one, animated as many), `twinkle` (one), `cloud`, `cloud-ball` (one, animated as
-many), `ring`. Motion comes from moving those pictures: flat cards facing the game camera
-(billboards), scaled, faded, turned and lifted. The blue ring lies flat on the board (stretched
-back to a circle, so the camera foreshortens it like a real ring) and really turns. Nothing is
-drawn in code in this look: sparks and the closing flash reuse the twinkle picture.
+Owner's direction (2026-11-24): **the picture is the effect.** The effects are the owner's own
+high-resolution element pictures (`design/reference/turnflock/garden/elements/`: `groen-portaal`,
+`ster`, `sterrencluster`, `wolk`, `blauw-portaal`), cropped, reduced with premultiplied alpha to
+about twice their size on a phone and saved as WebP with alpha by
+`tools/asset-pipeline/garden-effects-from-elements.py` → `assets/turnflock/garden/effects/`:
 
-The sheet is small (each effect about 60 px), so the pictures were first 4× enlargements of the
-crops (`tools/asset-pipeline/cut-garden-effects.py`) and are now redrawn at 8× resolution, one
-sub-session per effect, matched against the sheet (`tools/asset-pipeline/garden-effects-hd/`).
-Framing is identical in both, so the config does not change.
+| Picture | From | Size | kB |
+|---|---|---|---|
+| beam | groen-portaal | 300×379 | 31.6 |
+| star | ster | 200×192 | 9.0 |
+| twinkle | one sparkle of sterrencluster | 64×64 | 3.2 |
+| cloud | wolk | 200×182 | 7.8 |
+| cloud-ball | the front ball of wolk | 80×80 | 2.4 |
+| ring | blauw-portaal | 256×209 | 21.0 |
+| **total** | | | **75.0** |
+
+Motion comes from moving those pictures: flat cards facing the game camera (billboards),
+scaled, faded, turned and lifted. The blue ring lies flat on the board (stretched back to a
+circle, so the camera foreshortens it like a real ring) and really turns. Nothing is drawn in
+code in this look: sparks and the closing flash reuse the twinkle picture.
+
+History: the first pictures were cut from the small sheet `21-sheet-effects.png` (each effect
+about 60 px, 4× enlarged: `tools/asset-pipeline/cut-garden-effects.py`, kept in
+`production/qa/evidence/garden-effects/cut-4x/`); then redrawn at 8×, one sub-session per effect
+(`tools/asset-pipeline/garden-effects-hd/`, kept in `.../redraw-8x/`). Both are replaced by the
+owner's high-resolution pictures and stay only as comparison.
 
 The earlier code-built version (3D stars, spheres, torus, light column) stays as a choice
 (`look: "code"` in the config, or `GardenEffects.look`), with the same timings.
@@ -100,8 +114,8 @@ are far below a phone; the comparison between rows is what counts:
 
 Updating the effects costs 0.2–0.5 ms per frame on average. The picture look costs the frame
 rate little (−20 % against the bare board in software rendering); the 70 calls of the bare board
-are the stand-in lawn, not the effects. Pictures add ~74 kB (4× cuts) to the single HTML file;
-the 8× redraws add more (see the parts sheet for current sizes).
+are the stand-in lawn, not the effects. The pictures add 75 kB to the single HTML file
+(about 100 kB as base64).
 
 ## Proposal: portals (blue ring) — not built
 
@@ -115,10 +129,11 @@ The core rules are not changed: this needs the owner's decision.
 
 ## Where it deviates from the sheet (honest)
 
-- The beam and cloud are flat cards: from the game camera they look like the picture (drawn
-  from a low side view), not like a ring lying in perspective on the tile.
-- The cloud breaks up into copies of one ball; the balls of the sheet differ slightly in shading.
-- The celebration's twinkles are the sheet's small twinkle, which is very small on the sheet.
+- The beam, stars and cloud are flat cards: from the game camera they look like the picture
+  (drawn from a low side view), not like a ring lying in perspective on the tile.
+- The cloud breaks up into copies of one ball (the front one); the other balls of the picture
+  differ slightly in size and shading.
+- The ring's picture is drawn for one light direction; as it turns, its highlights turn with it.
 
 ## Parts sheet
 

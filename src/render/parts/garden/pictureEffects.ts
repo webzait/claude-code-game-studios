@@ -191,15 +191,15 @@ export class PictureStarsFx extends PicturePiece {
   }
 }
 
-/** The balls of the owner's cloud picture, measured on the cut picture: centre (x right, y up) and radius, in picture widths. */
+/** The balls of the owner's cloud picture (wolk.png), measured on the cropped picture: centre (x right, y up) and radius, in picture widths. */
 const CLOUD_BALLS = [
-  { x: 0.082, y: 0.27, r: 0.19 },
-  { x: -0.279, y: 0.018, r: 0.19 },
-  { x: 0.258, y: 0.105, r: 0.175 },
-  { x: 0.258, y: -0.147, r: 0.15 },
-  { x: -0.04, y: -0.239, r: 0.175 },
-  { x: -0.225, y: -0.158, r: 0.16 },
-  { x: 0.007, y: 0.053, r: 0.09 },
+  { x: 0.001, y: 0.228, r: 0.232 },
+  { x: -0.294, y: -0.059, r: 0.184 },
+  { x: 0.273, y: 0.036, r: 0.168 },
+  { x: -0.286, y: 0.132, r: 0.128 },
+  { x: 0.017, y: -0.012, r: 0.128 },
+  { x: -0.071, y: -0.251, r: 0.184 },
+  { x: 0.209, y: -0.219, r: 0.147 },
 ];
 
 /**
@@ -243,7 +243,7 @@ export class PictureCloudFx extends PicturePiece {
     const swell = 1 + cfg.grow * 0.5 * easeOut(span(u, 0.1, 0.5));
     const rise = cfg.rise * this.p * easeOut(u);
     // The whole picture, until it breaks up.
-    const whole = 1 - smooth(span(u, 0.4, 0.52));
+    const whole = 1 - smooth(span(u, 0.4, 0.45));
     this.cloud.position.copy(this.base).addScaledVector(this.up, lift + rise);
     this.cloud.scale.setScalar(Math.max(pop * swell, 0.0001));
     fadePicture(this.cloudMat, whole);
