@@ -1,12 +1,13 @@
 import { CONFIG } from '../config';
 
 /** The celebrations a win can play on the board; the test lab chooses between them. */
-export const CELEBRATION_VARIANTS = ['confetti', 'wave', 'hop'] as const;
+/** `garden`: the garden theme's beam and stars (design/themes/garden-effects.md), a choice next to the others in every theme. */
+export const CELEBRATION_VARIANTS = ['confetti', 'wave', 'hop', 'garden'] as const;
 /** One of the celebrations. */
 export type CelebrationVariant = (typeof CELEBRATION_VARIANTS)[number];
 
 /** The names the test lab shows. */
-export const CELEBRATION_NAMES: Record<CelebrationVariant, string> = { confetti: 'Confetti', wave: 'Light wave', hop: 'Victory hop' };
+export const CELEBRATION_NAMES: Record<CelebrationVariant, string> = { confetti: 'Confetti', wave: 'Light wave', hop: 'Victory hop', garden: 'Garden stars' };
 
 /** The tuning values of the celebration (`celebration` in data/config.json). */
 export type CelebrationConfig = typeof CONFIG.celebration;

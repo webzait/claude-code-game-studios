@@ -6,6 +6,12 @@ import './ui/tf-end.css';
 import './ui/tf-settings.css';
 import './ui/tf-scene.css';
 import './ui/tf-shop.css';
+// After the robot theme's sheets, so a theme's rules win over them (design/themes.md).
+import { applyPageTheme } from './ui/themes';
+import { applyGardenDecor } from './ui/themes/garden/gardenArt';
+import { applyGardenLevels, gardenPathModel } from './ui/themes/garden/levels';
+import { showGardenLogo, showRobotLogo } from './ui/themes/garden/logo';
+import { resolveTheme } from './render/themes';
 import { AudioHub, Sfx, type PlayedSound } from './audio';
 import { movePlan, soundSet } from './sound/sets';
 import { CONFIG } from './config';
@@ -13,7 +19,8 @@ import type { Color, Command, Robot, RobotEvent } from './engine/types';
 import { previewStep, witnessNext, type RescueResult, type ScanResult } from './game/assist';
 import { CelebrationRun, planCelebration, type CelebrationPlan, type CelebrationVariant } from './game/celebration';
 import { extraMovesPrice, hintPrice, payout, rewardFor, settlePaid, undoQuote, type UndoQuote } from './game/coins';
-import { applyLab, levelScreenView, rulesFor, usesCertifiedRules, type LabSettings } from './game/lab';
+import type { ThemeId } from './game/theme';
+import { applyLab, DEFAULT_LAB, levelScreenView, rulesFor, usesCertifiedRules, type LabSettings } from './game/lab';
 import { emptyLedger, record, type LedgerEntry } from './game/ledger';
 import { MemorySink, type MetricsEvent } from './game/metrics';
 import { isUnlocked, mainAction, starsFor, starsOfBest } from './game/progress';
@@ -25,6 +32,7 @@ import { MusicController, WebAudioMusic } from './music/player';
 import { LEVELS, TEST_BOARDS, type GameLevel } from './levels/index';
 import { BoardView } from './render/boardView';
 import { loadKit } from './render/kit';
+import { loadChickMaster } from './render/parts/garden/chickMaster';
 import decorLarge from '../assets/turnflock/decor/decor-bush-large.webp';
 import decorSmall from '../assets/turnflock/decor/decor-bush-small.webp';
 import decorClover from '../assets/turnflock/decor/decor-tuft-clover.webp';
@@ -64,6 +72,8 @@ export interface Snapshot {
   coins: number;
   kitReady: boolean;
   lab: LabSettings;
+  /** The active theme and the root element's `data-theme`. */
+  theme: { setting: ThemeId; page: string | undefined };
   events: MetricsEvent[];
   /** The test shop sheet is open. */
   shopOpen: boolean;
@@ -108,13 +118,42 @@ function storage(): KeyValueStore {
 }
 
 /** Glue between screens, session (logic), board view (3D), solver and save. */
+/**
+ * The decor pictures around the board for a theme: the robot theme's bushes by their `data-art`
+ * name, the garden's own picture per place (design/themes/garden-backdrop.md).
+ */
+function showDecor(theme: ThemeId): void {
+  const layer = document.querySelector('.tf-decor-layer');
+  if (!layer) return;
+  if (theme === 'garden') {
+    applyGardenDecor(layer);
+    return;
+  }
+  const art: Record<string, string> = { 'decor-large': decorLarge, 'decor-small': decorSmall, 'decor-clover': decorClover, 'decor-sprig': decorSprig };
+  for (const img of Array.from(layer.querySelectorAll<HTMLImageElement>('img[data-art]'))) {
+    const src = art[img.dataset.art ?? ''] ?? '';
+    if (img.getAttribute('src') !== src) img.src = src;
+  }
+}
+
+/** index.html's robot logo, read before any theme changes it (the build may have inlined it). */
+const robotLogo = document.querySelector<HTMLImageElement>('.tf-levels-logo')?.getAttribute('src') ?? '';
+
+/** The level screen's logo for a theme: the owner's chick logo in the garden (design/themes/garden-logo.md). */
+function showLogo(theme: ThemeId): void {
+  const img = document.querySelector<HTMLImageElement>('.tf-levels-logo');
+  if (!img) return;
+  if (theme === 'garden') showGardenLogo(img, el('map'));
+  else if (img.getAttribute('src') !== robotLogo) showRobotLogo(img, robotLogo);
+}
+
 class Game {
   private store = storage();
   private save: SaveData = settled(loadSave(this.store, LEVEL_IDS));
   private metrics = new MemorySink();
   /** One audio context for effects and music. */
   private audio = new AudioHub();
-  private sfx = new Sfx(() => this.save.settings.mute, () => this.save.lab.soundSet, this.audio);
+  private sfx = new Sfx(() => this.save.settings.mute, () => this.soundSetId, this.audio);
   private musicOut = new WebAudioMusic(this.audio, renderInBackground);
   private music = new MusicController(this.musicOut, CONFIG.music.screens, { enabled: this.save.settings.music, variant: this.save.lab.music, screen: 'map', visible: !document.hidden });
   private solver = new SolverClient();
@@ -219,11 +258,7 @@ class Game {
     window.addEventListener('pointerdown', () => this.run?.skip(), true);
     el('toSettings').addEventListener('click', () => this.tap(() => this.show('settings')));
     new ResizeObserver(() => this.view.resize()).observe(document.querySelector('.stage') as HTMLElement);
-    // Kit artwork: images are bundled; the page sets them here so one build works from any folder.
-    for (const img of Array.from(document.querySelectorAll<HTMLImageElement>('img[data-art]'))) {
-      const art: Record<string, string> = { 'decor-large': decorLarge, 'decor-small': decorSmall, 'decor-clover': decorClover, 'decor-sprig': decorSprig };
-      img.src = art[img.dataset.art ?? ''] ?? '';
-    }
+    // Kit artwork: images are bundled; the page sets them in applySettings (per theme) so one build works from any folder.
     this.listenForSound();
     this.applySettings();
     setupLogo(el('map'), CONFIG.logo, { reducedMotion: this.reduced });
@@ -242,6 +277,15 @@ class Game {
         // The built-in shapes stay in use; nothing else depends on the kit.
         this.kitReady = false;
       });
+    // The garden's chicks come from the owner's 3D master model; a level already on show is redrawn with them.
+    loadChickMaster()
+      .then(() => {
+        if (this.screen === 'level' && this.session.commands.length === 0) {
+          this.view.loadLevel(this.level);
+          this.view.resize();
+        }
+      })
+      .catch((error) => console.warn('Chick master model not loaded; the code-built chick stays.', error));
   }
 
   /**
@@ -327,6 +371,11 @@ class Game {
     this.refresh();
   }
 
+  /** The sound set that plays: the theme's own when it has one, else the one chosen in the test lab. */
+  private get soundSetId(): string {
+    return resolveTheme(this.save.settings.theme).soundSet ?? this.save.lab.soundSet;
+  }
+
   private get reduced(): boolean {
     return this.save.settings.reduceMotion ?? window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
@@ -349,6 +398,13 @@ class Game {
     this.music.set({ enabled: this.save.settings.music, variant: this.save.lab.music });
     applyColourShapes(this.save.settings.colourShapes);
     this.view.setColourShapes(this.save.settings.colourShapes);
+    // A theme switch rebuilds the board on show; no reload.
+    const theme = resolveTheme(this.save.settings.theme);
+    applyPageTheme(theme);
+    showDecor(theme.id);
+    showLogo(theme.id);
+    if (theme.id === 'garden') applyGardenLevels(el('map'));
+    this.view.setTheme(theme, this.session.state);
   }
 
   // ---------------------------------------------------------------- screens
@@ -426,6 +482,8 @@ class Game {
       replayAll,
       current: complete ? null : main.index,
       ahead: CONFIG.levelsAhead,
+      // The garden's path runs in gardens of 20 that end at a gazebo, with the last completed levels below (design/themes/garden-levels.md).
+      ...(this.save.settings.theme === 'garden' ? gardenPathModel() : {}),
       layout: CONFIG.levelPath.layout,
       page: this.page,
       pageSize,
@@ -457,6 +515,12 @@ class Game {
       music: this.save.settings.music,
       setMusic: (on) => change(() => (this.save.settings.music = on)),
       setReduceMotion: (value) => change(() => (this.save.settings.reduceMotion = value)),
+      theme: this.save.settings.theme,
+      setTheme: (theme) =>
+        change(() => {
+          this.save.settings.theme = theme;
+          this.save.settings.themeChosen = true;
+        }),
       colourShapes: this.save.settings.colourShapes,
       setColourShapes: (on) => change(() => (this.save.settings.colourShapes = on)),
       resetProgress: () =>
@@ -646,7 +710,7 @@ class Game {
     this.refresh();
     this.track({ type: 'command', level: this.level.id, command });
     // The button answers at the touch; with a `motion` set the turn and the step sound when the robots make them.
-    const sounds = movePlan(command, result.events.map((e) => e.outcome), result.events.some((e) => e.turned), soundSet(this.save.lab.soundSet).timing);
+    const sounds = movePlan(command, result.events.map((e) => e.outcome), result.events.some((e) => e.turned), soundSet(this.soundSetId).timing);
     for (const name of sounds.tap) this.sfx.play(name);
     const generation = this.generation;
     this.pending++;
@@ -712,7 +776,9 @@ class Game {
    */
   private celebrate(stars: 1 | 2 | 3, showCard: () => void): void {
     this.run?.cancel();
-    const plan = planCelebration({ variant: this.save.lab.celebration, stars, reduced: this.reduced, muted: this.save.settings.mute });
+    // In the garden the garden's own celebration plays, unless the test lab picked another one (owner, 2026-11-24).
+    const variant = this.save.settings.theme === 'garden' && this.save.lab.celebration === DEFAULT_LAB.celebration ? 'garden' : this.save.lab.celebration;
+    const plan = planCelebration({ variant, stars, reduced: this.reduced, muted: this.save.settings.mute });
     const generation = this.generation;
     this.run = new CelebrationRun(
       plan,
@@ -999,6 +1065,7 @@ class Game {
       coins: this.save.coins,
       kitReady: this.kitReady,
       lab: { ...this.save.lab },
+      theme: { setting: this.save.settings.theme, page: document.documentElement.dataset.theme },
       events: [...this.metrics.events],
       shopOpen: this.shop.isOpen,
       ledger: [...this.save.ledger.entries],

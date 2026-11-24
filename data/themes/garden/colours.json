@@ -1,0 +1,10 @@
+{
+  "_note": "Garden theme base colours, read from design/reference/turnflock/garden/10-backdrop-garden.png. Each key becomes a CSS custom property --tf-theme-<key> on the page while the garden theme is on (src/render/themes.ts resolveColours). See design/themes.md.",
+  "sky": "#2C86EC",
+  "skyLow": "#8ECDFF",
+  "haze": "#E4F6FF",
+  "sun": "#FFF4B8",
+  "grassLight": "#9BDA55",
+  "grass": "#78C63C",
+  "grassDeep": "#4C9A2A"
+}

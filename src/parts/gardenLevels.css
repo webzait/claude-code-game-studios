@@ -1,0 +1,2 @@
+/* Parts sheet only: what the game's style.css does for #map, which the sheet does not load. */
+.tf-garden-levels .tf-levels-pager[hidden] { display: none; }
