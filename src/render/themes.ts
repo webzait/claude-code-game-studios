@@ -82,9 +82,8 @@ export interface ThemeSlot {
 }
 
 /**
- * Every part of the look a theme may change, in the order of design/themes.md. Buttons, icons and
- * the screens around the board are not here: by the owner's decision (2026-11-24) they are the
- * robot theme's in every theme.
+ * Every part of the look a theme may change, in the order of design/themes.md. Buttons and icons
+ * are not here: by the owner's decision (2026-11-24) they are the robot theme's in every theme.
  */
 export const THEME_SLOTS: readonly ThemeSlot[] = [
   { id: 'robot', kind: '3d', supplies: ['buildPartsRobot', 'buildRobot'], robot: 'src/render/robot.ts' },
@@ -98,6 +97,7 @@ export const THEME_SLOTS: readonly ThemeSlot[] = [
   { id: 'gate', kind: '3d', supplies: ['buildGate', 'gateDoorScale'], robot: 'src/render/parts/board.ts' },
   { id: 'backdrop', kind: '2d', supplies: ['backdrop.css'], robot: 'src/ui/tf-scene.css' },
   { id: 'decor', kind: '2d', supplies: ['decor.css'], robot: 'src/ui/style.css (.tf-decor-*)' },
+  { id: 'levelScreen', kind: '2d', supplies: ['level-screen.css'], robot: 'src/ui/tf-levels.css' },
   { id: 'colours', kind: 'data', supplies: ['colours.json'], robot: '(none: the robot theme sets no theme colours)' },
   { id: 'light', kind: 'data', supplies: ['light.json'], robot: 'data/config.json (light)' },
   { id: 'sounds', kind: 'data', supplies: ['sounds.json'], robot: 'the sound set chosen in the test lab (data/sound-sets.json)' },

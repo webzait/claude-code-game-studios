@@ -44,17 +44,20 @@ to update when a part is added:
 | `gate` — gate | 3D | `buildGate`, `gateDoorScale` | `src/render/parts/board.ts` |
 | `backdrop` — background | 2D | `src/ui/themes/garden/backdrop.css` | `src/ui/tf-scene.css` |
 | `decor` — foreground decor | 2D | `src/ui/themes/garden/decor.css` | `.tf-decor-*` in `src/ui/style.css` |
+| `levelScreen` — level screen (the path) | 2D | `src/ui/themes/garden/level-screen.css` | `src/ui/tf-levels.css` |
 | `colours` — base colours | data | `data/themes/garden/colours.json` | — |
 | `light` — light on the board | data | `data/themes/garden/light.json` | `light` in `data/config.json` |
 | `sounds` — button and move sounds | data | `data/themes/garden/sounds.json`: `{ "set": "<id>" }`, a set in `data/sound-sets.json` | the set chosen in the test lab |
 
-**Not theme slots.** By the owner's decision (2026-11-24) the garden theme changes
-only the board, the backdrop, the sounds and the chicks. Buttons, icons and the
-screens around the board (level screen, settings, pop-ups) are the robot theme's in
-every theme; the register has no slot for them, so no session builds them.
+**Not theme slots.** By the owner's decision (2026-11-24) buttons and icons, and the
+settings screens and pop-ups, are the robot theme's in every theme; the register has
+no slot for them. The level screen is a slot: it has its own session.
 
 While a theme has its own sound set, that set plays and the test lab's
-"Button sounds" choice applies only in the robot theme.
+"Button sounds" choice applies only in the robot theme (owner, 2026-11-24).
+
+The theme choice stays in the player's settings (Settings → Game → Theme), not only
+in the test lab (owner, 2026-11-24).
 
 `slotStatus()` in the register tells, per slot, whether a theme supplies it (`own`)
 or shows the robot part (`robot`); `tests/unit/theme.test.ts` checks the fallback.
