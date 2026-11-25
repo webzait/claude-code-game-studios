@@ -143,15 +143,6 @@
 }
 .reduce-motion [data-theme="garden"] .tf-levels-step.is-current::after, [data-theme="garden"].reduce-motion .tf-levels-step.is-current::after { animation: none; opacity: .8; }
 
-/* In the game (theme session): style.css clears #map's background so the game's backdrop shows through;
-   on the garden level screen the level-path backdrop above shows instead (design/themes/garden-levels.md). */
-[data-theme="garden"] #map.tf-levels-phone {
-  background:
-    var(--tg-backdrop, url("./levels-backdrop.webp")) 50% 40% / cover no-repeat,
-    linear-gradient(180deg, var(--tg-sky-0, #3f9ff0) 0, var(--tg-sky-1, #7cc6fb) 22%, var(--tg-sky-2, #cdeeff) 35%,
-      var(--tg-lawn-0, #a6e060) 35%, var(--tg-lawn-1, #7fcd45) 65%, var(--tg-lawn-2, #5fb534) 100%);
-}
-
 /* ---- A garden completed: its gazebo lit (after 24-sheet-gazebo-goal): a warm green-gold glow behind it
    and a green check ball on its steps. Below the first levels of the next garden (.is-reached), and large
    when every level is completed (.is-done). ---- */

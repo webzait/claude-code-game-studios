@@ -55,9 +55,6 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 
 /* Level selection: the designed screen (tf-levels.css) fills the page; the game's backdrop shows behind it. */
 #map.tf-levels-phone { flex: 1; width: auto; height: auto; border-radius: 0; background: none; }
-/* The garden level screen brings its own picture (tf-levels-garden.css) and covers the puzzle's garden,
-   so the puzzle's backdrop is not drawn behind it: one background at a time (finding B13). */
-[data-theme="garden"] body:has(#map:not([hidden])) #backdrop { visibility: hidden; }
 /* Without the backdrop (test lab) the screen keeps the sky it was designed on. */
 .no-decor #map.tf-levels-phone { background: linear-gradient(180deg, #4eaff8 0, #86cbfb 52%, #cbefff 100%); }
 #map .tf-levels-head { padding-top: max(var(--tl-head-top, 12px), env(safe-area-inset-top)); padding-left: max(var(--tl-pad), env(safe-area-inset-left)); padding-right: max(var(--tl-pad), env(safe-area-inset-right)); }

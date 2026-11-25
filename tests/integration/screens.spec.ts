@@ -97,10 +97,10 @@ async function expectHeaderClear(page: Page): Promise<void> {
   expect(covered).toEqual([]);
 }
 
-/** The puzzle's backdrop is hidden behind the garden level screen (it has its own picture) and drawn otherwise. */
+/** The game's backdrop is drawn behind every screen, the garden level screen included (owner, 2026-11-25: the level screen shows the same garden as the game). */
 async function expectOneBackground(page: Page, theme: string, screen: string): Promise<void> {
   const { backdropDrawn } = await layout(page);
-  expect(backdropDrawn, `${theme} ${screen}: puzzle backdrop drawn`).toBe(!(theme === 'garden' && screen === 'map'));
+  expect(backdropDrawn, `${theme} ${screen}: puzzle backdrop drawn`).toBe(true);
 }
 
 const STATES: { name: string; best: Record<string, number>; lab?: Record<string, unknown>; improve?: boolean }[] = [
