@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
 """
-Cut the garden rim out of the owner's picture 03-rim-vines and pack it into one WebP atlas.
+Cut the garden rim out of one of the owner's pictures and pack it into one WebP atlas.
 
-    python3 assets/turnflock/garden/board/rim/build-rim.py
+    python3 assets/turnflock/garden/board/rim/build-rim.py          # from 03-rim-vines -> rim-atlas.webp
+    python3 assets/turnflock/garden/board/rim/build-rim.py board    # from 01-board-full -> board-rim-atlas.webp
+
+The "board" cut takes the rim from the whole-board picture together with the strip of lawn
+between the braid and the tiles (its grass fringe and the braid's shadow on it), so the rim and
+the lawn are of one piece. Everything inside the picture's tiles' outline is see-through: the
+game's own tiles and grass bed show there.
 
 Needs Pillow, numpy and scipy. Writes, next to this file:
   rim-atlas.webp   corners, plain braid tiles and decorated side pieces
@@ -19,6 +25,7 @@ flower (on clean background) is copied over it.
 """
 import json
 import os
+import sys
 import numpy as np
 from PIL import Image
 from scipy import ndimage as nd
@@ -53,6 +60,12 @@ STRAIGHTEN = {
     'right': (240, 1010, (1110, 1200)),
 }
 TAPER = 40
+SOURCE = '03-rim-vines.png'
+OUT = 'rim-atlas.webp'
+KEY = 'atlas'
+TILE_MASK = None      # (x0, x1, y0, y1): the picture's tiles, made see-through (board cut only)
+TILE_FADE = 10
+WHITE_MIN, WHITE_SPREAD = 170, 40   # what counts as petal white
 WINDOW = {'top': (0, 330), 'bottom': (930, 1254), 'left': (0, 330), 'right': (930, 1254)}
 # The grass bed: the strip of 01-board-full between the rim and the first row of tiles (x0, y0, x1, y1).
 BED_STRIP = (300, 128, 1000, 151)
@@ -93,6 +106,37 @@ SIDES = {
 }
 
 
+PROFILE = sys.argv[1] if len(sys.argv) > 1 else 'rim'
+if PROFILE == 'board':
+    # 01-board-full: a 6x6 board. INNER is the outline of its tiles (where the game's tiles go).
+    SOURCE = '01-board-full.png'
+    OUT = 'board-rim-atlas.webp'
+    KEY = 'atlasBoard'
+    INNER = (192, 1062, 151, 1052)
+    TILE_MASK = INNER
+    WHITE_MIN, WHITE_SPREAD = 155, 60
+    FLOWER_LEFT = (107, 365)
+    FLOWER_RIGHT = (1131, 866)
+    LEFT_BRAID = (84, 172)
+    RIGHT_OUTSIDE = 1177
+    STRAIGHTEN = {
+        'top': (240, 1040, (40, 120)),
+        'bottom': (360, 1000, (1110, 1225)),
+        'left': (240, 1010, (55, 140)),
+        'right': (240, 1010, (1120, 1215)),
+    }
+    SIDES['top']['across'] = (25, 151)
+    SIDES['bottom']['across'] = (1052, 1240)
+    SIDES['left']['across'] = (24, 192)
+    SIDES['right']['across'] = (1062, 1234)
+    SIDES['right']['pieces'][1]['across'] = (1062, 1234)
+    CORNERS = {
+        'tl': (28, 30, 320, 320),
+        'tr': (970, 30, 1230, 320),
+        'bl': (28, 940, 420, 1240),
+        'br': (940, 940, 1230, 1240),
+    }
+
 def load(name):
     return np.asarray(Image.open(os.path.join(REF, name)).convert('RGB')).astype(np.float32)
 
@@ -131,8 +175,10 @@ def flower_mask(im, c, petals_only=False):
     r, g, b = im[..., 0], im[..., 1], im[..., 2]
     mx, mn = im.max(-1), im.min(-1)
     near = disc(im.shape, c, PETAL_R)
-    white = near & (mn > 170) & (mx - mn < 40)
-    heart = disc(im.shape, c, 16) & (r > 200) & (b < 120)
+    white = near & (mn > WHITE_MIN) & (mx - mn < WHITE_SPREAD)
+    # Not the background past the right braid's outside.
+    white &= np.arange(im.shape[1])[None, :] < RIGHT_OUTSIDE - 6
+    heart = disc(im.shape, c, 20) & (r > 200) & (g > 110) & (b < 120)
     m = nd.binary_opening(white, iterations=1) | heart
     lab, n = nd.label(m)
     if n:
@@ -143,7 +189,7 @@ def flower_mask(im, c, petals_only=False):
 
 
 def rgba_source():
-    im = load('03-rim-vines.png')
+    im = load(SOURCE)
     solid = matte(im)
     r, g, b = im[..., 0], im[..., 1], im[..., 2]
     braid_or_leaf = ((r - b > 60) & (r > g + 12)) | ((g > r) & (g - b > 40))
@@ -352,6 +398,12 @@ def bed_patch():
 def main():
     rgb, alpha = rgba_source()
     rgb, alpha, edges = straighten(rgb, alpha)
+    if TILE_MASK:
+        # See-through over the picture's tiles, fading in over TILE_FADE px outside their outline.
+        x0, x1, y0, y1 = TILE_MASK
+        yy, xx = np.mgrid[:alpha.shape[0], :alpha.shape[1]]
+        out = np.maximum(np.maximum(x0 - xx, xx - x1), np.maximum(y0 - yy, yy - y1))
+        alpha = alpha * np.clip(out / TILE_FADE, 0, 1)
     rgb = bleed(rgb, alpha)
     items, meta = [], []
 
@@ -392,13 +444,14 @@ def main():
         atlas[y:y + h, x:x + w] = item
         meta[i]['atlas'] = [x + PAD, y + PAD, w - 2 * PAD, h - 2 * PAD]
     out = Image.fromarray(np.clip(atlas, 0, 255).astype(np.uint8), 'RGBA')
-    out.save(os.path.join(HERE, 'rim-atlas.webp'), 'WEBP', quality=QUALITY, alpha_quality=90, method=6, exact=True)
-    bed_patch().save(os.path.join(HERE, 'bed.webp'), 'WEBP', quality=80, method=6)
+    out.save(os.path.join(HERE, OUT), 'WEBP', quality=QUALITY, alpha_quality=90, method=6, exact=True)
+    if PROFILE == 'rim':
+        bed_patch().save(os.path.join(HERE, 'bed.webp'), 'WEBP', quality=80, method=6)
 
     with open(DATA) as f:
         data = json.load(f)
-    data['atlas'] = {
-        '$comment': 'Written by assets/turnflock/garden/board/rim/build-rim.py. Source px are in 03-rim-vines (1254 px square); atlas px in rim-atlas.webp.',
+    data[KEY] = {
+        '$comment': f'Written by assets/turnflock/garden/board/rim/build-rim.py. Source px are in {SOURCE} (1254 px square); atlas px in {OUT}.',
         'size': [width, height],
         'scale': SCALE,
         'fade': FADE,
@@ -411,7 +464,7 @@ def main():
     with open(DATA, 'w') as f:
         json.dump(data, f, indent=2)
         f.write('\n')
-    for f in ('rim-atlas.webp', 'bed.webp'):
+    for f in (OUT,):
         print(f, round(os.path.getsize(os.path.join(HERE, f)) / 1024, 1), 'kB')
     print('atlas', width, 'x', height)
 
