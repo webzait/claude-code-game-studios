@@ -159,7 +159,7 @@ export function rimGrass(cols: number, rows: number, gap: number): THREE.BufferG
   const foot = new RoundedPath(innerW / 2 - g.base, innerD / 2 - g.base, Math.max(0.03, radius - g.base));
   const tip = new RoundedPath(innerW / 2 + g.lean, innerD / 2 + g.lean, radius + g.lean);
   const samples = Math.ceil(foot.length * 10);
-  const repeats = Math.max(1, Math.round(foot.length / 0.24));
+  const repeats = Math.max(1, Math.round(foot.length / g.bladeRepeat));
   const rowsOut: number[][] = [[], []];
   for (let i = 0; i <= samples; i++) {
     const f = i / samples;

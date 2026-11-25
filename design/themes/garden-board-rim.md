@@ -173,3 +173,11 @@ example. Changes:
   little below the bed (a test allows up to 0.03).
 - **No grass band against the braid** (`rim.grass.height` 0): in the game's light it read as a pale
   smooth strip rather than blades. The code stays, at height 0.
+
+### Closer to 01-board-full (2026-11-25)
+
+The owner sent `01-board-full` again. Changes towards it: five thinner strands instead of three
+(`strandRadius` 0.46, `strandOffset` 0.54), a flatter, wider-looking band (`flatten` 0.62, centre at
+0.19, so it lies low against the lawn), a longer twist (`pitch` 2.6), and the grass fringe along the
+inside back (`rim.grass`, 0.13 high, blade texture every 1.6 cells). Rim 6×6 about 23,000 triangles;
+board 8×8 under 50,000 (tested). Side by side: `compact-next-to-01-board-full.webp`.
