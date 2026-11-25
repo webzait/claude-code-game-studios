@@ -1,0 +1,13 @@
+{
+  "_about": "Written by tools/asset-pipeline/garden_exit/plate.py: size in cells and anchor (fractions from the top left) of each picture.",
+  "sprites": {
+    "plate": {
+      "width": 1.0219,
+      "height": 0.6719,
+      "anchor": [
+        0.4983,
+        0.3599
+      ]
+    }
+  }
+}

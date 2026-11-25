@@ -2,11 +2,17 @@
  * Garden board: the grass tile (`buildFloorTile`), and the grass fur and tile body that the glowing
  * and dirt tiles and the rim's inner grass reuse. Sizes and colours: `data/themes/garden/tile.json`.
  * Reference: `02-tile-grass`, `11-sheet-tile-grass`.
+ *
+ * The grass tile is the owner's own picture: `02-tile-grass` cut out into one texture atlas
+ * (`assets/turnflock/garden/board/tile/grass-tile.webp`, made by `cut.py` next to it), laid on a
+ * thin body. The older tile modelled in code is kept as `buildFloorTileCode`; its fur and body
+ * helpers stay here because the other garden parts use them.
  */
 import * as THREE from 'three';
 import TILE from '../../../../data/themes/garden/tile.json';
 import UNDER from '../../../../data/themes/garden/underlay.json';
-import { loftBody, Mesher, once, outline, shade, shadowed, type Ring } from './geometry';
+import grassTileUrl from '../../../../assets/turnflock/garden/board/tile/grass-tile.webp';
+import { loftBody, Mesher, once, outline, plainMaterial, shade, shadowed, type Ring } from './geometry';
 import { edgeShade, fur, mottle, painted } from './paint';
 import { seeded } from './layout';
 
@@ -191,17 +197,165 @@ export function addPegs(tile: THREE.Group, material: THREE.Material): void {
 export const altTint = (): string => `#${new THREE.Color('#FFFFFF').multiplyScalar(C.altShade).lerp(new THREE.Color('#E8FFD0').multiplyScalar(C.altShade * 0.97), 0.5).getHexString()}`;
 
 /**
- * 1. Grass tile: one cell, a soft rounded cushion of lawn with a fuzzy edge of grass blades and
- * a faint clover pattern on top (reference `02-tile-grass`). `alt` is the slightly darker tile of
- * the checkerboard; its pattern is also turned half round, so neighbours do not repeat exactly.
- * The body is `tile.body` wide inside the 1-cell square, so the grass bed shows between tiles.
+ * The grass tile as modelled in code (the first version): one cell, a soft rounded cushion of lawn
+ * with a fuzzy edge of grass blades and a faint clover pattern on top. `alt` is the slightly darker
+ * tile of the checkerboard; its pattern is also turned half round. Kept as a choice next to the
+ * picture tile (`buildFloorTile`); same contract.
  */
-export function buildFloorTile(alt = false, pegs = true): THREE.Group {
+export function buildFloorTileCode(alt = false, pegs = true): THREE.Group {
   const tint = alt ? altTint() : '#FFFFFF';
   const key = alt ? 'alt' : 'main';
   const tile = new THREE.Group();
   tile.add(new THREE.Mesh(once(`grass-${key}`, () => loftBody(T.body, T.radius, bodyRings(0.72, 0.9, 1, tint), T.cornerSteps, alt)), grassMaterial));
   for (const g of tileFur(key, tint)) tile.add(furMesh(g));
   if (pegs) addPegs(tile, grassMaterial);
+  return shadowed(tile);
+}
+
+// ---------------------------------------------------------------------------------------------
+// The grass tile from the owner's picture.
+
+const I = TILE.image;
+
+/**
+ * The atlas picture, decoded before any tile is built (top-level await: a few milliseconds for a
+ * 32 kB WebP inlined in the page), so the first frame already shows it. Outside a browser (the unit
+ * tests) there is no image: the tile is then drawn in its vertex colours alone.
+ */
+async function loadAtlas(): Promise<THREE.Texture | null> {
+  if (typeof document === 'undefined' || typeof Image === 'undefined') return null;
+  try {
+    const image = new Image();
+    image.src = grassTileUrl;
+    await image.decode();
+    const texture = new THREE.Texture(image);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
+    texture.anisotropy = 8;
+    texture.minFilter = THREE.LinearMipmapLinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.needsUpdate = true;
+    return texture;
+  } catch {
+    return null;
+  }
+}
+
+/** The grass tile atlas (top and side fur), or null outside a browser. */
+export const grassTileAtlas: THREE.Texture | null = await loadAtlas();
+
+/**
+ * The picture tile's material: the atlas times the vertex colours (the dark checkerboard tint).
+ * Its fuzzy edge is soft, so it blends; it still writes depth, and its triangles are listed side
+ * first, top last, so a tile's own fur lies over its side.
+ */
+export const grassImageMaterial = new THREE.MeshStandardMaterial({
+  map: grassTileAtlas,
+  vertexColors: true,
+  roughness: 1,
+  metalness: 0,
+  transparent: true,
+  alphaTest: I.alphaTest,
+  color: new THREE.Color(1, 1, 1).multiplyScalar(I.light),
+});
+
+/** Shadows of the picture tile follow its fuzzy outline, not its square card. */
+export const grassImageDepth = new THREE.MeshDepthMaterial({ map: grassTileAtlas, alphaTest: 0.5 });
+
+/** Where the atlas's two pieces sit, as texture v (1 = the picture's top row). */
+function atlasRows(): { topV0: number; topV1: number; sideV0: number; sideV1: number } {
+  const a = I.atlas;
+  const h = a.top + a.pad + a.side;
+  return { topV1: 1, topV0: 1 - a.top / h, sideV1: 1 - (a.top + a.pad + 0.5) / h, sideV0: 0.5 / h };
+}
+
+/**
+ * The thin body under the picture: straight sides from the floor to just under the top, a rounded
+ * square `image.wall` wide, wrapped in the side strip of fur, repeated a whole number of times
+ * round the outline so it closes without a seam.
+ */
+function imageWalls(m: Mesher, tint: string): void {
+  const { sideV0, sideV1 } = atlasRows();
+  const w = I.wall;
+  const pts = outline(w, w, I.wallRadius, 0, I.cornerSteps);
+  let total = 0;
+  for (let i = 1; i < pts.length; i++) total += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].z - pts[i - 1].z);
+  const repeats = Math.max(4, Math.round(total / I.sideRepeat));
+  // Columns along the outline, with a doubled column wherever the strip starts again.
+  const cols: { x: number; z: number; nx: number; nz: number; u: number }[] = [];
+  const at = (k: number): number => pts[k].f * repeats;
+  for (let i = 0; i < pts.length; i++) {
+    if (i > 0) {
+      const a = at(i - 1);
+      const b = at(i);
+      for (let n = Math.floor(a) + 1; n < b - 1e-9; n++) {
+        const t = (n - a) / (b - a);
+        const p = pts[i - 1];
+        const q = pts[i];
+        const x = p.x + (q.x - p.x) * t;
+        const z = p.z + (q.z - p.z) * t;
+        const nx = p.nx + (q.nx - p.nx) * t;
+        const nz = p.nz + (q.nz - p.nz) * t;
+        cols.push({ x, z, nx, nz, u: 1 }, { x, z, nx, nz, u: 0 });
+      }
+    }
+    const f = at(i);
+    const frac = f - Math.floor(f);
+    cols.push({ ...pts[i], u: i === pts.length - 1 ? 1 : frac });
+  }
+  const lift = I.sideLift;
+  const bottom = shade(I.sideFoot, tint);
+  const top = shade(1, tint);
+  const row = (y: number, v: number, c: THREE.Color): number[] => cols.map((p) =>
+    m.vertex(new THREE.Vector3(p.x, y, p.z), new THREE.Vector3(p.nx, lift, p.nz).normalize(), p.u, v, c));
+  const rows = [row(0, sideV0, bottom), row(I.wallTop, sideV1, top)];
+  // Drop the zero-width quads at each doubled column (their two corners coincide).
+  for (let j = 0; j < cols.length - 1; j++) {
+    if (cols[j].x === cols[j + 1].x && cols[j].z === cols[j + 1].z) continue;
+    const a = rows[0][j];
+    const b = rows[0][j + 1];
+    const c = rows[1][j];
+    const d = rows[1][j + 1];
+    m.index.push(a, c, b, b, c, d);
+  }
+}
+
+/** The top: a rounded square `image.top` wide at the tile's height, the cut-out picture laid on from above. */
+function imageTop(m: Mesher, tint: string): void {
+  const { topV0, topV1 } = atlasRows();
+  const q = I.top;
+  const y = T.height;
+  const uv = (x: number, z: number): [number, number] => [x / q + 0.5, topV0 + (topV1 - topV0) * (0.5 - z / q)];
+  const c = shade(1, tint);
+  const up = new THREE.Vector3(0, 1, 0);
+  const ring = outline(q, q, I.topRadius, 0, I.cornerSteps).slice(0, -1).map((p) => m.vertex(new THREE.Vector3(p.x, y, p.z), up, ...uv(p.x, p.z), c));
+  const centre = m.vertex(new THREE.Vector3(0, y, 0), up, ...uv(0, 0), c);
+  for (let j = 0; j < ring.length; j++) m.index.push(centre, ring[(j + 1) % ring.length], ring[j]);
+}
+
+/** Geometry of the picture tile: side first, then top (see `grassImageMaterial`). */
+export function grassImageGeometry(tint = '#FFFFFF'): THREE.BufferGeometry {
+  const m = new Mesher();
+  imageWalls(m, tint);
+  imageTop(m, tint);
+  return m.build();
+}
+
+/**
+ * 1. Grass tile: one cell, the owner's picture `02-tile-grass` cut out and laid on top of a thin
+ * body, its fuzzy outline on a transparent ground; the body's side wears the picture's own side
+ * fur. `alt` is the checkerboard's second tile: by default (`image.checker` false, the owner's
+ * choice) it is the very same tile, as on `01-board-full`; with `checker` true it is the same
+ * picture with a darker tint. Same contract as the robot tile: one cell, floor at y = 0, top at
+ * 0.2; pegs only on loose parts.
+ */
+export function buildFloorTile(alt = false, pegs = true): THREE.Group {
+  const dark = alt && I.checker;
+  const tint = dark ? altTint() : '#FFFFFF';
+  const tile = new THREE.Group();
+  const mesh = new THREE.Mesh(once(`grass-image-${dark ? 'alt' : 'main'}`, () => grassImageGeometry(tint)), grassImageMaterial);
+  mesh.customDepthMaterial = grassImageDepth;
+  tile.add(mesh);
+  if (pegs) addPegs(tile, plainMaterial);
   return shadowed(tile);
 }

@@ -3,6 +3,7 @@ import { CELEBRATION_NAMES, CELEBRATION_VARIANTS, type CelebrationVariant } from
 import { DEFAULT_LAB, usesCertifiedRules, type LabSettings } from '../game/lab';
 import { MUSIC_VARIANTS, scoreOf } from '../music/tracks';
 import parts from '../../data/parts.json';
+import { THEME_IDS, THEME_NAMES, type ThemeId } from '../game/theme';
 import { SHAPE_COLOURS, shapeOf, shapesInWords, shapeSvg } from './colourShapes';
 import pkg from '../../package.json';
 import { soundSet, soundSetIds } from '../sound/sets';
@@ -197,6 +198,7 @@ const CELEBRATION_HINTS: Record<CelebrationVariant, string> = {
   confetti: 'Paper flecks in the robot colours shoot up from the exit and flutter down.',
   wave: 'The tiles light up in a ring that runs from the exit across the board.',
   hop: 'The robots hop out of the exit once more, spin and dive back in.',
+  garden: 'Garden theme: a beam of light on the exit, stars burst out and twinkles run over the board.',
 };
 
 const LAB_KEYS = Object.keys(DEFAULT_LAB) as (keyof LabSettings)[];
@@ -386,12 +388,15 @@ export interface PlayerSettingsModel {
   readonly reduceMotion: boolean | null;
   /** A shape on each robot colour and its button. */
   readonly colourShapes: boolean;
+  /** The look the game is played in. */
+  readonly theme: ThemeId;
   /** How many test lab values differ from the certified game. */
   readonly labChanged: number;
   setMute(mute: boolean): void;
   setMusic(on: boolean): void;
   setReduceMotion(value: boolean | null): void;
   setColourShapes(on: boolean): void;
+  setTheme(theme: ThemeId): void;
   resetProgress(): void;
   back(): void;
   openLab(): void;
@@ -421,6 +426,10 @@ export function playerScreen(m: PlayerSettingsModel): { root: HTMLElement; back:
     segmented<boolean | null>(motion.titleId, [{ label: 'Auto', value: null }, { label: 'On', value: true }, { label: 'Off', value: false }], m.reduceMotion, (v) => m.setReduceMotion(v), motion.hintId),
   );
   game.body.append(shapesRow(m.colourShapes, (on) => m.setColourShapes(on)), motion.row);
+  const theme = row('Theme', 'How the game looks. Levels and progress stay the same.', { stack: true });
+  theme.row.dataset.key = 'theme';
+  theme.row.appendChild(segmented<ThemeId>(theme.titleId, THEME_IDS.map((value) => ({ label: THEME_NAMES[value], value })), m.theme, (v) => m.setTheme(v), theme.hintId));
+  game.body.append(theme.row);
 
   const progress = panel('Progress');
   progress.body.append(resetControl(false, false, () => m.resetProgress()));

@@ -38,7 +38,7 @@ const lively = (stars: 1 | 2 | 3 = 1): CelebrationPlan => planCelebration({ vari
 
 describe('the celebration that is planned for a win', () => {
   it('offers three named variants, and the configured one is the default of the test lab', () => {
-    expect(CELEBRATION_VARIANTS).toEqual(['confetti', 'wave', 'hop']);
+    expect(CELEBRATION_VARIANTS).toEqual(['confetti', 'wave', 'hop', 'garden']);
     expect(new Set(Object.values(CELEBRATION_NAMES)).size).toBe(CELEBRATION_VARIANTS.length);
     expect(CELEBRATION_VARIANTS).toContain(C.variant);
     expect(DEFAULT_LAB.celebration).toBe(C.variant);

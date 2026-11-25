@@ -1,0 +1,131 @@
+{
+  "_note": "Garden theme effects (design/themes/garden-effects.md). Sizes are in cells (multiplied by the board pitch), times in seconds.",
+  "facingTilt": 30,
+  "beam": {
+    "seconds": 0.9,
+    "calmSeconds": 0.7,
+    "radius": 0.36,
+    "tube": 0.045,
+    "band": 0.06,
+    "height": 1.2,
+    "rays": 5,
+    "rayHeight": 1.55,
+    "rayWidth": 0.045,
+    "sparks": 10,
+    "sparkSize": 0.09,
+    "colors": {
+      "ring": "#FFFFFF",
+      "band": "#3DB81E",
+      "pad": "#C6F45A",
+      "padEdge": "#6FD42C",
+      "light": "#9BEF3A",
+      "core": "#E4FF9A",
+      "ray": "#D9FF7A"
+    }
+  },
+  "stars": {
+    "seconds": 1.0,
+    "calmSeconds": 0.8,
+    "count": 3,
+    "size": 0.26,
+    "depth": 0.035,
+    "puff": 0.05,
+    "lift": 0.45,
+    "spread": 0.55,
+    "rise": 0.35,
+    "wobble": 14,
+    "twinkles": 4,
+    "twinkleSize": 0.3,
+    "colors": {
+      "face": "#FFD62E",
+      "rim": "#F5A11C",
+      "glow": "#FFE85C"
+    }
+  },
+  "cloud": {
+    "seconds": 0.7,
+    "calmSeconds": 0.5,
+    "size": 0.42,
+    "lift": 0.28,
+    "grow": 0.35,
+    "rise": 0.12,
+    "colors": {
+      "light": "#FFFFFF",
+      "shade": "#AEB3EA"
+    }
+  },
+  "ring": {
+    "seconds": 1.0,
+    "calmSeconds": 0.8,
+    "radius": 0.33,
+    "tube": 0.1,
+    "lift": 0.1,
+    "turns": 1.6,
+    "glow": 0.85,
+    "colors": {
+      "deep": "#0E4FD0",
+      "mid": "#2A9BFF",
+      "light": "#A8F0FF",
+      "glow": "#47B4FF"
+    }
+  },
+  "celebration": {
+    "seconds": 1.5,
+    "perfectSeconds": 2.1,
+    "cardDelay": 0.7,
+    "perfectCardDelay": 0.9,
+    "beamScale": 1.6,
+    "starsAt": 0.12,
+    "starsScale": 2.0,
+    "sparkleAt": 0.2,
+    "sparkleSize": 0.5,
+    "calm": {
+      "seconds": 0.9,
+      "cardDelay": 0.2
+    },
+    "perfectBurstAt": 0.5,
+    "perfectBurstScale": 2.2
+  },
+  "look": "picture",
+  "pictures": {
+    "_note": "Sizes of the owner's pictures on the board, in cells. Anchors are where in the picture (0..1 from left, 0..1 from top) the effect touches the cell. lift: how far the picture moves towards the camera so it does not cut into the tiles.",
+    "lift": 0.3,
+    "beam": {
+      "width": 1.09,
+      "aspect": 1.263,
+      "anchor": [
+        0.499,
+        0.749
+      ],
+      "stretch": 0.35,
+      "sparks": 6,
+      "sparkSize": 0.08
+    },
+    "star": {
+      "size": 0.5,
+      "aspect": 0.96,
+      "twinkleSize": 0.16,
+      "lift": 0.25,
+      "spread": 0.48
+    },
+    "cloud": {
+      "width": 0.95,
+      "aspect": 0.91,
+      "anchor": [
+        0.5,
+        0.6
+      ],
+      "ballSize": 1.0
+    },
+    "ring": {
+      "width": 1.0,
+      "aspect": 0.816,
+      "squash": 0.8,
+      "centre": [
+        0.499,
+        0.495
+      ],
+      "turn": 0.35
+    }
+  }
+}

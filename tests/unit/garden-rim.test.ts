@@ -5,14 +5,146 @@ import TILE from '../../data/themes/garden/tile.json';
 import RIM from '../../data/themes/garden/rim.json';
 import UNDER from '../../data/themes/garden/underlay.json';
 import { boardFootprint, boardPixels, buildFloorTile, buildRim, buildUnderlay, rimDecorLayout } from '../../src/render/parts/garden/board';
-import { braidTwists, rimPath, RoundedPath, seeded } from '../../src/render/parts/garden/layout';
+import { braidTwists, RIM_PICTURES, RIM_PX, rimDecorSlots, rimPath, rimQuads, RoundedPath, seeded, sideSpec, type Side } from '../../src/render/parts/garden/layout';
+import { buildRimBoard, buildRimImage, buildRimModel } from '../../src/render/parts/garden/rim';
 import { boxOf, outwardShare, SIZES } from './garden-helpers';
 
 const GAP = config.board.grid.gap;
+const SIDES: Side[] = ['top', 'right', 'bottom', 'left'];
+const FADE = RIM.atlas.fade / RIM_PX;
 
-describe('garden rim, underlay and board', () => {
+/** Inner length of a board side, and where its straight run between the corners starts and ends (cells). */
+function run(side: Side, cols: number, rows: number): { from: number; to: number; length: number } {
+  const { innerW, innerD } = boardFootprint(cols, rows, GAP);
+  const spec = sideSpec(side);
+  const length = side === 'top' || side === 'bottom' ? innerW : innerD;
+  return { from: spec.cornerStart / RIM_PX, to: length - (spec.length - spec.cornerEnd) / RIM_PX, length };
+}
+
+describe("garden rim as the owner's picture (buildRimImage)", () => {
+  it('is one flat mesh, facing up, just above the tiles', () => {
+    for (const [cols, rows] of SIZES) {
+      const rim = buildRimImage(cols, rows, GAP);
+      const meshes: THREE.Mesh[] = [];
+      rim.traverse((n) => {
+        if (n instanceof THREE.Mesh) meshes.push(n);
+      });
+      expect(meshes).toHaveLength(1);
+      const box = boxOf(rim);
+      expect(box.min.y).toBeGreaterThan(TILE.tile.height);
+      expect(box.max.y - box.min.y).toBeLessThan(0.01);
+      const { agree, total } = outwardShare(rim);
+      expect(total).toBeGreaterThan(0);
+      expect(agree).toBe(total);
+    }
+  });
+
+  it('never stretches either picture: every piece is drawn at its picture\'s one scale', () => {
+    for (const pic of Object.values(RIM_PICTURES)) {
+      const px = pic.image.pxPerCell;
+      for (const [cols, rows] of SIZES) {
+        for (const q of rimQuads(cols, rows, GAP, pic)) {
+          expect(Math.abs(q.sx1 - q.sx0)).toBeCloseTo(Math.abs(q.x1 - q.x0) * px, 6);
+          expect(Math.abs(q.sy1 - q.sy0)).toBeCloseTo(Math.abs(q.z1 - q.z0) * px, 6);
+        }
+      }
+    }
+  });
+
+  it('the rim cut from 01-board-full lies low, under the tile tops, and its plain braid runs corner to corner', () => {
+    const pic = RIM_PICTURES.board;
+    const px = pic.image.pxPerCell;
+    const fade = pic.atlas.fade / px;
+    for (const [cols, rows] of SIZES) {
+      const box = boxOf(buildRimBoard(cols, rows, GAP));
+      expect(box.max.y).toBeLessThan(TILE.tile.height);
+      expect(box.min.y).toBeGreaterThan(0);
+      const { innerW, innerD } = boardFootprint(cols, rows, GAP);
+      const quads = rimQuads(cols, rows, GAP, pic);
+      for (const side of SIDES) {
+        const spec = sideSpec(side, pic);
+        const horizontal = side === 'top' || side === 'bottom';
+        const length = (horizontal ? innerW : innerD) - 2 * (pic.image.innerInset ?? 0);
+        const pieces = quads
+          .filter((q) => q.kind === 'tile' && q.side === side)
+          .map((q) => (horizontal ? [q.x0, q.x1] : [q.z0, q.z1]).map((v) => v + length / 2))
+          .sort((a, b) => a[0] - b[0]);
+        expect(pieces[0][0]).toBeCloseTo(spec.cornerStart / px - fade, 6);
+        expect(pieces[pieces.length - 1][1]).toBeCloseTo(length - (spec.length - spec.cornerEnd) / px + fade, 6);
+        for (let i = 1; i < pieces.length; i++) expect(pieces[i][0]).toBeCloseTo(pieces[i - 1][1], 9);
+      }
+    }
+  });
+
+  it('the plain braid runs along every side from corner to corner without a gap', () => {
+    for (const [cols, rows] of SIZES) {
+      const quads = rimQuads(cols, rows, GAP);
+      for (const side of SIDES) {
+        const { from, to, length } = run(side, cols, rows);
+        const horizontal = side === 'top' || side === 'bottom';
+        const pieces = quads
+          .filter((q) => q.kind === 'tile' && q.side === side)
+          .map((q) => (horizontal ? [q.x0, q.x1] : [q.z0, q.z1]).map((v) => v + length / 2))
+          .sort((a, b) => a[0] - b[0]);
+        expect(pieces.length).toBeGreaterThan(0);
+        expect(pieces[0][0]).toBeCloseTo(from - FADE, 6);
+        expect(pieces[pieces.length - 1][1]).toBeCloseTo(to + FADE, 6);
+        for (let i = 1; i < pieces.length; i++) expect(pieces[i][0]).toBeCloseTo(pieces[i - 1][1], 9);
+      }
+    }
+  });
+
+  it('the straight-side pieces keep clear of the tiles', () => {
+    for (const [cols, rows] of SIZES) {
+      const tilesW = cols * TILE.tile.size + (cols - 1) * GAP;
+      const tilesD = rows * TILE.tile.size + (rows - 1) * GAP;
+      for (const q of rimQuads(cols, rows, GAP).filter((p) => p.kind !== 'corner')) {
+        const overlapX = Math.min(Math.max(q.x0, q.x1), tilesW / 2) - Math.max(Math.min(q.x0, q.x1), -tilesW / 2);
+        const overlapZ = Math.min(Math.max(q.z0, q.z1), tilesD / 2) - Math.max(Math.min(q.z0, q.z1), -tilesD / 2);
+        expect(overlapX <= 1e-9 || overlapZ <= 1e-9).toBe(true);
+      }
+    }
+  });
+
+  it('leaves and flowers sit at fixed places, between the corners, overlapping only by their faded ends', () => {
+    for (const [cols, rows] of SIZES) {
+      const slots = rimDecorSlots(cols, rows, GAP);
+      expect(rimDecorSlots(cols, rows, GAP)).toEqual(slots);
+      for (const side of SIDES) {
+        const { from, to } = run(side, cols, rows);
+        const mine = slots.filter((p) => p.side === side).sort((a, b) => a.start - b.start);
+        mine.forEach((p, i) => expect(p.start).toBeGreaterThanOrEqual((i === 0 ? from : mine[i - 1].end) - FADE - 1e-9));
+        if (mine.length) expect(mine[mine.length - 1].end).toBeLessThanOrEqual(to + FADE + 1e-9);
+      }
+    }
+  });
+
+  it('keeps every decorated piece on 6x6 and larger, and both flowers on every board', () => {
+    for (const [cols, rows] of [[6, 6], [8, 8], [6, 8], [8, 6]] as const) {
+      expect(rimDecorSlots(cols, rows, GAP).map((p) => p.name).sort()).toEqual([...RIM.image.decorOrder].sort());
+    }
+    for (const [cols, rows] of SIZES) {
+      const names = rimDecorSlots(cols, rows, GAP).map((p) => p.name);
+      expect(names).toContain('left-g');
+      expect(names).toContain('right-d');
+      for (const side of SIDES) expect(names.some((n) => n.startsWith(side)) || side === 'bottom').toBe(true);
+    }
+  });
+
+  it('costs a few dozen triangles', () => {
+    for (const [cols, rows] of SIZES) {
+      let tris = 0;
+      buildRimImage(cols, rows, GAP).traverse((n) => {
+        if (n instanceof THREE.Mesh) tris += n.geometry.index!.count / 3;
+      });
+      expect(tris).toBeLessThan(120);
+    }
+  });
+});
+
+describe('garden rim modelled in code (buildRimModel), underlay and board', () => {
   it('faces outward', () => {
-    for (const part of [buildRim(6, 6, GAP), buildRim(4, 7, GAP), buildUnderlay(5, 5, GAP, true)]) {
+    for (const part of [buildRimModel(6, 6, GAP), buildRimModel(4, 7, GAP), buildUnderlay(5, 5, GAP, true)]) {
       const { agree, total } = outwardShare(part);
       expect(total).toBeGreaterThan(0);
       expect(agree / total).toBeGreaterThan(0.97);
@@ -26,7 +158,7 @@ describe('garden rim, underlay and board', () => {
       const tilesD = rows * TILE.tile.size + (rows - 1) * GAP;
       expect(innerW).toBeGreaterThan(tilesW);
       expect(innerD).toBeGreaterThan(tilesD);
-      const braid = (buildRim(cols, rows, GAP).children[0] as THREE.Mesh).geometry;
+      const braid = (buildRimModel(cols, rows, GAP).children[0] as THREE.Mesh).geometry;
       braid.computeBoundingBox();
       const box = braid.boundingBox!;
       // The braid stays within the outside of the footprint.
@@ -34,11 +166,20 @@ describe('garden rim, underlay and board', () => {
       expect(box.max.z).toBeLessThanOrEqual(outerD / 2 + 1e-3);
       // ...and keeps clear of the tiles.
       const pos = braid.getAttribute('position');
+      // The tiles' outline: the cells' rectangle less the gap round each tile, with the tile's rounded corners.
+      const inset = (TILE.tile.size - TILE.tile.body) / 2;
+      const hw = tilesW / 2 - inset;
+      const hd = tilesD / 2 - inset;
+      const rad = TILE.tile.radius;
       for (let i = 0; i < pos.count; i++) {
-        const inside = Math.abs(pos.getX(i)) < tilesW / 2 && Math.abs(pos.getZ(i)) < tilesD / 2;
+        const x = Math.abs(pos.getX(i));
+        const z = Math.abs(pos.getZ(i));
+        const corner = x > hw - rad && z > hd - rad;
+        const inside = x < hw && z < hd && (!corner || Math.hypot(x - (hw - rad), z - (hd - rad)) < rad);
         expect(inside).toBe(false);
       }
-      expect(box.min.y).toBeGreaterThanOrEqual(-1e-3);
+      // The braid sits a little down in the grass bed (y = 0), never through the plate under it.
+      expect(box.min.y).toBeGreaterThanOrEqual(-0.03);
     }
   });
 
@@ -70,8 +211,8 @@ describe('garden rim, underlay and board', () => {
   it('decorations sit at the same places every time', () => {
     expect(rimDecorLayout(6, 6, GAP)).toEqual(rimDecorLayout(6, 6, GAP));
     expect(rimDecorLayout(6, 6, GAP)).toHaveLength(RIM.decor.clusters.length);
-    const a = buildRim(5, 7, GAP);
-    const b = buildRim(5, 7, GAP);
+    const a = buildRimModel(5, 7, GAP);
+    const b = buildRimModel(5, 7, GAP);
     const points = (o: THREE.Object3D): number[] => {
       o.updateMatrixWorld(true);
       return o.children.filter((c) => c instanceof THREE.Group).map((c) => c.position.toArray()).flat();
@@ -127,14 +268,13 @@ describe('garden rim, underlay and board', () => {
   it('a whole 8x8 board stays within the triangle budget', () => {
     let tris = 0;
     const board = new THREE.Group();
-    board.add(buildUnderlay(8, 8, GAP), buildRim(8, 8, GAP));
+    board.add(buildUnderlay(8, 8, GAP), buildRimModel(8, 8, GAP));
     for (let i = 0; i < 64; i++) board.add(buildFloorTile(i % 2 === 1, false));
     board.traverse((n) => {
       if (n instanceof THREE.Mesh) tris += (n.geometry.index ? n.geometry.index.count : n.geometry.getAttribute('position').count) / 3;
     });
-    // The robot board of this size has about 19,600. The full braid of thin twigs (asked for by the owner)
-    // costs most of the difference; it is one draw call, which a phone handles easily.
-    expect(tris).toBeLessThan(70000);
+    // The robot board of this size has 19,596; the compact braid is about 28,000 of these, in one draw call.
+    expect(tris).toBeLessThan(50000);
   });
   it('gives the same numbers for the same seed', () => {
     const a = seeded(42);
@@ -145,5 +285,11 @@ describe('garden rim, underlay and board', () => {
       expect(v).toBeGreaterThanOrEqual(0);
       expect(v).toBeLessThan(1);
     }
+  });
+});
+
+describe('the default garden rim', () => {
+  it('is the rim cut from 01-board-full, the owner\'s choice', () => {
+    expect(buildRim).toBe(buildRimBoard);
   });
 });

@@ -1,0 +1,20 @@
+/* Garden-theme obstacles on the parts sheet: warm cream backdrop as in the owner's pictures. */
+.card.garden canvas, .card.garden img { width: 100%; height: auto; display: block; border-radius: 12px; background: #F8F4F2; }
+.card.garden figure { margin: 0; text-align: center; }
+.card.garden figcaption { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.garden-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.garden-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 8px; align-items: start; }
+.garden-row figure.sheet img { image-rendering: auto; padding: 10%; }
+.garden-game { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-top: 10px; }
+.garden-game figure.big { flex: 1 1 100%; max-width: 640px; }
+.card.garden .garden-game canvas.phone { width: auto; border-radius: 8px; }
+.garden-strip { margin-top: 8px; }
+.garden-strip img { max-width: 640px; margin: 0 auto; }
+.garden-cost { margin-top: 12px; border-collapse: collapse; font-size: 12.5px; }
+.garden-cost td, .garden-cost th { padding: 3px 10px; border-bottom: 1px solid var(--line); text-align: left; font-variant-numeric: tabular-nums; }
+@media (max-width: 700px) { .garden-pair { grid-template-columns: 1fr; } .garden-row { grid-template-columns: repeat(3, 1fr); } }
+.garden-row.three { grid-template-columns: repeat(3, 1fr); }
+.garden-row.four { grid-template-columns: repeat(4, 1fr); }
+.card.garden img.checker { background-color: #fff; background-image: conic-gradient(#e3e6ee 25%, #fff 0 50%, #e3e6ee 0 75%, #fff 0); background-size: 16px 16px; object-fit: contain; aspect-ratio: 1; padding: 8%; }
+.card.garden img.grass { background: #8fd23f; object-fit: contain; aspect-ratio: 1; padding: 8%; }
+.garden-row figure img:not(.checker):not(.grass) { aspect-ratio: 1; object-fit: contain; }

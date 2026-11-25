@@ -1,0 +1,22 @@
+/* Garden theme logo: the owner's chick logo (assets/turnflock/garden/logo/logo-garden.webp, 560×299) in the
+   robot logo's place on the level screen. showGardenLogo (logo.ts) swaps the picture; these rules only fit
+   its shape. Every rule starts with [data-theme="garden"], so the robot theme is untouched.
+   The logo is as WIDE as the robot logo would be in every layout and on every screen, so the word reads
+   the same size; it is higher by --tg-logo-grow (about 1.14: the chicks stand on the letters), and the band and
+   the level grid below it take that height into account. Design: design/themes/garden-logo.md. */
+
+/* The picture's shape, so its box is reserved before it is decoded. */
+[data-theme="garden"] .tf-levels-logo { aspect-ratio: 560 / 299; filter: drop-shadow(0 4px 6px var(--tg-logo-shadow, rgba(30, 90, 40, .28))); }
+
+/* Row (also every screen too low for the band): the same width rule as the robot logo, the height follows. */
+[data-theme="garden"] .tf-levels-logo { width: min(100%, var(--tl-logo-row-max, 56px) * 768 / 360 * var(--tg-logo-wide, 1)); }
+@container tl (max-height: 620px) { [data-theme="garden"] .tf-levels-logo { width: min(100%, min(var(--tl-logo-row-max, 56px), 46px) * 768 / 360 * var(--tg-logo-wide, 1)); } }
+
+/* Band: the robot's band height (same formula as tf-levels.css, keep the two together) times the
+   growth, so the logo is as wide as the robot's. The band and the grid use --tl-logo-h, so they make room. */
+[data-theme="garden"] .tf-levels-phone > * {
+  --tl-logo-h: calc(var(--tg-logo-grow, 1.139) * clamp(var(--tl-logo-min, 50px), calc(100cqh - var(--tl-chrome) + var(--tl-logo-give) - var(--tl-rows) * (var(--tl-logo-comfort, 60px) + var(--tl-gap) + var(--tl-d))), var(--tl-logo-cap)));
+}
+@container tl (min-height: 562px) {
+  [data-theme="garden"] .tf-logo-band .tf-levels-logo { width: auto; height: var(--tl-logo-h); }
+}

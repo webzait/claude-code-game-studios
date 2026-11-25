@@ -1,11 +1,21 @@
 // npm run build        -> dist/: the folder build, for shipping (itch.io, a website)
 // npm run build:single -> dist-single/index.html: one file with everything
 //                         inlined, which every check opens from disk
+// npm run build:single:garden -> dist-single-garden/index.html: the same game (kept as a
+//                         name the published copy is built with; both open in the garden)
 // Vitest reads the test block; Playwright has its own config.
 import { defineConfig } from 'vitest/config';
 import { viteSingleFile } from 'vite-plugin-singlefile';
 
+/** Modes that build one self-contained HTML file. */
+const SINGLE_FILE_MODES = ['single', 'single-garden', 'parts', 'sounds'];
+/** Output folder per mode; any other mode builds the folder version into dist/. */
+const OUT_DIRS: Record<string, string> = { single: 'dist-single', 'single-garden': 'dist-single-garden', parts: 'dist-parts', sounds: 'dist-sounds' };
+
 export default defineConfig(({ mode }) => ({
+  // The theme a fresh save starts in (src/game/theme.ts): the garden, the main theme since the
+  // owner's decision of 2026-11-24; the robot theme stays one tap away in the settings.
+  define: { __TF_DEFAULT_THEME__: JSON.stringify('garden') },
   // Relative paths, so the build works from any folder, itch.io included.
   base: './',
   // Assets are imported in the code (new URL('../assets/x.png', import.meta.url)),
@@ -14,12 +24,12 @@ export default defineConfig(({ mode }) => ({
   publicDir: false,
   // The asset kit's 3D models are imported from code like the images are.
   assetsInclude: ['**/*.glb'],
-  plugins: mode === 'single' || mode === 'parts' || mode === 'sounds' ? [viteSingleFile()] : [],
+  plugins: SINGLE_FILE_MODES.includes(mode) ? [viteSingleFile()] : [],
   // The game's page only: other pages in the project (one-shots in prototypes/)
   // are not scanned for packages.
   optimizeDeps: { entries: ['index.html'] },
   build: {
-    outDir: mode === 'single' ? 'dist-single' : mode === 'parts' ? 'dist-parts' : mode === 'sounds' ? 'dist-sounds' : 'dist',
+    outDir: OUT_DIRS[mode] ?? 'dist',
     emptyOutDir: true,
     // npm run build:parts -> dist-parts/parts.html: every game element on its own, for review.
     ...(mode === 'parts' ? { rollupOptions: { input: 'parts.html' } } : {}),

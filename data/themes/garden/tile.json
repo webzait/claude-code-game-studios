@@ -36,5 +36,25 @@
     "blade": "#96CB1A",
     "bladeTip": "#DDF66A",
     "bladeBase": "#4F8E12"
+  },
+  "image": {
+    "$comment": "The grass tile from the owner's picture (buildFloorTile). The atlas is assets/turnflock/garden/board/tile/grass-tile.webp (cut.py): the top seen from above, then pad rows, then the side's fur strip, all 512 px wide. top: width of the top picture, fur tip to tip is 0.962 of it. wall: the thin body under it. sideRepeat: cells per repeat of the side strip. sideLift: how far the side's normals lean up (the picture's side is already shaded). light: brightness of the material against the game's light. checker: false gives every tile the same picture, as on 01-board-full (owner's choice, 2026-11-24); true tints the alt tile of the checkerboard with altTint.",
+    "atlas": {
+      "top": 512,
+      "pad": 16,
+      "side": 112
+    },
+    "top": 0.98,
+    "topRadius": 0.2,
+    "wall": 0.88,
+    "wallRadius": 0.17,
+    "wallTop": 0.197,
+    "sideRepeat": 0.42,
+    "sideLift": 0.6,
+    "sideFoot": 0.85,
+    "cornerSteps": 6,
+    "alphaTest": 0.03,
+    "light": 1.04,
+    "checker": false
   }
 }
