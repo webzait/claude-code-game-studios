@@ -57,7 +57,9 @@ export const dirtTileReady: Promise<void> = typeof document === 'undefined'
   });
 
 /**
- * The picture tile's block: a rounded square `tile.body` wide and `tile.height` tall. Its top
+ * The picture tile's block: a rounded square as wide as the grass tile's top (`image.top` and
+ * `image.topRadius` in tile.json, so a dirt cell and a grass cell are the same size) and
+ * `tile.height` tall. Its top
  * shows the top of the picture, stretched over the square (x left to right, the far side at the
  * picture's top); its side shows the band of the front wall, unrolled round the outline so the
  * band runs on without a jump at every corner. `mirror` flips the picture left to right (the
@@ -65,8 +67,8 @@ export const dirtTileReady: Promise<void> = typeof document === 'undefined'
  */
 export function dirtBlock(mirror: boolean, tint: string): THREE.BufferGeometry {
   const m = new Mesher();
-  const w = T.body;
-  const r = P.corner * w;
+  const w = TILE.image.top;
+  const r = TILE.image.topRadius;
   const color = shade(1, tint);
   const { top, band } = dirtAtlas;
   const flip = (u: number): number => (mirror ? 1 - u : u);
