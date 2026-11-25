@@ -11,7 +11,7 @@
  * `dirt.ts` (dirt.json), rim `rim.ts` (rim.json), underlay `underlay.ts` (underlay.json).
  * Shared helpers: `geometry.ts`, `paint.ts`, `layout.ts`. Design: `design/themes/garden-board.md`.
  */
-import { barkMaterial, decorMaterial, leafMaterial, rimMaterial } from './rim';
+import { barkMaterial, decorMaterial, leafMaterial, rimBoardMaterial, rimMaterial } from './rim';
 import { bedMaterial } from './underlay';
 import { dirtMaterial } from './dirt';
 import { furMaterial, grassMaterial } from './grass';
@@ -26,7 +26,8 @@ export { boardFootprint, boardPixels, rimDecorLayout } from './layout';
 
 /**
  * The shared materials of the garden board, for the theme session (to fuse, dispose or tune them).
- * The rim (`buildRim`, the default) is `bark` with `decor` (flowers) and `leaf` (leaves, tendrils);
- * `rim` is the picture rim's (`buildRimImage`, kept as an alternative).
+ * The rim (`buildRim`, the default, = `buildRimBoard`, owner's choice) is `rimBoard`, cut from
+ * 01-board-full; `bark`, `decor` and `leaf` belong to the modelled braid (`buildRimModel`) and `rim`
+ * to the rim from 03-rim-vines (`buildRimImage`), both kept as alternatives.
  */
-export const gardenBoardMaterials = { grass: grassMaterial, fur: furMaterial, dirt: dirtMaterial, bark: barkMaterial, decor: decorMaterial, leaf: leafMaterial, rim: rimMaterial, bed: bedMaterial, plain: plainMaterial };
+export const gardenBoardMaterials = { grass: grassMaterial, fur: furMaterial, dirt: dirtMaterial, rimBoard: rimBoardMaterial, bark: barkMaterial, decor: decorMaterial, leaf: leafMaterial, rim: rimMaterial, bed: bedMaterial, plain: plainMaterial };
