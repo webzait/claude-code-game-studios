@@ -978,7 +978,7 @@ export class BoardView {
     // garden's painted pad must not be stretched.
     const enter = pad.userData.enter as ((k: number, calm: boolean) => void) | undefined;
     if (enter) {
-      const seconds = (pad.userData.enterSeconds as number | undefined) ?? 0.9;
+      const seconds = (pad.userData.enterSeconds as number | undefined) ?? CONFIG.anim.exitTime;
       void this.addTween(seconds, (k) => enter(k, this.reduced));
       return;
     }
