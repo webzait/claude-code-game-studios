@@ -125,7 +125,7 @@ export function addGardenLevelCards(sheet: HTMLElement): void {
   };
 
   const states = card('garden-levels', 'Tuinthema · levelscherm (het pad)', 'tuinen van 20 levels · huidig + 5 vooruit · 2 gehaalde levels eronder · prieel aan het eind van een tuin',
-    'Dezelfde HTML en code als het spel (index.html + renderLevels); alleen het thema verschilt. Groen met vinkje = gehaald, geel = nu spelen (de enige knop op het pad), grijs met slot = komt nog. Het prieel sluit elke tuin van 20 levels af en verschijnt zodra het einde in zicht is. Achtergrond: jouw levelpad-achtergrond (25-backdrop-level-path), 97 KB.');
+    'Dezelfde HTML en code als het spel (index.html + renderLevels); alleen het thema verschilt. Groen met vinkje = gehaald, geel = nu spelen (de enige knop op het pad), grijs met slot = komt nog. Het prieel sluit elke tuin van 20 levels af en verschijnt zodra het einde in zicht is. Achtergrond: jouw levelpad-achtergrond (25-backdrop-level-path), met jouw vogelhuisje (07) verder naar binnen zodat het op elke telefoon te zien is; 97 KB. Zolang het einde van de tuin niet in zicht is, staat het prieel klein aan de horizon.');
   fig(states, 'Nieuwe speler · level 1', { view: 'path', solved: 0, coins: 30 });
   fig(states, 'Onderweg · level 9', { view: 'path', solved: 8, coins: 240 });
   fig(states, 'Einde tuin in zicht · level 17', { view: 'path', solved: 16, coins: 485 });

@@ -24,6 +24,7 @@ export function gardenLevelsVars(config: GardenLevels): Record<string, string> {
     '--tg-outline': config.outline,
     '--tg-gazebo-w': String(config.gazeboWidth),
     '--tg-dock': config.dock,
+    '--tg-hz-width': String(config.horizonGazebo.width), '--tg-hz-base': String(config.horizonGazebo.baseY),
   };
 }
 
