@@ -6,7 +6,7 @@ import RIM from '../../data/themes/garden/rim.json';
 import UNDER from '../../data/themes/garden/underlay.json';
 import { boardFootprint, boardPixels, buildFloorTile, buildRim, buildUnderlay, rimDecorLayout } from '../../src/render/parts/garden/board';
 import { braidTwists, RIM_PICTURES, RIM_PX, rimDecorSlots, rimPath, rimQuads, RoundedPath, seeded, sideSpec, type Side } from '../../src/render/parts/garden/layout';
-import { buildRimBoard, buildRimImage } from '../../src/render/parts/garden/rim';
+import { buildRimBoard, buildRimImage, buildRimModel } from '../../src/render/parts/garden/rim';
 import { boxOf, outwardShare, SIZES } from './garden-helpers';
 
 const GAP = config.board.grid.gap;
@@ -142,9 +142,9 @@ describe("garden rim as the owner's picture (buildRimImage)", () => {
   });
 });
 
-describe('garden rim modelled in code (buildRim, the default), underlay and board', () => {
+describe('garden rim modelled in code (buildRimModel), underlay and board', () => {
   it('faces outward', () => {
-    for (const part of [buildRim(6, 6, GAP), buildRim(4, 7, GAP), buildUnderlay(5, 5, GAP, true)]) {
+    for (const part of [buildRimModel(6, 6, GAP), buildRimModel(4, 7, GAP), buildUnderlay(5, 5, GAP, true)]) {
       const { agree, total } = outwardShare(part);
       expect(total).toBeGreaterThan(0);
       expect(agree / total).toBeGreaterThan(0.97);
@@ -158,7 +158,7 @@ describe('garden rim modelled in code (buildRim, the default), underlay and boar
       const tilesD = rows * TILE.tile.size + (rows - 1) * GAP;
       expect(innerW).toBeGreaterThan(tilesW);
       expect(innerD).toBeGreaterThan(tilesD);
-      const braid = (buildRim(cols, rows, GAP).children[0] as THREE.Mesh).geometry;
+      const braid = (buildRimModel(cols, rows, GAP).children[0] as THREE.Mesh).geometry;
       braid.computeBoundingBox();
       const box = braid.boundingBox!;
       // The braid stays within the outside of the footprint.
@@ -211,8 +211,8 @@ describe('garden rim modelled in code (buildRim, the default), underlay and boar
   it('decorations sit at the same places every time', () => {
     expect(rimDecorLayout(6, 6, GAP)).toEqual(rimDecorLayout(6, 6, GAP));
     expect(rimDecorLayout(6, 6, GAP)).toHaveLength(RIM.decor.clusters.length);
-    const a = buildRim(5, 7, GAP);
-    const b = buildRim(5, 7, GAP);
+    const a = buildRimModel(5, 7, GAP);
+    const b = buildRimModel(5, 7, GAP);
     const points = (o: THREE.Object3D): number[] => {
       o.updateMatrixWorld(true);
       return o.children.filter((c) => c instanceof THREE.Group).map((c) => c.position.toArray()).flat();
@@ -268,7 +268,7 @@ describe('garden rim modelled in code (buildRim, the default), underlay and boar
   it('a whole 8x8 board stays within the triangle budget', () => {
     let tris = 0;
     const board = new THREE.Group();
-    board.add(buildUnderlay(8, 8, GAP), buildRim(8, 8, GAP));
+    board.add(buildUnderlay(8, 8, GAP), buildRimModel(8, 8, GAP));
     for (let i = 0; i < 64; i++) board.add(buildFloorTile(i % 2 === 1, false));
     board.traverse((n) => {
       if (n instanceof THREE.Mesh) tris += (n.geometry.index ? n.geometry.index.count : n.geometry.getAttribute('position').count) / 3;
@@ -285,5 +285,11 @@ describe('garden rim modelled in code (buildRim, the default), underlay and boar
       expect(v).toBeGreaterThanOrEqual(0);
       expect(v).toBeLessThan(1);
     }
+  });
+});
+
+describe('the default garden rim', () => {
+  it('is the rim cut from 01-board-full, the owner\'s choice', () => {
+    expect(buildRim).toBe(buildRimBoard);
   });
 });

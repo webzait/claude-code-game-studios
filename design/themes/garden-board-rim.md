@@ -205,3 +205,10 @@ are of one piece, which is what the owner missed. `build-rim.py board` writes
 Cost: about 60 triangles, 1 draw call, 67 kB. Not yet the default: `buildRim` is still the code
 braid; the owner chooses (`choice-code-vs-picture-level07.webp`). To use it in the game, the theme
 session points the garden's rim at `buildRimBoard` (and its footprint is unchanged).
+
+### The owner chose the picture from 01-board-full (2026-11-25)
+
+Asked "A (code braid) or B (picture from 01-board-full)?", the owner chose **B**. `buildRim` in
+`rim.ts` is now `buildRimBoard`; the code braid is `buildRimModel`, the 03-rim-vines picture
+`buildRimImage`. The game picks it up through the theme (it reads `buildRim` from the garden
+modules); checked in the game, levels 1, 3, 5, 7, 11 (`board-picture-in-game-390x844-*`).
