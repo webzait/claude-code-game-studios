@@ -359,3 +359,12 @@ painted pad, and the pad never changed its look. Now:
   `moments` table: waiting green, its colour all in grey, level won rays. "Colour shapes" survives a
   change of look.
 - Evidence (phone size, single-file build): `production/qa/evidence/garden-exit/in-game-*.png`.
+
+## Owner's choices (2026-11-25)
+
+- The stone tile stays the garden exit. The 3D grass variant (branch `claude/turnflock-garden-exit-grass`,
+  `exitVariant`) is not taken into `main`.
+- The tick on the yellow exit (and the yellow colour shape) is darker: `DEEP_DARKEN` 0.45 in
+  colour_exits.py, ink #623E00, 5.4:1 on the yellow face (was 2.9:1). Evidence:
+  `production/qa/evidence/garden-exit/elements/yellow-tick-darker.png` (before, after, shape before,
+  after) and `in-game-yellow-tick.png` (level 65).
