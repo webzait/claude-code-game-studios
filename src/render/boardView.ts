@@ -666,6 +666,25 @@ export class BoardView {
       });
     }
     this.showGates(animate);
+    this.situateExits();
+  }
+
+  /**
+   * Tell every exit pad that wants to know how many flock members it still waits for and how many
+   * are still out (`userData.situate`): a theme's pad may change its look with that (the garden's
+   * pad goes grey when its colour is all in and shows its rays when the level is won). Counts come
+   * from what the board shows, so they follow undo and replays.
+   */
+  private situateExits(): void {
+    if (!this.level) return;
+    const width = this.level.board.width;
+    const out = [...this.robots.values()].filter((view) => this.shownCell.get(view.id) !== -1);
+    for (const exit of exitsOf(this.level.board)) {
+      const pad = this.exitPads.get(exit.y * width + exit.x);
+      const situate = pad?.userData.situate as ((waitingFor: number, stillOut: number) => void) | undefined;
+      if (!situate) continue;
+      situate(out.filter((view) => exit.color === null || view.color === exit.color).length, out.length);
+    }
   }
 
   /** The turn tile's light at point `k` (0 to 1) of a turn: up and down again. */
@@ -757,6 +776,7 @@ export class BoardView {
             if (this.playFx) this.playFx.exit(tx, tz);
             else this.burst(tx, tz, view.color);
             this.pulseExit(e.toY * width + e.toX);
+            this.situateExits();
             void this.addTween(a.exitTime / speed, (k) => {
               const s = k < 0.25 ? 1 + k * 0.9 : 1.225 * (1 - easeInOut((k - 0.25) / 0.75));
               view.visibleScale = Math.max(s, 0);
@@ -954,6 +974,14 @@ export class BoardView {
   }
 
   private pulsePad(pad: THREE.Group): void {
+    // A theme's pad may play its own entry (`userData.enter`, over `userData.enterSeconds`): the
+    // garden's painted pad must not be stretched.
+    const enter = pad.userData.enter as ((k: number, calm: boolean) => void) | undefined;
+    if (enter) {
+      const seconds = (pad.userData.enterSeconds as number | undefined) ?? 0.9;
+      void this.addTween(seconds, (k) => enter(k, this.reduced));
+      return;
+    }
     void this.addTween(0.32, (k) => {
       const s = 1 + Math.sin(Math.PI * k) * 0.16;
       pad.scale.set(s, 1 + Math.sin(Math.PI * k) * 0.8, s);

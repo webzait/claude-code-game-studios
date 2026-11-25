@@ -4,7 +4,7 @@ import type { Color } from '../../../engine/types';
 import garden from '../../../../data/themes/garden/exit.json';
 import { radialGlowTexture } from './common';
 import { EXIT_MOMENT_LOOKS } from './exit';
-import type { ExitLook } from './exitMoments';
+import { exitLook, type ExitLook } from './exitMoments';
 import { buildFloorTile } from './specials';
 /** Size fragments, one per part, written by tools/asset-pipeline/garden_exit/<part>.py. */
 const FRAGMENTS = import.meta.glob<{ sprites: Record<string, Sprite> }>('../../../../data/themes/garden/exit-sprites/*.json', { eager: true, import: 'default' });
@@ -226,12 +226,22 @@ export function buildExit(color?: Color, look: ExitLook = EXIT_MOMENT_LOOKS.wait
   pad.add(glow);
   pad.userData.glow = glow;
   setExitLook(pad, look);
+  // How the board plays this pad (BoardView): its own entry instead of the robot pad's stretch, and
+  // its look by the moment of play (waiting green, its colour all in grey, level won rays).
+  pad.userData.enter = (k: number, calm: boolean): void => exitEntry(pad, k, calm);
+  pad.userData.enterSeconds = garden.exit.flashSeconds;
+  pad.userData.situate = (waitingFor: number, stillOut: number): void => {
+    const next = exitLook({ waitingFor, stillOut, sinceEntry: Infinity, flashSeconds: garden.exit.flashSeconds }, EXIT_MOMENT_LOOKS);
+    if (next !== pad.userData.look) setExitLook(pad, next);
+  };
   return pad;
 }
 
 /** Put a picture exit into one of its four looks (grey, green, rays, portal). */
 export function setExitLook(pad: THREE.Group, look: ExitLook): void {
   const color = pad.userData.color as Color | undefined;
+  // Keep which of the two the board shows ("Colour shapes"), so a change of look does not undo it.
+  const shapeShown = (pad.userData.shape as THREE.Object3D | undefined)?.visible ?? false;
   for (const key of ['check', 'shape'] as const) {
     const old = pad.userData[key] as THREE.Object3D | undefined;
     if (old) pad.remove(old);
@@ -244,7 +254,8 @@ export function setExitLook(pad: THREE.Group, look: ExitLook): void {
   if (color) {
     const shapeName = (look === 'grey' ? 'exit-grey' : `exit-shape-${color}`) as SpriteName;
     const shape = tileSprite(shapeName);
-    shape.visible = false;
+    shape.visible = shapeShown;
+    main.visible = !shapeShown;
     pad.add(shape);
     pad.userData.shape = shape;
   }

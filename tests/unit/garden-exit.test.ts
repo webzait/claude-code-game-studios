@@ -222,6 +222,32 @@ describe('garden picture parts (the standard version) keep the robot contract', 
     expect(diagonal).toBeGreaterThan(200);
   });
 
+  it('picture exit tells the board how to play it: its own entry and its look by the moment', () => {
+    const pad = pic.buildExit();
+    expect(typeof pad.userData.enter).toBe('function');
+    expect(pad.userData.enterSeconds).toBe(garden.exit.flashSeconds);
+    const situate = pad.userData.situate as (waitingFor: number, stillOut: number) => void;
+    situate(2, 2);
+    expect(spriteOf(pad.userData.check)).toBe('exit-green');
+    situate(0, 0);
+    expect(spriteOf(pad.userData.check)).toBe('exit-rays');
+    const red = pic.buildExit('red');
+    const redSituate = red.userData.situate as (waitingFor: number, stillOut: number) => void;
+    redSituate(0, 3);
+    expect(spriteOf(red.userData.check)).toBe('exit-grey');
+    redSituate(1, 3);
+    expect(spriteOf(red.userData.check)).toBe('exit-red');
+  });
+
+  it('picture colour exit keeps "Colour shapes" when its look changes', () => {
+    const pad = pic.buildExit('blue');
+    (pad.userData.shape as THREE.Object3D).visible = true;
+    (pad.userData.check as THREE.Object3D).visible = false;
+    pic.setExitLook(pad, 'grey');
+    expect((pad.userData.shape as THREE.Object3D).visible).toBe(true);
+    expect((pad.userData.check as THREE.Object3D).visible).toBe(false);
+  });
+
   it('picture colour exit keeps its own colour in the portal moment', () => {
     const pad = pic.buildExit('red', 'portal');
     expect(spriteOf(pad.userData.check)).toBe('exit-red');
