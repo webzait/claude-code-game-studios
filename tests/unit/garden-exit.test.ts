@@ -169,6 +169,59 @@ describe('garden picture parts (the standard version) keep the robot contract', 
     expect(spriteOf(pad.userData.check)).toBe('exit-portal');
   });
 
+  it('picture exit entry shows the portal and a rising column, then puts everything back', () => {
+    const pad = pic.buildExit(undefined, 'green');
+    const glow = (pad.userData.glow as THREE.Mesh).material as THREE.MeshBasicMaterial;
+    const before = glow.opacity;
+    pic.exitEntry(pad, 0.3);
+    const layers = pad.userData.entry as { portal: THREE.Group; beam: THREE.Group; beamQuad: THREE.Mesh; portalMat: THREE.MeshBasicMaterial; beamMat: THREE.MeshBasicMaterial };
+    expect(spriteOf(layers.portal)).toBe('exit-portal');
+    expect(spriteOf(layers.beam)).toBe('exit-portal-beam');
+    expect(layers.portal.visible).toBe(true);
+    expect(layers.portalMat.opacity).toBeGreaterThan(0.9);
+    expect(layers.beam.visible).toBe(true);
+    expect(layers.beamQuad.scale.y).toBeGreaterThan(0.5);
+    expect(layers.beamMat.blending).toBe(THREE.AdditiveBlending);
+    expect(glow.opacity).toBeGreaterThan(before);
+    pic.exitEntry(pad, 1);
+    expect(layers.portal.visible).toBe(false);
+    expect(layers.beam.visible).toBe(false);
+    expect(glow.opacity).toBeCloseTo(before, 6);
+    expect((pad.userData.check as THREE.Object3D).scale.x).toBe(1);
+    expect(spriteOf(pad.userData.check)).toBe('exit-green');
+  });
+
+  it('picture exit entry fades only the pad it plays on', () => {
+    const a = pic.buildExit();
+    const b = pic.buildExit();
+    pic.exitEntry(a, 0.3);
+    pic.exitEntry(b, 0);
+    const portalOf = (p: THREE.Group) => (p.userData.entry as { portalMat: THREE.MeshBasicMaterial }).portalMat;
+    expect(portalOf(a)).not.toBe(portalOf(b));
+    expect(portalOf(b).opacity).toBe(0);
+  });
+
+  it('picture colour exit entry pops without a green portal', () => {
+    const pad = pic.buildExit('blue');
+    pic.exitEntry(pad, 0.15);
+    expect((pad.userData.entry as { portal: unknown }).portal).toBeNull();
+    expect((pad.userData.check as THREE.Object3D).scale.x).toBeGreaterThan(1);
+    pic.exitEntry(pad, 1);
+    expect((pad.userData.check as THREE.Object3D).scale.x).toBe(1);
+  });
+
+  it('picture exit glow follows the square tile, not a circle', () => {
+    const g = garden.exit.entry.glowSquare;
+    const n = 64;
+    const square = pic.squareGlowTexture('#ffffff', g.inner, g.corner, g.falloff, n).image.data as Uint8Array;
+    const alpha = (i: number, j: number) => square[(j * n + i) * 4 + 3];
+    // Same distance from the centre: towards a corner as bright as towards a side (a circle would fade the corner).
+    const side = alpha(Math.round(n / 2 + 0.29 * n), n / 2);
+    const diagonal = alpha(Math.round(n / 2 + 0.29 * n), Math.round(n / 2 + 0.29 * n));
+    expect(side).toBe(255);
+    expect(diagonal).toBeGreaterThan(200);
+  });
+
   it('picture colour exit keeps its own colour in the portal moment', () => {
     const pad = pic.buildExit('red', 'portal');
     expect(spriteOf(pad.userData.check)).toBe('exit-red');

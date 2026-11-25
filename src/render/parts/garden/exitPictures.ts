@@ -122,6 +122,7 @@ function exitSpriteName(look: ExitLook, color?: Color): SpriteName {
 }
 
 const glowMaps = new Map<string, THREE.Texture>();
+/** The round light patch, for the turn tile's ring. */
 function glowMap(color?: Color): THREE.Texture {
   const key = color ?? 'all';
   let m = glowMaps.get(key);
@@ -129,6 +130,47 @@ function glowMap(color?: Color): THREE.Texture {
     const tone = color ? CONFIG.colors.robots[color].top : garden.exit.colors.glow;
     m = radialGlowTexture(tone, tone, 0.62, 1.6);
     glowMaps.set(key, m);
+  }
+  return m;
+}
+
+/**
+ * A soft light patch shaped like the square stone tile (a rounded square), so the light round the
+ * exit follows the owner's pad instead of a circle. Full inside `inner` (share of the patch's half
+ * width), fading to nothing at the patch's edge.
+ */
+export function squareGlowTexture(tone: string, inner: number, corner: number, falloff: number, n = 128): THREE.DataTexture {
+  const c = new THREE.Color(tone);
+  const data = new Uint8Array(n * n * 4);
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+    // Rounded-square distance in units of the half width: 0 at the centre, `inner` on the tile's edge.
+    const x = Math.abs(((i + 0.5) / n - 0.5) * 2);
+    const y = Math.abs(((j + 0.5) / n - 0.5) * 2);
+    const qx = Math.max(x - (inner - corner), 0);
+    const qy = Math.max(y - (inner - corner), 0);
+    const d = Math.hypot(qx, qy) + Math.min(Math.max(x, y) - (inner - corner), 0) - corner + inner;
+    const out = Math.min(1, Math.max(0, (d - inner) / (1 - inner)));
+    const alpha = d < inner ? 1 : (1 - out) ** falloff;
+    data.set([c.r * 255, c.g * 255, c.b * 255, 255 * alpha], (j * n + i) * 4);
+  }
+  const map = new THREE.DataTexture(data, n, n, THREE.RGBAFormat);
+  map.colorSpace = THREE.SRGBColorSpace;
+  map.magFilter = THREE.LinearFilter;
+  map.minFilter = THREE.LinearFilter;
+  map.needsUpdate = true;
+  return map;
+}
+
+const squareGlowMaps = new Map<string, THREE.Texture>();
+/** The exit's light patch, square like the tile. */
+function exitGlowMap(color?: Color): THREE.Texture {
+  const key = color ?? 'all';
+  let m = squareGlowMaps.get(key);
+  if (!m) {
+    const tone = color ? CONFIG.colors.robots[color].top : garden.exit.colors.glow;
+    const g = garden.exit.entry.glowSquare;
+    m = squareGlowTexture(tone, g.inner, g.corner, g.falloff);
+    squareGlowMaps.set(key, m);
   }
   return m;
 }
@@ -150,7 +192,7 @@ export function buildExit(color?: Color, look: ExitLook = EXIT_MOMENT_LOOKS.wait
   const light = new THREE.PlaneGeometry(span, span);
   light.rotateX(-Math.PI / 2);
   light.boundingBox = new THREE.Box3(new THREE.Vector3(-0.5, 0, -0.5), new THREE.Vector3(0.5, 0, 0.5));
-  const glow = new THREE.Mesh(light, new THREE.MeshBasicMaterial({ map: glowMap(color), transparent: true, opacity: garden.exit.glowPulse.high, depthWrite: false, toneMapped: false }));
+  const glow = new THREE.Mesh(light, new THREE.MeshBasicMaterial({ map: exitGlowMap(color), transparent: true, opacity: garden.exit.glowPulse.high, depthWrite: false, toneMapped: false }));
   glow.name = 'exit-glow';
   glow.position.y = TOP + 0.004;
   glow.renderOrder = 1;
@@ -183,6 +225,92 @@ export function setExitLook(pad: THREE.Group, look: ExitLook): void {
   }
   (pad.userData.glow as THREE.Object3D).visible = look !== 'grey';
   pad.userData.look = look;
+}
+
+const E = garden.exit.entry;
+const ramp = (k: number, from: number, to: number): number => Math.min(1, Math.max(0, (k - from) / (to - from)));
+const smooth = (t: number): number => t * t * (3 - 2 * t);
+
+/** The extra layers of the entry animation of one pad, made on first use: the portal over the pad and the column of light. */
+interface EntryLayers {
+  portal: THREE.Group | null;
+  portalMat: THREE.MeshBasicMaterial | null;
+  beam: THREE.Group | null;
+  beamQuad: THREE.Mesh | null;
+  beamMat: THREE.MeshBasicMaterial | null;
+  beamBottom: number;
+  beamHeight: number;
+  glowOpacity: number;
+}
+
+function entryLayers(pad: THREE.Group): EntryLayers {
+  let layers = pad.userData.entry as EntryLayers | undefined;
+  if (layers) return layers;
+  const color = pad.userData.color as Color | undefined;
+  layers = { portal: null, portalMat: null, beam: null, beamQuad: null, beamMat: null, beamBottom: 0, beamHeight: 0, glowOpacity: 0 };
+  if (!color) {
+    // Own materials: the shared ones of the pictures must not fade on every exit at once.
+    layers.portal = sprite('exit-portal', clearance('exit-portal', TOP + FACE));
+    layers.portal.position.y += TOP + FACE;
+    const quad = layers.portal.children[0] as THREE.Mesh;
+    layers.portalMat = new THREE.MeshBasicMaterial({ map: texture('exit-portal'), transparent: true, opacity: 0, depthWrite: false, toneMapped: false });
+    quad.material = layers.portalMat;
+    quad.renderOrder = 3;
+    layers.beam = sprite('exit-portal-beam', clearance('exit-portal', TOP + FACE));
+    layers.beam.position.y += TOP + FACE;
+    layers.beamQuad = layers.beam.children[0] as THREE.Mesh;
+    layers.beamMat = new THREE.MeshBasicMaterial({ map: texture('exit-portal-beam'), transparent: true, opacity: 0, depthWrite: false, toneMapped: false, blending: THREE.AdditiveBlending });
+    layers.beamQuad.material = layers.beamMat;
+    layers.beamQuad.renderOrder = 4;
+    const s = SPRITES['exit-portal-beam'];
+    layers.beamHeight = s.height;
+    layers.beamBottom = layers.beamQuad.position.y - s.height / 2;
+    layers.portal.visible = false;
+    layers.beam.visible = false;
+    pad.add(layers.portal, layers.beam);
+  }
+  pad.userData.entry = layers;
+  return layers;
+}
+
+/**
+ * The animation of a chick going into the exit, at progress `k` (0 to 1 over
+ * `garden.exit.flashSeconds`): call it every frame of that time, as the robot theme pulses its pad
+ * (`pulsePad` in BoardView). The owner's portal picture fades in over the pad, which pops a little;
+ * a column of the portal's own light grows up out of its ring and fades; then the pad's look shows
+ * again. No ring or circle of its own: the light comes from the square tile's picture. A colour exit
+ * (no portal in its colour) only pops and flares its glow. `calm` (reduced motion): the portal only
+ * fades in and out. At `k >= 1` everything is back as it was.
+ */
+export function exitEntry(pad: THREE.Group, k: number, calm = false): void {
+  const layers = entryLayers(pad);
+  const done = k <= 0 || k >= 1;
+  const glow = pad.userData.glow as THREE.Mesh;
+  const glowMat = glow.material as THREE.MeshBasicMaterial;
+  if (!pad.userData.entryActive && !done) layers.glowOpacity = glowMat.opacity;
+  const pop = done || calm ? 1 : 1 + E.pop * Math.sin(Math.PI * ramp(k, 0, E.popUntil));
+  for (const key of ['check', 'shape'] as const) (pad.userData[key] as THREE.Object3D | undefined)?.scale.setScalar(pop);
+  if (layers.portal && layers.portalMat) {
+    layers.portal.visible = !done;
+    layers.portal.scale.setScalar(pop);
+    layers.portalMat.opacity = done ? 0 : smooth(ramp(k, 0, E.portalIn)) * (1 - smooth(ramp(k, E.portalOut[0], E.portalOut[1])));
+  }
+  if (layers.beam && layers.beamQuad && layers.beamMat) {
+    layers.beam.visible = !done && !calm;
+    const rise = ramp(k, E.beamRise[0], E.beamRise[1]);
+    // Grows up out of the ring, a touch past full height, then settles.
+    const grow = rise < 1 ? E.beamOvershoot * smooth(rise) : E.beamOvershoot - (E.beamOvershoot - 1) * smooth(ramp(k, E.beamRise[1], E.beamFade[0]));
+    const g = Math.max(grow, 0.001);
+    layers.beamQuad.scale.y = g;
+    layers.beamQuad.position.y = layers.beamBottom + (layers.beamHeight * g) / 2;
+    layers.beamMat.opacity = E.beamOpacity * smooth(ramp(k, E.beamRise[0], E.beamRise[0] + 0.08)) * (1 - smooth(ramp(k, E.beamFade[0], E.beamFade[1])));
+  }
+  if (done) {
+    if (pad.userData.entryActive) glowMat.opacity = layers.glowOpacity;
+  } else {
+    glowMat.opacity = Math.min(1, layers.glowOpacity * (1 + (E.glowFlare - 1) * Math.sin(Math.PI * k)));
+  }
+  pad.userData.entryActive = !done;
 }
 
 /**

@@ -59,6 +59,19 @@
       "seconds": 2.4
     },
     "flashSeconds": 0.9,
+    "entry": {
+      "_about": "Picture version: a chick goes into the exit (exitPictures.exitEntry, over flashSeconds). Times are shares of the whole. The owner's portal picture fades in over the pad, the pad pops a little, a column of the portal's own light grows up out of the ring and fades; then the pad's look shows again. A colour exit has no portal in its colour: it only pops and its glow flares. glowSquare: the light patch round the pad follows the square tile: full up to the tile edge (inner, share of the patch half width; the tile is 1 of the patch's 1.39 cells), corner radius likewise, then fading out.",
+      "portalIn": 0.12,
+      "portalOut": [0.7, 1.0],
+      "pop": 0.07,
+      "popUntil": 0.3,
+      "beamRise": [0.05, 0.42],
+      "beamOvershoot": 1.12,
+      "beamFade": [0.45, 0.95],
+      "beamOpacity": 0.95,
+      "glowFlare": 1.8,
+      "glowSquare": { "inner": 0.7, "corner": 0.2, "falloff": 1.6 }
+    },
     "colors": {
       "stoneTop": "#E4E1E6",
       "stoneMid": "#C9C5CC",
