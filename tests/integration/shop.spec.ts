@@ -25,9 +25,7 @@ async function open(page: Page, coins: number, lab: Record<string, unknown> = {}
     ([save]) => {
       if (!localStorage.getItem('turnflock.save')) localStorage.setItem('turnflock.save', save);
     },
-    // The shop and its buttons are the same in every theme; the robot theme is picked because its board
-    // draws much faster in the software-rendered test browser (design/themes.md).
-    [JSON.stringify({ version: 9, best: {}, coins, paid: {}, economy: 2, settings: { theme: 'robot', themeChosen: true }, lab })],
+    [JSON.stringify({ version: 10, best: {}, coins, paid: {}, economy: 2, settings: {}, lab })],
   );
   await page.goto(build);
   await expect.poll(() => page.evaluate(() => typeof window.turnflock?.snapshot)).toBe('function');

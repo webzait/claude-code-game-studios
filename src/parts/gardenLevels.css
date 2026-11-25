@@ -1,5 +1,0 @@
-/* Parts sheet only: what the game's style.css does for #map, which the sheet does not load. */
-.tf-garden-levels .tf-levels-pager[hidden] { display: none; }
-/* A phone on the sheet: the game's backdrop with the level screen over it, as #map sits over #backdrop. */
-.tf-garden-frame { border-radius: 26px; }
-.tf-garden-frame > .tf-levels-phone { position: absolute; inset: 0; z-index: 5; width: auto !important; height: auto !important; border-radius: 0; }

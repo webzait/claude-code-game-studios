@@ -36,7 +36,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 }
 .screen { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 /* Every screen covers the whole window, whatever padding a host page gives #app (finding B13: a host
-   that pads #app for the notch pushed the level screen inward, and the garden behind it showed as a
+   that pads #app for the notch pushed the level screen inward, and the backdrop behind it showed as a
    frame). An absolutely placed child ignores its parent's padding; the screens keep the notch clear
    themselves with env(safe-area-inset-*). Only one screen is shown at a time ([hidden] on the others). */
 #app > .screen { position: absolute; inset: 0; }

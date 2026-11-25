@@ -7,10 +7,10 @@ Every sheet shows BEFORE (top, the build before the fix, commit 2cdffd8) and AFT
 
 | File | What |
 |---|---|
-| `owner-case-garden-grid-402x874.webp`, `owner-case-robot-grid-402x874.webp` | The owner's case: 402×874 with the artifact version's padding on `#app` (16 px on every side). Before reproduces the screenshot. |
-| `artifact-notch-<theme>-<state>.webp` | Artifact padding (`max(16px, env(safe-area-inset-*))`) plus an emulated notch (59 px top, 34 px bottom), at 320×568, 390×844 and 430×932. |
-| `plain-<theme>-<state>.webp` | The plain build without padding or notch, same sizes. |
-| `transitions-artifact-notch-<theme>.webp` | Level screen, shop, puzzle, settings and test lab, 390×844 with artifact padding and notch. |
+| `owner-case-robot-grid-402x874.webp` | The owner's case: 402×874 with the artifact version's padding on `#app` (16 px on every side). Before reproduces the screenshot. |
+| `artifact-notch-robot-<state>.webp` | Artifact padding (`max(16px, env(safe-area-inset-*))`) plus an emulated notch (59 px top, 34 px bottom), at 320×568, 390×844 and 430×932. |
+| `plain-robot-<state>.webp` | The plain build without padding or notch, same sizes. |
+| `transitions-artifact-notch-robot.webp` | Level screen, shop, puzzle, settings and test lab, 390×844 with artifact padding and notch. |
 
 States: `path` (the normal path), `grid` (test view, all levels unlocked), `done` (all levels completed),
 `improve` (levels to improve).
@@ -23,3 +23,7 @@ after: none, every screen fills the window. Guarded by `tests/integration/screen
 
 Screenshots in headless Chromium (SwiftShader), deviceScaleFactor 1; the notch is emulated with
 `Emulation.setSafeAreaInsetsOverride`. Not checked on a real phone or on the published artifact page.
+
+The garden theme was removed on 2026-11-25 (`design/themes.md`); its sheets of this finding
+(`*-garden-*.webp`) were taken out of the tree with it and stay in the git history (last at commit 808d855).
+The counts above were measured with both themes.

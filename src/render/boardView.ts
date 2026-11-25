@@ -8,12 +8,12 @@ import { DIR_DX, DIR_DY, type Color, type GameState, type RobotEvent } from '../
 import type { Level } from '../levels/parse';
 import { QUARTER, headingAngle, nearestAngle, squashScale, turnAngle, type HeadingStyle } from './heading';
 import { fuse, type Kit } from './kit';
-import type { RobotView } from './robot';
-import { resolveTheme, type PlayEffects, type ResolvedTheme } from './themes';
+import { boardFootprint, buildExit, buildFloorTile, buildGate, buildObstacle, buildPlate, buildRim, buildTurnTile, buildUnderlay, gateDoorScale } from './parts/board';
+import { buildPartsRobot, buildRobot, type RobotView } from './robot';
+import { BumpClouds } from './bumpCloud';
 import { tileBeats } from './stepPlan';
 import type { CelebrationPlan } from '../game/celebration';
 import { CelebrationFx } from './celebration';
-import { GardenCelebrationFx } from './parts/garden/celebration';
 
 /** Which models the board is drawn with. */
 export interface BoardStyle {
@@ -101,7 +101,7 @@ export class BoardView {
   private tweens: Tween[] = [];
   private particles: Particle[] = [];
   /** The win celebration while it plays. */
-  private celebration: CelebrationFx | GardenCelebrationFx | null = null;
+  private celebration: CelebrationFx | null = null;
   /** One pad per exit, by cell. */
   private exitPads = new Map<number, THREE.Group>();
   private exitRings: THREE.Mesh[] = [];
@@ -119,10 +119,6 @@ export class BoardView {
   /** Seconds into the turn tiles' opening cue, or null when it is not playing. */
   private cueTime: number | null = null;
   private sun: THREE.DirectionalLight;
-  private hemisphere: THREE.HemisphereLight;
-  private groundShadow: THREE.ShadowMaterial;
-  /** The active theme: its build functions and light (src/render/themes.ts). */
-  private theme: ResolvedTheme = resolveTheme('robot');
   private time = 0;
   private last = 0;
   private particleGeo = new RoundedBoxGeometry(0.09, 0.09, 0.09, 2, 0.02);
@@ -136,10 +132,8 @@ export class BoardView {
   /** The hint picture: one group of flat marks per robot, lying on the tiles. */
   private hintGroup = new THREE.Group();
   private hintMarks: { group: THREE.Group; dx: number; dz: number; materials: THREE.MeshBasicMaterial[] }[] = [];
-  /** The theme's hint light on cells (garden), with each glow's full opacity; empty in the robot theme. */
-  private hintGlows: { mesh: THREE.Mesh; opacity: number }[] = [];
-  /** The theme's effects during play (garden: beam on the exit, cloud on a bump); null in the robot theme. */
-  private playFx: PlayEffects | null = null;
+  /** The cloud puffs where a robot bumps into something (src/render/bumpCloud.ts); made per level. */
+  private clouds: BumpClouds | null = null;
 
   constructor(private canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -151,24 +145,21 @@ export class BoardView {
     const pmrem = new THREE.PMREMGenerator(this.renderer);
     this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     pmrem.dispose();
+    this.scene.environmentIntensity = CONFIG.light.reflections;
     this.scene.add(this.boardGroup);
-    const light = this.theme.light;
-    this.hemisphere = new THREE.HemisphereLight(light.sky, light.ground, light.ambient);
-    this.scene.add(this.hemisphere);
-    this.sun = new THREE.DirectionalLight(light.sunColor, light.sun);
+    this.scene.add(new THREE.HemisphereLight(CONFIG.light.sky, CONFIG.light.ground, CONFIG.light.ambient));
+    this.sun = new THREE.DirectionalLight('#FFFFFF', CONFIG.light.sun);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(2048, 2048);
     this.sun.shadow.radius = 4;
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.add(this.sun, this.sun.target);
-    this.groundShadow = new THREE.ShadowMaterial({ color: light.shadowColor, opacity: light.shadow });
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), this.groundShadow);
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.ShadowMaterial({ color: '#1F3A7A', opacity: CONFIG.light.shadow }));
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = BOX_BOTTOM - 0.01;
     ground.receiveShadow = true;
     this.scene.add(ground);
-    this.applyLight();
     requestAnimationFrame((t) => this.frame(t));
   }
 
@@ -189,44 +180,13 @@ export class BoardView {
   private boardSize(): { w: number; d: number } {
     const { width, height } = this.level?.board ?? { width: 1, height: 1 };
     if (!this.modular) return { w: width + this.layout.frame, d: height + this.layout.frame };
-    const { boardFootprint, underlayLip } = this.theme.builders;
     const { outerW, outerD } = boardFootprint(width, height, GRID.gap);
-    // The underlay reaches past the rim (robot) or sits under it (garden: negative lip, the rim is the edge).
-    const lip = Math.max(0, underlayLip);
-    return { w: outerW + 2 * lip, d: outerD + 2 * lip };
+    return { w: outerW + 2 * PARTS.underlay.lip, d: outerD + 2 * PARTS.underlay.lip };
   }
 
   /** Hand over the asset kit once it has loaded. Takes effect at the next level load. */
   setKit(kit: Kit): void {
     void kit;
-  }
-
-  /**
-   * Show the board in another theme. The light changes at once; the parts are rebuilt at once
-   * when a level is on show (`state` is where it stands), else at the next level load.
-   */
-  setTheme(theme: ResolvedTheme, state?: GameState): void {
-    if (theme.id === this.theme.id) return;
-    this.theme = theme;
-    this.applyLight();
-    if (this.level && state) {
-      this.loadLevel(this.level);
-      this.cueTime = null;
-      this.sync(state, false);
-    }
-  }
-
-  /** The active theme's light on the scene. */
-  private applyLight(): void {
-    const light = this.theme.light;
-    this.scene.environmentIntensity = light.reflections;
-    this.hemisphere.color.set(light.sky);
-    this.hemisphere.groundColor.set(light.ground);
-    this.hemisphere.intensity = light.ambient;
-    this.sun.color.set(light.sunColor);
-    this.sun.intensity = light.sun;
-    this.groundShadow.color.set(light.shadowColor);
-    this.groundShadow.opacity = light.shadow;
   }
 
   /** Choose kit models or the built-in shapes. Takes effect at the next level load. */
@@ -256,8 +216,8 @@ export class BoardView {
     }
     const open = held.size > 0;
     if (open === this.gatesShownOpen && animate) return;
-    const from = this.theme.builders.gateDoorScale(this.gatesShownOpen);
-    const to = this.theme.builders.gateDoorScale(open);
+    const from = gateDoorScale(this.gatesShownOpen);
+    const to = gateDoorScale(open);
     this.gatesShownOpen = open;
     if (!animate || this.reduced) {
       for (const door of this.gateDoors) door.scale.y = to;
@@ -293,7 +253,7 @@ export class BoardView {
   setMotion(speed: number, reduced: boolean): void {
     this.speedScale = speed;
     this.reduced = reduced;
-    if (this.playFx) this.playFx.reduced = reduced;
+    if (this.clouds) this.clouds.reduced = reduced;
   }
 
   /** Build the diorama for a level and show its start state. */
@@ -318,16 +278,15 @@ export class BoardView {
     this.floorY = this.modular ? PARTS.floorTile.height : 0.06;
     if (this.modular) this.buildPartsBoard(level);
     else this.buildPlainBoard(level);
-    this.playFx?.dispose();
-    this.playFx = this.theme.builders.playEffects(this.boardGroup, { pitch: this.pitch, floorY: this.floorY });
-    if (this.playFx) this.playFx.reduced = this.reduced;
+    this.clouds?.dispose();
+    this.clouds = new BumpClouds(this.boardGroup, { pitch: this.pitch, floorY: this.floorY, tilt: this.layout.tilt });
+    this.clouds.reduced = this.reduced;
     this.showExitShapes();
 
     for (const r of level.start.robots) {
       const heading = this.style.heading ?? 'faceUp';
       const viewTilt = (this.layout.tilt * Math.PI) / 180;
-      const parts = this.theme.builders;
-      const view = this.style.kitRobots ? parts.buildPartsRobot(r.id, r.color, heading, viewTilt) : parts.buildRobot(r.id, r.color, heading);
+      const view = this.style.kitRobots ? buildPartsRobot(r.id, r.color, heading, viewTilt) : buildRobot(r.id, r.color, heading);
       view.showShape(this.colourShapes);
       this.robots.set(r.id, view);
       this.boardGroup.add(view.root);
@@ -366,8 +325,6 @@ export class BoardView {
    */
   private buildPartsBoard(level: Level): void {
     const { width, height, walls } = level.board;
-    const { buildUnderlay, buildRim, buildExit, buildTurnTile, buildPlate, buildGate, buildFloorTile, obstaclesFor } = this.theme.builders;
-    const obstacleAt = obstaclesFor(level);
     const exitAt = new Map(exitsOf(level.board).map((e) => [e.y * width + e.x, e] as const));
     // Everything that never moves goes into one group and is fused into a few meshes.
     const fixed = new THREE.Group();
@@ -421,7 +378,7 @@ export class BoardView {
         tile.position.set(cx, 0, cz);
         fixed.add(tile);
         if (walls[y * width + x]) {
-          const block = obstacleAt(x, y);
+          const block = buildObstacle();
           block.position.set(cx, PARTS.floorTile.height, cz);
           fixed.add(block);
         }
@@ -436,7 +393,6 @@ export class BoardView {
     const c = CONFIG.colors;
     const mat = (color: string, roughness = 0.8): THREE.MeshStandardMaterial =>
       new THREE.MeshStandardMaterial({ color, roughness });
-    const { buildTurnTile, buildPlate, buildGate } = this.theme.builders;
     const rim = this.layout.frame;
     const frame = new THREE.Mesh(
       slab(width + rim, height + rim, 0.22 + rim * 0.35, 0.34),
@@ -666,25 +622,6 @@ export class BoardView {
       });
     }
     this.showGates(animate);
-    this.situateExits();
-  }
-
-  /**
-   * Tell every exit pad that wants to know how many flock members it still waits for and how many
-   * are still out (`userData.situate`): a theme's pad may change its look with that (the garden's
-   * pad goes grey when its colour is all in and shows its rays when the level is won). Counts come
-   * from what the board shows, so they follow undo and replays.
-   */
-  private situateExits(): void {
-    if (!this.level) return;
-    const width = this.level.board.width;
-    const out = [...this.robots.values()].filter((view) => this.shownCell.get(view.id) !== -1);
-    for (const exit of exitsOf(this.level.board)) {
-      const pad = this.exitPads.get(exit.y * width + exit.x);
-      const situate = pad?.userData.situate as ((waitingFor: number, stillOut: number) => void) | undefined;
-      if (!situate) continue;
-      situate(out.filter((view) => exit.color === null || view.color === exit.color).length, out.length);
-    }
   }
 
   /** The turn tile's light at point `k` (0 to 1) of a turn: up and down again. */
@@ -697,7 +634,6 @@ export class BoardView {
     view.root.position.set(x, this.floorY, z);
     view.angle = angle;
     view.visibleScale = scale;
-    view.cheer?.(false);
     view.body.rotation.set(0, 0, 0);
     view.aim(angle);
     view.body.position.set(0, 0, 0);
@@ -771,12 +707,8 @@ export class BoardView {
           if (e.outcome === 'moved') return walk;
           // Collected: pop, spin and sink into the pad while confetti flies.
           return walk.then(() => {
-            view.cheer?.(true);
-            // The theme's own effect (garden: a beam of light), or the robot theme's flecks.
-            if (this.playFx) this.playFx.exit(tx, tz);
-            else this.burst(tx, tz, view.color);
+            this.burst(tx, tz, view.color);
             this.pulseExit(e.toY * width + e.toX);
-            this.situateExits();
             void this.addTween(a.exitTime / speed, (k) => {
               const s = k < 0.25 ? 1 + k * 0.9 : 1.225 * (1 - easeInOut((k - 0.25) / 0.75));
               view.visibleScale = Math.max(s, 0);
@@ -787,12 +719,12 @@ export class BoardView {
             });
           });
         }
-        // Blocked: lunge, squash against the obstacle, spring back. A theme may mark the contact (garden: a cloud puff).
+        // Blocked: lunge, squash against the obstacle or the rim, spring back; a cloud puffs where it touches.
         let bumped = false;
         return this.addTween((a.moveTime * 1.05) / speed, (k) => {
-          if (this.playFx && !bumped && k >= 0.35) {
+          if (this.clouds && !bumped && k >= 0.35) {
             bumped = true;
-            this.playFx.bump(fx + (dx * this.pitch) / 2, fz + (dz * this.pitch) / 2);
+            this.clouds.bump(fx + (dx * this.pitch) / 2, fz + (dz * this.pitch) / 2);
           }
           const lunge = k < 0.35 ? easeOut(k / 0.35) : 1 - easeOutBack((k - 0.35) / 0.65);
           const off = lunge * a.bumpDistance * (this.reduced ? 0.5 : 1);
@@ -845,15 +777,6 @@ export class BoardView {
     this.clearHint();
     if (!events || !this.level) return;
     const p = this.pitch;
-    // A theme that lights cells (garden) gives a glow per cell; the robot theme gives none and draws arrows.
-    let spare = this.theme.builders.hintGlow();
-    const glowing = spare !== null;
-    const nextGlow = (): THREE.Mesh | null => {
-      const g = spare ?? this.theme.builders.hintGlow();
-      spare = null;
-      return g;
-    };
-    const lit = new Set<number>();
     for (const e of events) {
       const color = this.level.start.robots.find((r) => r.id === e.id)?.color;
       if (!color) continue;
@@ -864,18 +787,7 @@ export class BoardView {
       /** A point `along` the heading and `side` to its right, in cells from the robot's centre. */
       const at = (along: number, side: number): THREE.Vector2 => new THREE.Vector2((dx * along - dz * side) * p, (dz * along + dx * side) * p);
       const shapes: THREE.Vector2[][] = [];
-      const glow = glowing && (e.outcome === 'moved' || e.outcome === 'exited') && !lit.has(e.toY * this.level.board.width + e.toX) ? nextGlow() : null;
-      if (glow) {
-        // The theme lights the cell the flock member steps onto instead of drawing an arrow.
-        lit.add(e.toY * this.level.board.width + e.toX);
-        glow.position.x += this.cellX(e.toX);
-        glow.position.z += this.cellZ(e.toY);
-        glow.renderOrder = 19;
-        this.hintGroup.add(glow);
-        this.hintGlows.push({ mesh: glow, opacity: (glow.material as THREE.MeshBasicMaterial).opacity });
-      } else if (glowing && (e.outcome === 'moved' || e.outcome === 'exited')) {
-        // The cell is already lit for another member of the flock.
-      } else if (e.outcome === 'moved' || e.outcome === 'exited') {
+      if (e.outcome === 'moved' || e.outcome === 'exited') {
         const a = HINT.arrow;
         shapes.push([at(a.from, -a.shaft), at(a.neck, -a.shaft), at(a.neck, -a.head), at(a.tip, 0), at(a.neck, a.head), at(a.neck, a.shaft), at(a.from, a.shaft)]);
       } else {
@@ -925,11 +837,6 @@ export class BoardView {
       this.hintGroup.add(group);
       this.hintMarks.push({ group, dx, dz, materials: [tint, white] });
     }
-    // A glow made to find out whether the theme lights cells, but not used (no one steps this time).
-    if (spare) {
-      spare.geometry.dispose();
-      (spare.material as THREE.Material).dispose();
-    }
   }
 
   /** A closed outline of `points` widened by `grow` on every side, lying flat. */
@@ -959,11 +866,6 @@ export class BoardView {
       for (const material of mark.materials) material.dispose();
     }
     this.hintMarks = [];
-    for (const { mesh } of this.hintGlows) {
-      mesh.geometry.dispose();
-      (mesh.material as THREE.Material).dispose();
-    }
-    this.hintGlows = [];
     this.hintGroup.clear();
   }
 
@@ -974,14 +876,6 @@ export class BoardView {
   }
 
   private pulsePad(pad: THREE.Group): void {
-    // A theme's pad may play its own entry (`userData.enter`, over `userData.enterSeconds`): the
-    // garden's painted pad must not be stretched.
-    const enter = pad.userData.enter as ((k: number, calm: boolean) => void) | undefined;
-    if (enter) {
-      const seconds = (pad.userData.enterSeconds as number | undefined) ?? CONFIG.anim.exitTime;
-      void this.addTween(seconds, (k) => enter(k, this.reduced));
-      return;
-    }
     void this.addTween(0.32, (k) => {
       const s = 1 + Math.sin(Math.PI * k) * 0.16;
       pad.scale.set(s, 1 + Math.sin(Math.PI * k) * 0.8, s);
@@ -1010,9 +904,7 @@ export class BoardView {
     this.stopCelebration();
     if (!this.level) return;
     const { width, height, walls, exitX, exitY } = this.level.board;
-    // The garden's celebration takes the same stage and plan (design/themes/garden-effects.md).
-    const Fx = plan.variant === 'garden' ? GardenCelebrationFx : CelebrationFx;
-    this.celebration = new Fx(
+    this.celebration = new CelebrationFx(
       {
         group: this.boardGroup,
         width,
@@ -1106,12 +998,7 @@ export class BoardView {
         for (const material of mark.materials) material.opacity = HINT.opacity * (1 - HINT.pulse.fade * swing);
       }
     }
-    // The theme's hint light breathes with the same rhythm as the marks.
-    if (this.hintGlows.length) {
-      const swing = this.reduced ? 0 : 0.5 - 0.5 * Math.cos((this.time / HINT.pulse.seconds) * Math.PI * 2);
-      for (const { mesh, opacity } of this.hintGlows) (mesh.material as THREE.MeshBasicMaterial).opacity = opacity * (1 - HINT.pulse.fade * swing);
-    }
-    this.playFx?.update(dt);
+    this.clouds?.update(dt);
     for (const ring of this.exitRings) {
       const beat = (this.time * 0.7) % 1;
       ring.scale.setScalar(0.9 + beat * 0.55);

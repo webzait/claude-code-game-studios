@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { iconType, inlineLinkIcons } from '../../tools/single-file/inlineLinkIcons';
 
-// The single-file build puts index.html's link icons into the page (tools/single-file/inlineLinkIcons.ts,
-// design/themes/garden-icon.md), so the one file carries its own tab and home-screen icon.
+// The single-file build puts index.html's link icons into the page (tools/single-file/inlineLinkIcons.ts),
+// so the one file carries its own tab and home-screen icon.
 
 const BYTES = new Uint8Array([1, 2, 3]); // base64 "AQID"
 const PAGE = '<head><link rel="icon" type="image/png" href="./fav-x1.png" /><link rel="apple-touch-icon" href="./touch-x2.png" /><link rel="stylesheet" href="./fav-x1.png" /></head>';

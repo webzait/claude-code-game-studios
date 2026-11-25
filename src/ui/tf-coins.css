@@ -1,7 +1,7 @@
 /* Coin controls (tf-coin-*): counter, plus button, the price tag, reward and the explainer. Shared by the game and the parts sheet. */
 /* Owner tones: gold #f6c542 / #c9961a / #ffe48a, plus green #38d96a / #25a84f / #7bff9e, hint cyan #53d3e8 / #28a7bc / #9af3ff, booster purple #7e6bff / #5c48d9 / #b2a8ff. */
 :root { --gold: #f6c542; --gold-deep: #c9961a; --gold-light: #ffe48a; --no: #d5333b; --no-soft: #ffe4e5; --yes: #17793a; --yes-soft: #dcf9e5; }
-/* The coin is a picture in the style sheet, not an <img>, so a theme swaps it under [data-theme] (garden: src/ui/themes/garden/coin.css). */
+/* The coin is a picture in the style sheet, not an <img>: one place decides the picture for every coin. */
 .tf-coin-ico { display: inline-block; flex: none; width: var(--s, 24px); height: var(--s, 24px); background: url('../../assets/turnflock/ui/coin.webp') center / 100% 100% no-repeat; }
 /* A thin dark-gold edge under the owner's picture, so it keeps its outline on a white panel. svg: the drawn coin on the parts sheet. */
 .tf-coin-ico:not(svg) { filter: drop-shadow(0 1px 0 rgba(138, 94, 4, .6)); }

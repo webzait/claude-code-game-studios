@@ -1,9 +1,0 @@
-/* Garden theme: the base colours, from data/themes/garden/colours.json as --tf-theme-* (design/themes.md).
-   The backdrop itself is garden-scene.css (backdrop session); what is left here is the plain colour
-   behind the screens when the test lab switches the backdrop off. Every rule starts with [data-theme="garden"]. */
-/* Backdrop switched off in the test lab: the plain colour behind the screens. */
-[data-theme="garden"].no-decor #map.tf-levels-phone,
-[data-theme="garden"].no-decor #settings.tf-set-frame,
-[data-theme="garden"].no-decor #lab.tf-set-frame {
-  background: linear-gradient(180deg, var(--tf-theme-sky) 0, var(--tf-theme-skyLow) 45%, var(--tf-theme-grassLight) 100%);
-}

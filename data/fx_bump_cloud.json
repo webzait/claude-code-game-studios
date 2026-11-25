@@ -1,0 +1,21 @@
+{
+  "_note": "The cloud puff where a robot bumps into an obstacle or the rim (src/render/bumpCloud.ts, design/themes.md). Sizes are in cells (times the board pitch), times in seconds, angles in degrees.",
+  "seconds": 0.7,
+  "calm_seconds": 0.5,
+  "_lift": "How far above the floor the cloud's anchor sits.",
+  "lift": 0.28,
+  "_toward_camera": "How far the picture is pulled towards the camera, so it does not cut into the tiles.",
+  "toward_camera": 0.3,
+  "_grow": "How much the cloud swells while it plays (half of this is added to its size).",
+  "grow": 0.35,
+  "_rise": "How far it drifts up while it plays.",
+  "rise": 0.12,
+  "_width": "Width of the cloud picture on the board.",
+  "width": 0.95,
+  "_aspect": "Height over width of the cloud picture (assets/turnflock/fx/bump-cloud.webp).",
+  "aspect": 0.91,
+  "_anchor": "The point of the picture (0..1 from the left, 0..1 from the top) that sits on the bump.",
+  "anchor": [0.5, 0.6],
+  "_ball_size": "Size of the balls the cloud breaks into, against the balls in the picture.",
+  "ball_size": 1.0
+}

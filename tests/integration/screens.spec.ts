@@ -1,7 +1,7 @@
-// One screen at a time, filling the window (finding B13): in each theme, in every state of the level
-// screen and through the moves between level screen, puzzle, settings, test lab and shop. Also with the
-// rule the artifact version adds (#app padded for the notch) and a notch emulated on the phone, the case
-// in which the garden level screen used to sit as an inset frame over the puzzle's garden.
+// One screen at a time, filling the window (finding B13): in every state of the level screen and
+// through the moves between level screen, puzzle, settings, test lab and shop. Also with the rule the
+// artifact version adds (#app padded for the notch) and a notch emulated on the phone, the case in
+// which the level screen used to sit as an inset frame over the puzzle's backdrop.
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -15,7 +15,6 @@ const allDone = Object.fromEntries(levels.map((l) => [l.id, l.par]));
 const someToImprove = Object.fromEntries(levels.slice(0, 12).map((l, i) => [l.id, l.par + (i % 3 ? 4 : 0)]));
 /** The rule the artifact version adds around the game. */
 const ARTIFACT_PADDING = '#app{padding-block:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-bottom));padding-inline:max(16px,env(safe-area-inset-left)) max(16px,env(safe-area-inset-right))}';
-const THEMES = ['garden', 'robot'] as const;
 const SIZES = [
   { width: 320, height: 568 },
   { width: 390, height: 844 },
@@ -24,7 +23,7 @@ const SIZES = [
 type Host = 'plain' | 'artifact+notch';
 
 /** Open the build with a save; `artifact+notch` adds the artifact's padding rule and a phone notch. */
-async function open(page: Page, host: Host, theme: string, best: Record<string, number>, lab: Record<string, unknown> = {}): Promise<string[]> {
+async function open(page: Page, host: Host, best: Record<string, number>, lab: Record<string, unknown> = {}): Promise<string[]> {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   if (host === 'artifact+notch') {
@@ -41,7 +40,7 @@ async function open(page: Page, host: Host, theme: string, best: Record<string, 
           document.head.append(style);
         });
     },
-    [JSON.stringify({ version: 9, best, coins: 50, paid: best, economy: 2, settings: { theme, themeChosen: true, music: false }, lab }), host === 'plain' ? '' : ARTIFACT_PADDING],
+    [JSON.stringify({ version: 10, best, coins: 50, paid: best, economy: 2, settings: { music: false }, lab }), host === 'plain' ? '' : ARTIFACT_PADDING],
   );
   await page.goto(build);
   await expect.poll(() => page.evaluate(() => typeof window.turnflock?.snapshot)).toBe('function');
@@ -97,10 +96,10 @@ async function expectHeaderClear(page: Page): Promise<void> {
   expect(covered).toEqual([]);
 }
 
-/** The game's backdrop is drawn behind every screen, the garden level screen included (owner, 2026-11-25: the level screen shows the same garden as the game). */
-async function expectOneBackground(page: Page, theme: string, screen: string): Promise<void> {
+/** The game's backdrop is drawn behind every screen, the level screen included. */
+async function expectOneBackground(page: Page, screen: string): Promise<void> {
   const { backdropDrawn } = await layout(page);
-  expect(backdropDrawn, `${theme} ${screen}: puzzle backdrop drawn`).toBe(true);
+  expect(backdropDrawn, `${screen}: puzzle backdrop drawn`).toBe(true);
 }
 
 const STATES: { name: string; best: Record<string, number>; lab?: Record<string, unknown>; improve?: boolean }[] = [
@@ -111,19 +110,18 @@ const STATES: { name: string; best: Record<string, number>; lab?: Record<string,
 ];
 
 for (const host of ['plain', 'artifact+notch'] as const)
-  for (const theme of THEMES)
-    for (const state of STATES)
-      test(`screens (${host}, ${theme}, ${state.name}): the level screen fills the window alone, header clear, at every phone size`, async ({ browser }) => {
+  for (const state of STATES)
+      test(`screens (${host}, ${state.name}): the level screen fills the window alone, header clear, at every phone size`, async ({ browser }) => {
         for (const size of SIZES) {
           await test.step(`${size.width}×${size.height}`, async () => {
             // A fresh context per size: its own storage, so each state starts from its own save.
             const context = await browser.newContext({ viewport: size, hasTouch: true });
             const page = await context.newPage();
-            const errors = await open(page, host, theme, state.best, state.lab);
+            const errors = await open(page, host, state.best, state.lab);
             if (state.improve) await page.click('#toImprove');
             await expect.poll(() => page.evaluate(() => document.getElementById('map')!.classList.contains('tf-levels-i'))).toBe(!!state.improve);
             await expectOneScreen(page, 'map');
-            await expectOneBackground(page, theme, 'map');
+            await expectOneBackground(page, 'map');
             await expectHeaderClear(page);
             expect(errors).toEqual([]);
             await context.close();
@@ -132,9 +130,8 @@ for (const host of ['plain', 'artifact+notch'] as const)
       });
 
 for (const host of ['plain', 'artifact+notch'] as const)
-  for (const theme of THEMES)
-    test(`screens (${host}, ${theme}): one screen through level screen, shop, puzzle, settings and test lab`, async ({ page }) => {
-      const errors = await open(page, host, theme, someToImprove);
+    test(`screens (${host}): one screen through level screen, shop, puzzle, settings and test lab`, async ({ page }) => {
+      const errors = await open(page, host, someToImprove);
       const screen = () => page.evaluate(() => window.turnflock.snapshot().screen);
       await expectOneScreen(page, 'map');
       // The shop lies over the level screen as a sheet; the level screen stays the one screen under it.
@@ -147,16 +144,16 @@ for (const host of ['plain', 'artifact+notch'] as const)
       await page.click('#continue');
       await expect.poll(screen).toBe('level');
       await expectOneScreen(page, 'level');
-      await expectOneBackground(page, theme, 'level');
+      await expectOneBackground(page, 'level');
       await page.click('#levelBack');
       await expect.poll(screen).toBe('map');
       await expectOneScreen(page, 'map');
-      await expectOneBackground(page, theme, 'map');
+      await expectOneBackground(page, 'map');
       // Settings, the test lab, and back to the level screen.
       await page.click('#toSettings');
       await expect.poll(screen).toBe('settings');
       await expectOneScreen(page, 'settings');
-      await expectOneBackground(page, theme, 'settings');
+      await expectOneBackground(page, 'settings');
       await page.click('#settings .tf-set-entry');
       await expect.poll(screen).toBe('lab');
       await expectOneScreen(page, 'lab');
