@@ -181,3 +181,27 @@ The owner sent `01-board-full` again. Changes towards it: five thinner strands i
 0.19, so it lies low against the lawn), a longer twist (`pitch` 2.6), and the grass fringe along the
 inside back (`rim.grass`, 0.13 high, blade texture every 1.6 cells). Rim 6×6 about 23,000 triangles;
 board 8×8 under 50,000 (tested). Side by side: `compact-next-to-01-board-full.webp`.
+
+## The picture variant again, cut from 01-board-full (2026-11-25)
+
+The owner asked to try the picture variant once more, based on the example (`01-board-full`).
+`buildRimBoard` cuts the rim from the whole-board picture **together with the strip of lawn between
+the braid and the tiles** (its grass fringe and the braid's shadow on the grass), so rim and lawn
+are of one piece, which is what the owner missed. `build-rim.py board` writes
+`board-rim-atlas.webp` (67 kB) and the `atlasBoard` block of `rim.json`.
+
+- Placed by the picture's tiles, not by the braid: the picture's tile outline (`atlasBoard.inner`)
+  lands `imageBoard.innerInset` (0.18) inside the footprint's inner edge, so its see-through middle
+  lines up with the game's tiles. Everything inside the picture's tile outline is see-through (it
+  fades in over 10 px outside it), so the game's tiles and grass bed show there.
+- Laid low (`imageBoard.height` 0.06, under the tile tops at 0.2), so the 3D tiles stand over its
+  lawn strip; the near rim's front is in the picture.
+- Same nine-part layout as the other picture rim (corners, repeated braid, decorated pieces at fixed
+  places, never stretched; tested). One scale, 140 source px per cell: the picture is a little
+  taller than wide (cells 146 px across, 152 px down), so its tiles do not line up exactly with the
+  game's away from the corners.
+- The left flower again sits on the drop shadow and is replaced by a copy of the right one.
+
+Cost: about 60 triangles, 1 draw call, 67 kB. Not yet the default: `buildRim` is still the code
+braid; the owner chooses (`choice-code-vs-picture-level07.webp`). To use it in the game, the theme
+session points the garden's rim at `buildRimBoard` (and its footprint is unchanged).

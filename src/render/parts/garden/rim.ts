@@ -16,9 +16,10 @@ import RIM from '../../../../data/themes/garden/rim.json';
 import UNDER from '../../../../data/themes/garden/underlay.json';
 import { Mesher, mergeAll, once, shade, shadowed, tube } from './geometry';
 import { painted } from './paint';
-import { boardFootprint, braidTwists, rimDecorLayout, rimPath, rimQuads, RoundedPath, seeded, type DecorPlace, type RimQuad } from './layout';
+import { boardFootprint, braidTwists, RIM_PICTURES, rimDecorLayout, rimPath, rimQuads, RoundedPath, seeded, type DecorPlace, type RimPicture, type RimQuad } from './layout';
 import { furMesh } from './grass';
 import atlasUrl from '../../../../assets/turnflock/garden/board/rim/rim-atlas.webp';
+import boardAtlasUrl from '../../../../assets/turnflock/garden/board/rim/board-rim-atlas.webp';
 
 const G = { rim: RIM.rim, decor: RIM.decor, underlay: UNDER.underlay };
 const C = RIM.colors;
@@ -389,7 +390,6 @@ export function buildRim(cols: number, rows: number, gap: number): THREE.Group {
 // ---------------------------------------------------------------------------------------------
 
 const IMG = RIM.image;
-const ATLAS = RIM.atlas;
 
 /**
  * A texture loaded from `url` (a WebP the build puts in the page), and a promise that settles
@@ -434,9 +434,20 @@ export const rimMaterial = new THREE.MeshBasicMaterial({ map: rimAtlas, transpar
 /** For the rim's shadow: only the solid part of the picture casts one. Give it back after `fuse`. */
 export const rimDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: rimAtlas, alphaTest: IMG.shadowAlpha });
 
+const boardAtlas = imageTexture(boardAtlasUrl, false);
+
+/** Settles once the rim cut from 01-board-full (`board-rim-atlas.webp`) has loaded. */
+export const rimBoardReady: Promise<void> = boardAtlas.ready;
+
+/** The material of the rim cut from 01-board-full, as `rimMaterial`. */
+export const rimBoardMaterial = new THREE.MeshBasicMaterial({ map: boardAtlas.texture, transparent: true, alphaTest: RIM.imageBoard.alphaTest, toneMapped: false });
+
+/** Its shadow shape, as `rimDepthMaterial`. */
+export const rimBoardDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: boardAtlas.texture, alphaTest: RIM.imageBoard.shadowAlpha });
+
 /** Texture coordinates (0-1, three.js's v up) of the source point (`sx`, `sy`) of the atlas piece `name`. */
-function atlasUv(name: string, sx: number, sy: number): [number, number] {
-  const p = ATLAS.pieces.find((q) => q.name === name)!;
+function atlasUv(pic: RimPicture, name: string, sx: number, sy: number): [number, number] {
+  const p = pic.atlas.pieces.find((q) => q.name === name)!;
   const [x0, y0, x1, y1] = p.src;
   const [ax, ay, aw, ah] = p.atlas;
   // A repeating tile holds one period of the braid along its side.
@@ -444,19 +455,19 @@ function atlasUv(name: string, sx: number, sy: number): [number, number] {
   const horizontal = p.side === 'top' || p.side === 'bottom';
   const w = period && horizontal ? period : x1 - x0;
   const h = period && !horizontal ? period : y1 - y0;
-  const u = (ax + ((sx - x0) / w) * aw) / ATLAS.size[0];
-  const v = (ay + ((sy - y0) / h) * ah) / ATLAS.size[1];
+  const u = (ax + ((sx - x0) / w) * aw) / pic.atlas.size[0];
+  const v = (ay + ((sy - y0) / h) * ah) / pic.atlas.size[1];
   return [u, 1 - v];
 }
 
 /** The flat geometry of every rim piece on a `cols` by `rows` board, facing up, layered by `RimQuad.layer`. */
-export function rimImageGeometry(quads: readonly RimQuad[]): THREE.BufferGeometry {
+export function rimImageGeometry(quads: readonly RimQuad[], pic: RimPicture = RIM_PICTURES.rim): THREE.BufferGeometry {
   const pos: number[] = [];
   const nor: number[] = [];
   const uv: number[] = [];
   const index: number[] = [];
   for (const q of quads) {
-    const y = IMG.height + q.layer * IMG.layer;
+    const y = pic.image.height + q.layer * pic.image.layer;
     const base = pos.length / 3;
     const corners: [number, number, number, number][] = [
       [q.x0, q.z0, q.sx0, q.sy0],
@@ -467,7 +478,7 @@ export function rimImageGeometry(quads: readonly RimQuad[]): THREE.BufferGeometr
     for (const [x, z, sx, sy] of corners) {
       pos.push(x, y, z);
       nor.push(0, 1, 0);
-      uv.push(...atlasUv(q.piece, sx, sy));
+      uv.push(...atlasUv(pic, q.piece, sx, sy));
     }
     // Counter-clockwise seen from above (+y), so the face looks up.
     index.push(base, base + 2, base + 1, base, base + 3, base + 2);
@@ -493,6 +504,23 @@ export function buildRimImage(cols: number, rows: number, gap: number): THREE.Gr
   mesh.name = 'garden-rim';
   mesh.castShadow = true;
   mesh.customDepthMaterial = rimDepthMaterial;
+  frame.add(mesh);
+  return frame;
+}
+
+/**
+ * The rim cut from `01-board-full` together with the strip of lawn inside it (its grass fringe and
+ * the braid's shadow on the grass), so rim and lawn are of one piece. Laid out like
+ * `buildRimImage`, but placed by the picture's tiles: its see-through middle lines up with the
+ * game's tiles, which stand over it (it lies low, at `imageBoard.height`).
+ */
+export function buildRimBoard(cols: number, rows: number, gap: number): THREE.Group {
+  const pic = RIM_PICTURES.board;
+  const frame = new THREE.Group();
+  const mesh = new THREE.Mesh(rimImageGeometry(rimQuads(cols, rows, gap, pic), pic), rimBoardMaterial);
+  mesh.name = 'garden-rim-board';
+  mesh.castShadow = true;
+  mesh.customDepthMaterial = rimBoardDepthMaterial;
   frame.add(mesh);
   return frame;
 }

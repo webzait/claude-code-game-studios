@@ -165,8 +165,20 @@ export function roundedSquareDistance(x: number, y: number, half: number, r: num
 // The rim as the owner's picture: where each piece of 03-rim-vines lands on a board.
 // ---------------------------------------------------------------------------------------------
 
-const IMG = RIM.image;
-const ATLAS = RIM.atlas;
+/**
+ * One of the owner's rim pictures, cut into pieces: `rim` from 03-rim-vines (`rim-atlas.webp`),
+ * `board` from 01-board-full with the lawn strip inside the braid (`board-rim-atlas.webp`).
+ */
+export interface RimPicture {
+  image: { pxPerCell: number; decorOrder: string[]; innerInset?: number; height: number; layer: number };
+  atlas: { size: number[]; fade: number; inner: number[]; mirrorShift: number; pieces: AtlasPiece[] };
+}
+
+/** The two rim pictures. */
+export const RIM_PICTURES: Record<'rim' | 'board', RimPicture> = {
+  rim: { image: RIM.image, atlas: RIM.atlas as RimPicture['atlas'] },
+  board: { image: RIM.imageBoard, atlas: RIM.atlasBoard as RimPicture['atlas'] },
+};
 
 /** A side of the board, as in the reference picture: top is far (-z), left is -x. */
 export type Side = 'top' | 'right' | 'bottom' | 'left';
@@ -211,26 +223,26 @@ export interface DecorSlot {
   home: number;
 }
 
-const piece = (name: string): AtlasPiece => {
-  const p = (ATLAS.pieces as AtlasPiece[]).find((q) => q.name === name);
+const piece = (name: string, pic: RimPicture = RIM_PICTURES.rim): AtlasPiece => {
+  const p = pic.atlas.pieces.find((q) => q.name === name);
   if (!p) throw new Error(`rim atlas has no piece ${name}`);
   return p;
 };
 
 /** Source pixels per cell: the picture is laid on the board at this one scale, never stretched. */
-export const RIM_PX = IMG.pxPerCell;
+export const RIM_PX = RIM.image.pxPerCell;
 
 /**
  * The geometry of one side, in source pixels along it: the inner length in the picture, where the
  * corner at its start ends and the corner at its end begins, the axis that runs along it, and
  * where along-coordinates start (the picture's inner edge).
  */
-export function sideSpec(side: Side): { along: 'x' | 'y'; origin: number; length: number; cornerStart: number; cornerEnd: number; corners: [string, string] } {
-  const [ix0, ix1, iy0, iy1] = ATLAS.inner;
+export function sideSpec(side: Side, pic: RimPicture = RIM_PICTURES.rim): { along: 'x' | 'y'; origin: number; length: number; cornerStart: number; cornerEnd: number; corners: [string, string] } {
+  const [ix0, ix1, iy0, iy1] = pic.atlas.inner;
   const horizontal = side === 'top' || side === 'bottom';
   const corners: [string, string] = side === 'top' ? ['tl', 'tr'] : side === 'bottom' ? ['bl', 'br'] : side === 'left' ? ['tl', 'bl'] : ['tr', 'br'];
-  const a = piece(corners[0]).src;
-  const b = piece(corners[1]).src;
+  const a = piece(corners[0], pic).src;
+  const b = piece(corners[1], pic).src;
   const origin = horizontal ? ix0 : iy0;
   return {
     along: horizontal ? 'x' : 'y',
@@ -243,9 +255,9 @@ export function sideSpec(side: Side): { along: 'x' | 'y'; origin: number; length
 }
 
 /** Length of a board side inside the rim, in cells. */
-function sideLength(side: Side, cols: number, rows: number, gap: number): number {
+function sideLength(side: Side, cols: number, rows: number, gap: number, pic: RimPicture): number {
   const { innerW, innerD } = boardFootprint(cols, rows, gap);
-  return side === 'top' || side === 'bottom' ? innerW : innerD;
+  return (side === 'top' || side === 'bottom' ? innerW : innerD) - 2 * (pic.image.innerInset ?? 0);
 }
 
 /**
@@ -256,24 +268,25 @@ function sideLength(side: Side, cols: number, rows: number, gap: number): number
  * run is too short for them all, they are pushed together, and if that is not enough, the least
  * important (last in `image.decorOrder`) is left out. Never random: the same board, the same rim.
  */
-export function rimDecorSlots(cols: number, rows: number, gap: number): DecorSlot[] {
-  const fade = ATLAS.fade / RIM_PX;
+export function rimDecorSlots(cols: number, rows: number, gap: number, pic: RimPicture = RIM_PICTURES.rim): DecorSlot[] {
+  const px = pic.image.pxPerCell;
+  const fade = pic.atlas.fade / px;
   const slots: DecorSlot[] = [];
   for (const side of ['top', 'right', 'bottom', 'left'] as Side[]) {
-    const spec = sideSpec(side);
-    const L = sideLength(side, cols, rows, gap);
-    const startW = spec.cornerStart / RIM_PX;
-    const endW = L - (spec.length - spec.cornerEnd) / RIM_PX;
-    let names = IMG.decorOrder.filter((n) => piece(n).side === side);
+    const spec = sideSpec(side, pic);
+    const L = sideLength(side, cols, rows, gap, pic);
+    const startW = spec.cornerStart / px;
+    const endW = L - (spec.length - spec.cornerEnd) / px;
+    let names = pic.image.decorOrder.filter((n) => piece(n, pic).side === side);
     for (;;) {
       const placed = names
         .map((name) => {
-          const src = piece(name).src;
+          const src = piece(name, pic).src;
           const s0 = (spec.along === 'x' ? src[0] : src[1]) - spec.origin;
           const s1 = (spec.along === 'x' ? src[2] : src[3]) - spec.origin;
           const f = ((s0 + s1) / 2 - spec.cornerStart) / (spec.cornerEnd - spec.cornerStart);
           const home = startW + f * (endW - startW);
-          const half = (s1 - s0) / RIM_PX / 2;
+          const half = (s1 - s0) / px / 2;
           return { name, side, start: home - half, end: home + half, home };
         })
         .sort((a, b) => a.home - b.home);
@@ -311,20 +324,23 @@ export function rimDecorSlots(cols: number, rows: number, gap: number): DecorSlo
  * `rimDecorSlots` over it. The left side has no plain stretch long enough in the picture, so it
  * repeats the right side's braid, mirrored.
  */
-export function rimQuads(cols: number, rows: number, gap: number): RimQuad[] {
-  const { innerW, innerD } = boardFootprint(cols, rows, gap);
+export function rimQuads(cols: number, rows: number, gap: number, pic: RimPicture = RIM_PICTURES.rim): RimQuad[] {
+  const inset = pic.image.innerInset ?? 0;
+  const { innerW: fullW, innerD: fullD } = boardFootprint(cols, rows, gap);
+  const innerW = fullW - 2 * inset;
+  const innerD = fullD - 2 * inset;
   const A = innerW / 2;
   const B = innerD / 2;
-  const [ix0, ix1, iy0, iy1] = ATLAS.inner;
-  const s = RIM_PX;
-  const fade = ATLAS.fade / s;
+  const [ix0, ix1, iy0, iy1] = pic.atlas.inner;
+  const s = pic.image.pxPerCell;
+  const fade = pic.atlas.fade / s;
   const quads: RimQuad[] = [];
   // Where a source x / y lands for each corner of the board.
   const wx = (left: boolean, sx: number): number => (left ? -A + (sx - ix0) / s : A + (sx - ix1) / s);
   const wz = (top: boolean, sy: number): number => (top ? -B + (sy - iy0) / s : B + (sy - iy1) / s);
 
   for (const name of ['tl', 'tr', 'bl', 'br']) {
-    const [x0, y0, x1, y1] = piece(name).src;
+    const [x0, y0, x1, y1] = piece(name, pic).src;
     const left = name[1] === 'l';
     const top = name[0] === 't';
     quads.push({ piece: name, kind: 'corner', side: 'corner', layer: 2, x0: wx(left, x0), x1: wx(left, x1), z0: wz(top, y0), z1: wz(top, y1), sx0: x0, sx1: x1, sy0: y0, sy1: y1 });
@@ -346,17 +362,17 @@ export function rimQuads(cols: number, rows: number, gap: number): RimQuad[] {
     }
     // The right side's braid on the left side, mirrored: its outside (large source x) lands outside
     // (-x), moved in by `mirrorShift` so its outside lines up with the left side's own.
-    const m = ATLAS.mirrorShift / s;
+    const m = pic.atlas.mirrorShift / s;
     return { ...base, x0: -A - (bx1 - ix1) / s + m, x1: -A - (bx0 - ix1) / s + m, z0: -B + w0, z1: -B + w1, sx0: bx1, sx1: bx0, sy0: iy0 + a0, sy1: iy0 + a1 };
   };
 
   const tiles: Record<Side, string> = { top: 'top-tile', bottom: 'bottom-tile', right: 'right-tile', left: 'right-tile' };
   for (const side of ['top', 'right', 'bottom', 'left'] as Side[]) {
-    const spec = sideSpec(side);
+    const spec = sideSpec(side, pic);
     const L = side === 'top' || side === 'bottom' ? innerW : innerD;
     const from = spec.cornerStart / s - fade;
     const to = L - (spec.length - spec.cornerEnd) / s + fade;
-    const tile = piece(tiles[side]);
+    const tile = piece(tiles[side], pic);
     const t0 = (spec.along === 'x' ? tile.src[0] : tile.src[1]) - spec.origin;
     const period = (tile.period ?? 0) / s;
     for (let w = from; w < to - 1e-6; w += period) {
@@ -365,9 +381,9 @@ export function rimQuads(cols: number, rows: number, gap: number): RimQuad[] {
     }
   }
 
-  for (const slot of rimDecorSlots(cols, rows, gap)) {
-    const p = piece(slot.name);
-    const spec = sideSpec(slot.side);
+  for (const slot of rimDecorSlots(cols, rows, gap, pic)) {
+    const p = piece(slot.name, pic);
+    const spec = sideSpec(slot.side, pic);
     const a0 = (spec.along === 'x' ? p.src[0] : p.src[1]) - spec.origin;
     const a1 = (spec.along === 'x' ? p.src[2] : p.src[3]) - spec.origin;
     quads.push(onSide(slot.side, p, 'decor', slot.start, slot.end, a0, a1));

@@ -5,8 +5,8 @@ import TILE from '../../data/themes/garden/tile.json';
 import RIM from '../../data/themes/garden/rim.json';
 import UNDER from '../../data/themes/garden/underlay.json';
 import { boardFootprint, boardPixels, buildFloorTile, buildRim, buildUnderlay, rimDecorLayout } from '../../src/render/parts/garden/board';
-import { braidTwists, RIM_PX, rimDecorSlots, rimPath, rimQuads, RoundedPath, seeded, sideSpec, type Side } from '../../src/render/parts/garden/layout';
-import { buildRimImage } from '../../src/render/parts/garden/rim';
+import { braidTwists, RIM_PICTURES, RIM_PX, rimDecorSlots, rimPath, rimQuads, RoundedPath, seeded, sideSpec, type Side } from '../../src/render/parts/garden/layout';
+import { buildRimBoard, buildRimImage } from '../../src/render/parts/garden/rim';
 import { boxOf, outwardShare, SIZES } from './garden-helpers';
 
 const GAP = config.board.grid.gap;
@@ -39,11 +39,39 @@ describe("garden rim as the owner's picture (buildRimImage)", () => {
     }
   });
 
-  it('never stretches the picture: every piece is drawn at the one scale', () => {
+  it('never stretches either picture: every piece is drawn at its picture\'s one scale', () => {
+    for (const pic of Object.values(RIM_PICTURES)) {
+      const px = pic.image.pxPerCell;
+      for (const [cols, rows] of SIZES) {
+        for (const q of rimQuads(cols, rows, GAP, pic)) {
+          expect(Math.abs(q.sx1 - q.sx0)).toBeCloseTo(Math.abs(q.x1 - q.x0) * px, 6);
+          expect(Math.abs(q.sy1 - q.sy0)).toBeCloseTo(Math.abs(q.z1 - q.z0) * px, 6);
+        }
+      }
+    }
+  });
+
+  it('the rim cut from 01-board-full lies low, under the tile tops, and its plain braid runs corner to corner', () => {
+    const pic = RIM_PICTURES.board;
+    const px = pic.image.pxPerCell;
+    const fade = pic.atlas.fade / px;
     for (const [cols, rows] of SIZES) {
-      for (const q of rimQuads(cols, rows, GAP)) {
-        expect(Math.abs(q.sx1 - q.sx0)).toBeCloseTo(Math.abs(q.x1 - q.x0) * RIM_PX, 6);
-        expect(Math.abs(q.sy1 - q.sy0)).toBeCloseTo(Math.abs(q.z1 - q.z0) * RIM_PX, 6);
+      const box = boxOf(buildRimBoard(cols, rows, GAP));
+      expect(box.max.y).toBeLessThan(TILE.tile.height);
+      expect(box.min.y).toBeGreaterThan(0);
+      const { innerW, innerD } = boardFootprint(cols, rows, GAP);
+      const quads = rimQuads(cols, rows, GAP, pic);
+      for (const side of SIDES) {
+        const spec = sideSpec(side, pic);
+        const horizontal = side === 'top' || side === 'bottom';
+        const length = (horizontal ? innerW : innerD) - 2 * (pic.image.innerInset ?? 0);
+        const pieces = quads
+          .filter((q) => q.kind === 'tile' && q.side === side)
+          .map((q) => (horizontal ? [q.x0, q.x1] : [q.z0, q.z1]).map((v) => v + length / 2))
+          .sort((a, b) => a[0] - b[0]);
+        expect(pieces[0][0]).toBeCloseTo(spec.cornerStart / px - fade, 6);
+        expect(pieces[pieces.length - 1][1]).toBeCloseTo(length - (spec.length - spec.cornerEnd) / px + fade, 6);
+        for (let i = 1; i < pieces.length; i++) expect(pieces[i][0]).toBeCloseTo(pieces[i - 1][1], 9);
       }
     }
   });
