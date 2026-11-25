@@ -4,7 +4,8 @@
  * this file decides (design/themes.md, "Two versions of a part").
  *
  * - Floor tile: the grass tile from the owner's picture (grass.ts), not the special tiles' stand-in.
- * - During play: a beam of light when a chick goes into the exit, a cloud puff where one bumps
+ * - During play: the exit pad's own entry (the owner's portal picture, exitPictures.ts) when a chick
+ *   goes into the exit, a cloud puff where one bumps
  *   (design/themes/garden-effects.md); the hint lights the cells the flock will step onto
  *   (design/themes/garden-board-highlight.md). Owner's go-ahead, 2026-11-24.
  * - Exit, turn tile, pressure plate, gate: the owner's pictures (exitPictures.ts), the standard of
@@ -45,7 +46,10 @@ export const buildGate: typeof gatePicture = (alt, pegs) => keepPicturesApart(ga
 export function playEffects(parent: THREE.Object3D, frame: { readonly pitch: number; readonly floorY: number }): PlayEffects {
   const fx = new GardenEffects(parent, frame);
   return {
-    exit: (x, z) => void fx.play('beam', x, z),
+    // The exit pad plays its own entry from the owner's portal picture (exitPictures.exitEntry, run by
+    // the board through the pad's userData.enter); the round beam is not played on it (owner, 2026-11-25:
+    // "Dat is nog steeds met een rondje").
+    exit: () => undefined,
     bump: (x, z) => void fx.play('cloud', x, z),
     update: (dt) => fx.update(dt),
     get reduced() {

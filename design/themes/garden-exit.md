@@ -341,3 +341,21 @@ in all looks, colour exits, turn tile, plate) *is* the cell's tile (`tileSprite`
 The quad's origin is now the tile's front foot, so the entry pop grows the pad up from where it
 stands. Evidence: `production/qa/evidence/garden-exit/garden-exit-aligned.png`. Tested: the tile's
 foot spans the cell's front edge (`picture pads line their stone tile up with the cell`).
+
+## In the game (2026-11-25)
+
+The owner: "Sluit de tuinonderdelen aan in het spel. De nieuwe eindtegel zit nog niet in het spel."
+The garden theme already built its exit, turn tile, plate and gate from these pictures (register.ts),
+but a chick going in still played the effects session's round beam, the robot `pulsePad` stretched the
+painted pad, and the pad never changed its look. Now:
+
+- **Entry.** `BoardView.pulsePad` plays a pad's own entry when it has one: `userData.enter(k, calm)`
+  over `userData.enterSeconds`. The garden pad's is `exitEntry` (portal fades in, the column of light
+  rises, back to its look). The garden's `playEffects.exit` no longer plays the round beam
+  (register.ts). The robot pad is unchanged.
+- **Look by the moment.** `BoardView.situateExits` tells every pad with `userData.situate(waitingFor,
+  stillOut)` how many flock members it still waits for and how many are out, after every sync (level
+  start, undo, restart) and when one goes in. The garden pad picks its look with `exitLook` and the
+  `moments` table: waiting green, its colour all in grey, level won rays. "Colour shapes" survives a
+  change of look.
+- Evidence (phone size, single-file build): `production/qa/evidence/garden-exit/in-game-*.png`.
