@@ -13,8 +13,6 @@ interface LevelData {
 }
 const levels: LevelData[] = JSON.parse(readFileSync('data/levels.json', 'utf8'));
 const config = JSON.parse(readFileSync('data/config.json', 'utf8'));
-/** The garden level screen's settings (the main theme): completed levels shown below the current one. */
-const garden = JSON.parse(readFileSync('data/themes/garden/levels.json', 'utf8'));
 const build = pathToFileURL(resolve('dist-single/index.html')).href;
 const budget = (index: number): number => levels[index].par + config.moveSlack;
 /** Position of a level in play order; the checks below name levels by id, so reordering never breaks them. */
@@ -127,8 +125,8 @@ test('Levels, Level, Win, Next: no dead ends, and progress survives a reload', a
   await expect(page.locator('#levelName')).toHaveText(levels[1].name);
   await expect(page.locator('#levelCoins .tf-coin-amount')).toHaveText(String(config.coins.start + perfectWin));
   await page.click('#levelBack');
-  // The garden's path (the main theme) keeps the completed level below as a done step; the next one is the current step.
-  await expect(page.locator('#node-1')).toHaveClass(/is-passed/);
+  // The completed level is gone from the path; the next one is the current step.
+  await expect(page.locator('#node-1')).toHaveCount(0);
   await expect(page.locator('#node-2')).toHaveClass(/is-current/);
   await expect(page.locator('#node-2')).toBeEnabled();
   await expect(page.locator('#node-3')).toHaveClass(/is-locked/);
@@ -294,8 +292,7 @@ test('out of moves in a hopeless position: free Retry, a priced Undo, and no ext
   await page.click('#node-1');
   for (let i = 0; i < budget(0); i++) await press(page, 'red');
   expect((await snap(page)).status).toBe('lost');
-  // The garden board draws slower in the software-rendered test browser, so the pop-up may take longer here.
-  await expect(page.locator('#end-title')).toHaveText('Out of moves', { timeout: 45000 });
+  await expect(page.locator('#end-title')).toHaveText('Out of moves', { timeout: 15000 });
   await expect(page.locator('#end-retry')).toHaveText('Retry');
   // The pop-up's Undo costs what the Undo button costs, and says so before the tap.
   await expect(page.locator('#end-undo')).toHaveAttribute('aria-label', `Undo, ${undoCost} coins`);
@@ -534,7 +531,7 @@ test('settings: colour shapes is off at first, shows each colour\'s shape on its
   }
   await expect(page.locator('.cmd[data-cmd=forward] .tf-cmd-shape')).toHaveCount(0);
   // Saved in the current format, without the dropped vibration value.
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('turnflock.save')!).settings)).toEqual({ mute: false, music: true, reduceMotion: null, colourShapes: true, theme: 'garden', themeChosen: false });
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('turnflock.save')!).settings)).toEqual({ mute: false, music: true, reduceMotion: null, colourShapes: true });
   // Kept over a reload, and switched off again without one.
   await page.click('#levelBack');
   await page.reload();
@@ -563,9 +560,7 @@ test('level selection: mid-way it shows the current level and the next few, near
   await expect(page.locator('#pathWhere')).toHaveText(`Level 12 of ${levels.length}`);
   await expect(page.locator('#steps .tf-levels-step.is-current')).toHaveText(/12/);
   await expect(page.locator('#steps .tf-levels-step.is-locked')).toHaveCount(ahead);
-  // The garden's path (the main theme) shows the last completed levels below the current one.
-  for (let n = 12 - garden.behind; n < 12; n++) await expect(page.locator(`#node-${n}`)).toHaveClass(/is-passed/);
-  await expect(page.locator(`#node-${11 - garden.behind}`)).toHaveCount(0);
+  await expect(page.locator('#node-11')).toHaveCount(0);
   await expect(page.locator(`#node-${12 + ahead}`)).toHaveClass(/is-locked/);
   await expect(page.locator(`#node-${13 + ahead}`)).toHaveCount(0);
   // The current level is a real target: at least 44 by 44 CSS pixels, and Enter on it opens the level.

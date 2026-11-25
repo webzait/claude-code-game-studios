@@ -295,7 +295,7 @@ describe('music setting', () => {
     expect(save.version).toBe(SAVE_VERSION);
     expect(save.best).toEqual({ a: 7 });
     expect(save.coins).toBe(73);
-    expect(save.settings).toEqual({ mute: true, music: true, reduceMotion: null, colourShapes: true, theme: 'garden', themeChosen: false });
+    expect(save.settings).toEqual({ mute: true, music: true, reduceMotion: null, colourShapes: true });
     expect(save.lab.unlockAll).toBe(true);
     expect(save.lab.music).toBe(DEFAULT_LAB.music);
   });

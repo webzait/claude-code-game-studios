@@ -67,9 +67,7 @@ async function openLevel(page: Page, index: number): Promise<string[]> {
     ([save]) => {
       if (!localStorage.getItem('turnflock.save')) localStorage.setItem('turnflock.save', save);
     },
-    // Pop-ups and helper buttons are the same in every theme (owner: buttons stay the robot theme's); the
-    // robot theme is picked because its board draws much faster in the software-rendered test browser.
-    [JSON.stringify({ version: 9, best, coins: config.coins.start, paid: {}, economy: 2, settings: { theme: 'robot', themeChosen: true }, lab: {} })],
+    [JSON.stringify({ version: 10, best, coins: config.coins.start, paid: {}, economy: 2, settings: {}, lab: {} })],
   );
   await page.goto(build);
   await expect.poll(() => page.evaluate(() => typeof window.turnflock?.snapshot)).toBe('function');

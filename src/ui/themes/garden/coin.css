@@ -1,7 +1,0 @@
-/* Garden theme: the star coin (owner's stermunt) in every coin place — counter, price tags, the extra-moves offer,
-   the win reward, the flying coins, the test shop and the level screen. All of them draw the coin as
-   <i class="tf-coin-ico"> (src/ui/coins.ts), whose picture the robot sheet sets in tf-coins.css.
-   Cut by tools/asset-pipeline/garden-coin.py; notes in design/themes/garden-coin.md. Every rule starts with [data-theme="garden"]. */
-[data-theme="garden"] i.tf-coin-ico { background-image: url('../../../../assets/turnflock/garden/coin/star-coin.webp'); }
-/* The price tags on Undo and Hint show the coin at about 24 CSS px: the small cut, sharpened so the star stays crisp. */
-[data-theme="garden"] .tf-paid .tf-coin-price i.tf-coin-ico { background-image: url('../../../../assets/turnflock/garden/coin/star-coin-small.webp'); }

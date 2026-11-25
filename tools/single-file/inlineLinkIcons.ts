@@ -4,7 +4,7 @@ import type { Plugin } from 'vite';
  * The single-file build inlines scripts and styles (vite-plugin-singlefile), but Vite writes the
  * images that index.html's `<link rel="icon">` and `<link rel="apple-touch-icon">` point at as
  * files next to the page. This puts them into the page as data URLs and drops the files, so the
- * single file carries its own tab and home-screen icon (design/themes/garden-icon.md).
+ * single file carries its own tab and home-screen icon.
  */
 
 /** Media types of the icon files this handles. */

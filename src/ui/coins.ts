@@ -19,8 +19,8 @@ export function formatCoins(amount: number): string {
 }
 
 /**
- * The coin picture: one element whose picture comes from the style sheets, so the theme decides which coin it is
- * (robot: tf-coins.css, garden: src/ui/themes/garden/coin.css) and a theme switch needs no new markup.
+ * The coin picture: one element whose picture comes from the style sheet (tf-coins.css), so every coin in the
+ * game shows the same picture.
  */
 export const COIN = '<i class="tf-coin-ico" aria-hidden="true"></i>';
 
