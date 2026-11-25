@@ -5,18 +5,11 @@
    end of each garden of 20 levels. Values: data/themes/garden/levels.json (put on the screen by
    applyGardenLevels); the fallbacks below are the same values. Design: design/themes/garden-levels.md. */
 
-/* ---- The screen: the owner's level-path backdrop (25-backdrop-level-path): sky, fence and hedge on the
-   horizon, a calm lawn in the middle for the path, flowers at the edges. It covers the screen, anchored a
-   little above the middle so the horizon stays under the header on phones and tablets alike. Underneath,
-   the same sky and lawn in plain colours, for the moment before the picture is decoded. Another picture
-   can take its place through --tg-backdrop (a full background value, e.g. url(...)). ---- */
-[data-theme="garden"] .tf-levels-phone {
-  color: var(--tg-ink, #2f4a1e);
-  background:
-    var(--tg-backdrop, url("./levels-backdrop.webp")) 50% 40% / cover no-repeat,
-    linear-gradient(180deg, var(--tg-sky-0, #3f9ff0) 0, var(--tg-sky-1, #7cc6fb) 22%, var(--tg-sky-2, #cdeeff) 35%,
-      var(--tg-lawn-0, #a6e060) 35%, var(--tg-lawn-1, #7fcd45) 65%, var(--tg-lawn-2, #5fb534) 100%);
-}
+/* ---- The screen: no background of its own. As in the robot theme, the level screen is transparent and
+   the game's own backdrop shows behind it (#backdrop: the garden scene and its edge decor, made by the
+   backdrop session in garden-scene.css), so the level screen and the puzzle screen share one garden.
+   Only the colour of the text is the garden's. ---- */
+[data-theme="garden"] .tf-levels-phone { isolation: isolate; color: var(--tg-ink, #2f4a1e); background: none; }
 
 /* ---- Header: the logo on the sky, white pills with a leaf-green edge. ---- */
 [data-theme="garden"] .tf-levels-logo { filter: drop-shadow(0 4px 6px rgba(30, 90, 40, .28)); }

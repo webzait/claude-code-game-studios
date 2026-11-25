@@ -61,14 +61,12 @@ path's height (container units); on 320×568 a locked ball is about 34 px, the c
 
 ## Mood
 
-- **Background:** the owner's level-path backdrop (`design/reference/turnflock/garden/25-backdrop-level-path.webp`,
-  956×1645), stored as `src/ui/themes/garden/levels-backdrop.webp` (WebP quality 76, 97 KB, about 130 KB
-  inlined). It covers the screen, anchored at 40% height so the fence stays just under the header; on a
-  phone the birdhouse and the flower arch at the edges are partly cut off, on a tablet they show in full.
-  Under it the same sky and lawn in plain colours, for the moment before it is decoded. `--tg-backdrop`
-  can replace it. In the game, `style.css` makes `#map` transparent so the game's own backdrop shows;
-  the theme session must let this picture show on the garden level screen instead (for example
-  `[data-theme="garden"] #map.tf-levels-phone { background: … }` with the same value).
+- **Background: the game's own** (owner, 2026-11-25: "the level screen the same screen as in-game").
+  As in the robot theme, the level screen has no background of its own: it is transparent and the
+  game's backdrop behind every screen (`#backdrop`: the garden scene with birdhouses, gazebo and flower
+  arch, and the edge decor, made by the backdrop session in `garden-scene.css`) shows through. So the
+  level screen and the puzzle screen are one garden. The separate level-path backdrop (owner's
+  `25-backdrop-level-path`), the moved birdhouse and the gazebo on the horizon were tried and dropped.
 - **Logo:** the owner's logo, unchanged (it may not be recoloured), with a soft green shadow.
   It still shows the red robot; a chick logo is the owner's call.
 - **Header and dock:** white pills with a leaf-green edge; a warm cream dock.
@@ -79,9 +77,9 @@ path's height (container units); on 320×568 a locked ball is about 34 px, the c
 |---|---|
 | `src/ui/themes/garden/tf-levels-garden.css` | All garden styles, only under `[data-theme="garden"]` |
 | `src/ui/themes/garden/levels.ts` | `applyGardenLevels(screen)`, `gardenPathModel()` |
-| `src/ui/themes/garden/levels-backdrop.webp` | The level-path backdrop, 956×1645, 97 KB |
 | `src/ui/themes/garden/levels-gazebo.webp` | The gazebo, 360×408, 32 KB (about 43 KB inlined) |
 | `data/themes/garden/levels.json` | Garden size, completed levels shown, colours, gazebo size |
+| `tools/asset-pipeline/garden_cutout.py` | Cutting artwork out of the owner's pictures (shared) |
 | `tools/asset-pipeline/build-garden-gazebo.py` | Cuts the gazebo out of `08-gazebo.png` (background and arch openings transparent, ground shadow made see-through; artwork not redrawn or recoloured) |
 | `src/ui/themes/garden/gardenDone.ts`, `tf-garden-done.css` | The "garden complete" celebration |
 | `src/parts/gardenLevels.ts` | The parts sheet section (the game's own screen and code, made-up progress) |
@@ -91,12 +89,13 @@ path's height (container units); on 320×568 a locked ball is about 34 px, the c
 1. Set `data-theme="garden"` on the root element and import `tf-levels-garden.css`.
 2. Call `applyGardenLevels(el('map'))` once.
 3. In `drawMap`, pass `...gardenPathModel()` to `renderLevels` (adds `chapter: 20, behind: 2`).
-4. Let the level-path backdrop show on `#map` (see Mood).
+4. Leave `#map` transparent (style.css already does), so the game's garden backdrop shows; no
+   garden override of `#map`'s background.
 5. After a win, if `chapterCompletedBy(index, LEVELS.length, 20)` is not 0, open the level screen
    with `showGardenDone(el('map'), { garden, last, ...gardenStars(stars, garden, 20) }, next)`
    and import `tf-garden-done.css`.
 
-Cost: 2D only — no triangles or draw calls. Two pictures (97 KB + 32 KB, about 175 KB inlined), about 13 KB of CSS (uncompressed, comments included).
+Cost: 2D only — no triangles or draw calls. One picture (32 KB, about 43 KB inlined), about 13 KB of CSS (uncompressed, comments included).
 
 ## Known differences from the reference
 
