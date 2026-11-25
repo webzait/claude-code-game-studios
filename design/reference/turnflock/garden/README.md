@@ -16,6 +16,7 @@ compressed and the size is reported.
 | 11-sheet-tile-grass | Grass tile, sheet version | Board |
 | 12-sheet-tile-highlight | Grass tile with a glowing yellow-green edge (highlight / hint) | Board |
 | 13-sheet-tile-dirt | Dirt tile with a grass edge (possible new tile type) | Board |
+| 25-tile-grass-fur-small, 26-tile-grass-fur | Grass tile with visible grass structure: a fine blade texture on top and a tufted fur edge (added 2026-11-25 with the request "give the tile grass structure, closer together; may be in four if that is better") | Board |
 | 04-rock, 14-sheet-rock, 15-sheet-rock-mossy | Rock, plain and mossy | Obstacles |
 | 05-stump, 16-sheet-stump | Tree stump with leaves | Obstacles |
 | 06-bush-flowers, 17-sheet-bushes-plants | Bushes with white or pink flowers; leaf, grass tuft, white and pink flower | Obstacles / decor |
