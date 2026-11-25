@@ -9,20 +9,33 @@ and `01-board-full` for how tiles sit on the board.
 
 ## What it is
 
-The owner's picture, not a model of it. `assets/turnflock/garden/board/tile/cut.py` cuts
-`02-tile-grass` into one atlas, `grass-tile.webp` (512 × 640 px, 67.8 kB). Before cutting it lifts
-the picture's fine detail (the picture plus twice itself less a 5 px blur), so the grass strokes
-and the blades of the side still read at game size: the owner's wish for grass texture.
+The owner's picture, restyled in code. `assets/turnflock/garden/board/tile/cut.py` cuts
+`02-tile-grass` into one atlas, `grass-tile.webp` (512 × 640 px, about 54 kB), and restyles it after
+`25/26-tile-grass-fur`, the owner's 2026-11-25 wish ("give the tile grass texture and put them closer
+together; may also be in code"):
 
-Why not `26-tile-grass-fur` itself: it is 607 px wide and soft (an enlarged JPEG). Cut out, enlarged
-and sharpened, its top still reads as a flat, pale field on the board (compare
+- **From the picture (02):** the shape, the broad light (a 60 px blur of the top), the fine fur, the
+  outline of its own fringe, and the side's blades. 02 is the only sharp source (1254 px).
+- **In code, baked into the atlas by `cut.py`** (so the game draws one picture, no extra cost):
+  - the colour of 26 (its top and side means: a calmer yellow-green, a deeper side);
+  - the clovers and mottling of 02 removed (the middle scales of the top dropped);
+  - grass strokes: 2,600 short tapered blades, light and dark, most leaning the same way, each about
+    a fortieth of the tile long, so they still read at 40 to 65 px per tile (finer detail disappears
+    there; that is why 26 itself, and the first versions, looked flat on the board);
+  - the ragged edge: 240 little tufts of 3 to 5 blades round the outline, the lawn's colour at the
+    root and pale yellow at the tip, as on 26.
+
+All numbers are in `STYLE` in `cut.py`; it is seeded, so it gives the same picture every run.
+
+Why not `26-tile-grass-fur` as the picture: it is 607 px wide and soft (an enlarged JPEG). Cut out,
+enlarged and sharpened, its top still reads as a flat, pale field on the board (compare
 `production/qa/evidence/garden-board/tile/source-26-left-vs-02-lifted-right-game-size.webp`). It
-stays in `cut.py` as a choice (`python3 cut.py preview.png 26-tile-grass-fur.jpg`).
+stays in `cut.py` as a source (`python3 cut.py preview.png 26-tile-grass-fur.jpg`).
 
-Why not "in four" (four corner pieces or a nine-part build): that pays off when the picture is
-sharper than the tile needs or the tile changes shape. Neither holds: the cells are square, and one
-512 px picture is already more than twice a tile on the phone. Four pieces would add seams and no
-detail.
+Why not the whole tile modelled in code at run time: the earlier code tile (`buildFloorTileCode`,
+grass-blade cards round a lofted body) reads as a smooth cushion at game size and costs three times
+the triangles. Painting the texture in code but baking it gives the look of the references and keeps
+one picture and one draw call.
 
 The pieces:
 
@@ -63,9 +76,9 @@ any size. Close up (about 800 px per tile on the parts page) it is a little soft
 ## Loading
 
 The atlas is decoded before any tile is built (top-level `await` in `grass.ts`), so the first frame
-already shows it; a 32 kB WebP decodes in a few milliseconds. Everything that imports `grass.ts`
+already shows it; a 54 kB WebP decodes in a few milliseconds. Everything that imports `grass.ts`
 waits for that. Outside a browser (unit tests) there is no image and the tile uses its vertex colours.
-In the single-file build the atlas adds about 43 kB (base64). The game does not import it yet.
+In the single-file build the atlas adds about 73 kB (base64). The game does not import it yet.
 
 ## Kept from the earlier version
 
@@ -80,10 +93,12 @@ use them.
   the game's sun does not move it. On the board this is hardly visible.
 - The side's fur strip has a smoother band in its middle (as on the picture) that, repeated round the
   tile, shows as a faint horizontal streak close up; at game size it is 1–2 px.
-- `01-board-full` draws the tiles a touch flatter and less fuzzy than `02-tile-grass`; we follow
-  `02-tile-grass`, and the owner chose to keep the side.
-- The game's hemisphere light adds a little blue: the rendered top is about 3% darker and slightly less
-  saturated than the picture (`image.light` is set to 1.04 to make up most of it).
+- `01-board-full` draws the tiles a touch flatter and less fuzzy; the owner chose to keep the side.
+- The painted strokes are cleaner and more regular than the soft strokes of 26; close up they read as
+  drawn blades rather than a photo of fur. At game size they read as texture, which is the point.
+- The top's colour is set to 26's; `image.light` (1.15) makes up for the board's light, so on the
+  board it is within about 5% of 26 and close up about 4% lighter. The side is a little darker than 26's.
+- 02's darker band just inside the back edge (its shoulder) is still faintly there.
 
 ## Notes for the theme session
 

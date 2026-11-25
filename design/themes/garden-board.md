@@ -12,7 +12,7 @@ supersedes the code-built description further down:
 
 | Part | Note | Picture | Code version kept as |
 |---|---|---|---|
-| Grass tile | `garden-board-tile.md` | `assets/turnflock/garden/board/tile/grass-tile.webp` (from `02-tile-grass`) | `buildFloorTileCode` |
+| Grass tile | `garden-board-tile.md` | `assets/turnflock/garden/board/tile/grass-tile.webp` (shape from `02-tile-grass`, grass texture painted after `25`/`26-tile-grass-fur`) | `buildFloorTileCode` |
 | Glowing tile, hint | `garden-board-highlight.md` | `assets/turnflock/garden/board/highlight/glow-rim.webp` | `style: 'painted'` |
 | Dirt tile | `garden-board-dirt.md` | `assets/turnflock/garden/board/dirt/dirt-tile.webp` | `style: 'modelled'` |
 | Rim, grass bed | `garden-board-rim.md` | `assets/turnflock/garden/board/rim/` (from `01-board-full` and `03-rim-vines`) | `buildRimModel` |
