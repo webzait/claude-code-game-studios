@@ -9,7 +9,7 @@
     "edgeGrass": 0.06,
     "cornerRadius": 1.1,
     "$comment": "lip: the plate stops this far inside the rim's outside, under the braid (the rim picture's far side is thinner than its near side). cornerRadius: the plate's corners, round enough to stay under the rim picture's round corners. The bed's top is assets/turnflock/garden/board/bed/bed.webp (built by build-bed.py there, in the colours of 01-board-full; design/themes/garden-board-bed.md), repeating every bedRepeat cells (keep equal to REPEAT in build-bed.py), on a matte Lambert material brightened by bedTone so it sits with the tiles as in the picture.",
-    "bedTone": 1.4
+    "bedTone": 1.25
   },
   "colors": {
     "bed": "#5E9E10",

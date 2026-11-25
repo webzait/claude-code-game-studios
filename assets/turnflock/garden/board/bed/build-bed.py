@@ -9,17 +9,16 @@ lays it over the underlay's top, repeating every `bedRepeat` cells (data/themes/
 
 Why it is built and not cut: in the owner's picture 01-board-full the bed shows only in thin
 strips and small diamonds between the tiles, too little to cut a clean repeating patch from (the
-earlier 128 px patch was blurred and blotchy at phone size). So the bed is drawn here, in the
-picture's style and colours (sampled from the strip between the rim and the first row of tiles):
+earlier 128 px patch was blurred and blotchy at phone size). So the bed is drawn here, compact
+and fine like the fur round the edge of the owner's tile pictures (02-tile-grass, 11):
 
   - a mid green ground with only fine, small variation (no blotches);
-  - tufts of three to six pointed blades fanning out from one root, every blade shaded from a
-    deep green root to a light yellow-green tip, with a lighter edge on one side, as painted in
-    the picture;
+  - short leaf-shaped blades (narrow at the root, widest at a third, pointed), packed close on a
+    jittered grid, each shaded from a green root to a light lime tip with a lit edge;
   - the blades point to the top of the picture, which is away from the camera on the board, so
-    they read as standing grass seen from the front, as in 01-board-full;
-  - tufts sit on a jittered grid that wraps round the edges, drawn front to back by row, so the
-    patch repeats without a seam and without rows.
+    they read as standing grass seen from the front;
+  - the grid wraps round the edges and every blade and its wrapped copies are drawn back to
+    front together, so the patch repeats without a seam and without rows.
 
 It is drawn at 3x and scaled down, so every blade edge is sharp and antialiased. Fixed seed: the
 same file every run.
@@ -30,25 +29,26 @@ from PIL import Image, ImageDraw, ImageFilter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-SIZE = 384           # px of the finished patch (one repeat)
+SIZE = 640           # px of the finished patch (one repeat)
 SS = 3               # drawn this many times larger, then scaled down
 REPEAT = 1.25        # cells per repeat; keep equal to underlay.bedRepeat (px per cell = SIZE / REPEAT)
 SEED = 11
-QUALITY = 72         # WebP quality
+QUALITY = 74         # WebP quality
 
-# Colours from 01-board-full: the bed strip under the top rim and the diamonds between tiles.
-GROUND = (62, 126, 0)        # the green between the blades
-GROUND_DEEP = (46, 102, 0)   # in the shade at a tuft's root
-ROOT = (64, 132, 0)          # a blade at its root
-MID = (112, 190, 0)         # a blade halfway
-TIP = (192, 240, 34)         # a blade's light tip
-EDGE = (170, 230, 22)        # the lit edge down one side of a blade
+# Colours from 01-board-full (the bed between the tiles) and the tile's fur edge (02, 11).
+GROUND = (58, 118, 0)        # the green between the leaves
+GROUND_DEEP = (40, 94, 0)    # the deepest slits
+ROOT = (70, 140, 0)          # a leaf at its root
+MID = (132, 204, 0)          # a leaf's body
+TIP = (196, 240, 36)         # a leaf's light tip
+EDGE = (212, 246, 74)        # the lit edge down one side of a leaf
 
-# Sizes in cells (one tile pitch is about 1 cell; the gap between tiles is about 0.1).
-BLADE_LEN = (0.13, 0.22)
-BLADE_WIDTH = (0.034, 0.05)
-TUFT_STEP = 0.09             # grid step of the tufts
-TUFT_BLADES = (4, 7)
+# Sizes in cells (one tile pitch is about 1 cell; the gap between tiles is about 0.1). Short,
+# leaf-shaped blades packed close, like the fur round the tile's edge: compact, not tufty.
+BLADE_LEN = (0.045, 0.07)
+BLADE_WIDTH = (0.02, 0.028)
+LEAF_STEP = 0.022            # grid step of the leaves
+TILT = 0.38                  # largest lean either way, radians
 
 
 def lerp(a, b, t):
@@ -57,7 +57,7 @@ def lerp(a, b, t):
 
 def blade_colour(t, shade):
     """Colour at fraction t from root (0) to tip (1), darkened by shade (0..1)."""
-    c = lerp(ROOT, MID, t / 0.55) if t < 0.55 else lerp(MID, TIP, (t - 0.55) / 0.45)
+    c = lerp(ROOT, MID, t / 0.45) if t < 0.45 else lerp(MID, TIP, (t - 0.45) / 0.55)
     return tuple(int(v * shade) for v in c)
 
 
@@ -75,7 +75,8 @@ def blade(draw, x, y, length, width, angle, bend, shade, cell):
         else:
             cx += np.sin(a) * length / segs
             cy -= np.cos(a) * length / segs
-        w = width * (1 - t) ** 0.9 * 0.5
+        # Leaf-shaped: narrow at the root, widest at a third, coming to a point.
+        w = width * 0.5 * ((0.55 + 0.45 * t / 0.35) if t < 0.35 else ((1 - t) / 0.65) ** 0.75)
         nx, ny = np.cos(a), np.sin(a)
         pts_l.append((cx - nx * w, cy - ny * w))
         pts_r.append((cx + nx * w, cy + ny * w))
@@ -100,9 +101,9 @@ def build():
     draw = ImageDraw.Draw(img)
 
     # Fine ground variation: small soft specks of the deep green, no large patches.
-    for _ in range(int(900 * REPEAT * REPEAT)):
+    for _ in range(int(2500 * REPEAT * REPEAT)):
         x, y = rand.uniform(0, n), rand.uniform(0, n)
-        r = rand.uniform(0.006, 0.014) * cell
+        r = rand.uniform(0.004, 0.009) * cell
         c = lerp(GROUND, GROUND_DEEP, rand.uniform(0.3, 1))
         for ox in (-n, 0, n):
             for oy in (-n, 0, n):
@@ -110,43 +111,36 @@ def build():
     img = img.filter(ImageFilter.GaussianBlur(0.006 * cell))
     draw = ImageDraw.Draw(img)
 
-    # Tufts on a jittered grid that wraps round.
-    step = TUFT_STEP * cell
+    # Leaves on a dense jittered grid that wraps round, every row offset by half a step.
+    step = LEAF_STEP * cell
     k = int(round(n / step))
     step = n / k
-    tufts = []
+    leaves = []
     for gy in range(k):
         for gx in range(k):
-            x = (gx + 0.5 + rand.uniform(-0.45, 0.45) + (0.5 if gy % 2 else 0)) * step
+            x = ((gx + 0.5 + rand.uniform(-0.45, 0.45) + (0.5 if gy % 2 else 0)) * step) % n
             y = (gy + 0.5 + rand.uniform(-0.4, 0.4)) * step
-            tufts.append((y, x % n, int(rand.integers(TUFT_BLADES[0], TUFT_BLADES[1] + 1)), rand.integers(1 << 30)))
-    # Every tuft and its wrapped copies, drawn front to back by root row: a root lower in the
-    # picture is nearer the camera and covers the blades behind it. Sorting the copies together
+            leaves.append(dict(
+                x=x, y=y,
+                length=rand.uniform(*BLADE_LEN) * cell,
+                width=rand.uniform(*BLADE_WIDTH) * cell,
+                angle=rand.uniform(-TILT, TILT),
+                bend=rand.uniform(-0.25, 0.25),
+                shade=rand.uniform(0.84, 1.0),
+            ))
+    # Every leaf and its wrapped copies, drawn back to front by root row: a root lower in the
+    # picture is nearer the camera and covers the leaves behind it. Sorting the copies together
     # keeps the overlap the same on both sides of an edge, so there is no seam.
     copies = []
-    for y, x, count, seed in tufts:
-        r = np.random.default_rng(int(seed))
-        specs = []
-        for j in range(count):
-            spread = (j - (count - 1) / 2) / max(1, count - 1)
-            specs.append(dict(
-                dx=r.uniform(-0.012, 0.012) * cell,
-                length=r.uniform(*BLADE_LEN) * cell * (1 - 0.35 * abs(spread)),
-                width=r.uniform(*BLADE_WIDTH) * cell,
-                angle=spread * r.uniform(0.6, 1.0) + r.uniform(-0.12, 0.12),
-                bend=spread * r.uniform(0.1, 0.4),
-                shade=r.uniform(0.82, 1.04),
-            ))
-        # Outer blades first, the upright middle ones over them.
-        specs.sort(key=lambda s: -abs(s['angle']))
+    for leaf in leaves:
         for ox in (-n, 0, n):
             for oy in (-n, 0, n):
-                if -0.2 * cell < x + ox < n + 0.2 * cell and -0.05 * cell < y + oy < n + 0.2 * cell:
-                    copies.append((y + oy, x + ox, specs))
+                x, y = leaf['x'] + ox, leaf['y'] + oy
+                if -0.1 * cell < x < n + 0.1 * cell and -0.02 * cell < y < n + 0.1 * cell:
+                    copies.append((y, x, leaf))
     copies.sort(key=lambda c: c[0])
-    for y, x, specs in copies:
-        for s in specs:
-            blade(draw, x + s['dx'], y, s['length'], s['width'], s['angle'], s['bend'], min(1.0, s['shade']), cell)
+    for y, x, l in copies:
+        blade(draw, x, y, l['length'], l['width'], l['angle'], l['bend'], l['shade'], cell)
 
     return img.resize((SIZE, SIZE), Image.LANCZOS)
 

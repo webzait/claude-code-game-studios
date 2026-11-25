@@ -25,33 +25,41 @@ green with sharp, light blade tips, and it sits well next to the tiles.
 
 ## What it is now
 
+The first version (tufts of long blades, 384 px) was sharp, but the owner asked for "compacter
+en hogere resolutie gras" (more compact grass at a higher resolution), and pointed to the fur
+round the edge of their tile pictures (`02-tile-grass`, `11-sheet-tile-grass`). The bed now
+follows that fur:
+
 - **A drawn patch, not a cut-out one.** The reference shows too little plain bed to cut a clean
-  repeating patch from it. `assets/turnflock/garden/board/bed/build-bed.py` draws one in the
-  reference's style and colours: a mid green ground, and tufts of four to seven pointed blades
-  fanning out from one root. Each blade runs from deep green at the root to a light yellow-green
-  tip and has a lit edge down one side. The blades point to the top of the picture, which is away
-  from the camera on the board, so they read as standing grass seen from the front, as in the
-  reference. It is drawn at 3x and scaled down, so every edge is sharp.
-- **Seamless, with no rows.** Tufts sit on a jittered, offset grid that wraps round the edges.
-  Every tuft and its wrapped copies are drawn front to back together, so the overlap is the same
-  on both sides of an edge and there is no seam.
-- **Resolution.** The patch is 384 px and repeats every 1.25 cells (`bedRepeat`), which is about
-  307 px per cell, or 1.6 texels per device pixel on a phone. 1.25 is not a whole number of
-  cells, so neighbouring gaps show different parts of the patch, and the repeat cannot be seen.
+  repeating patch from it. `assets/turnflock/garden/board/bed/build-bed.py` draws one with short,
+  leaf-shaped blades, about 0.045 to 0.07 of a cell long. Each is narrow at the root, widest at a
+  third and comes to a point, like the tile's fur. They are packed close on a jittered grid with
+  a step of 0.022 cells, each leaning up to 22° either way. Each is shaded from green at the
+  root to a light lime tip, with a lit edge. They point away from the camera, so they read as
+  standing grass. Everything is drawn at 3x and scaled down, so every edge is sharp.
+- **Seamless, with no rows.** The grid wraps round the edges, and every blade and its wrapped
+  copies are drawn back to front together. The overlap is then the same on both sides of an
+  edge, so there is no seam.
+- **Higher resolution.** The patch is 640 px and repeats every 1.25 cells (`bedRepeat`): 512 px
+  per cell, or about 2.7 texels per device pixel on a phone. 1.25 is not a whole number of cells,
+  so neighbouring gaps show different parts of the patch.
 - **Matte material.** `MeshLambertMaterial`: diffuse light and shadows, but no highlights and no
   environment reflection, because grass does not shine. This takes away the grey haze, and it is
-  cheaper on a phone than the standard material. `bedTone` 1.4 brightens it against the scene
-  light.
-- **Colour and brightness.** These were measured against the reference over the whole bed
-  (green channel, the bed compared with the tiles): reference 163 / 230 = 0.71, game 158 / 217 =
-  0.73. There is almost no blue in the palette, as in the reference.
+  cheaper on a phone than the standard material.
+- **Colour and brightness.** `bedTone` 1.25. In the game the bed's green is about 0.8 of the
+  tiles' green, a little brighter than the reference (0.71). It sits closer to the tiles, as the
+  owner asked, and the tile shadows still separate the cells.
 
-| | Before | After |
-|---|---|---|
-| File | `board/rim/bed.webp`, 128 px, 1.7 kB | `board/bed/bed.webp`, 384 px, 27 kB |
-| Pixels per cell | 128 | 307 |
-| Material | Standard (highlights and reflections) | Lambert (matte) |
-| Repeat | every cell | every 1.25 cells |
+| | Before | First try (tufts) | Now (compact) |
+|---|---|---|---|
+| File | `board/rim/bed.webp`, 128 px, 1.7 kB | 384 px, 27 kB | `board/bed/bed.webp`, 640 px, 71 kB |
+| Pixels per cell | 128 | 307 | 512 |
+| Material | Standard | Lambert | Lambert |
+
+**Size.** 71 kB is over the 30 kB guideline. Fine, dense blades do not compress well: WebP at
+quality 55 still makes 56 kB and the blades visibly soften. A 512 px patch that repeats every
+whole cell would be about 46 kB at the same sharpness, but then every gap would show the same
+grass.
 
 Build: `python3 assets/turnflock/garden/board/bed/build-bed.py` (needs Pillow and numpy). The
 seed is fixed, so every run writes the same file. If you change `REPEAT` there, change
@@ -67,7 +75,7 @@ place.
 `production/qa/evidence/garden-board/bed/`: levels 1, 7 and 11 at 390×844 with
 deviceScaleFactor 3 (`in-game-*`). The reference, the old bed and the new bed side by side
 (`compare-*`, at half size). A close-up at 1:1 device pixels next to the reference at the same
-cell size (`closeup-level01-bed`). The patch repeated 2×2 (`bed-texture-2x2-repeat`).
+cell size (`closeup-level01-bed`, with the first try between). The patch repeated 2×2 (`bed-texture-2x2-repeat`).
 
 ## Where it still differs from the reference
 
