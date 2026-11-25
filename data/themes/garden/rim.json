@@ -5,7 +5,7 @@
     "margin": 0.13,
     "width": 0.58,
     "cornerRadius": 1.0,
-    "centreY": 0.25,
+    "centreY": 0.21,
     "radius": 0.29,
     "flatten": 0.8,
     "strands": 3,
@@ -25,7 +25,20 @@
       "clearcoat": 0.6,
       "clearcoatRoughness": 0.25
     },
-    "coreRadial": 8
+    "coreRadial": 8,
+    "grass": {
+      "$comment": "Grass growing up against the inside of the braid: from `base` in front of it up to `height`, leaning `lean` onto it. Height 0: none (it read as a pale strip in the game's light).",
+      "base": 0.1,
+      "height": 0,
+      "lean": 0.04
+    },
+    "contact": {
+      "$comment": "Soft shadow on the grass bed along the inside of the braid, so it sits in the grass: from `under` beneath the braid to `width` in front of it, `opacity` at its darkest.",
+      "under": 0.1,
+      "width": 0.34,
+      "opacity": 0.75,
+      "color": "#1C3604"
+    }
   },
   "image": {
     "$comment": "The rim as the owner's picture (buildRim): pieces of 03-rim-vines from rim-atlas.webp, laid flat at `height`. pxPerCell: source pixels (in 03-rim-vines) per cell. decorOrder: the decorated pieces, most important first; on a board too small for all of them the last ones are left out.",

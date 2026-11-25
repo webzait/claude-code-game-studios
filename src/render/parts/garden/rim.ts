@@ -153,22 +153,69 @@ export function braidGeometry(path: RoundedPath): THREE.BufferGeometry {
 export function rimGrass(cols: number, rows: number, gap: number): THREE.BufferGeometry {
   const { innerW, innerD } = boardFootprint(cols, rows, gap);
   const m = new Mesher();
-  const h = G.underlay.edgeGrass;
+  const g = G.rim.grass;
   const radius = Math.max(0.05, G.rim.cornerRadius - G.rim.width / 2);
-  const outer = new RoundedPath(innerW / 2 + 0.03, innerD / 2 + 0.03, radius);
-  const inner = new RoundedPath(innerW / 2 - 0.02, innerD / 2 - 0.02, Math.max(0.03, radius - 0.05));
-  const samples = Math.ceil(outer.length * 10);
-  const repeats = Math.max(1, Math.round(outer.length / 0.24));
+  // From the bed in front of the braid up and onto its inner side.
+  const foot = new RoundedPath(innerW / 2 - g.base, innerD / 2 - g.base, Math.max(0.03, radius - g.base));
+  const tip = new RoundedPath(innerW / 2 + g.lean, innerD / 2 + g.lean, radius + g.lean);
+  const samples = Math.ceil(foot.length * 10);
+  const repeats = Math.max(1, Math.round(foot.length / 0.24));
   const rowsOut: number[][] = [[], []];
   for (let i = 0; i <= samples; i++) {
     const f = i / samples;
-    const a = outer.at(f * outer.length);
-    const b = inner.at(f * inner.length);
-    rowsOut[0].push(m.vertex(new THREE.Vector3(a.x, 0, a.z), new THREE.Vector3(0, 1, 0), f * repeats, 0, shade(0.7)));
-    rowsOut[1].push(m.vertex(new THREE.Vector3(b.x, h, b.z), new THREE.Vector3(0, 1, 0), f * repeats, 1, shade(0.95)));
+    const a = tip.at(f * tip.length);
+    const b = foot.at(f * foot.length);
+    rowsOut[0].push(m.vertex(new THREE.Vector3(a.x, g.height, a.z), new THREE.Vector3(0, 1, 0), f * repeats, 1, shade(0.95)));
+    rowsOut[1].push(m.vertex(new THREE.Vector3(b.x, 0.002, b.z), new THREE.Vector3(0, 1, 0), f * repeats, 0, shade(0.7)));
   }
   m.grid(rowsOut);
   return m.build();
+}
+
+/** The soft shadow the braid lays on the grass bed along its inside: see-through, darkest under the braid. */
+export const contactMaterial = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, toneMapped: false });
+
+/**
+ * A ring on the grass bed along the inside of the braid, darkest (`contact.opacity`) under it and
+ * fading to nothing `contact.width` in front of it, so the braid sits in the grass instead of on it.
+ */
+export function contactShadow(cols: number, rows: number, gap: number): THREE.BufferGeometry {
+  const { innerW, innerD } = boardFootprint(cols, rows, gap);
+  const c = G.rim.contact;
+  const radius = Math.max(0.05, G.rim.cornerRadius - G.rim.width / 2);
+  const tone = new THREE.Color(c.color);
+  const rings = [
+    { off: c.under, a: c.opacity },
+    { off: 0, a: c.opacity * 0.85 },
+    { off: -c.width * 0.35, a: c.opacity * 0.35 },
+    { off: -c.width, a: 0 },
+  ];
+  const paths = rings.map((r) => new RoundedPath(innerW / 2 + r.off, innerD / 2 + r.off, Math.max(0.03, radius + r.off)));
+  const samples = Math.ceil(paths[0].length * 8);
+  const pos: number[] = [];
+  const col: number[] = [];
+  const index: number[] = [];
+  for (let i = 0; i <= samples; i++) {
+    const f = i / samples;
+    rings.forEach((r, k) => {
+      const p = paths[k].at(f * paths[k].length);
+      pos.push(p.x, 0.003, p.z);
+      col.push(tone.r, tone.g, tone.b, r.a);
+    });
+  }
+  const n = rings.length;
+  for (let i = 0; i < samples; i++) for (let k = 0; k < n - 1; k++) {
+    const a = i * n + k;
+    const b = (i + 1) * n + k;
+    // Seen from above (+y): the path runs clockwise, rings go inward, so this order faces up.
+    index.push(a, a + 1, b, b, a + 1, b + 1);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(pos.map((_, i) => (i % 3 === 1 ? 1 : 0)), 3));
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(col, 4));
+  geometry.setIndex(index);
+  return geometry;
 }
 
 /** A leaf lying along +x from its stalk at the origin: pointed, its midrib raised, its tip curling down. */
@@ -315,7 +362,13 @@ export function buildRim(cols: number, rows: number, gap: number): THREE.Group {
   const path = rimPath(cols, rows, gap);
   const frame = new THREE.Group();
   frame.add(new THREE.Mesh(braidGeometry(path), barkMaterial));
-  frame.add(furMesh(rimGrass(cols, rows, gap)));
+  const contact = new THREE.Mesh(contactShadow(cols, rows, gap), contactMaterial);
+  contact.name = 'garden-rim-contact';
+  // `fuse` would make it cast a shadow; it stays a mesh of its own.
+  contact.userData.keepApart = true;
+  contact.renderOrder = 1;
+  frame.add(contact);
+  if (G.rim.grass.height > 0) frame.add(furMesh(rimGrass(cols, rows, gap)));
   const vines = new Mesher();
   const vineTone = new THREE.Color(C.vine);
   for (const place of rimDecorLayout(cols, rows, gap)) {
@@ -324,7 +377,11 @@ export function buildRim(cols: number, rows: number, gap: number): THREE.Group {
     tube(vines, points, points.map((_, i) => G.decor.vineRadius * (1 - 0.5 * Math.abs(i / (points.length - 1) - 0.5) * 2) + 0.004), 5, () => 0, 0, (_, around) => vineTone.clone().multiplyScalar(0.8 + 0.25 * Math.max(0, around)), false);
   }
   frame.add(new THREE.Mesh(vines.build(), leafMaterial));
-  return shadowed(frame);
+  shadowed(frame);
+  // The soft shadow is itself a shadow: it neither casts nor takes one.
+  contact.castShadow = false;
+  contact.receiveShadow = false;
+  return frame;
 }
 
 // ---------------------------------------------------------------------------------------------

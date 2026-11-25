@@ -160,3 +160,16 @@ sizes, and in the game on 390×844 at 3× density, levels 1, 3, 5, 7, 11).
 Still different from the reference: the leaves read paler and greyer in the game's light than the
 picture's bright yellow-green; the rope's strands are smoother and show fewer fine fibres; the
 picture's near side is thicker (it shows the braid's front), the model is the same all round.
+
+### Sitting in the grass (2026-11-25)
+
+The owner: the compact rim is fine, but it does not feel of one piece with the lawn; use shadow, for
+example. Changes:
+
+- **Contact shadow** (`contactShadow`, `rim.contact`): a soft dark-green ring on the grass bed along
+  the inside of the braid, darkest under it (opacity 0.75) and gone 0.34 cell in front of it. Kept
+  out of `fuse` (`userData.keepApart`) so it does not cast a shadow itself.
+- **The braid sits down in the grass**: its centre at 0.21 instead of 0.25, so its underside is a
+  little below the bed (a test allows up to 0.03).
+- **No grass band against the braid** (`rim.grass.height` 0): in the game's light it read as a pale
+  smooth strip rather than blades. The code stays, at height 0.
