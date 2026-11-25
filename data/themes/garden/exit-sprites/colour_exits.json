@@ -1,0 +1,89 @@
+{
+  "_about": "Written by tools/asset-pipeline/garden_exit/colour_exits.py: size in cells and anchor (fractions from the top left) of each picture.",
+  "sprites": {
+    "exit-red": {
+      "width": 1.0156,
+      "height": 1.0063,
+      "anchor": [
+        0.4968,
+        0.4121
+      ],
+      "tile": [
+        0.008,
+        0.0081,
+        0.992,
+        0.9919
+      ]
+    },
+    "exit-shape-red": {
+      "width": 1.0156,
+      "height": 1.0063,
+      "anchor": [
+        0.4968,
+        0.4121
+      ],
+      "tile": [
+        0.008,
+        0.0081,
+        0.992,
+        0.9919
+      ]
+    },
+    "exit-blue": {
+      "width": 1.0156,
+      "height": 1.0063,
+      "anchor": [
+        0.4968,
+        0.4121
+      ],
+      "tile": [
+        0.008,
+        0.0081,
+        0.992,
+        0.9919
+      ]
+    },
+    "exit-shape-blue": {
+      "width": 1.0156,
+      "height": 1.0063,
+      "anchor": [
+        0.4968,
+        0.4121
+      ],
+      "tile": [
+        0.008,
+        0.0081,
+        0.992,
+        0.9919
+      ]
+    },
+    "exit-yellow": {
+      "width": 1.0156,
+      "height": 1.0063,
+      "anchor": [
+        0.4968,
+        0.4121
+      ],
+      "tile": [
+        0.008,
+        0.0081,
+        0.992,
+        0.9919
+      ]
+    },
+    "exit-shape-yellow": {
+      "width": 1.0156,
+      "height": 1.0063,
+      "anchor": [
+        0.4968,
+        0.4121
+      ],
+      "tile": [
+        0.008,
+        0.0081,
+        0.992,
+        0.9919
+      ]
+    }
+  }
+}

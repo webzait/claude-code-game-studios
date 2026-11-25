@@ -20,6 +20,7 @@ import { addCoinCards, toolButton, toolTray, type ToolName } from './coins';
 import coinIcon from '../../assets/turnflock/ui/coin.webp';
 import extraMovesIcon from '../../assets/turnflock/ui/extra-moves.webp';
 import { addSettingsCards } from './settings';
+import { addGardenExitCards } from './garden-exit';
 
 /**
  * The parts sheet: every game element built on its own and shown from the
@@ -1044,5 +1045,8 @@ addCoinCards(document.getElementById('sheet')!);
 
 // The settings screen and its controls (src/parts/settings.ts).
 addSettingsCards(document.getElementById('sheet')!);
+
+// Garden theme: exit, gazebo goal and special tiles (src/parts/garden-exit.ts).
+void addGardenExitCards(document.getElementById('sheet')!);
 
 document.body.dataset.ready = 'true';
