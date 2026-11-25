@@ -3,12 +3,28 @@
 Part of the garden board (`garden-board.md`). Function: `buildFloorTile(alt, pegs)` in
 `src/render/parts/garden/grass.ts`, data in `data/themes/garden/tile.json` (`image`), parts-page cards
 in `src/parts/garden-board/tile.ts`, tests in `tests/unit/garden-tile.test.ts`.
-References: `02-tile-grass` (main), `11-sheet-tile-grass`, and `01-board-full` for how tiles sit on the board.
+References: `02-tile-grass` (source), `25-tile-grass-fur-small` and `26-tile-grass-fur` (the owner's
+2026-11-25 wish: visible grass texture, a ragged edge, tiles closer together), `11-sheet-tile-grass`,
+and `01-board-full` for how tiles sit on the board.
 
 ## What it is
 
 The owner's picture, not a model of it. `assets/turnflock/garden/board/tile/cut.py` cuts
-`02-tile-grass` into one atlas, `grass-tile.webp` (512 × 640 px, 31.7 kB):
+`02-tile-grass` into one atlas, `grass-tile.webp` (512 × 640 px, 67.8 kB). Before cutting it lifts
+the picture's fine detail (the picture plus twice itself less a 5 px blur), so the grass strokes
+and the blades of the side still read at game size: the owner's wish for grass texture.
+
+Why not `26-tile-grass-fur` itself: it is 607 px wide and soft (an enlarged JPEG). Cut out, enlarged
+and sharpened, its top still reads as a flat, pale field on the board (compare
+`production/qa/evidence/garden-board/tile/source-26-left-vs-02-lifted-right-game-size.webp`). It
+stays in `cut.py` as a choice (`python3 cut.py preview.png 26-tile-grass-fur.jpg`).
+
+Why not "in four" (four corner pieces or a nine-part build): that pays off when the picture is
+sharper than the tile needs or the tile changes shape. Neither holds: the cells are square, and one
+512 px picture is already more than twice a tile on the phone. Four pieces would add seams and no
+detail.
+
+The pieces:
 
 - **Top (rows 0–511).** The tile's top, cut out on a transparent ground. Alpha comes from how green a
   pixel is; the paper white is taken back out of the edge colours (no white halo), and transparent
@@ -18,9 +34,10 @@ The owner's picture, not a model of it. `assets/turnflock/garden/board/tile/cut.
 - **Side strip (rows 528–639).** The straight middle of the front side's fur, stretched back to its
   true height and made to repeat sideways without a seam.
 
-In 3D: a rounded square 0.98 wide at the tile height (0.2) carries the top; under it a thin body
-(0.88 wide, straight sides from the floor to just under the top) wears the side strip, repeated a
-whole number of times round the outline. 92 triangles, one material, so the whole board's tiles fuse
+In 3D: a rounded square 1.0 wide at the tile height (0.2) carries the top, its fur tips reaching
+0.99 of a cell, so neighbours stand close as on `01-board-full` (0.07 cell of grass bed between fur
+tips, it was 0.12; the gap setting `board.grid.gap` is unchanged). Under it a thin body (0.92 wide, straight sides from the floor to just under the top) wears the side strip, repeated a
+whole number of times round the outline. 96 triangles, one material, so the whole board's tiles fuse
 into one draw call (the robot tile: 216 triangles, one draw).
 
 Every tile is the same, as on `01-board-full`: the owner chose this on 2026-11-24 (no light/dark
