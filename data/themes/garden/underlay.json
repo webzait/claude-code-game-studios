@@ -17,5 +17,14 @@
     "bedLight": "#8CC428",
     "soil": "#6B4220",
     "soilDark": "#4A2C14"
+  },
+  "fringe": {
+    "$comment": "Grass blades standing up along the inside of the rim, as in 01-board-full: fringe.webp (built by build-bed.py) on a band rooted outset cells under the rim's inner edge, rising height cells; upright on the far side, leaning in by lean cells on the left and right sides (seen edge-on otherwise). repeat: cells along the rim per picture (keep equal to FRINGE_W); height is about FRINGE_H. cornerRadius: the band's corners, inside the rim picture's round inner corners.",
+    "height": 0.2,
+    "lean": 0.12,
+    "outset": 0.04,
+    "repeat": 1.0,
+    "cornerRadius": 0.35,
+    "alphaTest": 0.5
   }
 }

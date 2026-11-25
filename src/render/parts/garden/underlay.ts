@@ -7,12 +7,13 @@ import TILE from '../../../../data/themes/garden/tile.json';
 import UNDER from '../../../../data/themes/garden/underlay.json';
 import { Mesher, once, outlineRect, plainMaterial, shadowed } from './geometry';
 import { fur, mottle, painted } from './paint';
-import { boardFootprint, seeded } from './layout';
+import { boardFootprint, RoundedPath, seeded } from './layout';
 import { imageTexture } from './rim';
 import bedUrl from '../../../../assets/turnflock/garden/board/bed/bed.webp';
+import fringeUrl from '../../../../assets/turnflock/garden/board/bed/fringe.webp';
 
 const T = TILE.tile;
-const G = { underlay: UNDER.underlay };
+const G = { underlay: UNDER.underlay, fringe: UNDER.fringe };
 const C = UNDER.colors;
 
 /** The grass bed between the tiles, seen from above: deeper green, dense short blades; repeats every `bedRepeat` cells. */
@@ -29,8 +30,23 @@ export function bedTexture(): THREE.Texture | null {
 
 const bed = imageTexture(bedUrl, true);
 
+const fringe = imageTexture(fringeUrl, true);
+if (fringe.texture) fringe.texture.wrapT = THREE.ClampToEdgeWrapping;
+
+/**
+ * The blades standing along the inside of the rim (`fringe.webp`): see-through between the
+ * blades (`alphaTest`), both faces drawn, matte and toned like the bed. Without a browser there is
+ * no picture and the band is left out.
+ */
+export const fringeMaterial = new THREE.MeshLambertMaterial({
+  map: fringe.texture,
+  alphaTest: G.fringe.alphaTest,
+  side: THREE.DoubleSide,
+  color: new THREE.Color(1, 1, 1).multiplyScalar(G.underlay.bedTone),
+});
+
 /** Settles once the grass bed picture (`bed.webp`, built by `assets/turnflock/garden/board/bed/build-bed.py`) has loaded. */
-export const bedReady: Promise<void> = bed.ready;
+export const bedReady: Promise<void> = Promise.all([bed.ready, fringe.ready]).then(() => undefined);
 
 /**
  * The grass bed's material: a sharp repeating patch of pointed blades in the colours of
@@ -95,7 +111,55 @@ export function buildUnderlay(cols: number, rows: number, gap: number, pegs = fa
     }
   }
   shadowed(plate);
+  if (fringe.texture) {
+    // Standing blades, lit as in the picture: no shadows taken (the rim's would darken them all)
+    // and none cast (a cut-out casts a square one).
+    const band = new THREE.Mesh(fringeGeometry(cols, rows, gap), fringeMaterial);
+    band.name = 'garden-bed-fringe';
+    band.receiveShadow = false;
+    // Kept out of the game's fusing (src/render/kit.ts), which turns every shadow on.
+    band.userData.keepApart = true;
+    plate.add(band);
+  }
   return plate;
+}
+
+/**
+ * The fringe band: a strip round the inside of the rim, rooted `outset` under the rim's inner
+ * edge and rising `height`. Seen from the tilted camera, a strip leaning in on the far side would
+ * be seen edge-on, so it stands upright there and leans in by `lean` only on the left and right
+ * sides (by the sideways part of the rim's normal), where upright blades would be edge-on
+ * instead. The near side is mostly behind the rim, as in the picture. The picture repeats every
+ * `repeat` cells along it, a whole number of times, so it closes without a seam.
+ */
+export function fringeGeometry(cols: number, rows: number, gap: number): THREE.BufferGeometry {
+  const f = G.fringe;
+  const { innerW, innerD } = boardFootprint(cols, rows, gap);
+  const r = Math.min(f.cornerRadius, innerW / 2, innerD / 2);
+  const foot = new RoundedPath(innerW / 2 + f.outset, innerD / 2 + f.outset, r + f.outset);
+  const repeats = Math.max(1, Math.round(foot.length / f.repeat));
+  const samples = Math.ceil(foot.length * 12);
+  const positions: number[] = [];
+  const uvs: number[] = [];
+  const index: number[] = [];
+  for (let i = 0; i <= samples; i++) {
+    const t = i / samples;
+    const a = foot.at(t * foot.length);
+    const lean = f.lean * Math.abs(a.nx);
+    positions.push(a.x, 0.002, a.z, a.x - a.nx * lean, f.height, a.z - a.nz * lean);
+    uvs.push(t * repeats, 0, t * repeats, 1);
+    if (i < samples) {
+      const k = i * 2;
+      index.push(k, k + 2, k + 1, k + 1, k + 2, k + 3);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  g.setIndex(index);
+  // Lit as if lying flat, like the bed round it: the blades are painted standing, not modelled.
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(positions.map((_, i) => (i % 3 === 1 ? 1 : 0)), 3));
+  return g;
 }
 
 /** A rounded rectangle `w` by `d` as a flat shape (x, y), for the bed. */

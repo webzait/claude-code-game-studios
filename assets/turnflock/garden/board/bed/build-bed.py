@@ -4,8 +4,10 @@ Build the garden board's grass bed (the green between the tiles) as one repeatin
 
     python3 assets/turnflock/garden/board/bed/build-bed.py
 
-Needs Pillow and numpy. Writes bed.webp next to this file; src/render/parts/garden/underlay.ts
-lays it over the underlay's top, repeating every `bedRepeat` cells (data/themes/garden/underlay.json).
+Needs Pillow and numpy. Writes next to this file:
+  bed.webp     the bed, laid over the underlay's top, repeating every `bedRepeat` cells
+  fringe.webp  a strip of upright blades along the inside of the rim (`underlay.fringe`)
+src/render/parts/garden/underlay.ts lays both out (sizes in data/themes/garden/underlay.json).
 
 Why it is built and not cut: in the owner's picture 01-board-full the bed shows only in thin
 strips and small diamonds between the tiles, too little to cut a clean repeating patch from (the
@@ -49,6 +51,15 @@ BLADE_LEN = (0.045, 0.07)
 BLADE_WIDTH = (0.02, 0.028)
 LEAF_STEP = 0.022            # grid step of the leaves
 TILT = 0.38                  # largest lean either way, radians
+
+# The fringe: a strip of taller blades standing up along the inside of the rim, as in
+# 01-board-full, where blade tips stand up against the braid all round. One repeat is FRINGE_W
+# cells along the rim by FRINGE_H cells up; keep equal to underlay.fringe.repeat and .height.
+FRINGE_SIZE = (512, 120)     # px
+FRINGE_W = 1.0
+FRINGE_H = 0.234
+FRINGE_LEN = (0.6, 1.0)      # blade length as a fraction of the strip's height
+FRINGE_STEP = 0.026          # cells between roots along the strip
 
 
 def lerp(a, b, t):
@@ -145,10 +156,70 @@ def build():
     return img.resize((SIZE, SIZE), Image.LANCZOS)
 
 
+def build_fringe():
+    """The fringe strip: blades rooted along the bottom edge, pointing up, on a see-through
+    ground, repeating along its length. See-through pixels take the colour of the blades, so the
+    edges show no dark halo when the texture is filtered."""
+    rand = np.random.default_rng(SEED + 1)
+    w, h = FRINGE_SIZE[0] * SS, FRINGE_SIZE[1] * SS
+    cell = w / FRINGE_W
+    img = Image.new('RGB', (w, h), MID)
+    mask = Image.new('L', (w, h), 0)
+    draw, mdraw = ImageDraw.Draw(img), ImageDraw.Draw(mask)
+    k = int(round(FRINGE_W / FRINGE_STEP))
+    step = w / k
+    blades = []
+    for i in range(k):
+        blades.append(dict(
+            x=(i + rand.uniform(0, 1)) * step,
+            y=h * rand.uniform(1.0, 1.06),
+            length=rand.uniform(*FRINGE_LEN) * h,
+            width=rand.uniform(*BLADE_WIDTH) * cell * 1.7,
+            angle=rand.uniform(-TILT, TILT) * 0.8,
+            bend=rand.uniform(-0.3, 0.3),
+            shade=rand.uniform(0.84, 1.0),
+            back=rand.uniform(0, 1),
+        ))
+    # Back to front: a back row of dark blades (the shade under the braid in the picture), so
+    # the light tips of the front row stand out against it.
+    blades.sort(key=lambda b: b['back'])
+    for b in blades:
+        shade = b['shade'] * (0.52 + 0.1 * b['back'] if b['back'] < 0.45 else 1.0)
+        for ox in (-w, 0, w):
+            blade(draw, b['x'] + ox, b['y'], b['length'], b['width'], b['angle'], b['bend'], shade, cell)
+            blade_mask(mdraw, b['x'] + ox, b['y'], b['length'], b['width'], b['angle'], b['bend'])
+    img = img.resize(FRINGE_SIZE, Image.LANCZOS)
+    mask = mask.resize(FRINGE_SIZE, Image.LANCZOS)
+    rgba = img.convert('RGBA')
+    rgba.putalpha(mask)
+    return rgba
+
+
+def blade_mask(draw, x, y, length, width, angle, bend):
+    """The same outline as blade(), filled white, for the fringe's see-through mask."""
+    segs = 8
+    left, right = [], []
+    cx, cy = x, y
+    for i in range(segs + 1):
+        t = i / segs
+        a = angle + bend * t * t
+        if i:
+            cx += np.sin(a) * length / segs
+            cy -= np.cos(a) * length / segs
+        wv = width * 0.5 * ((0.55 + 0.45 * t / 0.35) if t < 0.35 else ((1 - t) / 0.65) ** 0.75)
+        nx, ny = np.cos(a), np.sin(a)
+        left.append((cx - nx * wv, cy - ny * wv))
+        right.append((cx + nx * wv, cy + ny * wv))
+    draw.polygon(left + right[::-1], fill=255)
+
+
 def main():
     out = os.path.join(HERE, 'bed.webp')
     build().save(out, 'WEBP', quality=QUALITY, method=6)
     print('bed.webp', SIZE, 'px,', round(os.path.getsize(out) / 1024, 1), 'kB')
+    out = os.path.join(HERE, 'fringe.webp')
+    build_fringe().save(out, 'WEBP', quality=QUALITY, alpha_quality=80, method=6, exact=True)
+    print('fringe.webp', FRINGE_SIZE, round(os.path.getsize(out) / 1024, 1), 'kB')
 
 
 if __name__ == '__main__':
