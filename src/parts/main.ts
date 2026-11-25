@@ -20,7 +20,15 @@ import { addCoinCards, toolButton, toolTray, type ToolName } from './coins';
 import coinIcon from '../../assets/turnflock/ui/coin.webp';
 import extraMovesIcon from '../../assets/turnflock/ui/extra-moves.webp';
 import { addSettingsCards } from './settings';
+import { addGardenObstacleCards } from './garden-obstacles';
+import { addGardenBoardCards } from './garden-board/index';
+import { addGardenBackdropCards } from './gardenBackdrop';
+import { addGardenLevelCards } from './gardenLevels';
+import { addGardenEffectCards } from './gardenEffects';
 import { addGardenExitCards } from './garden-exit';
+import { addGardenLogoCards } from './gardenLogo';
+import { addGardenIconCards } from './gardenIcon';
+import { addGardenIconCards as addGardenGemHeartCards } from './gardenIcons';
 
 /**
  * The parts sheet: every game element built on its own and shown from the
@@ -376,22 +384,22 @@ for (const [cols, rows] of [[5, 5], [6, 6], [8, 8], [4, 7]] as const) {
 
   const TOOLS: ToolName[] = ['Undo', 'Restart', 'Hint'];
   const coins = CONFIG.coins;
-  /** The four tools as the puzzle screen shows them; `state` freezes all four in one state. */
+  /** The tools as the puzzle screen shows them; `state` freezes them all in one state. */
   const tools = (state: State = ''): string[] =>
     TOOLS.map((name) => toolButton(name, { ...(name === 'Undo' ? { cost: coins.undoCost, price: 'ok' as const } : name === 'Hint' ? { cost: coins.hintCost, price: 'ok' as const } : {}), state: state === 'nudge' ? '' : state }));
   const t = b.tools;
   const toolDepth = Math.round(t.height * b.family.depth * 10) / 10;
   const actionRow = (colors: readonly (typeof COLORS)[number][]): string => `<div class="tf-line" style="gap:${p.gap}px">${colors.map((c) => action({ ...p.action, width: (p.stripWidth - 2 * p.padding - (colors.length - 1) * p.gap) / colors.length }, c, c === 'blue' ? 'nudge' : '')).join('')}</div>`;
-  const phone = (id: string, colors: readonly (typeof COLORS)[number][], extra = ''): string => `<div class="tf-phone" id="${id}">
+  const phone = (id: string, colors: readonly (typeof COLORS)[number][]): string => `<div class="tf-phone" id="${id}">
       <div class="tf-board">speelbord</div>
-      <div class="tf-controls tf-family">${toolTray(tools(), extra)}${actionRow(colors)}</div>
+      <div class="tf-controls tf-family">${toolTray(tools())}${actionRow(colors)}</div>
     </div>`;
 
   const el = document.createElement('section');
   el.className = 'card wide';
   el.id = 'buttons';
-  el.innerHTML = `<h2>Knoppen</h2><p class="dims">één familie: diepte = ${b.family.depth} × vlakhoogte, hoek = ${b.family.radius} × vlakhoogte, indrukken ${Math.round(b.pressFraction * 100)}% · gereedschap (Undo, Restart, Hint): drie gelijke blokken, vlak ${t.height} px + ${toolDepth} px diep, in één bak · actie ${b.action.width}×${b.action.height} px, ${b.action.depth} px diep</p>
-  <h3 class="btn-title">Gereedschap · drie gelijke knoppen in één bak</h3>
+  el.innerHTML = `<h2>Knoppen</h2><p class="dims">diepte = ${b.family.depth} × vlakhoogte, indrukken ${Math.round(b.pressFraction * 100)}% · gereedschap (Undo, Restart, Hint): drie gelijke losse blokken van ${t.width}×${t.height} px + ${toolDepth} px diep, hoek ${t.radius} px, ${t.gap} px uit elkaar · actie ${b.action.width}×${b.action.height} px, ${b.action.depth} px diep</p>
+  <h3 class="btn-title">Gereedschap · drie gelijke knoppen, elk op zichzelf</h3>
   <div id="buttons-sheet">${toolTray(tools())}<div class="tf-tools-caption">${TOOLS.map((n) => `<span>${n}</span>`).join('')}</div></div>
   <h3 class="btn-title">Toestanden · gereedschap</h3>
   <div id="buttons-states-utility">
@@ -411,10 +419,7 @@ for (const [cols, rows] of [[5, 5], [6, 6], [8, 8], [4, 7]] as const) {
   <h3 class="btn-title">Telefoon ${p.stripWidth} px · vier opdrachten en twee opdrachten</h3>
   ${phone('buttons-phone', COLORS)}
   ${phone('buttons-phone-two', ['red', 'forward'])}
-  <h3 class="btn-title">Omkeerbare keuzes (data/parts.json → buttons.tools)</h3>
-  ${phone('buttons-phone-labels', COLORS, ' labels')}<div class="tf-tools-caption wide"><span>"labels": true · namen in de knop</span></div>
-  ${phone('buttons-phone-notray', COLORS, ' no-tray')}<div class="tf-tools-caption wide"><span>"tray": false · zonder bak</span></div>
-  <p class="note">Echte HTML-knoppen met CSS: tekst blijft tekst, maten komen uit <code>--w --h --d --r</code>. Elke knop is één gegoten blok met een bovenvlak, een ronde rand en schuine flanken: bij indrukken zakt het hele blok ${Math.round(b.pressFraction * 100)}% van de diepte weg; de voetafdruk en het raakvlak blijven gelijk. De gereedschapsknoppen en de actieknoppen zijn dezelfde bouw op twee maten en staan op hetzelfde raster: de buitenranden van de bak-knoppen liggen gelijk met die van de actieknoppen. Gereedschap toont alleen een pictogram; de naam is er voor schermlezers. Een prijs staat op het ene prijskaartje over de onderrand (zie de muntenkaart); een knop zonder prijs (Restart) heeft geen kaartje en staat toch op dezelfde lijn. Blauw toont in de telefoonstroken de nudge.</p>`;
+  <p class="note">Echte HTML-knoppen met CSS: tekst blijft tekst, maten komen uit <code>--w --h --d --r</code>. Elke knop is één gegoten blok met een bovenvlak, een ronde rand en schuine flanken: bij indrukken zakt het hele blok ${Math.round(b.pressFraction * 100)}% van de diepte weg; de voetafdruk en het raakvlak blijven gelijk. De gereedschapsknoppen hebben één eigen kleur (violet, wit symbool), duidelijk anders dan de actieknoppen: klein, ronder, alleen het symbool verschilt. Ze staan los van elkaar in het midden, met duidelijke ruimte tot de actieknoppen eronder. Gereedschap toont alleen een pictogram; de naam is er voor schermlezers. Een prijs staat op het ene prijskaartje over de onderrand (zie de muntenkaart); een knop zonder prijs (Restart) heeft geen kaartje en staat toch op dezelfde lijn. Blauw toont in de telefoonstroken de nudge.</p>`;
   document.getElementById('sheet')!.appendChild(el);
 }
 
@@ -621,6 +626,9 @@ for (const [cols, rows] of [[5, 5], [6, 6], [8, 8], [4, 7]] as const) {
     document.body.dataset.decorReady = 'true';
   });
 }
+
+// Garden theme: backdrop, edge decor and the loose birdhouse and arch (src/parts/gardenBackdrop.ts).
+addGardenBackdropCards(document.getElementById('sheet')!);
 
 // Coin controls: counter, plus button, price tags, reward and the icon at small sizes.
 addCoinCards(document.getElementById('sheet')!);
@@ -877,7 +885,7 @@ addCoinCards(document.getElementById('sheet')!);
   const stroke = (d: string, width: number): string => `<path d="${d}" fill="none" stroke="currentColor" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"/>`;
   const ICONS = {
     undo: icon(`<path d="M9.4 4.2 3.6 9.3l5.8 5.1z" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>` + stroke('M9 9.3h5.4a5.3 5.3 0 0 1 0 10.6H9.6', 3.5)),
-    retry: icon(stroke('M17.1 16.9A7 7 0 1 1 15.5 8', 3.5) + stroke('M18.4 3.2v6h-6', 3.5)),
+    retry: icon(stroke('M5.6 5.4v13.2', 3.6) + '<path d="M18.6 5.6v12.8L9.8 12z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>'),
     replay: icon('<path d="M7.4 5v14l11.4-7z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>'),
     next: icon(stroke('M4.5 12h13.5M12.4 5.4 19 12l-6.6 6.6', 3.8)),
     levels: icon('<rect x="3.5" y="3.5" width="7" height="7" rx="2" fill="currentColor"/><rect x="13.5" y="3.5" width="7" height="7" rx="2" fill="currentColor"/><rect x="3.5" y="13.5" width="7" height="7" rx="2" fill="currentColor"/><rect x="13.5" y="13.5" width="7" height="7" rx="2" fill="currentColor"/>'),
@@ -889,7 +897,7 @@ addCoinCards(document.getElementById('sheet')!);
     const inner = opts.inner ?? (opts.after ? label + ICONS[glyph] : ICONS[glyph] + label);
     return `<button type="button" class="tf-btn ${kind}"${opts.name ? ` aria-label="${opts.name}"` : ''}${opts.disabled ? ' disabled' : ''}><span class="tf-clip"><span class="tf-face">${inner}</span></span></button>`;
   };
-  const utility = (text: string, glyph: keyof typeof ICONS, size = 'tf-end-small'): string => button(`tf-utility ${size}`, text, glyph);
+  const utility = (text: string, glyph: keyof typeof ICONS, size = 'tf-end-small'): string => button(`tf-utility tf-neutral ${size}`, text, glyph);
 
   // The stand-in board: a 6x6 plate with walls, the exit and whoever is still on it.
   const WALLS = new Set([7, 9, 22, 24, 32]);
@@ -1045,8 +1053,21 @@ addCoinCards(document.getElementById('sheet')!);
 
 // The settings screen and its controls (src/parts/settings.ts).
 addSettingsCards(document.getElementById('sheet')!);
+void addGardenObstacleCards(document.getElementById('sheet')!);
+
+// The garden theme's board (src/parts/garden-board/).
+addGardenBoardCards(document.getElementById('sheet')!);
+addGardenLevelCards(document.getElementById('sheet')!);
+addGardenLogoCards(document.getElementById('sheet')!);
+addGardenIconCards(document.getElementById('sheet')!);
+
+// Garden theme: the board effects (src/parts/gardenEffects.ts).
+addGardenEffectCards(document.getElementById('sheet')!);
 
 // Garden theme: exit, gazebo goal and special tiles (src/parts/garden-exit.ts).
 void addGardenExitCards(document.getElementById('sheet')!);
+
+// The garden theme's loose gem and heart (src/parts/gardenIcons.ts).
+addGardenGemHeartCards(document.getElementById('sheet')!);
 
 document.body.dataset.ready = 'true';

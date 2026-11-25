@@ -73,33 +73,34 @@
 .tf-hint { --icon: calc(var(--h) * .66); }
 .tf-hint.compact .tf-label { display: none; }
 
-/* The tools of the puzzle screen (finding B9): Undo, Restart and Hint are one block design, standing
-   together in one tray. Same size, depth, radius, material and icon weight; a picture only, with the name for screen
-   readers (`.labels` on the row shows the names instead). A tool with a price carries the price tag over its bottom edge;
-   the row keeps that space free under every tool, priced or not, so they all stand level. Replay is not here: it is on the win pop-up. */
+/* The tools of the puzzle screen (finding B9): Undo, Restart and Hint. Each is a small block of its own, standing free
+   (no shared tray) in a row of its own above the command buttons, and all three are the same: size, depth, corner,
+   material and icon weight. Their look is theirs alone: one violet for all three with a white symbol, set in a darker rim, rounder than the
+   command buttons, so they read as a different kind of button. A picture only, with the name for screen readers. A tool
+   with a price carries the price tag over its bottom edge; the row keeps that space free under every tool, priced or
+   not, so they all stand level. Replay is not here: it is on the win pop-up. */
 .tf-tools {
-  --tool-h: 37px; --tool-gap: 10px; --tray-pad: 6px; --tag-over: 8px;
-  position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: var(--tool-gap);
-  margin: 0 calc(var(--tray-pad) * -1); padding: 4px var(--tray-pad) calc(var(--tag-over) + 2px); border-radius: calc(var(--tool-h) * .25 + var(--tray-pad));
-  background: linear-gradient(180deg, rgba(30, 52, 110, .62), rgba(40, 66, 130, .5));
-  box-shadow: inset 0 3px 5px rgba(10, 20, 54, .45), inset 0 0 0 1.5px rgba(255, 255, 255, .34), 0 1.5px 0 rgba(255, 255, 255, .45), 0 4px 8px rgba(24, 46, 110, .2);
+  --tool-h: 37px; --tool-w: 62px; --tool-r: 14px; --tool-gap: 20px; --tag-over: 8px;
+  position: relative; display: flex; justify-content: center; gap: var(--tool-gap); padding-bottom: var(--tag-over);
 }
-.tf-tools.no-tray { background: none; box-shadow: none; }
-.tf-tools .tf-btn { --w: 100%; --h: var(--tool-h); --d: calc(var(--h) * var(--tf-depth, .2)); --r: calc(var(--h) * var(--tf-round, .25)); --press-fraction: .8; --icon: calc(var(--h) * .65); }
-/* A slightly deeper wall than the white blocks elsewhere, so the low block still shows its depth. */
-.tf-tools .tf-utility { --c-side: #b3bedb; --c-deep: #8c9abd; }
-/* On the dark tray the white block needs no dark outline: it takes the family's own edge, like the command buttons. */
-.tf-tools:not(.no-tray) .tf-utility .tf-face { box-shadow: inset 0 -1.5px 1px rgba(255, 255, 255, .18), inset 0 0 0 1px rgba(0, 0, 0, .06); }
+.tf-tools .tf-btn { --w: var(--tool-w); --h: var(--tool-h); --d: calc(var(--h) * var(--tf-depth, .2)); --r: var(--tool-r); --press-fraction: .8; --icon: calc(var(--h) * .62); }
+/* The helper colour (`tf-neutral` wherever it is needed outside the tools row): one violet for every helper button, on
+   the puzzle screen and on the pop-up alike, clearly apart from the red, blue, yellow and dark of the command buttons.
+   Only the white symbol differs from one button to the next. */
+.tf-tools .tf-utility, .tf-neutral { --c-top: #a99dff; --c-main: #7e6bff; --c-side: #5846d4; --c-deep: #4332ad; --ink-c: #fff; --ink-shadow: rgba(40, 24, 140, .5); --gloss: .32; --cast: rgba(40, 28, 120, .5); }
+/* The rim: the block's darker body shows a little wider round the face than on the other buttons. */
+.tf-tools .tf-utility .tf-face, .tf-neutral .tf-face { --side: calc(var(--h) * .08); --lip: calc(var(--h) * .08); box-shadow: inset 0 0 0 1.5px rgba(38, 24, 120, .6), inset 0 -1.5px 1px rgba(255, 255, 255, .2);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--wall) 70%, #fff) 0, var(--wall) calc(var(--h) * .5), var(--wall) calc(var(--h) + var(--d) * .55), var(--wall-deep) 100%); }
+.tf-tools .tf-utility .tf-face::before, .tf-neutral .tf-face::before { border-radius: calc(var(--r) - var(--side)); }
+.tf-tools .tf-utility svg, .tf-neutral svg { filter: drop-shadow(0 1.5px 0 var(--ink-shadow)); }
+.tf-neutral .tf-label { text-shadow: 0 1.5px 0 var(--ink-shadow); }
+.tf-tools .tf-utility:disabled, .tf-neutral:disabled { --ink-c: #fff; }
 .tf-tools .tf-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.tf-tools.labels .tf-label { position: relative; width: auto; height: auto; overflow: visible; clip-path: none; --fs: clamp(11px, 3.2vw, 13px); }
-.tf-tools.labels .tf-btn { --icon: clamp(13px, 4vw, 16px); }
-.tf-tools.labels .tf-face { gap: 3px; }
-/* Hint while its hint is on the board: the lamp is lit. The block stays half sunk and warm, and its tag says "Used". */
-.tf-tools .tf-btn.showing:disabled {
-  --face-top: #fff6cf; --face: #ffe48a; --wall: #d9a92b; --wall-deep: #b98a12; --ink-c: #24314f; --gloss: .5; --cast: rgba(36, 49, 79, .3);
-}
+/* Hint while its hint is on the board: the block stays half sunk in its own colour, the lamp is lit, and its tag says "Used". */
+.tf-tools .tf-btn.showing:disabled { --face-top: #a99dff; --face: #7e6bff; --wall: #5846d4; --wall-deep: #4332ad; --gloss: .2; }
 .tf-tools .tf-btn.showing:disabled .tf-face > * { opacity: 1; }
-.tf-tools .tf-btn.showing:disabled .tf-face::after { content: ""; position: absolute; z-index: 0; left: 50%; top: calc(var(--lip) + var(--h) * .5); width: calc(var(--h) * 1.1); height: calc(var(--h) * 1.1); transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 255, 255, .95), rgba(255, 255, 255, 0)); pointer-events: none; }
+.tf-tools .tf-btn.showing:disabled .tf-face svg { color: #ffe48a; filter: drop-shadow(0 0 4px rgba(255, 228, 138, .95)) drop-shadow(0 1.5px 0 var(--ink-shadow)); }
+.tf-tools .tf-btn.showing:disabled .tf-face svg .tf-lamp { fill: #ffe48a; }
 
 /* Action: the four owner tones. */
 .tf-action { --icon: calc(var(--h) * .54); }

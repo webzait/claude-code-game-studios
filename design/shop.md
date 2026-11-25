@@ -1,6 +1,6 @@
 # TURNFLOCK — de testwinkel voor munten
 
-Stand: 2026-11-22. Dit document beschrijft de **testwinkel** die in het spel zit, de laag
+Stand: 2026-11-23 (pakketten en hoofdstuk 5 en 6 bijgewerkt voor bevinding B12). Dit document beschrijft de **testwinkel** die in het spel zit, de laag
 waarachter het kopen is weggezet, wat een **echte** winkel nog nodig zou hebben (niet gebouwd) en een
 eerste rekensom over de munteneconomie.
 
@@ -22,15 +22,20 @@ eerste rekensom over de munteneconomie.
 
   | Pakket | Munten | Voorbeeldprijs | Per 100 munten |
   |---|---|---|---|
-  | Handful of coins | 100 | €0,99 | €0,99 |
-  | Pouch of coins | 250 | €1,99 | €0,80 |
-  | Chest of coins | 700 | €4,99 | €0,71 |
+  | Handful of coins | 150 | €0,99 | €0,66 |
+  | Pouch of coins | 400 | €1,99 | €0,50 |
+  | Chest of coins | 1.100 | €4,99 | €0,45 |
+
+  Dit zijn de pakketten van de afstelling "Tight", de standaard sinds bevinding B12. De pakketten
+  horen bij de afstelling van de munteneconomie en wisselen mee met de keuze "Coin tuning" in het
+  testlab; alle vier de afstellingen staan in `design/economy.md`, hoofdstuk 2. In elke afstelling
+  koopt het kleinste pakket minstens één keer de duurste hulp (+3 moves); een unit-test bewaakt dat.
 
 - **De gespeelde aankoop**: tik op een pakket → bevestigingsstap met pakket, munten, voorbeeldprijs,
   het label "Test shop" en de zin "This is a test. Nothing is charged." → "Confirm test purchase" →
   een kort "Processing the test purchase…" (`shop.processingMs`, 0,9 s) → de munten komen erbij, de
-  teller telt op met de bestaande muntanimatie (gouden rand, "+100") en een bonregel bevestigt het:
-  "Test purchase TEST-0001: +100 coins. You now have 130. Nothing was charged."
+  teller telt op met de bestaande muntanimatie (gouden rand, "+150") en een bonregel bevestigt het:
+  "Test purchase TEST-0001: +150 coins. You now have 180. Nothing was charged."
 - **De ongelukkige paden** (schakelaar in het testlab): *geannuleerd* en *mislukt*. In beide verandert
   het saldo niet en de regel zegt dat ook, met het saldo erbij. "Cancel" in de bevestigingsstap doet
   hetzelfde als annuleren: er gebeurt niets.
@@ -40,7 +45,7 @@ eerste rekensom over de munteneconomie.
 - Altijd via de plusknop.
 - Op de momenten dat de speler tekortkomt, als **stille tekstlink "Get coins"** naast de gratis
   uitweg, nooit in plaats daarvan en nooit als pop-up die het spel onderbreekt:
-  - Undo te duur: de regel "Undo costs 5 coins. Restart is free." met Restart omringd, en daarachter
+  - Undo te duur: de regel "Undo costs 10 coins. Restart is free." met Restart omringd, en daarachter
     de link.
   - Hint te duur: "Not enough coins for the next move." met de link erachter.
   - "+3 moves" te duur (of de Undo op die pop-up): de link staat klein onder Undo en de gratis
@@ -51,6 +56,7 @@ eerste rekensom over de munteneconomie.
 
 | Schakelaar | Waarden | Standaard |
 |---|---|---|
+| Coin tuning | Roomy / Firmer / Tight / Scarce: de afstelling van de munteneconomie (start, beloning, prijzen en pakketten samen). Geldt meteen; het saldo blijft staan. Zie `design/economy.md` | **Tight** |
 | Test shop | aan / uit. Uit: de plusknop opent weer de uitleg "there is nothing to buy" en er is nergens een "Get coins"-link | **aan** |
 | Purchase outcome | Succeeds / Cancelled / Fails | Succeeds |
 | Free help (bestond al, onder "Shortcuts") | Hints, extra zetten en Undo kosten niets | uit |
@@ -237,6 +243,21 @@ nemen. Het ontwerp laat daar ruimte voor:
 
 ## 5. Economienotitie: verdienen, uitgeven en wat de pakketten waard zijn
 
+> **Verouderd sinds 2026-11-23.** De rest van dit hoofdstuk rekent met de allereerste bedragen (start
+> 30, hint 10, pakketten van 100, 250 en 700) en is bewaard als verslag van hoe de pakketten toen zijn
+> gekozen. De huidige bedragen, de vier afstellingen en hun doorrekening staan in `design/economy.md`.
+> Wat nu geldt voor de pakketten, kort:
+>
+> | Afstelling | Pakketten (voorbeeldprijs) | Kleinste pakket koopt | Eén hint / één +3 moves in euro |
+> |---|---|---|---|
+> | Roomy | 100 / 250 / 700 voor €0,99 / €1,99 / €4,99 | 5 hints of 2,5 keer +3 moves | €0,20 / €0,40 |
+> | Firmer | 100 / 250 / 700 voor €0,99 / €1,99 / €4,99 | 2,5 hints of 1,25 keer +3 moves | €0,40 / €0,79 |
+> | **Tight (standaard)** | 150 / 400 / 1.100 voor €0,99 / €1,99 / €4,99 | 2 hints of 1 keer +3 moves | €0,49 / €0,99 |
+> | Scarce | 800 / 2.200 / 5.000 voor €1,99 / €4,99 / €9,99 | 3,2 hints of 1 keer +3 moves | €0,62 / €1,87 |
+>
+> De regels voor pakketten zijn niet veranderd: drie pakketten, het grotere is per munt nooit duurder,
+> de hoeveelheidskorting wordt niet aangeprezen, en geen pakket is voorgeselecteerd of uitgelicht.
+
 **Dit is een beginpunt voor de test, geen voorspelling.** De spelersprofielen hieronder zijn
 aannames; alleen het kasboek van echte speelsessies kan ze bevestigen of weerleggen. De rekensom is
 opnieuw te draaien met `node tools/economy/shop-sim.mjs`, waar de profielen ook aan te passen zijn.
@@ -310,3 +331,37 @@ laatste kwart tekort (61 na 30 levels, 260 na 40).
 3. Voelt de link "Get coins" als hulp of als zeuren? En wordt Restart nog gebruikt?
 4. Houdt een goede speler te veel munten over?
 5. Kloppen de aannames hierboven? Pas ze aan in `tools/economy/shop-sim.mjs` en draai opnieuw.
+
+## 6. Een aanbod op het verliesmoment: voorstel, NIET GEBOUWD
+
+De referentie bij bevinding B12 toont onder het verliesscherm een bundel (munten plus hulpmiddelen)
+met een sticker "30% korting". Dat is hier niet overgenomen en hoort er ook niet in: de korting is
+een anker dat alleen op het moment van frustratie verschijnt, de bundel mengt dingen zodat de prijs
+niet te vergelijken is, en het aanbod staat op de plek waar de gratis uitweg hoort te staan.
+
+Er bestaat wel een vorm die binnen de vaste grenzen past. Wat er nu al is: bij te weinig munten voor
+"+3 moves" staat onder de gratis Retry een stille tekstlink "Get coins", die de gewone winkel opent.
+Het voorstel maakt van die link één rustige regel met een knop:
+
+- **Wanneer**: alleen op de pop-up "Out of moves", alleen als de oplosser heeft bewezen dat +3 moves
+  deze stand oplost (de bestaande regel voor het aanbod), en alleen als de speler er te weinig munten
+  voor heeft. In elk ander geval verschijnt er niets.
+- **Wat er staat**: de feiten, zonder aansporing. "You have 40 coins. +3 moves costs 150." en daaronder
+  het kleinste gewone pakket dat het tekort dekt, met zijn gewone naam, inhoud en prijs: "Handful of
+  coins: 150 coins, €0.99".
+- **Wat er niet staat**: geen korting, geen sticker, geen doorgestreepte prijs, geen "alleen nu", geen
+  timer, geen bundel met extra's, geen animatie die de aandacht trekt, geen ander pakket dan wat ook
+  in de winkel ligt en voor dezelfde prijs.
+- **Volgorde en gewicht**: Retry blijft de hoofdknop en staat erboven. Het aanbod is kleiner en
+  rustiger dan Retry en heeft geen eigen kleur.
+- **De tik** opent de bestaande bevestigingsstap van de winkel (pakket, munten, prijs, "Confirm").
+  Er wordt dus nooit met één tik gekocht. Na de aankoop staat de speler terug op dezelfde pop-up, met
+  +3 moves nu betaalbaar; hij koopt die zelf, of kiest toch Retry.
+- **Hoe vaak**: één keer per verloren poging, nooit als pop-up over het spel, en niet opnieuw na
+  "Cancel".
+- **Met een echte winkel**: de oudercontrole van hoofdstuk 4.5 komt vóór de bevestigingsstap, ook hier.
+
+Waarom dit eerlijk te verdedigen is: het aanbod verschijnt alleen als het bewezen helpt, het zegt
+precies wat de speler tekortkomt en wat het kost, en het is hetzelfde pakket voor dezelfde prijs als
+op elk ander moment. Wat het niet wegneemt: het is en blijft een aanbod op een moment van
+teleurstelling. Als kinderen de doelgroep zijn, zou ik het weglaten en de stille link houden.

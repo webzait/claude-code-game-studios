@@ -312,7 +312,7 @@ Eerlijk hierover:
 - Maar één level combineert de uitgang per kleur met de draaitegel (66). Twee recepten die juist de
   "verkeerde deur" op grote borden vroegen, leverden geen bruikbare kandidaat op.
 - De volledige meting van *Grand Sort* is afgekapt bij 3 miljoen standen; lengte en oplossing zijn bewezen.
-- Het economiemodel (`design/economy.md`) rekent nog met drie pagina's; pagina 4 zit daar niet in.
+- Het economiemodel (`design/economy.md`) rekent sinds bevinding B12 met alle 100 levels.
 
 ### Pagina 5 (level 81–100): drukplaat en poort — in het spel
 

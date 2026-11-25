@@ -1,0 +1,61 @@
+{
+  "$comment": "Garden theme board. Sizes in cells (1 cell = 56 px on the asset sheet), the same units as data/parts.json. Overview: design/themes/garden-board.md. Grass tile (buildFloorTile) and the grass fur shared by the other garden parts. Reference: 02-tile-grass, 11-sheet-tile-grass. Owner: the grass tile session.",
+  "tile": {
+    "size": 1,
+    "body": 0.9,
+    "height": 0.2,
+    "radius": 0.21,
+    "bevel": 0.1,
+    "bevelSteps": 3,
+    "cornerSteps": 4,
+    "peg": 0.12,
+    "pegHeight": 0.06,
+    "pegSpread": 0.28,
+    "fur": {
+      "reach": 0.03,
+      "inset": 0.06,
+      "droop": 0.07,
+      "blade": 0.18
+    },
+    "side": {
+      "low": 0.01,
+      "reach": 0.01
+    },
+    "texture": 1024,
+    "clovers": 6,
+    "seed": 11
+  },
+  "colors": {
+    "grassTop": "#BDE426",
+    "grassLight": "#D3F04C",
+    "grassDark": "#9FCC1E",
+    "grassSide": "#8CBF18",
+    "grassShade": "#4E8A10",
+    "altShade": 0.9,
+    "clover": "#D8F55C",
+    "blade": "#96CB1A",
+    "bladeTip": "#DDF66A",
+    "bladeBase": "#4F8E12"
+  },
+  "image": {
+    "$comment": "The grass tile from the owner's picture (buildFloorTile). The atlas is assets/turnflock/garden/board/tile/grass-tile.webp (cut.py: cut from 02-tile-grass, restyled in code after 25/26-tile-grass-fur: their colour, painted grass strokes, a ragged edge of light-tipped tufts): the top seen from above, then pad rows, then the side's fur strip, all 512 px wide. top: width of the top picture; tips: share of it the fur tips reach (cut.py's margin). Wider top = tiles closer together (owner, 2026-11-25). wall: the thin body under it. sideRepeat: cells per repeat of the side strip. sideLift: how far the side's normals lean up (the picture's side is already shaded). light: brightness of the material against the game's light. checker: false gives every tile the same picture, as on 01-board-full (owner's choice, 2026-11-24); true tints the alt tile of the checkerboard with altTint.",
+    "atlas": {
+      "top": 512,
+      "pad": 16,
+      "side": 112
+    },
+    "top": 1.0,
+    "topRadius": 0.17,
+    "wall": 0.92,
+    "wallRadius": 0.18,
+    "wallTop": 0.197,
+    "sideRepeat": 0.5,
+    "sideLift": 1.0,
+    "sideFoot": 1.0,
+    "cornerSteps": 6,
+    "alphaTest": 0.03,
+    "light": 1.15,
+    "checker": false,
+    "tips": 0.992
+  }
+}

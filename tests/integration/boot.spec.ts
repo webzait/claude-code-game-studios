@@ -13,6 +13,8 @@ interface LevelData {
 }
 const levels: LevelData[] = JSON.parse(readFileSync('data/levels.json', 'utf8'));
 const config = JSON.parse(readFileSync('data/config.json', 'utf8'));
+/** The garden level screen's settings (the main theme): completed levels shown below the current one. */
+const garden = JSON.parse(readFileSync('data/themes/garden/levels.json', 'utf8'));
 const build = pathToFileURL(resolve('dist-single/index.html')).href;
 const budget = (index: number): number => levels[index].par + config.moveSlack;
 /** Position of a level in play order; the checks below name levels by id, so reordering never breaks them. */
@@ -29,13 +31,13 @@ const tilesOnPage = Math.min(levels.length, config.levelsPerPage);
 const ahead = Math.min(levels.length - 1, config.levelsAhead);
 
 /** Start with every level before `index` already solved at par, so that level is open like for a real player. */
-async function solvedUpTo(page: Page, index: number, lab: Record<string, unknown> = {}): Promise<void> {
+async function solvedUpTo(page: Page, index: number, lab: Record<string, unknown> = {}, coins: number = config.coins.start): Promise<void> {
   const best = Object.fromEntries(levels.slice(0, index).map((l) => [l.id, l.par]));
   await page.addInitScript(
     ([save]) => {
       if (!localStorage.getItem('turnflock.save')) localStorage.setItem('turnflock.save', save);
     },
-    [JSON.stringify({ version: 4, best, coins: config.coins.start, paid: {}, settings: {}, lab })],
+    [JSON.stringify({ version: 4, best, coins, paid: {}, settings: {}, lab })],
   );
 }
 
@@ -125,8 +127,8 @@ test('Levels, Level, Win, Next: no dead ends, and progress survives a reload', a
   await expect(page.locator('#levelName')).toHaveText(levels[1].name);
   await expect(page.locator('#levelCoins .tf-coin-amount')).toHaveText(String(config.coins.start + perfectWin));
   await page.click('#levelBack');
-  // The completed level is gone from the path; the next one is the current step.
-  await expect(page.locator('#node-1')).toHaveCount(0);
+  // The garden's path (the main theme) keeps the completed level below as a done step; the next one is the current step.
+  await expect(page.locator('#node-1')).toHaveClass(/is-passed/);
   await expect(page.locator('#node-2')).toHaveClass(/is-current/);
   await expect(page.locator('#node-2')).toBeEnabled();
   await expect(page.locator('#node-3')).toHaveClass(/is-locked/);
@@ -292,7 +294,8 @@ test('out of moves in a hopeless position: free Retry, a priced Undo, and no ext
   await page.click('#node-1');
   for (let i = 0; i < budget(0); i++) await press(page, 'red');
   expect((await snap(page)).status).toBe('lost');
-  await expect(page.locator('#end-title')).toHaveText('Out of moves', { timeout: 15000 });
+  // The garden board draws slower in the software-rendered test browser, so the pop-up may take longer here.
+  await expect(page.locator('#end-title')).toHaveText('Out of moves', { timeout: 45000 });
   await expect(page.locator('#end-retry')).toHaveText('Retry');
   // The pop-up's Undo costs what the Undo button costs, and says so before the tap.
   await expect(page.locator('#end-undo')).toHaveAttribute('aria-label', `Undo, ${undoCost} coins`);
@@ -308,7 +311,9 @@ test('out of moves in a hopeless position: free Retry, a priced Undo, and no ext
 });
 
 test('out of moves two steps from home: extra moves are offered and really win', async ({ page }) => {
-  await solvedUpTo(page, ARROW);
+  // Since finding B12 the opening balance does not buy the extra moves: this player has saved up for them.
+  const saved = config.coins.extraMovesCost + 2 * undoCost;
+  await solvedUpTo(page, ARROW, {}, saved);
   await open(page);
   await page.click(`#node-${ARROW + 1}`);
   // Follow the Arrow's witness is three forwards, red, three forwards. Spend the spare
@@ -326,14 +331,14 @@ test('out of moves two steps from home: extra moves are offered and really win',
   await expect(page.locator('#end-undo > .tf-coin-slot .tf-coin-price')).toHaveText(String(undoCost));
   await expect(page.locator('#end-retry')).toBeVisible();
   await page.click('#end-offer');
-  expect(await snap(page)).toMatchObject({ status: 'playing', movesLeft: config.extraMoves, coins: config.coins.start - config.coins.extraMovesCost });
+  expect(await snap(page)).toMatchObject({ status: 'playing', movesLeft: config.extraMoves, coins: saved - config.coins.extraMovesCost });
   for (let i = 0; i < config.extraMoves && (await snap(page)).status === 'playing'; i++) await press(page, 'forward');
   expect((await snap(page)).status).toBe('won');
   await expect(page.locator('#end-title')).toContainText('extra moves', { timeout: 15000 });
   await expect(page.locator('#card .tf-coin-sum')).toHaveText(`+${config.coins.win}`);
   await expect(page.locator('.tf-end-stars')).toHaveAttribute('aria-label', '1 of 3 stars');
   // A win with extra moves is a one-star win: it pays the base amount only.
-  expect((await snap(page)).coins).toBe(config.coins.start - config.coins.extraMovesCost + config.coins.win);
+  expect((await snap(page)).coins).toBe(saved - config.coins.extraMovesCost + config.coins.win);
 });
 
 test('the bottom buttons are one set, and every price is the same tag in the same place (finding B9)', async ({ page }) => {
@@ -370,18 +375,49 @@ test('the bottom buttons are one set, and every price is the same tag in the sam
   // The tags stay clear of the command row and of the screen.
   const commands = (await page.locator('#commands').boundingBox())!;
   expect(boxes[0].y + boxes[0].height + hang[0]).toBeLessThanOrEqual(commands.y);
-  // The tools tray and the command row share one grid: the outer columns line up.
-  expect(boxes[0].x).toBeCloseTo(commands.x, 0);
-  expect(boxes[2].x + boxes[2].width).toBeCloseTo(commands.x + commands.width, 0);
+  // The tools stand apart from the command row and are compact: clearly narrower than a command button, centred as a group.
+  expect(commands.y - (boxes[0].y + boxes[0].height)).toBeGreaterThanOrEqual(24);
+  const cmd = (await page.locator('.cmd:not([hidden])').first().boundingBox())!;
+  expect(boxes[0].width).toBeLessThan(cmd.width);
+  expect(boxes[0].x - commands.x).toBeCloseTo(commands.x + commands.width - (boxes[2].x + boxes[2].width), 0);
+});
+
+test('the helper buttons stay clear of the command row on every phone size (finding B11)', async ({ page }) => {
+  const parts = JSON.parse(readFileSync('data/parts.json', 'utf8'));
+  const clearance: number = parts.buttons.tools.clearance;
+  // WCAG 2.5.8 asks for 24 CSS px between touch targets; the helpers cost coins or wipe the level, so never less.
+  expect(clearance).toBeGreaterThanOrEqual(24);
+  await open(page);
+  await page.click('#node-1');
+  await press(page, 'forward');
+  await expect(page.locator('#undo .tf-coin-price')).toHaveCount(1);
+  for (const [width, height] of [[320, 568], [360, 640], [390, 844], [430, 932]]) {
+    await page.setViewportSize({ width, height });
+    await expect.poll(() => page.evaluate(() => innerHeight)).toBe(height);
+    // One read per size: every measure in a single call, so the slow software-rendered board is not waited on per box.
+    const m = await page.evaluate(() => {
+      const rect = (selector: string) => document.querySelector(selector)!.getBoundingClientRect();
+      const lowest = ['#undo', '#restart', '#scan', '#undo .tf-coin-price', '#scan .tf-coin-price'].map((selector) => rect(selector).bottom);
+      const tops = Array.from(document.querySelectorAll('.cmd:not([hidden])'), (cmd) => cmd.getBoundingClientRect().top);
+      return { gap: Math.min(...tops) - Math.max(...lowest), stageBottom: rect('.stage').bottom, toolsTop: rect('#tools').top, commandsBottom: rect('#commands').bottom };
+    });
+    expect(m.gap, `${width}x${height}`).toBeGreaterThanOrEqual(clearance - 0.5);
+    // The move upwards is taken from the play zone, never from the screen: the command row still ends on screen
+    // and the tools start below the play zone.
+    expect(m.toolsTop, `${width}x${height}`).toBeGreaterThanOrEqual(m.stageBottom - 0.5);
+    expect(m.commandsBottom, `${width}x${height}`).toBeLessThanOrEqual(height);
+  }
 });
 
 test('Hint: the status is free, the next move costs coins and is drawn on the board, and without coins it is refused', async ({ page }) => {
-  await solvedUpTo(page, ARROW);
+  // Since finding B12 the opening balance does not buy a hint: this player has saved up for two, and an Undo.
+  const saved = 2 * config.coins.hintCost + undoCost;
+  await solvedUpTo(page, ARROW, {}, saved);
   await open(page);
   await page.click(`#node-${ARROW + 1}`);
   await press(page, 'red'); // leave the witness so the solver has to search
   await page.click('#undo');
-  const wallet = config.coins.start - undoCost; // that Undo was paid for
+  const wallet = saved - undoCost; // that Undo was paid for
   await press(page, 'forward');
   // The price is on the Hint button before it is tapped.
   await expect(page.locator('#scan')).toHaveAttribute('aria-label', `Hint, ${config.coins.hintCost} coins`);
@@ -498,7 +534,7 @@ test('settings: colour shapes is off at first, shows each colour\'s shape on its
   }
   await expect(page.locator('.cmd[data-cmd=forward] .tf-cmd-shape')).toHaveCount(0);
   // Saved in the current format, without the dropped vibration value.
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('turnflock.save')!).settings)).toEqual({ mute: false, reduceMotion: null, colourShapes: true });
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('turnflock.save')!).settings)).toEqual({ mute: false, music: true, reduceMotion: null, colourShapes: true, theme: 'garden', themeChosen: false });
   // Kept over a reload, and switched off again without one.
   await page.click('#levelBack');
   await page.reload();
@@ -527,7 +563,9 @@ test('level selection: mid-way it shows the current level and the next few, near
   await expect(page.locator('#pathWhere')).toHaveText(`Level 12 of ${levels.length}`);
   await expect(page.locator('#steps .tf-levels-step.is-current')).toHaveText(/12/);
   await expect(page.locator('#steps .tf-levels-step.is-locked')).toHaveCount(ahead);
-  await expect(page.locator('#node-11')).toHaveCount(0);
+  // The garden's path (the main theme) shows the last completed levels below the current one.
+  for (let n = 12 - garden.behind; n < 12; n++) await expect(page.locator(`#node-${n}`)).toHaveClass(/is-passed/);
+  await expect(page.locator(`#node-${11 - garden.behind}`)).toHaveCount(0);
   await expect(page.locator(`#node-${12 + ahead}`)).toHaveClass(/is-locked/);
   await expect(page.locator(`#node-${13 + ahead}`)).toHaveCount(0);
   // The current level is a real target: at least 44 by 44 CSS pixels, and Enter on it opens the level.
@@ -665,7 +703,9 @@ test('on a turn-tile level the hint shows the tile\'s extra turn, and following 
 });
 
 test('on a turn-tile level, out of moves one step from home: extra moves are offered and really win', async ({ page }) => {
-  await solvedUpTo(page, TURNTABLE);
+  // Since finding B12 the opening balance does not buy the extra moves: this player has saved up for them.
+  const saved = config.coins.extraMovesCost;
+  await solvedUpTo(page, TURNTABLE, {}, saved);
   await open(page);
   await page.click(`#node-${TURNTABLE + 1}`);
   // Four reds walk the robot round the corner and back to the top row, one cell on; then the
@@ -683,5 +723,5 @@ test('on a turn-tile level, out of moves one step from home: extra moves are off
   await expect(page.locator('#end-title')).toContainText('extra moves', { timeout: 15000 });
   await expect(page.locator('#card .tf-coin-sum')).toHaveText(`+${config.coins.win}`);
   // A helped win pays the base amount only, on a tile level as on any other.
-  expect((await snap(page)).coins).toBe(config.coins.start - config.coins.extraMovesCost + config.coins.win);
+  expect((await snap(page)).coins).toBe(saved - config.coins.extraMovesCost + config.coins.win);
 });

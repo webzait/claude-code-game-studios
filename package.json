@@ -10,17 +10,22 @@
     "dev": "vite --host",
     "build": "tsc --noEmit && vite build",
     "build:single": "tsc --noEmit && vite build --mode single",
+    "build:single:garden": "tsc --noEmit && vite build --mode single-garden",
     "build:parts": "tsc --noEmit && vite build --mode parts",
+    "build:sounds": "tsc --noEmit && vite build --mode sounds",
+    "sounds": "tsx tools/audio/measure.ts",
     "preview": "vite preview --host",
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "vitest run",
-    "test:e2e": "npm run build:single && playwright test",
+    "test:e2e": "npm run build:single && npm run build:single:garden && playwright test",
     "smoke": "npm run build:single && playwright test --grep @boot",
     "solve": "tsx tools/level-design/solve.ts",
     "measure": "tsx tools/level-design/report.ts",
     "generate": "tsx tools/level-design/generate.ts",
     "economy": "tsx tools/economy/run.ts",
-    "certify": "tsx tools/level-design/certify.ts"
+    "certify": "tsx tools/level-design/certify.ts",
+    "music:measure": "tsx tools/music/measure.ts",
+    "music:listen": "tsx tools/music/listen/build.ts"
   },
   "dependencies": {
     "three": "0.170.0"

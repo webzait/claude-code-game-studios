@@ -2,8 +2,9 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import config from '../../data/config.json';
 import levels from '../../data/levels.json';
+import { DEFAULT_TUNING, TUNINGS, tuningFor } from '../../src/game/coins';
 import { seeded } from '../../tools/level-design/measure';
-import { drawWants, playLevel, playRun, poisson, quantile, rate, scaled, scoresFromReport, summarise, withScores, type EconLevel, type PlayerType, type RuleSet, type Wants } from '../../tools/economy/model';
+import { drawWants, euroPerHelp, helpPerTenLevels, playLevel, playRun, poisson, priceAware, quantile, rate, scaled, scoresFromReport, summarise, withScores, type EconLevel, type PlayerType, type RuleSet, type Wants } from '../../tools/economy/model';
 
 // The economy model (tools/economy, design/economy.md): its arithmetic, and that it reads the game's own data.
 
@@ -12,6 +13,8 @@ const players = JSON.parse(readFileSync('tools/economy/players.json', 'utf8')) a
 const set = (id: string): RuleSet => sets.find((s) => s.id === id)!;
 const player = (id: string): PlayerType => players.find((p) => p.id === id)!;
 const RULES = config.coins;
+/** The game's own tuning as the model takes it. */
+const GAME: RuleSet = { id: DEFAULT_TUNING, name: 'game', about: '', coins: RULES };
 const LEVEL: EconLevel = { id: 'x', name: 'X', par: 7, score: 5 };
 const wants = (w: Partial<Wants>): Wants => ({ over: 0, undos: 0, hints: 0, extraMoves: false, ...w });
 const THREE = RULES.win + RULES.perfect;
@@ -131,8 +134,9 @@ describe('economy model: the game\'s own data', () => {
     expect(() => withScores([{ id: 'nope', name: 'Not In The Report', par: 5 }], scoresFromReport(report))).toThrow(/npm run measure/);
   });
 
-  it('test_sets_theRecommendedSetIsWhatTheGameUses', () => {
-    expect(set('recommended').coins).toEqual(config.coins);
+  it('test_sets_theFirstRoundsRecommendationIsTheRoomyTuning', () => {
+    // tools/economy/sets.json is the record of the first round; what it recommended is what finding B12 calls too roomy.
+    expect(set('recommended').coins).toEqual(tuningFor('roomy').coins);
   });
 
   it('test_sets_theFirstEconomyPaid26_13And10', () => {
@@ -168,18 +172,18 @@ describe('economy model: the game\'s own data', () => {
   });
 
   it('test_summarise_sameSeedSameTable_andThePlayerWithoutHelpIsNeverShort', () => {
-    const a = summarise(shipped, player('average'), set('recommended'), 50, SEED);
-    expect(summarise(shipped, player('average'), set('recommended'), 50, SEED)).toEqual(a);
+    const a = summarise(shipped, player('average'), GAME, 50, SEED);
+    expect(summarise(shipped, player('average'), GAME, 50, SEED)).toEqual(a);
     expect(a.balance).toHaveLength(shipped.length);
     expect(a.spentTotal).toBeCloseTo(a.spent.undo + a.spent.hint + a.spent.extraMoves, 6);
     expect(a.added.perPage.reduce((x, y) => x + y, 0)).toBeCloseTo(a.added.mean, 6);
-    const frugal = summarise(shipped, player('frugal'), set('recommended'), 50, SEED);
+    const frugal = summarise(shipped, player('frugal'), GAME, 50, SEED);
     expect(frugal).toMatchObject({ firstShort: null, shortShare: 0, refusals: 0, wanted: 0 });
     expect(frugal.added.mean).toBe(0);
   });
 
   it('test_summarise_whoAddsCoinsBuysEverythingWanted', () => {
-    const s = summarise(shipped, player('struggler'), set('recommended'), 50, SEED);
+    const s = summarise(shipped, player('struggler'), GAME, 50, SEED);
     expect(s.toppedUp.left).toBeCloseTo(s.start + s.toppedUp.earned + s.added.mean - s.toppedUp.spent, 6);
     expect(s.added.mean).toBeGreaterThan(0);
     expect(s.firstShort).not.toBeNull();
@@ -189,5 +193,36 @@ describe('economy model: the game\'s own data', () => {
     const need = (id: string): number => summarise(shipped, player('struggler'), set(id), 200, SEED).added.mean;
     expect(need('generous')).toBeLessThan(need('recommended'));
     expect(need('recommended')).toBeLessThan(need('scarce'));
+  });
+
+  it('test_tunings_eachTighterTuningLeavesTheSamePlayerShorter', () => {
+    const need = TUNINGS.map((t) => summarise(shipped, player('struggler'), { id: t.id, name: t.label, about: t.about, coins: t.coins }, 200, SEED).added.mean);
+    for (let i = 1; i < need.length; i++) expect(need[i]).toBeGreaterThan(need[i - 1]);
+  });
+});
+
+describe('economy model: price-aware habits and euro', () => {
+  const roomy = tuningFor('roomy').coins;
+
+  it('test_priceAware_elasticityZero_leavesTheHabitsAlone', () => {
+    expect(priceAware(player('average'), roomy, RULES, 0)).toEqual(player('average'));
+  });
+
+  it('test_priceAware_elasticityOne_scalesEachHabitByItsOwnPriceRatio', () => {
+    const p = priceAware(player('average'), roomy, { ...roomy, undoCost: roomy.undoCost * 2, hintCost: roomy.hintCost * 4 }, 1);
+    expect(p.undos).toEqual(player('average').undos.map((v) => v / 2));
+    expect(p.hints).toEqual(player('average').hints.map((v) => v / 4));
+    expect(p.extraMoves).toEqual(player('average').extraMoves);
+    expect(p.perfect).toEqual(player('average').perfect);
+  });
+
+  it('test_euroPerHelp_isThePriceTimesThePacksPricePerCoin', () => {
+    expect(euroPerHelp(150, { coins: 150, examplePriceCents: 99 })).toBeCloseTo(0.99, 6);
+    expect(euroPerHelp(75, { coins: 150, examplePriceCents: 99 })).toBeCloseTo(0.495, 6);
+  });
+
+  it('test_helpPerTenLevels_dividesTenLevelsOfEarningsByThePrice', () => {
+    expect(helpPerTenLevels(2000, 100, 50)).toBe(4);
+    expect(helpPerTenLevels(2000, 100, 0)).toBe(Infinity);
   });
 });

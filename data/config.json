@@ -68,6 +68,21 @@
       },
       "eye": "#111826",
       "eyeWhite": "#FFFFFF"
+    },
+    "chicks": {
+      "red": { "belly": "#FF7468", "bellyMix": 0.12, "blush": "#FF8FA6" },
+      "blue": { "belly": "#C0DDFF", "bellyMix": 1, "blush": "#FF8FC4" },
+      "yellow": { "belly": "#FFE98F", "bellyMix": 0.2, "blush": "#FF8F86" },
+      "beak": "#FFAA1E",
+      "beakUnder": "#F07A0C",
+      "mouth": "#8E1F2B",
+      "tongue": "#FF8C99",
+      "foot": "#FF8A1A",
+      "eye": "#150F18",
+      "eyeIris": "#9A541C",
+      "eyeWhite": "#FFFFFF",
+      "symbolLight": "#FFFFFF",
+      "symbolDark": "#2B2F45"
     }
   },
   "anim": {
@@ -129,8 +144,47 @@
     "turn": { "radius": 0.54, "width": 0.1, "startGap": 6, "endGap": 30, "head": 18, "headWidth": 0.26 },
     "pulse": { "seconds": 1.1, "slide": 0.07, "fade": 0.25 }
   },
+  "endCard": { "gapAboveControls": 16, "minTop": 8, "armSeconds": 0.35 },
+  "celebration": {
+    "variant": "confetti",
+    "cardDelay": 0.7,
+    "perfectCardDelay": 0.9,
+    "gold": "#FFD75A",
+    "white": "#FFFFFF",
+    "confetti": { "seconds": 1.5, "perfectSeconds": 2.1, "pieces": 70, "perfectPieces": 150, "size": 0.26, "rise": 7, "spread": 0.9, "lean": 0.55, "gravity": 18, "fall": 1.9, "drag": 1.1, "fade": 0.35, "secondBurst": 0.3 },
+    "wave": { "seconds": 0.9, "perfectSeconds": 1.6, "width": 2.2, "gap": 0.22, "tile": 0.9, "opacity": 0.85, "lift": 0.05 },
+    "hop": { "seconds": 1.3, "perfectSeconds": 1.7, "hopTime": 0.6, "stagger": 0.09, "height": 1.1, "perfectHeight": 1.6, "spread": 1.7, "fan": 110, "spins": 1, "perfectSpins": 2 },
+    "garden": { "seconds": 1.5, "perfectSeconds": 2.1 },
+    "calm": { "seconds": 0.9, "cardDelay": 0.2, "opacity": 0.45 },
+    "sound": {
+      "perfect": [[523, 0, 0.12], [659, 0.1, 0.12], [784, 0.2, 0.12], [1047, 0.3, 0.2], [1319, 0.42, 0.1], [1568, 0.5, 0.12], [2093, 0.58, 0.34]]
+    }
+  },
   "audio": {
-    "volume": 0.16
+    "volume": 0.16,
+    "set": "wood",
+    "sets": {
+      "classic": { "gain": 1, "pitch": 0 },
+      "wood": { "gain": 1, "pitch": 0 },
+      "bubble": { "gain": 1.1, "pitch": 0 },
+      "switch": { "gain": 1.5, "pitch": 0 },
+      "kalimba": { "gain": 1.1, "pitch": 0 }
+    },
+    "rapid": { "minGap": 0.03, "softWindow": 0.12, "softGain": 0.7, "fadeOut": 0.012 },
+    "limits": { "pressSeconds": 0.33, "motionSeconds": 0.13, "denySeconds": 0.21, "onsetMs": 8, "peak": 0.2, "busyPeak": 0.7 }
+  },
+  "music": {
+    "variant": "meadow",
+    "volume": 0.5,
+    "tempo": { "meadow": 88, "drift": 66, "stroll": 100 },
+    "level": 0.1,
+    "peakLimit": 0.9,
+    "sampleRate": 24000,
+    "fadeIn": 1.5,
+    "fadeOut": 0.4,
+    "screens": ["map", "level", "settings", "lab"],
+    "renderSliceMs": 6,
+    "backgroundPauseMs": 150
   },
   "colourShapes": {
     "red": "circle",
@@ -181,15 +235,15 @@
     }
   },
   "coins": {
-    "start": 50,
+    "start": 30,
     "win": 10,
     "twoStars": 10,
     "perfect": 20,
     "perSpareMove": 0,
     "hintedWinPays": "stars",
-    "hintCost": 20,
-    "extraMovesCost": 40,
-    "undoCost": 5,
+    "hintCost": 75,
+    "extraMovesCost": 150,
+    "undoCost": 10,
     "freeUndosPerLevel": 0
   },
   "shop": {
@@ -197,9 +251,48 @@
     "ledgerMax": 200,
     "ledgerShown": 40,
     "packs": [
-      { "id": "handful", "name": "Handful of coins", "coins": 100, "examplePriceCents": 99 },
-      { "id": "pouch", "name": "Pouch of coins", "coins": 250, "examplePriceCents": 199 },
-      { "id": "chest", "name": "Chest of coins", "coins": 700, "examplePriceCents": 499 }
+      { "id": "handful", "name": "Handful of coins", "coins": 150, "examplePriceCents": 99 },
+      { "id": "pouch", "name": "Pouch of coins", "coins": 400, "examplePriceCents": 199 },
+      { "id": "chest", "name": "Chest of coins", "coins": 1100, "examplePriceCents": 499 }
+    ]
+  },
+  "economy": {
+    "tuning": { "id": "tight", "label": "Tight", "about": "Thought-out help costs several levels of winnings; Undo stays small. The smallest pack is one +3 moves or two hints." },
+    "order": ["roomy", "firmer", "tight", "scarce"],
+    "alternatives": [
+      {
+        "id": "roomy",
+        "label": "Roomy",
+        "about": "The amounts until finding B12: one perfect level pays for six Undos.",
+        "coins": { "start": 50, "win": 10, "twoStars": 10, "perfect": 20, "perSpareMove": 0, "hintedWinPays": "stars", "hintCost": 20, "extraMovesCost": 40, "undoCost": 5, "freeUndosPerLevel": 0 },
+        "packs": [
+          { "id": "handful", "name": "Handful of coins", "coins": 100, "examplePriceCents": 99 },
+          { "id": "pouch", "name": "Pouch of coins", "coins": 250, "examplePriceCents": 199 },
+          { "id": "chest", "name": "Chest of coins", "coins": 700, "examplePriceCents": 499 }
+        ]
+      },
+      {
+        "id": "firmer",
+        "label": "Firmer",
+        "about": "Hint and +3 moves cost double; Undo and the packs stay as they were.",
+        "coins": { "start": 40, "win": 10, "twoStars": 10, "perfect": 20, "perSpareMove": 0, "hintedWinPays": "stars", "hintCost": 40, "extraMovesCost": 80, "undoCost": 5, "freeUndosPerLevel": 0 },
+        "packs": [
+          { "id": "handful", "name": "Handful of coins", "coins": 100, "examplePriceCents": 99 },
+          { "id": "pouch", "name": "Pouch of coins", "coins": 250, "examplePriceCents": 199 },
+          { "id": "chest", "name": "Chest of coins", "coins": 700, "examplePriceCents": 499 }
+        ]
+      },
+      {
+        "id": "scarce",
+        "label": "Scarce",
+        "about": "Close to the owner's reference: +3 moves costs what 25 perfect levels pay, and nearly the whole smallest pack.",
+        "coins": { "start": 20, "win": 10, "twoStars": 10, "perfect": 20, "perSpareMove": 0, "hintedWinPays": "stars", "hintCost": 250, "extraMovesCost": 750, "undoCost": 25, "freeUndosPerLevel": 0 },
+        "packs": [
+          { "id": "handful", "name": "Handful of coins", "coins": 800, "examplePriceCents": 199 },
+          { "id": "pouch", "name": "Pouch of coins", "coins": 2200, "examplePriceCents": 499 },
+          { "id": "chest", "name": "Chest of coins", "coins": 5000, "examplePriceCents": 999 }
+        ]
+      }
     ]
   },
   "light": {

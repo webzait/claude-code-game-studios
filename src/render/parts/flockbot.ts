@@ -252,10 +252,10 @@ function seamPlate(inset: number, flip = false): THREE.Shape {
 }
 
 /** A plain triangle with softened corners, pointing to +y of the shape plane. */
-function triangleShape(size: number): THREE.Shape {
+export function triangleShape(size: number, softenShare: number = F.symbol.soften): THREE.Shape {
   const half = size / 2;
   const corners = [new THREE.Vector2(0, half), new THREE.Vector2(half * 0.95, -half * 0.8), new THREE.Vector2(-half * 0.95, -half * 0.8)];
-  const soften = size * F.symbol.soften;
+  const soften = size * softenShare;
   const s = new THREE.Shape();
   corners.forEach((corner, i) => {
     const before = corners[(i + corners.length - 1) % corners.length];

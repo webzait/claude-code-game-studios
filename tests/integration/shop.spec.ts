@@ -25,7 +25,9 @@ async function open(page: Page, coins: number, lab: Record<string, unknown> = {}
     ([save]) => {
       if (!localStorage.getItem('turnflock.save')) localStorage.setItem('turnflock.save', save);
     },
-    [JSON.stringify({ version: 6, best: {}, coins, paid: {}, settings: {}, lab })],
+    // The shop and its buttons are the same in every theme; the robot theme is picked because its board
+    // draws much faster in the software-rendered test browser (design/themes.md).
+    [JSON.stringify({ version: 9, best: {}, coins, paid: {}, economy: 2, settings: { theme: 'robot', themeChosen: true }, lab })],
   );
   await page.goto(build);
   await expect.poll(() => page.evaluate(() => typeof window.turnflock?.snapshot)).toBe('function');
@@ -177,4 +179,61 @@ test('switching the shop off in the test lab brings the explainer back, and no "
   await page.click('#undo');
   await expect(page.locator('#hint')).toContainText('Restart is free');
   await expect(page.locator('#getCoins')).toHaveCount(0);
+});
+
+// ---------------------------------------------------------------- finding B12: the tunings of the economy
+
+const levels: { id: string; par: number; witness: string[] }[] = JSON.parse(readFileSync('data/levels.json', 'utf8'));
+const scarce = config.economy.alternatives.find((t: { id: string }) => t.id === 'scarce');
+
+test('a save from the economy before B12 keeps its balance and its paid level, and plays on under the game\'s tuning', async ({ page }) => {
+  const { errors } = await open(page, 0);
+  // Put in place once and loaded with a reload: a player who won level 1 with three stars under the old amounts.
+  await page.evaluate(
+    ([id, par]) => localStorage.setItem('turnflock.save', JSON.stringify({ version: 7, economy: 2, best: { [id]: par }, coins: 430, paid: { [id]: 30 }, settings: {}, lab: { unlockAll: true } })),
+    [levels[0].id, levels[0].par] as const,
+  );
+  await page.reload();
+  await expect.poll(() => page.evaluate(() => typeof window.turnflock?.snapshot)).toBe('function');
+  expect(await snap(page)).toMatchObject({ coins: 430, lab: { economy: config.economy.tuning.id } });
+  await page.locator('.tf-levels-tile').first().click();
+  // Today's prices are on the buttons; the saved balance is untouched.
+  await press(page, levels[0].witness[0]);
+  await expect(page.locator('#undo .tf-coin-price')).toHaveText(String(undoCost));
+  await expect(page.locator('#scan .tf-coin-price')).toHaveText(String(config.coins.hintCost));
+  for (const command of levels[0].witness.slice(1)) await press(page, command);
+  // The same result pays nothing a second time.
+  await expect(page.locator('#end-result')).toHaveText('Best reward already paid', { timeout: 15000 });
+  expect((await snap(page)).coins).toBe(430);
+  const stored = JSON.parse(await page.evaluate(() => localStorage.getItem('turnflock.save')!));
+  expect(stored).toMatchObject({ economy: 3, coins: 430, paid: { [levels[0].id]: 30 } });
+  expect(errors).toEqual([]);
+});
+
+test('the test lab\'s coin tuning changes the prices, the shop\'s packs and an untouched opening balance at once', async ({ page }) => {
+  const { errors, requests } = await open(page, config.coins.start);
+  await page.click('#toSettings');
+  await page.click('.tf-set-entry');
+  const row = page.locator('[data-key=economy]');
+  await expect(row.locator('[role=radio][aria-checked=true]')).toHaveText(config.economy.tuning.label);
+  await expect(row.locator('[role=radio]')).toHaveCount(config.economy.order.length);
+  await row.locator('[role=radio]', { hasText: scarce.label }).click();
+  // Nobody has played yet, so the wallet becomes the new opening balance; the amounts are spelled out under the choice.
+  expect(await snap(page)).toMatchObject({ coins: scarce.coins.start, lab: { economy: 'scarce' } });
+  await expect(row).toContainText(`hint ${scarce.coins.hintCost}`);
+  await page.click('#lab .tf-set-top button');
+  await page.click('#settings .tf-set-top button');
+  await page.click('#node-1');
+  await press(page, 'forward');
+  await expect(page.locator('#undo .tf-coin-price')).toHaveText(String(scarce.coins.undoCost));
+  await expect(page.locator('#scan .tf-coin-price')).toHaveText(String(scarce.coins.hintCost));
+  // The shop lists this tuning's packs, and Restart is still free.
+  await page.click('#levelCoins button');
+  await expect(page.locator('.tf-shop-pack')).toHaveCount(scarce.packs.length);
+  await expect(page.locator('.tf-shop-pack').first()).toContainText(`${scarce.packs[0].coins} coins`);
+  await page.click('#shopClose');
+  await page.click('#restart');
+  expect(await snap(page)).toMatchObject({ commands: [], coins: scarce.coins.start });
+  expect(errors).toEqual([]);
+  expect(requests).toEqual([]);
 });

@@ -1,0 +1,44 @@
+{
+  "$comment": "Garden theme board. Sizes in cells (1 cell = 56 px on the asset sheet), the same units as data/parts.json. Overview: design/themes/garden-board.md. Underlay and the grass bed between the tiles. Reference: 01-board-full. Owner: the rim session; the grass bed (bedRepeat, bedTone, bed.webp) is the bed session's.",
+  "underlay": {
+    "height": 0.22,
+    "lip": -0.3,
+    "bedRepeat": 1.25,
+    "texture": 512,
+    "seed": 7,
+    "edgeGrass": 0.06,
+    "cornerRadius": 1.1,
+    "$comment": "lip: the plate stops this far inside the rim's outside, under the braid (the rim picture's far side is thinner than its near side). cornerRadius: the plate's corners, round enough to stay under the rim picture's round corners. The bed's top is assets/turnflock/garden/board/bed/bed.webp (built by build-bed.py there, in the colours of 01-board-full; design/themes/garden-board-bed.md), repeating every bedRepeat cells (keep equal to REPEAT in build-bed.py), on a matte Lambert material brightened by bedTone so it sits with the tiles as in the picture.",
+    "bedTone": 1.25
+  },
+  "colors": {
+    "bed": "#5E9E10",
+    "bedDark": "#3E7A06",
+    "bedLight": "#8CC428",
+    "soil": "#6B4220",
+    "soilDark": "#4A2C14"
+  },
+  "blades": {
+    "$comment": "The whole bed is grass blades: rows of see-through cards (blades.webp, built by build-bed.py) standing in every gap between the tiles and between the tiles and the rim, leaning back from the camera by lean degrees so they are seen face-on. A row every step cells (jittered by jitter of a step), each card height cells tall (times 1 +- heightJitter), tucked tuck cells into the tile walls so no root shows. The picture repeats every repeat cells along a row and has variants strips of stripHeight (keep equal to BLADE_W, BLADE_VARIANTS and BLADE_H). Inside the rim's inner edge by outset, corners cornerRadius. rootShade darkens each card at the ground, as the blades in front shade it. ground: the bed's tone under the blades. stripPx and padPx: one strip's height and the see-through gap between strips in the atlas, in px (BLADE_H * BLADE_PX and BLADE_PAD). rimBand, rimHeight: within rimBand cells of the rim on the far, left and right sides the blades grow up to rimHeight times taller, standing against the braid as in the picture.",
+    "step": 0.03,
+    "jitter": 0.4,
+    "height": 0.11,
+    "heightJitter": 0.2,
+    "lean": 45,
+    "tuck": 0.02,
+    "outset": 0.04,
+    "cornerRadius": 0.35,
+    "repeat": 0.5,
+    "stripHeight": 0.12,
+    "variants": 4,
+    "rootShade": 0.92,
+    "alphaTest": 0.5,
+    "tone": 1.4,
+    "ground": 1.15,
+    "seed": 23,
+    "stripPx": 123,
+    "padPx": 8,
+    "rimBand": 0.12,
+    "rimHeight": 2.0
+  }
+}

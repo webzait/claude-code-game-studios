@@ -1,0 +1,45 @@
+{
+  "_note": "Garden-theme obstacles: the owner's pictures on camera-facing cards. Sizes in cells (1 cell = 1 unit = 56 px on the asset sheet). See design/themes/garden-obstacles.md.",
+  "sprite": {
+    "_note": "The default obstacles: the owner's pictures on a flat card facing the game camera. width = the object's own width in cells (shadow not counted), kept well inside the tile (0.96) so the obstacle sits on its own tile; footForward = how far towards the camera from the cell centre the object's foot line sits; lift = how far the card is moved towards the camera so a robot behind never cuts into it; mirror = may be flipped on odd turns (only pictures lit from the front).",
+    "width": {
+      "rock": 0.86,
+      "rockMossLight": 0.88,
+      "rockMossy": 0.88,
+      "stump": 0.84,
+      "bushWhite": 0.88,
+      "bushPink": 0.88
+    },
+    "footForward": 0.26,
+    "lift": 0.3,
+    "mirror": {
+      "rock": false,
+      "rockMossLight": false,
+      "rockMossy": false,
+      "stump": true,
+      "bushWhite": true,
+      "bushPink": true
+    }
+  },
+  "choice": {
+    "families": {
+      "rock": 0.4,
+      "bush": 0.35,
+      "stump": 0.25
+    },
+    "variants": {
+      "rock": {
+        "rock": 0.4,
+        "rockMossLight": 0.3,
+        "rockMossy": 0.3
+      },
+      "bush": {
+        "bushWhite": 0.5,
+        "bushPink": 0.5
+      },
+      "stump": {
+        "stump": 1
+      }
+    }
+  }
+}

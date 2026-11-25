@@ -272,6 +272,33 @@ export function scaled(player: PlayerType, habit: 'undos' | 'hints' | 'extraMove
   return { ...player, [habit]: [easy * factor, hard * factor] };
 }
 
+/**
+ * The same player, taking less of a help as it gets dearer. The habits in players.json were assumed at the
+ * prices of `base`; under `rules` each habit is scaled by (base price / price) ^ `elasticity`. 0 is the
+ * model's plain assumption (the same help whatever it costs); 1 means the coins a player wants to spend
+ * on each help stay the same, so a price three times as high gives a third of the help.
+ */
+export function priceAware(player: PlayerType, base: CoinRules, rules: CoinRules, elasticity: number): PlayerType {
+  const factor = (was: number, now: number): number => (was > 0 && now > 0 ? Math.pow(was / now, elasticity) : 1);
+  const by = (range: Range, f: number): Range => [range[0] * f, range[1] * f];
+  return {
+    ...player,
+    undos: by(player.undos, factor(base.undoCost, rules.undoCost)),
+    hints: by(player.hints, factor(base.hintCost, rules.hintCost)),
+    extraMoves: by(player.extraMoves, factor(base.extraMovesCost, rules.extraMovesCost)),
+  };
+}
+
+/** What a help costs in euro when its coins come from a pack: the price in coins times the pack's price per coin. */
+export function euroPerHelp(price: number, pack: { readonly coins: number; readonly examplePriceCents: number }): number {
+  return (price * pack.examplePriceCents) / pack.coins / 100;
+}
+
+/** How many of one help the coins earned over ten levels buy, when they buy nothing else. */
+export function helpPerTenLevels(earned: number, levels: number, price: number): number {
+  return price > 0 && levels > 0 ? ((earned / levels) * 10) / price : Infinity;
+}
+
 /** The difficulty scores in the generated level report, by level name. */
 export function scoresFromReport(report: string): Map<string, number> {
   const scores = new Map<string, number>();

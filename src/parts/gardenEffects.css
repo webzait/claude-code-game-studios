@@ -1,0 +1,35 @@
+/* Garden effects section of the parts sheet (src/parts/gardenEffects.ts). */
+.gfx-head { grid-column: 1 / -1; margin: 28px 0 0; font-size: 22px; }
+.gfx .gfx-bar { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 10px; }
+.gfx .gfx-btn { font: inherit; font-weight: 700; font-size: 15px; padding: 9px 16px; border-radius: 999px; border: 0; color: #fff; background: #3c8f25; box-shadow: 0 3px 0 #276617; cursor: pointer; }
+.gfx .gfx-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #276617; }
+.gfx .gfx-stars, .gfx .gfx-stars-1, .gfx .gfx-stars-2, .gfx .gfx-stars-3 { background: #f2a81b; box-shadow: 0 3px 0 #c27a08; }
+.gfx .gfx-cloud { background: #8d92c9; box-shadow: 0 3px 0 #646aa6; }
+.gfx .gfx-ring { background: #1f7ae8; box-shadow: 0 3px 0 #1356a8; }
+.gfx .gfx-calm, .gfx .gfx-all, .gfx .gfx-stress-btn, .gfx .gfx-pause, .gfx .gfx-step { background: #fff; color: #2b2f45; box-shadow: inset 0 0 0 1.5px #c9cede, 0 3px 0 #c9cede; }
+.gfx .gfx-calm[aria-pressed="true"], .gfx .gfx-pause[aria-pressed="true"] { background: #e8f6dc; box-shadow: inset 0 0 0 1.5px #3c8f25, 0 3px 0 #3c8f25; }
+.gfx .gfx-live { display: block; width: 100%; max-width: 720px; height: auto; margin: 0 auto; border-radius: 14px; background: linear-gradient(#cfeefc, #eaf7e1); }
+.gfx .gfx-live.phone { max-width: 390px; }
+.gfx .gfx-readout { font-size: 13px; font-variant-numeric: tabular-nums; color: #4a5068; margin: 8px 0 0; min-height: 1.3em; }
+.gfx .gfx-sheet { display: block; width: 100%; max-width: 968px; margin: 0 auto 10px; image-rendering: auto; }
+.gfx .gfx-row.four { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.gfx figure { margin: 0; text-align: center; }
+.gfx figure canvas { width: 100%; height: auto; display: block; border-radius: 10px; background: linear-gradient(#cfeefc, #eaf7e1); }
+.gfx figcaption { font-size: 12px; color: #4a5068; margin-top: 3px; font-variant-numeric: tabular-nums; }
+.gfx .gfx-strip { margin: 10px 0 0; }
+.gfx .gfx-strip h3 { font-size: 14px; margin: 0 0 4px; }
+.gfx .gfx-frames { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.gfx .gfx-frames.six { grid-template-columns: repeat(6, 1fr); }
+@media (max-width: 700px) { .gfx .gfx-row.four { grid-template-columns: 1fr 1fr; } .gfx .gfx-frames { grid-template-columns: repeat(4, 1fr); } .gfx .gfx-frames.six { grid-template-columns: repeat(3, 1fr); } }
+.gfx .gfx-cuts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 6px 0; }
+.gfx .gfx-pair { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; align-items: center; }
+.gfx .gfx-pair > * { width: 100%; height: auto; display: block; border-radius: 8px; background: #fff; box-shadow: inset 0 0 0 1px #e3e6ef; }
+.gfx .gfx-pair canvas { background: #fff; }
+.gfx .gfx-pair .on-lawn { background: #8bcb4f; }
+.gfx .gfx-row.four + .gfx-row.four { margin-top: 8px; }
+@media (max-width: 700px) { .gfx .gfx-cuts { grid-template-columns: 1fr; } }
+.gfx .gfx-pair.four { grid-template-columns: repeat(4, 1fr); }
+.gfx .gfx-pair .on-dark { background: #282830; }
+.gfx .gfx-pair > img { aspect-ratio: 1; object-fit: contain; }
+.gfx .gfx-sheet.small { max-width: 360px; margin-top: 12px; }
+.gfx .gfx-cuts { grid-template-columns: repeat(2, 1fr); }

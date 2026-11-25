@@ -76,6 +76,138 @@
       "window": "#F6F9FF"
     }
   },
+  "chick": {
+    "width": 1,
+    "height": 1,
+    "body": {
+      "radius": 0.4,
+      "depth": 0.39,
+      "bottom": 0.03,
+      "widest": 0.43,
+      "top": 0.83,
+      "upperRound": 1.0,
+      "lowerRound": 0.9
+    },
+    "belly": {
+      "elevation": -24,
+      "reach": 45,
+      "fade": 7,
+      "wide": 1.3
+    },
+    "blush": {
+      "elevation": -5,
+      "spread": 41,
+      "wide": 0.078,
+      "high": 0.046,
+      "core": 0.4,
+      "strength": 0.8,
+      "lift": 0.003
+    },
+    "eye": {
+      "elevation": 11,
+      "spread": 25,
+      "radius": 0.092,
+      "tall": 1.06,
+      "bulge": 0.14,
+      "rim": 1.04,
+      "rimLift": 0.035,
+      "pupil": 0.84,
+      "inward": 0.14,
+      "drop": 0.0,
+      "iris": 0.72,
+      "irisDrop": 0.1,
+      "cover": 0.64,
+      "coverLift": 0.2,
+      "glint": 0.2,
+      "happy": {
+        "wide": 11,
+        "high": 7,
+        "thick": 0.015,
+        "lift": 0.006
+      }
+    },
+    "beak": {
+      "elevation": 3,
+      "width": 0.08,
+      "height": 0.05,
+      "length": 0.085,
+      "taper": 0.5,
+      "sink": 0.014,
+      "mouth": 0.74,
+      "gape": 1.15,
+      "lip": 0.15,
+      "jut": 0.03
+    },
+    "tuft": {
+      "back": 6,
+      "length": 0.115,
+      "wide": 0.05,
+      "thick": 0.04,
+      "fan": 40,
+      "sideLength": 0.8,
+      "lean": 10
+    },
+    "wing": {
+      "azimuth": 80,
+      "elevation": 6,
+      "sink": 0.05,
+      "length": 0.1,
+      "wide": 0.08,
+      "thick": 0.036,
+      "out": 0.85,
+      "up": 0.45,
+      "back": 0.32,
+      "fan": [26, 0, -26]
+    },
+    "tail": {
+      "elevation": -22,
+      "pitch": 42,
+      "length": 0.075,
+      "wide": 0.046,
+      "thick": 0.036,
+      "fan": 32
+    },
+    "foot": {
+      "spread": 0.135,
+      "forward": 0.11,
+      "leg": 0.022,
+      "toe": 0.062,
+      "wide": 0.027,
+      "height": 0.04,
+      "fan": 30
+    },
+    "symbol": {
+      "tip": "beak",
+      "elevation": 60,
+      "size": 0.3,
+      "soften": 0.16,
+      "lift": 0.006,
+      "sink": 0.012,
+      "shape": {
+        "size": 0.36,
+        "pointer": 0.2,
+        "lift": 0.005
+      }
+    },
+    "board": {
+      "lean": 0
+    },
+    "material": {
+      "roughness": 0.62,
+      "clearcoat": 0.12,
+      "clearcoatRoughness": 0.45,
+      "reflect": 0.25,
+      "glow": 0.42,
+      "trimGlow": 0.3,
+      "topTint": 0.1,
+      "underShade": 0.1,
+      "wingShade": 0.45
+    },
+    "mesh": {
+      "fine": { "around": 256, "up": 160, "ball": [56, 36], "eye": [96, 64], "decal": 4, "rim": 256, "tube": 96 },
+      "game": { "around": 48, "up": 28, "ball": [12, 8], "eye": [16, 10], "decal": 2, "rim": 48, "tube": 12 }
+    }
+  },
   "floorTile": {
     "size": 1,
     "height": 0.2,
@@ -222,9 +354,10 @@
     },
     "tools": {
       "height": 37,
-      "gap": 10,
-      "tray": true,
-      "labels": false
+      "width": 62,
+      "radius": 14,
+      "gap": 20,
+      "clearance": 24
     },
     "action": {
       "width": 96,

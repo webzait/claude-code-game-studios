@@ -176,7 +176,9 @@ $RECYCLE.BIN/
 
 # === Web game (Turnflock) ===
 dist-single/
+dist-single-garden/
 /playwright-report/
 .vitest/
 dist-parts/
 tools/level-design/.cache/
+dist-sounds/

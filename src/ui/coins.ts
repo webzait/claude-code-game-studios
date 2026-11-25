@@ -1,7 +1,6 @@
 import { CONFIG } from '../config';
-import type { Reward } from '../game/coins';
+import type { CoinRules, Reward } from '../game/coins';
 import parts from '../../data/parts.json';
-import coinImage from '../../assets/turnflock/ui/coin.webp';
 import extraMovesImage from '../../assets/turnflock/ui/extra-moves.webp';
 
 /**
@@ -13,15 +12,20 @@ import extraMovesImage from '../../assets/turnflock/ui/extra-moves.webp';
 
 const C = parts.coins;
 const F = C.fly;
-const COINS = CONFIG.coins;
 
 /** An amount as the player reads it: thousands apart with a narrow space, never abbreviated. */
 export function formatCoins(amount: number): string {
   return String(Math.round(amount)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
+/**
+ * The coin picture: one element whose picture comes from the style sheets, so the theme decides which coin it is
+ * (robot: tf-coins.css, garden: src/ui/themes/garden/coin.css) and a theme switch needs no new markup.
+ */
+export const COIN = '<i class="tf-coin-ico" aria-hidden="true"></i>';
+
 /** The coin picture at a size in CSS pixels. */
-export const coinIcon = (size: number): string => `<img class="tf-coin-ico" src="${coinImage}" alt="" style="--s:${size}px" />`;
+export const coinIcon = (size: number): string => `<i class="tf-coin-ico" aria-hidden="true" style="--s:${size}px"></i>`;
 
 const CHECK = `<svg class="tf-coin-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.8 10 17.6 19.2 7" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const PLUS = `<svg viewBox="0 0 24 24" aria-hidden="true"><g class="tf-ink-shadow" transform="translate(0 1.4)"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></g><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></svg>`;
@@ -39,7 +43,7 @@ export function priceTag(cost: number, state: PriceState, size: { height: number
   const style = `style="--ph:${size.height}px;--pf:${size.font}px"`;
   if (state === 'free') return `<span class="tf-coin-price free" ${style}>Free</span>`;
   if (state === 'used') return `<span class="tf-coin-price used" ${style}>${CHECK}<span class="tf-coin-word">Used</span></span>`;
-  return `<span class="tf-coin-price${state === 'short' ? ' short' : ''}" ${style}><img class="tf-coin-ico" src="${coinImage}" alt="" /><span>${formatCoins(cost)}</span></span>`;
+  return `<span class="tf-coin-price${state === 'short' ? ' short' : ''}" ${style}>${COIN}<span>${formatCoins(cost)}</span></span>`;
 }
 
 /** The place on a button where its price tag stands: put this last inside the button. */
@@ -110,8 +114,8 @@ export function landingAmounts(from: number, to: number, count: number): number[
   return Array.from({ length: coins }, (_, i) => (i === coins - 1 ? to : from + Math.round(((to - from) * (i + 1)) / coins)));
 }
 
-/** The honest stand-in for a shop: what coins are, how they are earned and what they cost. */
-export function coinInfo(titleId: string): string {
+/** The honest stand-in for a shop: what coins are, how they are earned and what they cost, in the amounts in play. */
+export function coinInfo(titleId: string, COINS: CoinRules = CONFIG.coins): string {
   const small = coinIcon(C.reward.lineIcon);
   const line = (name: string, amount: string, spend = false): string => `<div class="tf-coin-line${spend ? ' spend' : ''}"><dt>${name}</dt><dd>${amount}${small}</dd></div>`;
   return `<h4 id="${titleId}">${coinIcon(24)}Coins</h4>
@@ -261,7 +265,7 @@ export class CoinCounters {
           const coin = document.createElement('i');
           coin.className = 'tf-coin-fly';
           coin.style.cssText = `--s:${F.size}px;--x0:${x0 + sx}px;--y0:${y0 + sy}px;--dx:${dx - sx}px;--dy:${dy - sy}px;--k:${(b.width / F.size).toFixed(3)};--ms:${F.flightMs}ms;--dl:${i * F.staggerMs}ms`;
-          coin.innerHTML = `<img src="${coinImage}" alt="" />`;
+          coin.innerHTML = COIN;
           coin.addEventListener('animationend', (e) => {
             if (e.target !== coin) return;
             coin.remove();

@@ -1,8 +1,14 @@
 import { CONFIG } from '../config';
+import { CELEBRATION_NAMES, CELEBRATION_VARIANTS, type CelebrationVariant } from '../game/celebration';
+import { TUNINGS, tuningFor, type Tuning } from '../game/coins';
 import { DEFAULT_LAB, usesCertifiedRules, type LabSettings } from '../game/lab';
+import { formatExamplePrice } from '../game/shop';
+import { MUSIC_VARIANTS, scoreOf } from '../music/tracks';
 import parts from '../../data/parts.json';
+import { THEME_IDS, THEME_NAMES, type ThemeId } from '../game/theme';
 import { SHAPE_COLOURS, shapeOf, shapesInWords, shapeSvg } from './colourShapes';
 import pkg from '../../package.json';
+import { soundSet, soundSetIds } from '../sound/sets';
 
 /**
  * The settings screens: the player's own settings, and the test lab on a
@@ -189,6 +195,14 @@ export function resetControl(armed = false, done = false, onErase: () => void = 
 export const solverNote = (): HTMLElement =>
   h(`<p class="tf-set-note" role="note">${ICON.warn}<span><b>Test rule.</b> Levels are certified for “Many”. Here the solver re-checks each level when it opens; one it cannot prove may have no solution.</span></p>`);
 
+/** What each win celebration does, as the test lab explains it. */
+const CELEBRATION_HINTS: Record<CelebrationVariant, string> = {
+  confetti: 'Paper flecks in the robot colours shoot up from the exit and flutter down.',
+  wave: 'The tiles light up in a ring that runs from the exit across the board.',
+  hop: 'The robots hop out of the exit once more, spin and dive back in.',
+  garden: 'Garden theme: a beam of light on the exit, stars burst out and twinkles run over the board.',
+};
+
 const LAB_KEYS = Object.keys(DEFAULT_LAB) as (keyof LabSettings)[];
 
 /** What the test lab does with its values; without hooks it only keeps them (parts sheet). */
@@ -306,6 +320,7 @@ export function labContent(start: Partial<LabSettings>, hooks: LabHooks = {}): {
       { label: 'Classic', value: 'classic' },
     ]),
     flag('decor', 'Backdrop', 'Harbour and bushes behind the game.'),
+    choice('celebration', 'Win celebration', (v) => CELEBRATION_HINTS[v], CELEBRATION_VARIANTS.map((value) => ({ label: CELEBRATION_NAMES[value], value }))),
     choice('levelScreen', 'Level screen', 'Path: the current level and the next few. Grid: every level on pages, as before.', [
       { label: 'Path', value: 'path' },
       { label: 'Grid', value: 'grid' },
@@ -317,12 +332,23 @@ export function labContent(start: Partial<LabSettings>, hooks: LabHooks = {}): {
 
   const shop = panel('Coin shop', '', 'A pretend shop for testing. No purchase here is real and nothing is ever charged.');
   shop.body.append(
+    choice('economy', 'Coin tuning', (v) => tuningLine(tuningFor(v)), TUNINGS.map((t) => ({ label: t.label, value: t.id }))),
     flag('shop', 'Test shop', 'The plus button opens the test shop. Off: it explains coins and says there is nothing to buy.'),
     choice('purchaseOutcome', 'Purchase outcome', (v) => (v === 'success' ? 'A test purchase goes through and adds the coins.' : v === 'cancelled' ? 'A test purchase ends as cancelled. The coins do not change.' : 'A test purchase fails. The coins do not change.'), [
       { label: 'Succeeds', value: 'success' },
       { label: 'Cancelled', value: 'cancelled' },
       { label: 'Fails', value: 'failed' },
     ]),
+  );
+
+  const sound = panel('Sound');
+  sound.body.append(
+    choice('soundSet', 'Button sounds', (v) => soundSet(v).blurb, soundSetIds().map((id) => ({ label: soundSet(id).name, value: id }))),
+  );
+
+  const music = panel('Music');
+  music.body.append(
+    choice('music', 'Background music', (v) => scoreOf(v).mood, MUSIC_VARIANTS.map((value) => ({ label: scoreOf(value).title, value }))),
   );
 
   const sizes = panel('Board size test');
@@ -344,7 +370,14 @@ export function labContent(start: Partial<LabSettings>, hooks: LabHooks = {}): {
     status.focus();
   });
   refresh();
-  return { groups: [rules.panel, look.panel, shortcuts.panel, shop.panel, ...(hooks.panels ?? []), sizes.panel], bar, count, onCount: (fn) => listeners.push(fn) };
+  return { groups: [rules.panel, look.panel, sound.panel, music.panel, shortcuts.panel, shop.panel, ...(hooks.panels ?? []), sizes.panel], bar, count, onCount: (fn) => listeners.push(fn) };
+}
+
+/** A tuning in one line for the test lab: what sets it apart, then its amounts. */
+export function tuningLine(t: Tuning): string {
+  const c = t.coins;
+  const packs = t.packs.map((p) => `${p.coins} for ${formatExamplePrice(p.examplePriceCents)}`).join(', ');
+  return `${t.about} Start ${c.start}. Win ${c.win}, ${c.win + c.twoStars} or ${c.win + c.perfect}. Undo ${c.undoCost}, hint ${c.hintCost}, +${CONFIG.extraMoves} moves ${c.extraMovesCost}. Packs: ${packs}. "Reset progress" starts again on this start amount.`;
 }
 
 /** One screen: a fixed top bar with a back button and a title, and a list that scrolls under it. */
@@ -359,15 +392,21 @@ export function screenShell(title: string, backName: string, chipHtml = ''): { r
 /** What the game's settings screen shows and what it can change. */
 export interface PlayerSettingsModel {
   readonly mute: boolean;
+  /** Background music on; separate from the sound effects. */
+  readonly music: boolean;
   /** null follows the device. */
   readonly reduceMotion: boolean | null;
   /** A shape on each robot colour and its button. */
   readonly colourShapes: boolean;
+  /** The look the game is played in. */
+  readonly theme: ThemeId;
   /** How many test lab values differ from the certified game. */
   readonly labChanged: number;
   setMute(mute: boolean): void;
+  setMusic(on: boolean): void;
   setReduceMotion(value: boolean | null): void;
   setColourShapes(on: boolean): void;
+  setTheme(theme: ThemeId): void;
   resetProgress(): void;
   back(): void;
   openLab(): void;
@@ -390,13 +429,17 @@ export function playerScreen(m: PlayerSettingsModel): { root: HTMLElement; back:
     r.row.appendChild(toggle(r.titleId, on, set, r.hintId));
     return r.row;
   };
-  game.body.append(flag('sound', 'Sound', 'Game sounds.', !m.mute, (on) => m.setMute(!on)));
+  game.body.append(flag('sound', 'Sound', 'Game sounds.', !m.mute, (on) => m.setMute(!on)), flag('music', 'Music', 'Background music.', m.music, (on) => m.setMusic(on)));
   const motion = row('Reduce motion', 'Calmer animations. Auto follows this device.', { stack: true });
   motion.row.dataset.key = 'reduceMotion';
   motion.row.appendChild(
     segmented<boolean | null>(motion.titleId, [{ label: 'Auto', value: null }, { label: 'On', value: true }, { label: 'Off', value: false }], m.reduceMotion, (v) => m.setReduceMotion(v), motion.hintId),
   );
   game.body.append(shapesRow(m.colourShapes, (on) => m.setColourShapes(on)), motion.row);
+  const theme = row('Theme', 'How the game looks. Levels and progress stay the same.', { stack: true });
+  theme.row.dataset.key = 'theme';
+  theme.row.appendChild(segmented<ThemeId>(theme.titleId, THEME_IDS.map((value) => ({ label: THEME_NAMES[value], value })), m.theme, (v) => m.setTheme(v), theme.hintId));
+  game.body.append(theme.row);
 
   const progress = panel('Progress');
   progress.body.append(resetControl(false, false, () => m.resetProgress()));
