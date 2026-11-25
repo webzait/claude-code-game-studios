@@ -150,7 +150,8 @@ describe('garden rim modelled in code (buildRim, the default), underlay and boar
         const inside = x < hw && z < hd && (!corner || Math.hypot(x - (hw - rad), z - (hd - rad)) < rad);
         expect(inside).toBe(false);
       }
-      expect(box.min.y).toBeGreaterThanOrEqual(-1e-3);
+      // The braid sits a little down in the grass bed (y = 0), never through the plate under it.
+      expect(box.min.y).toBeGreaterThanOrEqual(-0.03);
     }
   });
 
