@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
+import { CONFIG } from '../../src/config';
 import TILE from '../../data/themes/garden/tile.json';
 import * as robot from '../../src/render/parts/board';
 import { buildFloorTile } from '../../src/render/parts/garden/board';
@@ -66,8 +67,8 @@ describe('garden grass tile from the owner picture', () => {
   });
 
   it('keeps the side inside the fuzzy outline of the top, seen from above', () => {
-    // The picture's fur tips reach 0.962 of the top's width (cut.py); the side must not show past them.
-    expect(I.wall).toBeLessThan(I.top * 0.962);
+    // The picture's fur tips reach `tips` of the top's width (cut.py); the side must not show past them.
+    expect(I.wall).toBeLessThan(I.top * I.tips);
     expect(I.wallTop).toBeLessThan(TILE.tile.height);
   });
 
@@ -86,6 +87,11 @@ describe('garden grass tile from the owner picture', () => {
       if (Math.abs(pos.getY(i) - TILE.tile.height) < 1e-6) expect(v).toBeGreaterThanOrEqual(topFloor - 1e-6);
       else expect(v).toBeLessThanOrEqual(sideCeil + 1e-6);
     }
+  });
+
+  it('sits closer to its neighbours than the first version: at most a tenth of a cell of grass bed between fur tips', () => {
+    const pitch = TILE.tile.size + CONFIG.board.grid.gap;
+    expect(pitch - I.top * I.tips).toBeLessThanOrEqual(0.1);
   });
 
   it('the earlier code tile is still there, with the same footprint', () => {

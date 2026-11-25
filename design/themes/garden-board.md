@@ -3,6 +3,24 @@
 Part of the garden (chick) theme. Built loose, on the parts page only; the theme session
 puts it into the game. References: `design/reference/turnflock/garden/` 01, 02, 03, 11, 12, 13.
 
+## Status (2026-11-25): the owner's pictures are the parts
+
+At the owner's request every board part was then worked out in its own session, with the owner's
+own pictures as the default (cut out as WebP, laid on as textures) and the code versions kept as
+options. The four branches are merged here. Each part's current design is in its own note, which
+supersedes the code-built description further down:
+
+| Part | Note | Picture | Code version kept as |
+|---|---|---|---|
+| Grass tile | `garden-board-tile.md` | `assets/turnflock/garden/board/tile/grass-tile.webp` (from `02-tile-grass`) | `buildFloorTileCode` |
+| Glowing tile, hint | `garden-board-highlight.md` | `assets/turnflock/garden/board/highlight/glow-rim.webp` | `style: 'painted'` |
+| Dirt tile | `garden-board-dirt.md` | `assets/turnflock/garden/board/dirt/dirt-tile.webp` | `style: 'modelled'` |
+| Rim, grass bed | `garden-board-rim.md` | `assets/turnflock/garden/board/rim/` (from `01-board-full` and `03-rim-vines`) | `buildRimModel` |
+
+The board pictures add about 233 kB to the single-file game once the theme imports them. Owner's
+choices so far: one grass tile everywhere (no checkerboard), the hint lights cells instead of
+arrows, tiles closer together with visible grass texture.
+
 ## What there is, and who works on it
 
 Each part has its own code file, data file, parts-page card file and test file, so each can be
