@@ -9,7 +9,7 @@ import { Mesher, once, outlineRect, plainMaterial, shadowed } from './geometry';
 import { fur, mottle, painted } from './paint';
 import { boardFootprint, seeded } from './layout';
 import { imageTexture } from './rim';
-import bedUrl from '../../../../assets/turnflock/garden/board/rim/bed.webp';
+import bedUrl from '../../../../assets/turnflock/garden/board/bed/bed.webp';
 
 const T = TILE.tile;
 const G = { underlay: UNDER.underlay };
@@ -29,14 +29,16 @@ export function bedTexture(): THREE.Texture | null {
 
 const bed = imageTexture(bedUrl, true);
 
-/** Settles once the grass bed picture (`bed.webp`, cut from `01-board-full`) has loaded. */
+/** Settles once the grass bed picture (`bed.webp`, built by `assets/turnflock/garden/board/bed/build-bed.py`) has loaded. */
 export const bedReady: Promise<void> = bed.ready;
 
 /**
- * The grass bed's material: a repeating patch cut from `01-board-full` (`bed.webp`). Outside a
- * browser, or before it loads in the tests, the painted bed (`bedTexture`) stands in.
+ * The grass bed's material: a sharp repeating patch of pointed blades in the colours of
+ * `01-board-full` (`bed.webp`, see `design/themes/garden-board-bed.md`), lit like the tiles and
+ * scaled by `bedTone` so it sits with them as in the picture. Outside a browser, or before it
+ * loads in the tests, the painted bed (`bedTexture`) stands in.
  */
-export const bedMaterial = new THREE.MeshStandardMaterial({ map: bed.texture ?? bedTexture(), roughness: 0.95, color: new THREE.Color(1, 1, 1).multiplyScalar(G.underlay.bedTone) });
+export const bedMaterial = new THREE.MeshLambertMaterial({ map: bed.texture ?? bedTexture(), color: new THREE.Color(1, 1, 1).multiplyScalar(G.underlay.bedTone) });
 
 /**
  * Underlay: one plate under the whole board, `lip` wider than the rim all round, its top the

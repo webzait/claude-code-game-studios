@@ -6,7 +6,6 @@ Cut the garden rim out of the owner's picture 03-rim-vines and pack it into one 
 
 Needs Pillow, numpy and scipy. Writes, next to this file:
   rim-atlas.webp   corners, plain braid tiles and decorated side pieces
-  bed.webp         a repeating patch of the grass bed, cut from 01-board-full
 and the "atlas" block of data/themes/garden/rim.json (where each piece sits in the atlas and in
 the source picture), which src/render/parts/garden/rim.ts reads to lay the rim out.
 
@@ -54,10 +53,6 @@ STRAIGHTEN = {
 }
 TAPER = 40
 WINDOW = {'top': (0, 330), 'bottom': (930, 1254), 'left': (0, 330), 'right': (930, 1254)}
-# The grass bed: the strip of 01-board-full between the rim and the first row of tiles (x0, y0, x1, y1).
-BED_STRIP = (300, 128, 1000, 151)
-BED_SIZE = 128
-BED_SEED = 5  # x range of the left braid in the source
 
 # Corners: the rectangle cut from the source (x0, y0, x1, y1). The two sides of a corner that
 # run on into the straight sides end in a fade. A corner and the decorated piece next to it share
@@ -321,34 +316,6 @@ def pack(items, width):
     return y + shelf, at
 
 
-def bed_patch():
-    """A repeating patch of the grass bed between the tiles, from 01-board-full. The bed shows there
-    only as a narrow strip (between the rim and the first row of tiles), too thin to repeat as it
-    is, so the patch is built from it: clumps of blades cut from the strip with a soft edge, laid
-    over the strip's own green in a fixed jittered grid that wraps round, so it repeats without a
-    seam and without rows."""
-    im = load('01-board-full.png')
-    strip = im[BED_STRIP[1]:BED_STRIP[3], BED_STRIP[0]:BED_STRIP[2]]
-    n = BED_SIZE
-    out = np.ones((n, n, 3), np.float32) * np.median(strip.reshape(-1, 3), 0)
-    ch, cw = strip.shape[0], 24
-    yy, xx = np.mgrid[:ch, :cw]
-    mask = np.clip(1.4 - np.hypot((xx - cw / 2 + 0.5) / (cw / 2), (yy - ch / 2 + 0.5) / (ch / 2)) * 1.4, 0, 1)[..., None]
-    rand = np.random.default_rng(BED_SEED)
-    step = 16
-    for gy in range(0, n, step):
-        for gx in range(0, n, step):
-            sx = int(rand.integers(0, strip.shape[1] - cw))
-            clump = strip[:, sx:sx + cw]
-            ox = (gx + int(rand.integers(-5, 6))) % n
-            oy = (gy + int(rand.integers(-4, 5))) % n
-            ys = (np.arange(ch) + oy) % n
-            xs = (np.arange(cw) + ox) % n
-            region = out[np.ix_(ys, xs)]
-            out[np.ix_(ys, xs)] = region * (1 - mask) + clump * mask
-    return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), 'RGB')
-
-
 def main():
     rgb, alpha = rgba_source()
     rgb, alpha, edges = straighten(rgb, alpha)
@@ -393,7 +360,6 @@ def main():
         meta[i]['atlas'] = [x + PAD, y + PAD, w - 2 * PAD, h - 2 * PAD]
     out = Image.fromarray(np.clip(atlas, 0, 255).astype(np.uint8), 'RGBA')
     out.save(os.path.join(HERE, 'rim-atlas.webp'), 'WEBP', quality=QUALITY, alpha_quality=90, method=6, exact=True)
-    bed_patch().save(os.path.join(HERE, 'bed.webp'), 'WEBP', quality=80, method=6)
 
     with open(DATA) as f:
         data = json.load(f)
@@ -411,7 +377,7 @@ def main():
     with open(DATA, 'w') as f:
         json.dump(data, f, indent=2)
         f.write('\n')
-    for f in ('rim-atlas.webp', 'bed.webp'):
+    for f in ('rim-atlas.webp',):
         print(f, round(os.path.getsize(os.path.join(HERE, f)) / 1024, 1), 'kB')
     print('atlas', width, 'x', height)
 

@@ -8,7 +8,7 @@ import { cost, figure, fmt, GAP, gameView, gardenBoard, img, robotBoard, section
 import refBoard from './ref-01-board-full.webp';
 import refRim from './ref-03-rim-vines.webp';
 import atlasUrl from '../../../assets/turnflock/garden/board/rim/rim-atlas.webp';
-import bedUrl from '../../../assets/turnflock/garden/board/rim/bed.webp';
+import bedUrl from '../../../assets/turnflock/garden/board/bed/bed.webp';
 
 /** Size in kB of the file behind `url` (a data URI in the single-file build). */
 async function kilobytes(url: string): Promise<string> {
