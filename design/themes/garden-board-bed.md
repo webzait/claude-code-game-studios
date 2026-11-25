@@ -97,9 +97,9 @@ the picture.
   (`heightJitter`, ±20 %), its own strip of the atlas (4 `variants`) and its own offset along it.
   The cards in one row share the row's offset in world units, so a row's blades run on across
   a tile unbroken.
-- **Darker at the root.** Each card's bottom is shaded to `rootShade` (vertex colours), as the
-  blades in front would shade it. The flat bed under the cards is the shade between them
-  (`ground` 0.95 of its picture).
+- **A little darker at the root.** Each card's bottom is shaded to `rootShade` (0.92, vertex
+  colours), as the blades in front would shade it. The flat bed under the cards shows between
+  them (`ground` 1.15 of its picture).
 - **Taller against the braid.** Within `rimBand` (0.12) of the far rim the rows grow up to
   `rimHeight` (2) times taller; on the left and right the end of every row is a separate taller
   card. This replaces the separate fringe band (and `fringe.webp`) of the previous version, so it
@@ -107,9 +107,9 @@ the picture.
 - **The picture.** `build-bed.py` writes `blades.webp`: 4 strips, each 0.5 cells wide (it
   repeats along a row) and 0.12 cells tall, at 1,024 px per cell (512 × 524 px). Blades are
   rooted on the strip's bottom edge, leaf-shaped, 0.012 to 0.018 cells wide, a root every 0.012
-  cells, shaded from a deep green root to a light lime tip with a lit edge; a third of them stand
-  behind, darker. Colours are deeper and less yellow than the tiles, as in the picture (there the
-  bed has about 0.55 of the tiles' red and 0.7 of their green).
+  cells, shaded from a green root to a light lime tip with a lit edge; a third of them stand
+  behind, only a little darker (`BACK_SHADE` 0.86). The colours carry no blue: blue in the tips
+  mixed with the dark roots into a dull, greyish olive.
 - **Material.** `MeshLambertMaterial` with `alphaTest` 0.5 and `alphaToCoverage`, so the cut
   edges are antialiased by the renderer's multisampling instead of stair-stepped. Both faces,
   `tone` 1.4. The cards take the tiles' and chicks' shadows but cast none (a cut-out casts a
@@ -121,17 +121,22 @@ the picture.
 
 | | Before (flat bed and fringe) | Now (blade cards) |
 |---|---|---|
-| Pictures | `bed.webp` 71 kB + `fringe.webp` 10 kB | `bed.webp` 17 kB (256 px) + `blades.webp` 34 kB |
+| Pictures | `bed.webp` 71 kB + `fringe.webp` 10 kB | `bed.webp` 17 kB (256 px) + `blades.webp` 31 kB |
 | Triangles on 8×8 | 322 + about 1,000 | 322 + 5,308 (4×4: 1,776; 6×5: 2,766) |
 | Whole 8×8 board | about 7,300 | about 11,600 (budget 19,600) |
 | Draw calls for the bed | 3 (bed, soil, fringe) | 3 (bed, soil, blades) |
 
 `bed.webp` went from 640 to 256 px: only the shade between the blades shows of it now, and side
-by side at 1:1 there was no visible difference. `blades.webp` is saved at WebP quality 62: 34 kB
-instead of 51, with colour and outline off by under 1.5 % on average.
+by side at 1:1 there was no visible difference. `blades.webp` is saved at WebP quality 62: 31 kB
+instead of about 50, with colour and outline off by under 1.5 % on average.
 
-**Colour.** In level 1 the bed between the tiles measures (103, 153, 19) on average, the picture's
-bed (101, 161, 2). The game's tiles are paler than the picture's, see below.
+**Colour.** The owner found the first version "veel te donker met teveel grijs" (far too dark,
+too much grey). It had dark roots (`rootShade` 0.8), dark back blades (0.62) and pale, slightly
+blue tips; mixed at phone size that read as dull olive, (103, 153, 19) on average in level 1. Not
+the tiles' shadows: turning them off on the blades changed nothing measurable. Now the blades are
+a clear mid green with little dark between them: (122, 182, 16) on average, between the picture's
+bed (101, 161, 2) and the game's tiles (158, 197, 28)
+(`closeup-level01-lighter-1to1`).
 
 ## Evidence
 
@@ -139,7 +144,8 @@ bed (101, 161, 2). The game's tiles are paler than the picture's, see below.
 with deviceScaleFactor 3 (`in-game-*`); the reference, the previous flat bed and the blade bed
 side by side (`compare-*`); close-ups at 1:1 device pixels at a tile crossing and at the far rim,
 next to the reference scaled to the same cell size (`closeup-level01-*-1to1`); the same spot drawn
-at 2× and at 3× (`closeup-level01-2x-vs-3x-1to1`, see below); the atlas at 2× (`blade-atlas-2x`).
+at 2× and at 3× (`closeup-level01-2x-vs-3x-1to1`, see below, still the darker first colours); the
+first, too dark colours next to the lighter ones (`closeup-level01-lighter-1to1`); the atlas at 2× (`blade-atlas-2x`).
 Shots: `node assets/turnflock/garden/board/bed/bed-shots.mjs <dir> 0,6,10` after
 `npm run build:single`.
 

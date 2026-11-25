@@ -67,10 +67,11 @@ BLADE_LENGTHS = (0.5, 1.0)   # blade length as a fraction of the strip's height
 BLADE_WIDTHS = (0.012, 0.018)
 # The blades' own colours: deeper and less yellow than the tiles, as the bed in 01-board-full
 # (about 0.55 of the tiles' red and 0.7 of their green), with light lime tips.
-B_ROOT = (34, 92, 0)
-B_MID = (86, 168, 0)
-B_TIP = (168, 228, 24)
-B_EDGE = (178, 232, 60)
+B_ROOT = (64, 142, 0)
+B_MID = (104, 192, 0)
+B_TIP = (156, 226, 4)
+B_EDGE = (176, 236, 16)
+BACK_SHADE = 0.86           # the blades standing behind: only a little darker, so the bed stays clear green
 
 
 def lerp(a, b, t):
@@ -205,7 +206,7 @@ def build_blades():
         lmask = Image.new('L', (W, H), 0)
         ld, lm = ImageDraw.Draw(layer), ImageDraw.Draw(lmask)
         for b in blades:
-            shade = b['shade'] * (0.62 + 0.2 * b['back'] if b['back'] < 0.35 else 1.0)
+            shade = b['shade'] * (BACK_SHADE if b['back'] < 0.35 else 1.0)
             length = min(b['length'], b['y'] - top - 2 * SS)
             for ox in (-sw * SS, 0, sw * SS):
                 blade(ld, b['x'] + ox, b['y'], length, b['width'], b['angle'], b['bend'], shade, cell, (B_ROOT, B_MID, B_TIP, B_EDGE))
@@ -246,7 +247,7 @@ def main():
     print('bed.webp', SIZE, 'px,', round(os.path.getsize(out) / 1024, 1), 'kB')
     out = os.path.join(HERE, 'blades.webp')
     atlas = build_blades()
-    # Lower quality than the bed: 34 kB instead of 51, the blades' colour and outline change by
+    # Lower quality than the bed: about 31 kB instead of 50, the blades' colour and outline change by
     # under 1.5 % on average (measured against the uncompressed atlas).
     atlas.save(out, 'WEBP', quality=62, alpha_quality=70, method=6, exact=True)
     print('blades.webp', atlas.size, round(os.path.getsize(out) / 1024, 1), 'kB')
