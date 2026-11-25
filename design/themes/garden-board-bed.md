@@ -70,12 +70,38 @@ seed is fixed, so every run writes the same file. If you change `REPEAT` there, 
 The parts page's rim card (`src/parts/garden-board/rim.ts`) now imports the bed from its new
 place.
 
+## Blades along the rim
+
+The owner said: "aan de rand moet je wel wat grassprieten zien" (at the rim you should see some
+grass blades). In `01-board-full` a row of blades stands up against the braid all round, with light
+tips against the dark shade under the braid. In the game the rim is a flat picture lying at
+height 0.3, and the bed just ran under it, so nothing stood up there.
+
+- **The picture.** `build-bed.py` also writes `fringe.webp` (512×120 px, about 10 kB): blades
+  rooted along the bottom edge and pointing up, on a see-through ground. Behind them is a row of
+  dark blades (the shade under the braid), so the light tips of the front row stand out. It
+  repeats along its length.
+- **The band.** `fringeGeometry` (in `underlay.ts`) lays it on a band round the inside of the
+  rim. The band starts `outset` 0.04 under the rim's inner edge and rises `height` 0.2 (the tiles
+  are 0.2 high, the rim picture lies at 0.3).
+- **Why the band does not lean in everywhere.** At the 30° camera tilt, a band that leans toward
+  the camera on the far side is seen almost exactly edge-on, as a line. So it stands upright on
+  the far side. On the left and right sides it leans in by `lean` 0.12 (by the sideways part of
+  the rim's normal), where upright blades would be edge-on instead. The near side is mostly
+  behind the rim, as in the picture.
+- **Material and shadows.** Matte, toned like the bed, both faces, `alphaTest` 0.5. It takes no
+  shadows and casts none: a cut-out casts a square shadow, and the rim's shadow turned it into a
+  dark band. The game's fusing (`fuse` in `src/render/kit.ts`) turns every shadow on, so the band
+  is marked `userData.keepApart` and kept as it is. That costs one extra draw call and under 1,000
+  triangles on an 8×8 board.
+
 ## Evidence
 
 `production/qa/evidence/garden-board/bed/`: levels 1, 7 and 11 at 390×844 with
 deviceScaleFactor 3 (`in-game-*`). The reference, the old bed and the new bed side by side
 (`compare-*`, at half size). A close-up at 1:1 device pixels next to the reference at the same
-cell size (`closeup-level01-bed`, with the first try between). The patch repeated 2×2 (`bed-texture-2x2-repeat`).
+cell size (`closeup-level01-bed`, with the first try between). The rim blades at 1:1,
+without and with them, next to the reference (`closeup-level01-rim-blades`). The patch repeated 2×2 (`bed-texture-2x2-repeat`).
 
 ## Where it still differs from the reference
 
