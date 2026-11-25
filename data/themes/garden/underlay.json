@@ -1,15 +1,15 @@
 {
-  "$comment": "Garden theme board. Sizes in cells (1 cell = 56 px on the asset sheet), the same units as data/parts.json. Overview: design/themes/garden-board.md. Underlay and the grass bed between the tiles. Reference: 01-board-full. Owner: the rim session.",
+  "$comment": "Garden theme board. Sizes in cells (1 cell = 56 px on the asset sheet), the same units as data/parts.json. Overview: design/themes/garden-board.md. Underlay and the grass bed between the tiles. Reference: 01-board-full. Owner: the rim session; the grass bed (bedRepeat, bedTone, bed.webp) is the bed session's.",
   "underlay": {
     "height": 0.22,
     "lip": -0.3,
-    "bedRepeat": 1.0,
+    "bedRepeat": 1.25,
     "texture": 512,
     "seed": 7,
     "edgeGrass": 0.06,
     "cornerRadius": 1.1,
-    "$comment": "lip: the plate stops this far inside the rim's outside, under the braid (the rim picture's far side is thinner than its near side). cornerRadius: the plate's corners, round enough to stay under the rim picture's round corners. The bed's top is bed.webp (cut from 01-board-full), repeating every bedRepeat cells, brightened by bedTone to make up for the scene light.",
-    "bedTone": 1.2
+    "$comment": "lip: the plate stops this far inside the rim's outside, under the braid (the rim picture's far side is thinner than its near side). cornerRadius: the plate's corners, round enough to stay under the rim picture's round corners. The bed's top is assets/turnflock/garden/board/bed/bed.webp (built by build-bed.py there, in the colours of 01-board-full; design/themes/garden-board-bed.md), repeating every bedRepeat cells (keep equal to REPEAT in build-bed.py), on a matte Lambert material brightened by bedTone so it sits with the tiles as in the picture.",
+    "bedTone": 1.25
   },
   "colors": {
     "bed": "#5E9E10",
