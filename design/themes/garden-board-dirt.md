@@ -21,8 +21,10 @@ Part of the garden board (`design/themes/garden-board.md`). Reference: `13-sheet
   30° camera foreshortens it again by about the same amount) with Lanczos, and lightly sharpened
   (unsharp mask, radius 1.2, 45%). The front band (rows 86.5–97.6) is unrolled row by row to the
   full tile width.
-- **The block.** A rounded square `tile.body` (0.9) wide, `tile.height` (0.2) tall, corner radius
-  0.18 of its width (measured from the picture), 16 steps per corner. Its top carries the top of the
+- **The block.** Exactly the grass tile's size (the owner, 2026-11-25: "if it is used, it must be
+  the same size as the grass tile"): a rounded square as wide as the grass tile's top
+  (`image.top`, 1.0) with its corner radius (`image.topRadius`), `tile.height` (0.2) tall, 16 steps
+  per corner. A test checks the two tiles measure the same. Its top carries the top of the
   picture; its side carries the band, running along the near wall, up the right, back along the far
   wall and down the left, mirrored on every other wall so it never jumps at a corner. A thin lip at
   the top edge catches a little light. 340 triangles, one material: every dirt tile on a board is

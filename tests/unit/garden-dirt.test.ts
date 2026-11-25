@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import TILE from '../../data/themes/garden/tile.json';
 import DIRT from '../../data/themes/garden/dirt.json';
-import { buildDirtTile } from '../../src/render/parts/garden/board';
+import { buildFloorTile, buildDirtTile } from '../../src/render/parts/garden/board';
 import { buildDirtTileModelled, dirtAtlas, dirtBlock, dirtMaterial } from '../../src/render/parts/garden/dirt';
 import { boxOf, outwardShare } from './garden-helpers';
 
@@ -32,11 +32,14 @@ function vertices(g: THREE.BufferGeometry): { p: THREE.Vector3; n: THREE.Vector3
 }
 
 describe('garden dirt tile (the owner\'s picture)', () => {
+  /** The grass tile's top width, which the dirt tile shares. */
+  const W = TILE.image.top;
+
   it('fills one cell as the grass tile does, stands on the floor, its top at the tile top', () => {
     const size = boxOf(buildDirtTile(false, false)).getSize(new THREE.Vector3());
     const box = boxOf(buildDirtTile(false, false));
-    expect(size.x).toBeCloseTo(T.body, 3);
-    expect(size.z).toBeCloseTo(T.body, 3);
+    expect(size.x).toBeCloseTo(W, 3);
+    expect(size.z).toBeCloseTo(W, 3);
     expect(box.min.y).toBeCloseTo(0, 3);
     expect(box.max.y).toBeCloseTo(T.height, 3);
   });
@@ -62,8 +65,8 @@ describe('garden dirt tile (the owner\'s picture)', () => {
     const top = vertices(block(false).geometry).filter((x) => x.n.y > 0.99 && x.p.y > T.height - 1e-6);
     expect(top.length).toBeGreaterThan(8);
     for (const { p, u, v } of top) {
-      expect(u).toBeCloseTo(p.x / T.body + 0.5, 5);
-      expect(v).toBeCloseTo(dirtAtlas.top.v0 + (p.z / T.body + 0.5) * (dirtAtlas.top.v1 - dirtAtlas.top.v0), 5);
+      expect(u).toBeCloseTo(p.x / W + 0.5, 5);
+      expect(v).toBeCloseTo(dirtAtlas.top.v0 + (p.z / W + 0.5) * (dirtAtlas.top.v1 - dirtAtlas.top.v0), 5);
       expect(v).toBeGreaterThanOrEqual(dirtAtlas.top.v1 - 1e-6);
     }
   });
@@ -82,7 +85,7 @@ describe('garden dirt tile (the owner\'s picture)', () => {
       foot.sort((a, b) => Math.atan2(a.p.z, a.p.x) - Math.atan2(b.p.z, b.p.x));
       for (let i = 0; i < foot.length; i++) {
         const next = foot[(i + 1) % foot.length];
-        const walked = next.p.distanceTo(foot[i].p) / T.body;
+        const walked = next.p.distanceTo(foot[i].p) / W;
         expect(Math.abs(next.u - foot[i].u)).toBeLessThanOrEqual(walked * 1.02 + 1e-6);
       }
     }
@@ -102,13 +105,23 @@ describe('garden dirt tile (the owner\'s picture)', () => {
     }
   });
 
-  it('keeps its corner as round as the picture\'s', () => {
-    const corner = DIRT.picture.corner * T.body;
+  it('keeps its corner as round as the grass tile\'s', () => {
+    const corner = TILE.image.topRadius;
     // The point of the outline on the diagonal sits the corner's radius in from the square's corner.
     const top = vertices(block(false).geometry).filter((x) => x.n.y > 0.99 && x.p.x > 0 && x.p.z > 0);
     const far = Math.max(...top.map((x) => x.p.x + x.p.z));
-    expect(far).toBeCloseTo(T.body - 2 * corner + 2 * corner * Math.SQRT1_2, 3);
+    expect(far).toBeCloseTo(W - 2 * corner + 2 * corner * Math.SQRT1_2, 3);
   });
+
+  it('has the same size as the grass tile, so the two can stand in any cell side by side', () => {
+    // The owner, 2026-11-25: if the dirt tile is used, it must be the grass tile's size.
+    const dirt = boxOf(buildDirtTile(false, false)).getSize(new THREE.Vector3());
+    const grass = boxOf(buildFloorTile(false, false)).getSize(new THREE.Vector3());
+    expect(dirt.x).toBeCloseTo(grass.x, 3);
+    expect(dirt.z).toBeCloseTo(grass.z, 3);
+    expect(dirt.y).toBeCloseTo(grass.y, 3);
+  });
+
 });
 
 describe('garden dirt tile, modelled in code (kept as a choice)', () => {
