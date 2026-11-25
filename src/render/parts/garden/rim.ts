@@ -1,21 +1,20 @@
 /**
  * Garden board: the rim.
  *
- * `buildRim` (the default, under the robot theme's name) is the owner's picture `03-rim-vines`
- * itself: corners, plain braid and decorated pieces cut from it into `rim-atlas.webp`
- * (`assets/turnflock/garden/board/rim/build-rim.py`), laid flat just above the tiles as a nine-part
- * frame that fits every board from 4×4 to 8×8 without stretching. Where the pieces go is worked
- * out in `layout.ts` (`rimQuads`).
+ * `buildRim` (the default, under the robot theme's name) is modelled in code after `03-rim-vines`:
+ * one compact rope of three thick glossy strands twisted tightly round a core, round corners, with
+ * leaves, vines and white flowers at fixed places and grass growing against its inside.
  *
- * `buildRimModel` is the earlier rim modelled in code: a braid of thin glossy twigs with leaves,
- * vines and white flowers at fixed places, and grass growing against its inside. Kept as a choice.
+ * `buildRimImage` is the owner's picture itself, cut into a nine-part frame (`rim-atlas.webp`,
+ * `assets/turnflock/garden/board/rim/build-rim.py`, laid out by `rimQuads` in `layout.ts`). Kept as
+ * a choice; the owner preferred the modelled rim in the game (2026-11-24).
  *
  * Sizes and colours: `data/themes/garden/rim.json`. Design: `design/themes/garden-board-rim.md`.
  */
 import * as THREE from 'three';
 import RIM from '../../../../data/themes/garden/rim.json';
 import UNDER from '../../../../data/themes/garden/underlay.json';
-import { Mesher, mergeAll, once, plainMaterial, shade, shadowed, tube } from './geometry';
+import { Mesher, mergeAll, once, shade, shadowed, tube } from './geometry';
 import { painted } from './paint';
 import { boardFootprint, braidTwists, rimDecorLayout, rimPath, rimQuads, RoundedPath, seeded, type DecorPlace, type RimQuad } from './layout';
 import { furMesh } from './grass';
@@ -76,6 +75,15 @@ export function barkTexture(): THREE.Texture | null {
   }, true);
 }
 
+/**
+ * The leaves, vines and flowers: their own colours, lit softly and with little reflection of the
+ * surroundings, so they keep the reference's bright yellow-green and white.
+ */
+export const decorMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55, envMapIntensity: 0.25, side: THREE.DoubleSide });
+
+/** The leaves and vines: as `decorMaterial`, tinted (`decor.leafTint`) so the scene's cool light leaves them as fresh as the reference. */
+export const leafMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.5, envMapIntensity: 0.25, side: THREE.DoubleSide, color: new THREE.Color().setRGB(...(G.decor.leafTint as [number, number, number])), emissive: new THREE.Color(G.decor.leafGlow) });
+
 /** The glossy bark of the twigs. */
 export const barkMaterial = new THREE.MeshPhysicalMaterial({ map: barkTexture(), vertexColors: true, roughness: G.rim.gloss.roughness, clearcoat: G.rim.gloss.clearcoat, clearcoatRoughness: G.rim.gloss.clearcoatRoughness });
 
@@ -85,68 +93,59 @@ export function braidCentre(path: RoundedPath, s: number): { p: THREE.Vector3; o
   return { p: new THREE.Vector3(q.x, G.rim.centreY, q.z), out: new THREE.Vector3(q.nx, 0, q.nz) };
 }
 
-/** How far the braid reaches from its centre line: the bundles' twist plus a bundle's own reach. */
-export const BRAID_REACH = G.rim.twist + G.rim.bundleRadius + G.rim.twigRadius;
+/** How far the braid reaches sideways from its centre line (half the rim's width). */
+export const BRAID_REACH = G.rim.radius * (G.rim.strandOffset + G.rim.strandRadius);
 
-/** A fixed pseudo-random number in [0, 1) for twig `k`, so every twig has its own, unchanging thickness. */
-export const twigJitter = (k: number): number => {
-  const x = Math.sin(k * 127.1 + 311.7) * 43758.5453;
-  return x - Math.floor(x);
-};
+/** How high the braid's top sits above its centre line. */
+export const BRAID_TOP = BRAID_REACH * G.rim.flatten;
 
 /**
- * The braid, after `03-rim-vines`: `strands` bundles twisted round the rim's centre line, each a
- * bundle of `twigsPerBundle` thin twigs twisting round the bundle's own centre, `fineTwigs` very
- * thin twigs winding the other way over the whole braid, and a core of the same bark so no gap
- * shows through. Every twist count round the rim is a whole number, so the braid closes without a seam
- * on every board size. Vertex colours brighten the upper side of each twig, which with the glossy
- * bark material gives the shine of the reference.
+ * The braid, after `03-rim-vines`: one compact rope. `strands` thick strands twist tightly round
+ * the rim's centre line, overlapping so no gap shows between them, round a core of the same bark;
+ * each strand has `ridges` shallow fibre grooves that turn with it. The rope is flattened a little
+ * (`flatten`) and keeps to the rim's width. The twist count round the rim is a whole number, so
+ * the braid closes without a seam on every board size. Vertex colours darken where the strands
+ * meet and brighten their upper side, which with the glossy bark gives the reference's shine.
  */
 export function braidGeometry(path: RoundedPath): THREE.BufferGeometry {
   const r = G.rim;
   const m = new Mesher();
   const L = path.length;
   const twists = braidTwists(L);
-  const twigTurns = Math.max(1, Math.round(L / r.twigPitch));
-  const fineTurns = Math.max(1, Math.round(L / r.finePitch));
   const samples = Math.ceil(L * r.perUnit);
   const bark = Math.max(1, Math.round(L / r.barkRepeat));
   const up = new THREE.Vector3(0, 1, 0);
-  const tone = (around: number): THREE.Color => shade(0.74 + 0.34 * Math.max(0, around) ** 0.8);
-  let twig = 0;
-  for (let k = 0; k < r.strands; k++) {
-    for (let j = 0; j < r.twigsPerBundle; j++) {
-      const points: THREE.Vector3[] = [];
-      const radii: number[] = [];
-      const own = twigJitter(twig);
-      for (let i = 0; i < samples; i++) {
-        const { p, out } = braidCentre(path, (L * i) / samples);
-        const theta = Math.PI * 2 * ((twists * i) / samples + k / r.strands);
-        const phi = Math.PI * 2 * ((twigTurns * i) / samples + j / r.twigsPerBundle + k * 0.17);
-        const bundle = p.addScaledVector(out, Math.cos(theta) * r.twist).addScaledVector(up, Math.sin(theta) * r.twist * r.flatten);
-        points.push(bundle.addScaledVector(out, Math.cos(phi) * r.bundleRadius).addScaledVector(up, Math.sin(phi) * r.bundleRadius * 0.9));
-        radii.push(r.twigRadius * (0.86 + 0.28 * own) * (1 + 0.07 * Math.sin(Math.PI * 2 * ((7 + j) * i / samples) + own * 6)));
+  const R = r.radius;
+  const strandR = R * r.strandRadius;
+  const offset = R * r.strandOffset;
+  for (let k = 0; k <= r.strands; k++) {
+    const isCore = k === r.strands;
+    const rows: number[][] = [];
+    for (let i = 0; i <= samples; i++) {
+      const s = (L * (i % samples)) / samples;
+      const { p, out } = braidCentre(path, s);
+      const theta = Math.PI * 2 * ((twists * i) / samples + k / r.strands);
+      // The strand's centre, and the direction from the rope's centre to it (for the shade between strands).
+      const toStrand = out.clone().multiplyScalar(Math.cos(theta)).addScaledVector(up, Math.sin(theta) * r.flatten);
+      const centre = isCore ? p : p.clone().addScaledVector(out, Math.cos(theta) * offset).addScaledVector(up, Math.sin(theta) * offset * r.flatten);
+      const radius = isCore ? R * r.core : strandR;
+      const row: number[] = [];
+      const radial = isCore ? r.coreRadial : r.radial;
+      for (let j = 0; j <= radial; j++) {
+        const phi = (j / radial) * Math.PI * 2;
+        // Round the strand in the plane across the rim: outward and up.
+        const dir = out.clone().multiplyScalar(Math.cos(phi)).addScaledVector(up, Math.sin(phi));
+        const ridge = isCore ? 1 : 1 - r.ridgeDepth * (0.5 + 0.5 * Math.cos(r.ridges * (phi - theta * 2)));
+        const pos = centre.clone().addScaledVector(out, Math.cos(phi) * radius * ridge).addScaledVector(up, Math.sin(phi) * radius * ridge * r.flatten);
+        const normal = out.clone().multiplyScalar(Math.cos(phi) * r.flatten).addScaledVector(up, Math.sin(phi)).normalize();
+        const facing = isCore ? 0 : Math.max(-1, Math.min(1, dir.dot(toStrand.clone().normalize())));
+        const light = (0.66 + 0.4 * Math.max(0, normal.y) ** 0.8) * (0.8 + 0.2 * (0.5 + 0.5 * facing)) * (0.93 + 0.07 * ridge);
+        row.push(m.vertex(pos, normal, (i / samples) * bark, j / radial + k * 0.29, shade(Math.min(1.08, light))));
       }
-      tube(m, points, radii, r.radial, (i) => (i / samples) * bark, own, (_, around) => tone(around), true);
-      twig++;
+      rows.push(row);
     }
+    m.grid(rows, true);
   }
-  // Fine twigs, winding the other way over the outside of the braid.
-  for (let f = 0; f < r.fineTwigs; f++) {
-    const points: THREE.Vector3[] = [];
-    for (let i = 0; i < samples; i++) {
-      const { p, out } = braidCentre(path, (L * i) / samples);
-      const psi = Math.PI * 2 * (-(fineTurns * i) / samples + f / r.fineTwigs);
-      // Keep them to the visible upper half, where the reference shows its fine twigs.
-      const a = Math.PI / 2 + 0.95 * Math.sin(psi);
-      points.push(p.addScaledVector(out, Math.cos(a) * r.fineReach).addScaledVector(up, Math.sin(a) * r.fineReach * r.flatten * 1.05));
-    }
-    tube(m, points, points.map(() => r.fineRadius), r.fineRadial, (i) => (i / samples) * bark, f * 0.31, (_, around) => tone(around), true);
-  }
-  const core: THREE.Vector3[] = [];
-  const coreSamples = Math.ceil(samples / 3);
-  for (let i = 0; i < coreSamples; i++) core.push(braidCentre(path, (L * i) / coreSamples).p);
-  tube(m, core, core.map(() => r.core), 6, (i) => (i / coreSamples) * bark * 0.5, 0, () => shade(0.78), true);
   return m.build();
 }
 
@@ -183,9 +182,10 @@ export function leafGeometry(): THREE.BufferGeometry {
   const dark = new THREE.Color(C.leafDark);
   for (let i = 0; i <= d.leafSteps; i++) {
     const t = i / d.leafSteps;
-    const half = (d.leafWidth / 2) * Math.sin(Math.PI * t ** 0.8) ** 0.6;
+    // A plump oval leaf with a short point, as in the reference.
+    const half = (d.leafWidth / 2) * Math.sin(Math.PI * t ** 0.75) ** 0.45;
     rows.push(across.map((a) => {
-      const y = -0.18 * d.leafLength * t * t + (1 - a * a) * half * 0.45 + 0.02 * Math.sin(Math.PI * t);
+      const y = -0.12 * d.leafLength * t * t + (1 - a * a) * half * 0.6 + 0.03 * Math.sin(Math.PI * t);
       const c = leaf.clone().lerp(light, (1 - Math.abs(a)) * 0.55 * Math.sin(Math.PI * t)).lerp(dark, (1 - t) ** 3 * 0.6 + Math.abs(a) * 0.15);
       return m.vertex(new THREE.Vector3(d.leafLength * t, y, a * half), new THREE.Vector3(0, 1, 0), t, a, c);
     }));
@@ -204,9 +204,10 @@ export function petalGeometry(): THREE.BufferGeometry {
   const deep = new THREE.Color(C.petalShade);
   for (let i = 0; i <= 6; i++) {
     const t = i / 6;
-    const half = (d.petalWidth / 2) * Math.sqrt(Math.max(0, 1 - (1.7 * t - 1) ** 2)) ** 0.7 + 0.004;
+    // A round, puffy petal.
+    const half = (d.petalWidth / 2) * Math.sqrt(Math.max(0, 1 - (1.8 * t - 1) ** 2)) ** 0.5 + 0.004;
     rows.push(across.map((a) => {
-      const y = 0.22 * d.petal * t * t + a * a * half * 0.3;
+      const y = 0.18 * d.petal * t * t + (1 - a * a) * half * 0.35;
       return m.vertex(new THREE.Vector3(d.heart * 0.5 + d.petal * t, y, a * half), new THREE.Vector3(0, 1, 0), t, a, deep.clone().lerp(white, Math.min(1, t * 1.6)));
     }));
   }
@@ -249,7 +250,7 @@ export function vinePoints(place: DecorPlace, path: RoundedPath): THREE.Vector3[
   const t = along ? place.x : place.z;
   const from = Math.max(-half, t - d.vineLength / 2);
   const to = Math.min(half, t + d.vineLength / 2);
-  const reach = BRAID_REACH + 0.004;
+  const reach = BRAID_REACH + 0.006;
   const points: THREE.Vector3[] = [];
   const steps = 36;
   for (let i = 0; i <= steps; i++) {
@@ -259,7 +260,7 @@ export function vinePoints(place: DecorPlace, path: RoundedPath): THREE.Vector3[
     const base = along ? new THREE.Vector3(at, r.centreY, place.z) : new THREE.Vector3(place.x, r.centreY, at);
     base.x += place.nx * Math.cos(theta) * reach;
     base.z += place.nz * Math.cos(theta) * reach;
-    base.y += Math.sin(theta) * reach * (r.flatten + 0.25);
+    base.y += Math.sin(theta) * reach * (r.flatten + 0.06);
     points.push(base);
   }
   return points;
@@ -274,11 +275,11 @@ export function decoration(place: DecorPlace): THREE.Group {
   const along = new THREE.Vector3(place.ax, 0, place.az).multiplyScalar(place.flip ? -1 : 1);
   const basis = new THREE.Matrix4().makeBasis(out, new THREE.Vector3(0, 1, 0), along);
   group.quaternion.setFromRotationMatrix(basis);
-  group.position.set(place.x, r.centreY + (r.twist + r.bundleRadius) * r.flatten + r.twigRadius * 0.6, place.z).addScaledVector(out, r.twist * 0.35);
+  group.position.set(place.x, r.centreY + BRAID_TOP * 0.92, place.z).addScaledVector(out, BRAID_REACH * 0.25);
   const leaf = once('garden-leaf', leafGeometry);
   /** A leaf pointing `angle` degrees from outward towards "along", tipped up by `lift` degrees, scaled by `size`. */
   const addLeaf = (angle: number, lift: number, size: number, dx = 0, dz = 0): void => {
-    const mesh = new THREE.Mesh(leaf, plainMaterial);
+    const mesh = new THREE.Mesh(leaf, leafMaterial);
     mesh.scale.setScalar(size);
     mesh.rotation.set(0, (-angle * Math.PI) / 180, (lift * Math.PI) / 180, 'YXZ');
     mesh.position.set(dx, 0, dz);
@@ -295,9 +296,10 @@ export function decoration(place: DecorPlace): THREE.Group {
     addLeaf(-150, 4, 0.8, 0.02, -0.08);
     addLeaf(120, 6, 0.9, 0.02, 0.08);
     addLeaf(40, 6, 0.75, 0.04, 0.12);
-    const flower = new THREE.Mesh(once('garden-flower', flowerGeometry), plainMaterial);
-    flower.position.set(-0.02, 0.04, 0);
-    flower.rotation.z = -0.18;
+    const flower = new THREE.Mesh(once('garden-flower', flowerGeometry), decorMaterial);
+    flower.position.set(-0.02, 0.07, 0);
+    flower.scale.setScalar(G.decor.flowerScale);
+    flower.rotation.z = -0.12;
     group.add(flower);
   }
   return group;
@@ -309,7 +311,7 @@ export function decoration(place: DecorPlace): THREE.Group {
  * board from 4×4 to 8×8, square or not: the braid follows the footprint and twists a whole
  * number of times, the decorations sit at fixed fractions of each side.
  */
-export function buildRimModel(cols: number, rows: number, gap: number): THREE.Group {
+export function buildRim(cols: number, rows: number, gap: number): THREE.Group {
   const path = rimPath(cols, rows, gap);
   const frame = new THREE.Group();
   frame.add(new THREE.Mesh(braidGeometry(path), barkMaterial));
@@ -321,7 +323,7 @@ export function buildRimModel(cols: number, rows: number, gap: number): THREE.Gr
     const points = vinePoints(place, path);
     tube(vines, points, points.map((_, i) => G.decor.vineRadius * (1 - 0.5 * Math.abs(i / (points.length - 1) - 0.5) * 2) + 0.004), 5, () => 0, 0, (_, around) => vineTone.clone().multiplyScalar(0.8 + 0.25 * Math.max(0, around)), false);
   }
-  frame.add(new THREE.Mesh(vines.build(), plainMaterial));
+  frame.add(new THREE.Mesh(vines.build(), leafMaterial));
   return shadowed(frame);
 }
 
@@ -428,7 +430,7 @@ export function rimImageGeometry(quads: readonly RimQuad[]): THREE.BufferGeometr
  * stretched); the leaves and flowers are pieces of the picture at fixed places along each side
  * (`rimDecorSlots`). Fits every board from 4×4 to 8×8, square or not. One mesh, one material.
  */
-export function buildRim(cols: number, rows: number, gap: number): THREE.Group {
+export function buildRimImage(cols: number, rows: number, gap: number): THREE.Group {
   const frame = new THREE.Group();
   const mesh = new THREE.Mesh(rimImageGeometry(rimQuads(cols, rows, gap)), rimMaterial);
   mesh.name = 'garden-rim';
