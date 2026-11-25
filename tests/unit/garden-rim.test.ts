@@ -6,7 +6,7 @@ import RIM from '../../data/themes/garden/rim.json';
 import UNDER from '../../data/themes/garden/underlay.json';
 import { boardFootprint, boardPixels, buildFloorTile, buildRim, buildUnderlay, rimDecorLayout } from '../../src/render/parts/garden/board';
 import { braidTwists, RIM_PX, rimDecorSlots, rimPath, rimQuads, RoundedPath, seeded, sideSpec, type Side } from '../../src/render/parts/garden/layout';
-import { buildRimModel } from '../../src/render/parts/garden/rim';
+import { buildRimImage } from '../../src/render/parts/garden/rim';
 import { boxOf, outwardShare, SIZES } from './garden-helpers';
 
 const GAP = config.board.grid.gap;
@@ -21,10 +21,10 @@ function run(side: Side, cols: number, rows: number): { from: number; to: number
   return { from: spec.cornerStart / RIM_PX, to: length - (spec.length - spec.cornerEnd) / RIM_PX, length };
 }
 
-describe("garden rim as the owner's picture (buildRim)", () => {
+describe("garden rim as the owner's picture (buildRimImage)", () => {
   it('is one flat mesh, facing up, just above the tiles', () => {
     for (const [cols, rows] of SIZES) {
-      const rim = buildRim(cols, rows, GAP);
+      const rim = buildRimImage(cols, rows, GAP);
       const meshes: THREE.Mesh[] = [];
       rim.traverse((n) => {
         if (n instanceof THREE.Mesh) meshes.push(n);
@@ -106,7 +106,7 @@ describe("garden rim as the owner's picture (buildRim)", () => {
   it('costs a few dozen triangles', () => {
     for (const [cols, rows] of SIZES) {
       let tris = 0;
-      buildRim(cols, rows, GAP).traverse((n) => {
+      buildRimImage(cols, rows, GAP).traverse((n) => {
         if (n instanceof THREE.Mesh) tris += n.geometry.index!.count / 3;
       });
       expect(tris).toBeLessThan(120);
@@ -114,9 +114,9 @@ describe("garden rim as the owner's picture (buildRim)", () => {
   });
 });
 
-describe('garden rim modelled in code (buildRimModel), underlay and board', () => {
+describe('garden rim modelled in code (buildRim, the default), underlay and board', () => {
   it('faces outward', () => {
-    for (const part of [buildRimModel(6, 6, GAP), buildRimModel(4, 7, GAP), buildUnderlay(5, 5, GAP, true)]) {
+    for (const part of [buildRim(6, 6, GAP), buildRim(4, 7, GAP), buildUnderlay(5, 5, GAP, true)]) {
       const { agree, total } = outwardShare(part);
       expect(total).toBeGreaterThan(0);
       expect(agree / total).toBeGreaterThan(0.97);
@@ -130,7 +130,7 @@ describe('garden rim modelled in code (buildRimModel), underlay and board', () =
       const tilesD = rows * TILE.tile.size + (rows - 1) * GAP;
       expect(innerW).toBeGreaterThan(tilesW);
       expect(innerD).toBeGreaterThan(tilesD);
-      const braid = (buildRimModel(cols, rows, GAP).children[0] as THREE.Mesh).geometry;
+      const braid = (buildRim(cols, rows, GAP).children[0] as THREE.Mesh).geometry;
       braid.computeBoundingBox();
       const box = braid.boundingBox!;
       // The braid stays within the outside of the footprint.
@@ -138,8 +138,16 @@ describe('garden rim modelled in code (buildRimModel), underlay and board', () =
       expect(box.max.z).toBeLessThanOrEqual(outerD / 2 + 1e-3);
       // ...and keeps clear of the tiles.
       const pos = braid.getAttribute('position');
+      // The tiles' outline: the cells' rectangle less the gap round each tile, with the tile's rounded corners.
+      const inset = (TILE.tile.size - TILE.tile.body) / 2;
+      const hw = tilesW / 2 - inset;
+      const hd = tilesD / 2 - inset;
+      const rad = TILE.tile.radius;
       for (let i = 0; i < pos.count; i++) {
-        const inside = Math.abs(pos.getX(i)) < tilesW / 2 && Math.abs(pos.getZ(i)) < tilesD / 2;
+        const x = Math.abs(pos.getX(i));
+        const z = Math.abs(pos.getZ(i));
+        const corner = x > hw - rad && z > hd - rad;
+        const inside = x < hw && z < hd && (!corner || Math.hypot(x - (hw - rad), z - (hd - rad)) < rad);
         expect(inside).toBe(false);
       }
       expect(box.min.y).toBeGreaterThanOrEqual(-1e-3);
@@ -174,8 +182,8 @@ describe('garden rim modelled in code (buildRimModel), underlay and board', () =
   it('decorations sit at the same places every time', () => {
     expect(rimDecorLayout(6, 6, GAP)).toEqual(rimDecorLayout(6, 6, GAP));
     expect(rimDecorLayout(6, 6, GAP)).toHaveLength(RIM.decor.clusters.length);
-    const a = buildRimModel(5, 7, GAP);
-    const b = buildRimModel(5, 7, GAP);
+    const a = buildRim(5, 7, GAP);
+    const b = buildRim(5, 7, GAP);
     const points = (o: THREE.Object3D): number[] => {
       o.updateMatrixWorld(true);
       return o.children.filter((c) => c instanceof THREE.Group).map((c) => c.position.toArray()).flat();
@@ -228,7 +236,7 @@ describe('garden rim modelled in code (buildRimModel), underlay and board', () =
     expect(px.height).toBeCloseTo(outerD * px.unit, 9);
   });
 
-  it('a whole 8x8 board with the picture rim costs no more than the robot board', () => {
+  it('a whole 8x8 board stays within the triangle budget', () => {
     let tris = 0;
     const board = new THREE.Group();
     board.add(buildUnderlay(8, 8, GAP), buildRim(8, 8, GAP));
@@ -236,8 +244,8 @@ describe('garden rim modelled in code (buildRimModel), underlay and board', () =
     board.traverse((n) => {
       if (n instanceof THREE.Mesh) tris += (n.geometry.index ? n.geometry.index.count : n.geometry.getAttribute('position').count) / 3;
     });
-    // The robot board of this size has 19,596. The picture rim is a few dozen triangles (the code braid was about 39,000).
-    expect(tris).toBeLessThan(19600);
+    // The robot board of this size has 19,596; the compact braid is about 28,000 of these, in one draw call.
+    expect(tris).toBeLessThan(50000);
   });
   it('gives the same numbers for the same seed', () => {
     const a = seeded(42);

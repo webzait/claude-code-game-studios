@@ -1,34 +1,31 @@
 {
   "$comment": "Garden theme board. Sizes in cells (1 cell = 56 px on the asset sheet), the same units as data/parts.json. Overview: design/themes/garden-board.md. Braided twig rim with leaves, vines and flowers. Reference: 03-rim-vines, 01-board-full. Owner: the rim session.",
   "rim": {
+    "$comment": "The rim modelled in code (buildRim): one compact rope of three thick strands twisted tightly round a core, after 03-rim-vines. radius: half the rope's width; strandRadius, strandOffset and core are shares of it (offset + strand = 1, so the rope keeps to its width). pitch: cells per full twist (rounded so the braid closes). ridges/ridgeDepth: the fibre grooves along each strand.",
     "margin": 0.13,
     "width": 0.58,
-    "cornerRadius": 0.6,
-    "strands": 3,
-    "twist": 0.168,
+    "cornerRadius": 1.0,
+    "centreY": 0.25,
+    "radius": 0.29,
     "flatten": 0.8,
-    "centreY": 0.262,
-    "pitch": 1.6,
-    "core": 0.2,
-    "perUnit": 7,
-    "radial": 6,
-    "barkRepeat": 0.6,
+    "strands": 3,
+    "strandRadius": 0.58,
+    "strandOffset": 0.42,
+    "core": 0.5,
+    "pitch": 3.0,
+    "ridges": 4,
+    "ridgeDepth": 0.05,
+    "perUnit": 9,
+    "radial": 12,
+    "barkRepeat": 0.7,
     "texture": 1024,
     "seed": 3,
-    "bundleRadius": 0.05,
-    "twigRadius": 0.068,
-    "twigsPerBundle": 4,
-    "twigPitch": 0.8,
-    "fineTwigs": 3,
-    "fineRadius": 0.02,
-    "fineReach": 0.248,
-    "finePitch": 2.3,
-    "fineRadial": 4,
     "gloss": {
-      "roughness": 0.3,
-      "clearcoat": 0.9,
-      "clearcoatRoughness": 0.16
-    }
+      "roughness": 0.38,
+      "clearcoat": 0.6,
+      "clearcoatRoughness": 0.25
+    },
+    "coreRadial": 8
   },
   "image": {
     "$comment": "The rim as the owner's picture (buildRim): pieces of 03-rim-vines from rim-atlas.webp, laid flat at `height`. pxPerCell: source pixels (in 03-rim-vines) per cell. decorOrder: the decorated pieces, most important first; on a board too small for all of them the last ones are left out.",
@@ -48,13 +45,13 @@
     ]
   },
   "decor": {
-    "leafLength": 0.46,
-    "leafWidth": 0.3,
+    "leafLength": 0.56,
+    "leafWidth": 0.44,
     "leafSteps": 7,
     "petal": 0.2,
-    "petalWidth": 0.14,
-    "heart": 0.07,
-    "vineRadius": 0.016,
+    "petalWidth": 0.24,
+    "heart": 0.1,
+    "vineRadius": 0.02,
     "vineLength": 0.95,
     "vineTurns": 1.1,
     "minGap": 0.45,
@@ -113,15 +110,22 @@
         "kind": "leaves",
         "flip": false
       }
-    ]
+    ],
+    "flowerScale": 1.4,
+    "leafTint": [
+      1.05,
+      1.05,
+      0.3
+    ],
+    "leafGlow": "#2E4A00"
   },
   "colors": {
-    "bark": "#E48A2C",
-    "barkLight": "#FFC25A",
-    "barkDark": "#AE5A16",
-    "leaf": "#92D62A",
-    "leafLight": "#D2F46E",
-    "leafDark": "#4E9A14",
+    "bark": "#DE7F28",
+    "barkLight": "#FFB64C",
+    "barkDark": "#A4521A",
+    "leaf": "#A3E32C",
+    "leafLight": "#E6FB7A",
+    "leafDark": "#62AD18",
     "vine": "#7CC229",
     "petal": "#FFFFFF",
     "petalShade": "#E6E4EE",

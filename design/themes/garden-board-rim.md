@@ -129,3 +129,34 @@ other change was needed: `fuse` keeps a part's `customDepthMaterial`, so the rim
 the picture, and the game draws every frame, so the pictures appear as soon as they have loaded.
 Evidence: `production/qa/evidence/garden-board/rim/in-game-390x844-*.webp` (levels 1, 3, 5, 7, 11:
 4×4, 5×4, 5×5, 6×6, 6×5, on a 390×844 phone at 3× pixel density).
+
+## The rim in code again: one compact braid (2026-11-25)
+
+The owner, after seeing the picture rim in the game: "The rim is not nice this way. It must be a
+code variant. Make it one compact whole." So `buildRim` (the default, and what the game uses) is
+modelled in code again, and the picture rim stays as a choice under `buildRimImage`.
+
+Unlike the first code braid (twelve thin twigs and fine twigs over them, which read as loose and
+spiky), the braid is now **one compact rope**:
+
+- Three thick strands (`strandRadius` 0.58 of the rope's half-width), twisted round the rim's
+  centre line at `strandOffset` 0.42, so they overlap and no gap shows between them, round a core of
+  the same bark. Offset plus strand radius is 1, so the rope keeps exactly to the rim's width (0.58).
+- A long twist (`pitch` 3 cells per full turn: a strand crosses the top about once a cell), as the
+  strands run in `03-rim-vines`; four shallow fibre grooves along each strand turn with it.
+- Round corners as in the picture (`cornerRadius` 1.0 on the centre line); the rope stays clear of
+  the corner tiles (tested against the tiles' rounded outline).
+- Warmer, more saturated orange bark (sampled against the picture), clearcoat 0.6; vertex shading
+  darkens where strands meet and brightens their tops.
+- Leaves plumper and larger, flowers 1.4× larger with round petals; leaves and vines have their own
+  material (`leafMaterial`, tinted and slightly self-lit) so the game's cool light does not grey them.
+
+Cost: rim 6×6 27,186 triangles, 4 draw calls (bark, flowers, leaves, rim grass); board 8×8 fused
+40,254 triangles, 7 draw calls (robot 19,596 and 3). Nothing added to the file size.
+
+Evidence: `production/qa/evidence/garden-board/rim/compact-*` (next to the reference, five board
+sizes, and in the game on 390×844 at 3× density, levels 1, 3, 5, 7, 11).
+
+Still different from the reference: the leaves read paler and greyer in the game's light than the
+picture's bright yellow-green; the rope's strands are smoother and show fewer fine fibres; the
+picture's near side is thicker (it shows the braid's front), the model is the same all round.
