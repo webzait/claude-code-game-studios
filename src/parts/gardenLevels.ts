@@ -5,6 +5,8 @@ import { drawTrailIn, renderLevels, type LevelsModel, type MapNode } from '../ui
 import { improvableLevels } from '../ui/levelPath';
 import { applyGardenLevels, GARDEN_LEVELS } from '../ui/themes/garden/levels';
 import '../ui/themes/garden/tf-levels-garden.css';
+import '../ui/themes/garden/garden-scene.css';
+import { applyGardenDecor } from '../ui/themes/garden/gardenArt';
 import './gardenLevels.css';
 import '../ui/themes/garden/tf-garden-done.css';
 import { gardenStars, showGardenDone, type GardenDoneView } from '../ui/themes/garden/gardenDone';
@@ -70,19 +72,33 @@ const SCREEN = (() => {
   return indexHtml.slice(start, end).replace('./assets/turnflock/brand/logo.webp', logoUrl);
 })();
 
+/** The game's backdrop (index.html #backdrop): the scene and the decoration layer that sit behind every screen. */
+const BACKDROP = (() => {
+  const open = indexHtml.indexOf('<div id="backdrop"');
+  const start = indexHtml.indexOf('>', open) + 1;
+  const end = indexHtml.lastIndexOf('</div>', indexHtml.indexOf('<div id="app">'));
+  return indexHtml.slice(start, end);
+})();
+
 let made = 0;
 const phones: HTMLElement[] = [];
 
 /**
- * One phone: the game's screen at `w`×`h`, rendered by the game's own code, then its ids
- * renamed so the next phone can be rendered the same way.
+ * One phone as in the game: the game's backdrop (garden scene and edge decor) with the game's
+ * level screen over it, at `w`×`h`, rendered by the game's own code. Its ids are then renamed
+ * so the next phone can be rendered the same way. Returns the level screen.
  */
 function phone(host: HTMLElement, s: Situation, w: number, h: number): HTMLElement {
-  host.insertAdjacentHTML('beforeend', SCREEN);
-  const screen = host.lastElementChild as HTMLElement;
+  const frame = document.createElement('div');
+  frame.className = 'tf-decor-screen tf-garden-frame';
+  frame.style.width = `${w}px`;
+  frame.style.height = `${h}px`;
+  frame.innerHTML = BACKDROP;
+  applyGardenDecor(frame.querySelector('.tf-decor-layer')!);
+  host.appendChild(frame);
+  frame.insertAdjacentHTML('beforeend', SCREEN);
+  const screen = frame.lastElementChild as HTMLElement;
   screen.classList.remove('screen');
-  screen.style.width = `${w}px`;
-  screen.style.height = `${h}px`;
   applyGardenLevels(screen);
   // Sizes the game sets in style.css for #map, which the sheet does not load.
   for (const b of Array.from(screen.querySelectorAll<HTMLElement>('.tf-levels-head .tf-btn, .tf-levels-pager .tf-btn'))) b.setAttribute('style', '--w:46px;--h:40px;--d:6px;--r:15px');
@@ -91,7 +107,8 @@ function phone(host: HTMLElement, s: Situation, w: number, h: number): HTMLEleme
   renderLevels(model(s));
   made += 1;
   for (const node of Array.from(screen.querySelectorAll<HTMLElement>('[id]'))) node.id = `garden-${made}-${node.id}`;
-  screen.id = `garden-levels-${made}`;
+  screen.id = `garden-levels-${made}-map`;
+  frame.id = `garden-levels-${made}`;
   phones.push(screen);
   return screen;
 }
@@ -125,7 +142,7 @@ export function addGardenLevelCards(sheet: HTMLElement): void {
   };
 
   const states = card('garden-levels', 'Tuinthema · levelscherm (het pad)', 'tuinen van 20 levels · huidig + 5 vooruit · 2 gehaalde levels eronder · prieel aan het eind van een tuin',
-    'Dezelfde HTML en code als het spel (index.html + renderLevels); alleen het thema verschilt. Groen met vinkje = gehaald, geel = nu spelen (de enige knop op het pad), grijs met slot = komt nog. Het prieel sluit elke tuin van 20 levels af en verschijnt zodra het einde in zicht is. Achtergrond: jouw levelpad-achtergrond (25-backdrop-level-path), met jouw vogelhuisje (07) verder naar binnen zodat het op elke telefoon te zien is; 97 KB. Zolang het einde van de tuin niet in zicht is, staat het prieel klein aan de horizon.');
+    'Dezelfde HTML en code als het spel (index.html + renderLevels); alleen het thema verschilt. Groen met vinkje = gehaald, geel = nu spelen (de enige knop op het pad), grijs met slot = komt nog. Het prieel sluit elke tuin van 20 levels af en verschijnt zodra het einde in zicht is. Achtergrond: dezelfde als in het spel. Het levelscherm is doorzichtig en de spelachtergrond van de tuin (met vogelhuisjes, prieel, bloemenboog en randdecor) staat erachter, net als bij het robotthema.');
   fig(states, 'Nieuwe speler · level 1', { view: 'path', solved: 0, coins: 30 });
   fig(states, 'Onderweg · level 9', { view: 'path', solved: 8, coins: 240 });
   fig(states, 'Einde tuin in zicht · level 17', { view: 'path', solved: 16, coins: 485 });

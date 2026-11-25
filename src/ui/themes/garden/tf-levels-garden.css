@@ -5,20 +5,11 @@
    end of each garden of 20 levels. Values: data/themes/garden/levels.json (put on the screen by
    applyGardenLevels); the fallbacks below are the same values. Design: design/themes/garden-levels.md. */
 
-/* ---- The screen: the owner's level-path backdrop (25-backdrop-level-path): sky, fence and hedge on the
-   horizon, a calm lawn in the middle for the path, flowers at the edges. It covers the screen, anchored a
-   little above the middle so the horizon stays under the header on phones and tablets alike. Underneath,
-   the same sky and lawn in plain colours, for the moment before the picture is decoded. Another picture
-   can take its place through --tg-backdrop (a full background value, e.g. url(...)). ---- */
-[data-theme="garden"] .tf-levels-phone {
-  /* Its own layer, so the horizon gazebo (z-index -1) sits on this background, not under it. */
-  isolation: isolate;
-  color: var(--tg-ink, #2f4a1e);
-  background:
-    var(--tg-backdrop, url("./levels-backdrop.webp")) 50% 40% / cover no-repeat,
-    linear-gradient(180deg, var(--tg-sky-0, #3f9ff0) 0, var(--tg-sky-1, #7cc6fb) 22%, var(--tg-sky-2, #cdeeff) 35%,
-      var(--tg-lawn-0, #a6e060) 35%, var(--tg-lawn-1, #7fcd45) 65%, var(--tg-lawn-2, #5fb534) 100%);
-}
+/* ---- The screen: no background of its own. As in the robot theme, the level screen is transparent and
+   the game's own backdrop shows behind it (#backdrop: the garden scene and its edge decor, made by the
+   backdrop session in garden-scene.css), so the level screen and the puzzle screen share one garden.
+   Only the colour of the text is the garden's. ---- */
+[data-theme="garden"] .tf-levels-phone { isolation: isolate; color: var(--tg-ink, #2f4a1e); background: none; }
 
 /* ---- Header: the logo on the sky, white pills with a leaf-green edge. ---- */
 [data-theme="garden"] .tf-levels-logo { filter: drop-shadow(0 4px 6px rgba(30, 90, 40, .28)); }
@@ -172,17 +163,3 @@
 }
 /* The reached gazebo lies behind the player: a little smaller than the one ahead. */
 [data-theme="garden"] .tf-levels-step.is-finish.is-reached { width: calc(var(--s) * 1.55); height: calc(var(--s) * 1.55 * 408 / 360); }
-
-/* ---- The garden's goal on the horizon: the gazebo, small and far away, in the middle of the fence line,
-   while the path does not reach it yet. Once the end of the garden is in sight it leaves the horizon and
-   stands at the end of the path instead. It is placed on the backdrop's horizon: the backdrop covers the
-   screen (anchored at 40% height), so its drawn size is --tg-dh by --tg-dw, and its fence line sits at
-   --tg-hz-base of its height. Under everything else on the screen (z-index -1 in the screen's own layer). ---- */
-[data-theme="garden"] .tf-levels-p:has(> .tf-levels-body > .tf-levels-path:not([hidden])):not(:has(.tf-levels-step.is-finish:not(.is-reached))) .tf-levels-body::before {
-  --tg-dh: max(100cqh, 100cqw * 1645 / 956); --tg-dw: max(100cqw, 100cqh * 956 / 1645);
-  --tg-hz-w: calc(var(--tg-dw) * var(--tg-hz-width, .15));
-  content: ""; position: absolute; z-index: -1; pointer-events: none;
-  left: calc(50% - var(--tg-hz-w) / 2); width: var(--tg-hz-w); aspect-ratio: 360 / 408;
-  top: calc((100cqh - var(--tg-dh)) * .4 + var(--tg-dh) * var(--tg-hz-base, .372) - var(--tg-hz-w) * 408 / 360);
-  background: url("./levels-gazebo.webp") center bottom / contain no-repeat;
-}

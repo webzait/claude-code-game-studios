@@ -2,17 +2,6 @@
   "chapter": 20,
   "behind": 2,
   "ink": "#2f4a1e",
-  "sky": [
-    "#3f9ff0",
-    "#7cc6fb",
-    "#cdeeff"
-  ],
-  "lawn": [
-    "#a6e060",
-    "#7fcd45",
-    "#5fb534"
-  ],
-  "hedge": "#3f9a32",
   "rail": {
     "edge": "#8a97a8",
     "fill": "#e4e9f0"
@@ -37,9 +26,5 @@
   },
   "outline": "#4b5d72",
   "gazeboWidth": 2,
-  "dock": "#fffaf0",
-  "horizonGazebo": {
-    "width": 0.15,
-    "baseY": 0.372
-  }
+  "dock": "#fffaf0"
 }

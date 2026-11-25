@@ -1,6 +1,6 @@
 """Cuts a piece of artwork out of one of the owner's garden pictures (flat off-white background).
 
-Shared by build-garden-gazebo.py and build-garden-levels-backdrop.py. The artwork is not redrawn
+Used by build-garden-gazebo.py. The artwork is not redrawn
 or recoloured. What is done:
   1. The flat background is removed: every patch of pixels close to the background colour that
      touches the picture's edge, or is large (openings such as the gazebo's arches), becomes

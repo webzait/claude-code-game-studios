@@ -11,12 +11,9 @@ export const GARDEN_LEVELS: GardenLevels = garden;
  * The stylesheet carries the same values as fallbacks, so it also looks right without this.
  */
 export function gardenLevelsVars(config: GardenLevels): Record<string, string> {
-  const { sky, lawn, rail, done, current, locked } = config;
+  const { rail, done, current, locked } = config;
   return {
     '--tg-ink': config.ink,
-    '--tg-sky-0': sky[0], '--tg-sky-1': sky[1], '--tg-sky-2': sky[2],
-    '--tg-lawn-0': lawn[0], '--tg-lawn-1': lawn[1], '--tg-lawn-2': lawn[2],
-    '--tg-hedge': config.hedge,
     '--tg-rail-edge': rail.edge, '--tg-rail-fill': rail.fill,
     '--tg-done-top': done.top, '--tg-done-face': done.face, '--tg-done-deep': done.deep,
     '--tg-cur-top': current.top, '--tg-cur-face': current.face, '--tg-cur-deep': current.deep, '--tg-cur-ink': current.ink, '--tg-cur-glow': current.glow,
@@ -24,7 +21,6 @@ export function gardenLevelsVars(config: GardenLevels): Record<string, string> {
     '--tg-outline': config.outline,
     '--tg-gazebo-w': String(config.gazeboWidth),
     '--tg-dock': config.dock,
-    '--tg-hz-width': String(config.horizonGazebo.width), '--tg-hz-base': String(config.horizonGazebo.baseY),
   };
 }
 
