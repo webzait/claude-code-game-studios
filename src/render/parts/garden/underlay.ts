@@ -7,13 +7,14 @@ import TILE from '../../../../data/themes/garden/tile.json';
 import UNDER from '../../../../data/themes/garden/underlay.json';
 import { Mesher, once, outlineRect, plainMaterial, shadowed } from './geometry';
 import { fur, mottle, painted } from './paint';
-import { boardFootprint, RoundedPath, seeded } from './layout';
+import { boardFootprint, seeded } from './layout';
 import { imageTexture } from './rim';
 import bedUrl from '../../../../assets/turnflock/garden/board/bed/bed.webp';
-import fringeUrl from '../../../../assets/turnflock/garden/board/bed/fringe.webp';
+import bladesUrl from '../../../../assets/turnflock/garden/board/bed/blades.webp';
 
 const T = TILE.tile;
-const G = { underlay: UNDER.underlay, fringe: UNDER.fringe };
+const I = TILE.image;
+const G = { underlay: UNDER.underlay, blades: UNDER.blades };
 const C = UNDER.colors;
 
 /** The grass bed between the tiles, seen from above: deeper green, dense short blades; repeats every `bedRepeat` cells. */
@@ -30,23 +31,25 @@ export function bedTexture(): THREE.Texture | null {
 
 const bed = imageTexture(bedUrl, true);
 
-const fringe = imageTexture(fringeUrl, true);
-if (fringe.texture) fringe.texture.wrapT = THREE.ClampToEdgeWrapping;
+const blades = imageTexture(bladesUrl, true);
+if (blades.texture) blades.texture.wrapT = THREE.ClampToEdgeWrapping;
 
 /**
- * The blades standing along the inside of the rim (`fringe.webp`): see-through between the
- * blades (`alphaTest`), both faces drawn, matte and toned like the bed. Without a browser there is
- * no picture and the band is left out.
+ * The blade cards that make up the whole bed (`blades.webp`): see-through between the blades,
+ * with smooth cut edges where the renderer antialiases (`alphaToCoverage`), matte and toned like
+ * the tiles. Each card is darker at its root (vertex colours), as the blades in front shade it.
  */
-export const fringeMaterial = new THREE.MeshLambertMaterial({
-  map: fringe.texture,
-  alphaTest: G.fringe.alphaTest,
+export const bladeMaterial = new THREE.MeshLambertMaterial({
+  map: blades.texture,
+  alphaTest: G.blades.alphaTest,
+  alphaToCoverage: true,
   side: THREE.DoubleSide,
-  color: new THREE.Color(1, 1, 1).multiplyScalar(G.underlay.bedTone),
+  vertexColors: true,
+  color: new THREE.Color(1, 1, 1).multiplyScalar(G.blades.tone),
 });
 
-/** Settles once the grass bed picture (`bed.webp`, built by `assets/turnflock/garden/board/bed/build-bed.py`) has loaded. */
-export const bedReady: Promise<void> = Promise.all([bed.ready, fringe.ready]).then(() => undefined);
+/** Settles once the grass bed pictures (`bed.webp`, `blades.webp`, built by `assets/turnflock/garden/board/bed/build-bed.py`) have loaded. */
+export const bedReady: Promise<void> = Promise.all([bed.ready, blades.ready]).then(() => undefined);
 
 /**
  * The grass bed's material: a sharp repeating patch of pointed blades in the colours of
@@ -54,7 +57,11 @@ export const bedReady: Promise<void> = Promise.all([bed.ready, fringe.ready]).th
  * scaled by `bedTone` so it sits with them as in the picture. Outside a browser, or before it
  * loads in the tests, the painted bed (`bedTexture`) stands in.
  */
-export const bedMaterial = new THREE.MeshLambertMaterial({ map: bed.texture ?? bedTexture(), color: new THREE.Color(1, 1, 1).multiplyScalar(G.underlay.bedTone) });
+export const bedMaterial = new THREE.MeshLambertMaterial({
+  map: bed.texture ?? bedTexture(),
+  // Under the blades the bed is only the shade between them, so it is darker there.
+  color: new THREE.Color(1, 1, 1).multiplyScalar(blades.texture ? G.blades.ground : G.underlay.bedTone),
+});
 
 /**
  * Underlay: one plate under the whole board, `lip` wider than the rim all round, its top the
@@ -111,54 +118,130 @@ export function buildUnderlay(cols: number, rows: number, gap: number, pegs = fa
     }
   }
   shadowed(plate);
-  if (fringe.texture) {
-    // Standing blades, lit as in the picture: no shadows taken (the rim's would darken them all)
-    // and none cast (a cut-out casts a square one).
-    const band = new THREE.Mesh(fringeGeometry(cols, rows, gap), fringeMaterial);
-    band.name = 'garden-bed-fringe';
-    band.receiveShadow = false;
+  if (blades.texture) {
+    // The blades take the tiles' shadows but cast none (a cut-out casts a square one).
+    const field = new THREE.Mesh(bladeFieldGeometry(cols, rows, gap), bladeMaterial);
+    field.name = 'garden-bed-blades';
+    field.castShadow = false;
+    field.receiveShadow = true;
     // Kept out of the game's fusing (src/render/kit.ts), which turns every shadow on.
-    band.userData.keepApart = true;
-    plate.add(band);
+    field.userData.keepApart = true;
+    plate.add(field);
   }
   return plate;
 }
 
+/** Half the width of a rounded square of half-size `half` and corner radius `r`, at `dz` from its middle (0 outside). */
+function roundedHalf(half: number, r: number, dz: number): number {
+  const a = Math.abs(dz);
+  if (a >= half) return 0;
+  const straight = half - r;
+  if (a <= straight) return half;
+  const k = a - straight;
+  return straight + Math.sqrt(Math.max(0, r * r - k * k));
+}
+
 /**
- * The fringe band: a strip round the inside of the rim, rooted `outset` under the rim's inner
- * edge and rising `height`. Seen from the tilted camera, a strip leaning in on the far side would
- * be seen edge-on, so it stands upright there and leans in by `lean` only on the left and right
- * sides (by the sideways part of the rim's normal), where upright blades would be edge-on
- * instead. The near side is mostly behind the rim, as in the picture. The picture repeats every
- * `repeat` cells along it, a whole number of times, so it closes without a seam.
+ * Where the bed shows along one row at depth `z`: the stretches of x inside the rim's inner edge
+ * (pushed out by `outset`) and outside every tile's wall (pulled in by `tuck`, so the cards end
+ * inside the walls and no cut edge shows). Returned as [from, to] pairs, left to right.
  */
-export function fringeGeometry(cols: number, rows: number, gap: number): THREE.BufferGeometry {
-  const f = G.fringe;
+export function bedSpans(cols: number, rows: number, gap: number, z: number): [number, number][] {
+  const b = G.blades;
   const { innerW, innerD } = boardFootprint(cols, rows, gap);
-  const r = Math.min(f.cornerRadius, innerW / 2, innerD / 2);
-  const foot = new RoundedPath(innerW / 2 + f.outset, innerD / 2 + f.outset, r + f.outset);
-  const repeats = Math.max(1, Math.round(foot.length / f.repeat));
-  const samples = Math.ceil(foot.length * 12);
+  const a = innerW / 2 + b.outset;
+  const d = innerD / 2 + b.outset;
+  const r = Math.min(b.cornerRadius, a, d);
+  const edge = roundedHalf(d, r, z) > 0 ? a - (d - roundedHalf(d, r, z)) : 0;
+  if (edge <= 0) return [];
+  const pitch = T.size + gap;
+  const hw = I.wall / 2 - b.tuck;
+  const rw = Math.max(0, I.wallRadius - b.tuck);
+  const row = Math.min(rows - 1, Math.max(0, Math.round(z / pitch + (rows - 1) / 2)));
+  const half = roundedHalf(hw, rw, z - (row - (rows - 1) / 2) * pitch);
+  const spans: [number, number][] = [];
+  let from = -edge;
+  if (half > 0) {
+    for (let c = 0; c < cols; c++) {
+      const x = (c - (cols - 1) / 2) * pitch;
+      const lo = Math.max(-edge, x - half);
+      if (lo > from) spans.push([from, Math.min(lo, edge)]);
+      from = Math.max(from, x + half);
+    }
+  }
+  if (edge > from) spans.push([from, edge]);
+  return spans.filter(([p, q]) => q - p > 0.004);
+}
+
+/**
+ * The bed's blades: a row of see-through cards every `blades.step` cells from the far rim to the
+ * near one, each card filling one stretch of bed along its row (`bedSpans`) and leaning back from
+ * the camera by `lean` so the blades are seen face-on, as standing grass seen from the front. A
+ * row along a gap is one long card; a row through a row of tiles is one short card per gap. Each
+ * row takes its own strip of the atlas, its own offset along it and its own height, so neither
+ * rows nor repeats line up. Within `rimBand` of the rim they grow up to `rimHeight` times taller,
+ * standing against the braid as in the picture. Two triangles per card; lit as if lying flat,
+ * like the bed round it.
+ */
+export function bladeFieldGeometry(cols: number, rows: number, gap: number): THREE.BufferGeometry {
+  const b = G.blades;
+  const rimTall = (distance: number): number => 1 + (b.rimHeight - 1) * Math.max(0, 1 - distance / b.rimBand);
+  const { innerD } = boardFootprint(cols, rows, gap);
+  const rand = seeded(b.seed);
+  const lean = (b.lean * Math.PI) / 180;
+  const atlasPx = (b.stripPx + b.padPx) * b.variants;
   const positions: number[] = [];
   const uvs: number[] = [];
+  const colors: number[] = [];
   const index: number[] = [];
-  for (let i = 0; i <= samples; i++) {
-    const t = i / samples;
-    const a = foot.at(t * foot.length);
-    const lean = f.lean * Math.abs(a.nx);
-    positions.push(a.x, 0.002, a.z, a.x - a.nx * lean, f.height, a.z - a.nz * lean);
-    uvs.push(t * repeats, 0, t * repeats, 1);
-    if (i < samples) {
-      const k = i * 2;
-      index.push(k, k + 2, k + 1, k + 1, k + 2, k + 3);
-    }
+  const far = -innerD / 2 - b.outset;
+  const count = Math.ceil((innerD + 2 * b.outset) / b.step);
+  for (let i = 0; i <= count; i++) {
+    const z = far + (i + (rand() - 0.5) * b.jitter) * b.step;
+    const h = b.height * (1 + (rand() * 2 - 1) * b.heightJitter);
+    const variant = Math.floor(rand() * b.variants) % b.variants;
+    const offset = rand();
+    const vTop = 1 - (variant * (b.stripPx + b.padPx) + b.padPx / 2) / atlasPx;
+    const vBottom = vTop - b.stripPx / atlasPx;
+    const card = (x0: number, x1: number, tall: number): void => {
+      const up = h * tall * Math.cos(lean);
+      const back = h * tall * Math.sin(lean);
+      const k = positions.length / 3;
+      positions.push(x0, 0.003, z, x1, 0.003, z, x0, up, z - back, x1, up, z - back);
+      const u0 = x0 / b.repeat + offset;
+      const u1 = x1 / b.repeat + offset;
+      uvs.push(u0, vBottom, u1, vBottom, u0, vTop, u1, vTop);
+      const s = b.rootShade;
+      colors.push(s, s, s, s, s, s, 1, 1, 1, 1, 1, 1);
+      index.push(k, k + 1, k + 2, k + 2, k + 1, k + 3);
+    };
+    // Against the braid the blades stand taller, as in the picture: the rows near the far rim,
+    // and the ends of every row that meet the rim on the left and right.
+    const farTall = rimTall(z - far);
+    const spans = bedSpans(cols, rows, gap, z);
+    if (!spans.length) continue;
+    const left = spans[0][0];
+    const right = spans[spans.length - 1][1];
+    spans.forEach(([x0, x1], n) => {
+      let from = x0;
+      let to = x1;
+      if (farTall === 1 && n === 0 && to - from > 1.5 * b.rimBand) {
+        card(left, left + b.rimBand, rimTall(0));
+        from = left + b.rimBand;
+      }
+      if (farTall === 1 && n === spans.length - 1 && to - from > 1.5 * b.rimBand) {
+        card(right - b.rimBand, right, rimTall(0));
+        to = right - b.rimBand;
+      }
+      card(from, to, farTall);
+    });
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
   g.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-  g.setIndex(index);
-  // Lit as if lying flat, like the bed round it: the blades are painted standing, not modelled.
+  g.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
   g.setAttribute('normal', new THREE.Float32BufferAttribute(positions.map((_, i) => (i % 3 === 1 ? 1 : 0)), 3));
+  g.setIndex(index);
   return g;
 }
 
