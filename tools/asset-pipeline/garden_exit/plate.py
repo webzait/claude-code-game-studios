@@ -229,4 +229,5 @@ def build() -> tuple[np.ndarray, tuple[float, float]]:
 
 def run() -> None:
     plate, at = build()
-    write_part("plate", {"plate": (plate, at, 1.0 / PAD_STONE_OUT_PX)})
+    from exit_pads import tile_box
+    write_part("plate", {"plate": (plate, at, 1.0 / PAD_STONE_OUT_PX, tile_box("green"))})

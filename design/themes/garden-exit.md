@@ -322,3 +322,22 @@ sink into the pad is the chick session's.
 
 Parts sheet: a filmstrip of nine frames, a looping version at 90 px a cell, and the colour exit.
 Evidence: `production/qa/evidence/garden-exit/garden-exit-entry.png`.
+
+## Lined up with the cell (2026-11-25)
+
+The owner: "de uitlijning van tegel is nog niet goed". The square stone tile was placed like the old
+round plinth: on top of a grass tile, its face centre over the cell centre, so it stood too high (its
+back over the cells behind, a strip of grass showing in front). Now every pad-shaped picture (exit
+in all looks, colour exits, turn tile, plate) *is* the cell's tile (`tileSprite` in exitPictures.ts):
+
+- no grass tile under it;
+- the stone tile's box (`tile` in each sprite fragment, written by the pipeline) is scaled to one
+  grass tile wide (`floorStandIn.size`), uniformly, so the picture is not stretched;
+- its front foot sits on the cell's front edge at floor level, so under the game camera the outline
+  falls where the grass tile would be; its back edge then lands on the cell's back edge (the stone
+  reads about a quarter of a cell high, the grass tile 0.2);
+- the portal's column of light shares the portal's placement.
+
+The quad's origin is now the tile's front foot, so the entry pop grows the pad up from where it
+stands. Evidence: `production/qa/evidence/garden-exit/garden-exit-aligned.png`. Tested: the tile's
+foot spans the cell's front edge (`picture pads line their stone tile up with the cell`).

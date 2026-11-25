@@ -243,7 +243,7 @@ describe('garden picture parts (the standard version) keep the robot contract', 
     expect(normal.z).toBeCloseTo(Math.sin(tilt), 5);
   });
 
-  it('picture quads stay above the grass', () => {
+  it('picture quads stay above the floor', () => {
     for (const part of [pic.buildExit(undefined, 'rays'), pic.buildExit(undefined, 'portal'), pic.buildTurnTile(false, false), pic.buildPlate(false, false)]) {
       part.updateMatrixWorld(true);
       let lowest = Infinity;
@@ -254,7 +254,28 @@ describe('garden picture parts (the standard version) keep the robot contract', 
         }
       });
       expect(lowest).toBeLessThan(1);
-      expect(lowest).toBeGreaterThanOrEqual(garden.floorStandIn.height - 1e-6);
+      expect(lowest).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('picture pads line their stone tile up with the cell', () => {
+    // The stone tile's front foot, corner to corner, lies on the cell's front edge, a cell wide.
+    const sprites = Object.assign({}, ...Object.values(import.meta.glob<{ sprites: Record<string, { width: number; height: number; anchor: number[]; tile?: number[] }> }>('../../data/themes/garden/exit-sprites/*.json', { eager: true, import: 'default' })).map((f) => f.sprites));
+    for (const [part, name] of [[pic.buildExit(undefined, 'green'), 'exit-green'], [pic.buildExit(undefined, 'grey'), 'exit-grey'], [pic.buildExit(undefined, 'rays'), 'exit-rays'], [pic.buildExit('red'), 'exit-red'], [pic.buildTurnTile(false, false), 'turn']] as [THREE.Group, string][]) {
+      part.updateMatrixWorld(true);
+      const quad = part.getObjectByName(name) as THREE.Mesh;
+      const geo = quad.geometry as THREE.PlaneGeometry;
+      const s = sprites[name];
+      const [x0, , x1, y1] = s.tile;
+      const at = (fx: number, fy: number) => new THREE.Vector3((fx - 0.5) * geo.parameters.width, (0.5 - fy) * geo.parameters.height, 0).applyMatrix4(quad.matrixWorld);
+      const left = at(x0, y1);
+      const right = at(x1, y1);
+      expect(right.x - left.x).toBeCloseTo(garden.floorStandIn.size, 4);
+      expect((left.x + right.x) / 2).toBeCloseTo(0, 2);
+      // On the front edge, seen from the camera: the foot is only slid towards the camera by a hair.
+      expect(left.y).toBeGreaterThanOrEqual(0);
+      expect(left.y).toBeLessThan(0.01);
+      expect(left.z).toBeCloseTo(garden.floorStandIn.size / 2, 2);
     }
   });
 

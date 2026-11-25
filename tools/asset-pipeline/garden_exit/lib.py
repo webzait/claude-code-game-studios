@@ -275,15 +275,21 @@ def upscale(rgba: np.ndarray, factor: float, sharpen: float = 0.9, radius: float
     return np.dstack([rgb, alpha])
 
 
-def write_part(part: str, sprites: dict[str, tuple[np.ndarray, tuple[float, float], float]]) -> None:
-    """Write each sprite (rgba, anchor in px, cells per px) as WebP and the part's size fragment.
+def write_part(part: str, sprites: dict[str, tuple]) -> None:
+    """Write each sprite (rgba, anchor in px, cells per px[, tile box in px]) as WebP and the part's
+    size fragment.
 
     The anchor is the point the game puts over the cell centre (for pads: the face centre); the
-    fragment gives each sprite's width and height in cells and the anchor as fractions."""
+    fragment gives each sprite's width and height in cells and the anchor as fractions. A pad-shaped
+    picture also gives `tile`: the stone tile's box (x0, y0, x1, y1, fractions), which the game lines
+    up with the cell it stands on."""
     entries = {}
-    for name, (rgba, anchor, cells_per_px) in sprites.items():
+    for name, (rgba, anchor, cells_per_px, *rest) in sprites.items():
         save(to_image(rgba), name)
         h, w = rgba.shape[:2]
         entries[name] = {"width": round(w * cells_per_px, 4), "height": round(h * cells_per_px, 4), "anchor": [round(anchor[0] / w, 4), round(anchor[1] / h, 4)]}
+        if rest and rest[0] is not None:
+            x0, y0, x1, y1 = rest[0]
+            entries[name]["tile"] = [round(x0 / w, 4), round(y0 / h, 4), round(x1 / w, 4), round(y1 / h, 4)]
     FRAGMENTS.mkdir(parents=True, exist_ok=True)
     (FRAGMENTS / f"{part}.json").write_text(json.dumps({"_about": f"Written by tools/asset-pipeline/garden_exit/{part}.py: size in cells and anchor (fractions from the top left) of each picture.", "sprites": entries}, indent=2) + "\n")

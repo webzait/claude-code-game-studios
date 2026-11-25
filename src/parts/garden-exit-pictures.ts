@@ -181,7 +181,7 @@ export function addPictureCards(sheet: HTMLElement, k: Kit): void {
       const f = k.field(null, [...tiles, [0, 0, k.bot('red', 0)], [1, 1, k.bot('blue', 2)], [-1, 1, k.bot('yellow', 1)]]);
       game.appendChild(k.figure(k.inGame(f, 3, 3, cellPx), `Vak ${cellPx} px · boven: draaitegel, drukplaat, poort dicht · midden: uitgang, plaat met robot, poort open`));
     }
-    k.note(el, `Kosten: draaitegel ${k.cost(pic.buildTurnTile(false, false))}, drukplaat ${k.cost(pic.buildPlate(false, false))}, poort ${k.cost(pic.buildGate(false, false))}, elk inclusief de grastegel. Een geschilderd plaatje kan niet meedraaien met het kuiken: bij de draaitegel draait alleen de lichtring. De grastegel hier is een eenvoudige stand-in; de echte grastegel is van de bordsessie.`);
+    k.note(el, `Kosten: draaitegel ${k.cost(pic.buildTurnTile(false, false))}, drukplaat ${k.cost(pic.buildPlate(false, false))}, poort ${k.cost(pic.buildGate(false, false))}. Draaitegel, drukplaat en uitgang zijn zelf de tegel van het vak (geen grastegel eronder, de steen precies op het vak uitgelijnd); de poort staat op een grastegel. Een geschilderd plaatje kan niet meedraaien met het kuiken: bij de draaitegel draait alleen de lichtring. De grastegel hier is een eenvoudige stand-in; de echte grastegel is van de bordsessie.`);
     sheet.appendChild(el);
   }
 
