@@ -29,6 +29,8 @@ interface Sprite {
   width: number;
   height: number;
   anchor: number[];
+  /** Pad-shaped pictures: the stone tile's box (x0, y0, x1, y1, fractions from the top left). */
+  tile?: number[];
 }
 const SPRITES: Record<SpriteName, Sprite> = Object.assign({}, ...Object.values(FRAGMENTS).map((f) => f.sprites));
 const URLS: Record<SpriteName, string> = Object.fromEntries(Object.entries(FILES).map(([path, url]) => [path.replace(/^.*\/(.+)\.webp$/, '$1'), url]));
@@ -39,8 +41,6 @@ const TILT = THREE.MathUtils.degToRad(CONFIG.board.roomy.tilt);
 const TOWARDS_CAMERA = new THREE.Vector3(0, Math.cos(TILT), Math.sin(TILT));
 /** Height of a grass tile's top. */
 const TOP = garden.floorStandIn.height;
-/** Height of the painted pad's face above the floor, where the sprite's anchor goes. */
-const FACE = garden.exit.faceHeight;
 
 const textures = new Map<SpriteName, THREE.Texture>();
 const pending: Promise<void>[] = [];
@@ -104,14 +104,41 @@ function sprite(name: SpriteName, lift = 0): THREE.Group {
   return holder;
 }
 
-/** How far a sprite with its anchor at `height` must slide towards the camera so its lower edge stays above the grass. */
-function clearance(name: SpriteName, height: number): number {
+/** Width of a cell's tile: a pad picture's stone tile is drawn this wide. */
+const CELL = garden.floorStandIn.size;
+/** A hair towards the camera, so a tile picture standing on the floor never fights with it. */
+const TILE_LIFT = 0.006;
+
+/**
+ * A pad-shaped picture standing in for a cell's tile. The owner's stone tile is lined up with the
+ * cell: as wide as a grass tile, its front foot on the cell's front edge at floor level, so under the
+ * game camera its outline sits where the grass tile it replaces would be (its back edge lands on the
+ * cell's back edge, the stone reading about a quarter of a cell high). Scaled uniformly: the picture
+ * is not stretched. `ref` is the pad whose tile box places it; another picture (the portal's column
+ * of light) can share it, its own anchor landing on the ref's anchor. The holder's origin is the
+ * tile's front foot, so a pop scales it up from where it stands.
+ */
+function tileSprite(name: SpriteName, ref: SpriteName = name): THREE.Group {
+  const r = SPRITES[ref];
   const s = SPRITES[name];
-  const below = (1 - s.anchor[1]) * s.height;
-  // The quad leans back by 90° - tilt, so going `below` down its own height drops `below * sin(tilt)`.
-  const drop = below * Math.sin(TILT);
-  const need = drop - (height - TOP) + 0.01;
-  return Math.max(0, need / TOWARDS_CAMERA.y);
+  if (!r.tile) throw new Error(`garden exit picture "${ref}" has no tile box: run tools/asset-pipeline/garden_exit/build.py`);
+  const [x0, , x1, y1] = r.tile;
+  const k = CELL / ((x1 - x0) * r.width);
+  // The ref's anchor, measured from the tile's front foot (x right, y up the picture), in cells.
+  const ax = (r.anchor[0] - (x0 + x1) / 2) * r.width * k;
+  const ay = (y1 - r.anchor[1]) * r.height * k;
+  const w = s.width * k;
+  const h = s.height * k;
+  const quad = new THREE.Mesh(new THREE.PlaneGeometry(w, h), material(name));
+  quad.position.set(ax + (0.5 - s.anchor[0]) * w, ay + (s.anchor[1] - 0.5) * h, 0);
+  quad.name = name;
+  quad.renderOrder = 2;
+  const holder = new THREE.Group();
+  holder.rotation.x = -(Math.PI / 2 - TILT);
+  holder.add(quad);
+  holder.position.set(0, 0, CELL / 2).addScaledVector(TOWARDS_CAMERA, TILE_LIFT);
+  holder.userData.sprite = name;
+  return holder;
 }
 
 function exitSpriteName(look: ExitLook, color?: Color): SpriteName {
@@ -122,6 +149,7 @@ function exitSpriteName(look: ExitLook, color?: Color): SpriteName {
 }
 
 const glowMaps = new Map<string, THREE.Texture>();
+/** The round light patch, for the turn tile's ring. */
 function glowMap(color?: Color): THREE.Texture {
   const key = color ?? 'all';
   let m = glowMaps.get(key);
@@ -129,6 +157,47 @@ function glowMap(color?: Color): THREE.Texture {
     const tone = color ? CONFIG.colors.robots[color].top : garden.exit.colors.glow;
     m = radialGlowTexture(tone, tone, 0.62, 1.6);
     glowMaps.set(key, m);
+  }
+  return m;
+}
+
+/**
+ * A soft light patch shaped like the square stone tile (a rounded square), so the light round the
+ * exit follows the owner's pad instead of a circle. Full inside `inner` (share of the patch's half
+ * width), fading to nothing at the patch's edge.
+ */
+export function squareGlowTexture(tone: string, inner: number, corner: number, falloff: number, n = 128): THREE.DataTexture {
+  const c = new THREE.Color(tone);
+  const data = new Uint8Array(n * n * 4);
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+    // Rounded-square distance in units of the half width: 0 at the centre, `inner` on the tile's edge.
+    const x = Math.abs(((i + 0.5) / n - 0.5) * 2);
+    const y = Math.abs(((j + 0.5) / n - 0.5) * 2);
+    const qx = Math.max(x - (inner - corner), 0);
+    const qy = Math.max(y - (inner - corner), 0);
+    const d = Math.hypot(qx, qy) + Math.min(Math.max(x, y) - (inner - corner), 0) - corner + inner;
+    const out = Math.min(1, Math.max(0, (d - inner) / (1 - inner)));
+    const alpha = d < inner ? 1 : (1 - out) ** falloff;
+    data.set([c.r * 255, c.g * 255, c.b * 255, 255 * alpha], (j * n + i) * 4);
+  }
+  const map = new THREE.DataTexture(data, n, n, THREE.RGBAFormat);
+  map.colorSpace = THREE.SRGBColorSpace;
+  map.magFilter = THREE.LinearFilter;
+  map.minFilter = THREE.LinearFilter;
+  map.needsUpdate = true;
+  return map;
+}
+
+const squareGlowMaps = new Map<string, THREE.Texture>();
+/** The exit's light patch, square like the tile. */
+function exitGlowMap(color?: Color): THREE.Texture {
+  const key = color ?? 'all';
+  let m = squareGlowMaps.get(key);
+  if (!m) {
+    const tone = color ? CONFIG.colors.robots[color].top : garden.exit.colors.glow;
+    const g = garden.exit.entry.glowSquare;
+    m = squareGlowTexture(tone, g.inner, g.corner, g.falloff);
+    squareGlowMaps.set(key, m);
   }
   return m;
 }
@@ -144,13 +213,13 @@ function glowMap(color?: Color): THREE.Texture {
 export function buildExit(color?: Color, look: ExitLook = EXIT_MOMENT_LOOKS.waiting): THREE.Group {
   const pad = new THREE.Group();
   pad.name = 'garden-exit-picture';
-  pad.add(buildFloorTile(false, false));
+  // The stone tile is the cell's tile: no grass tile under it.
   pad.userData.color = color;
   const span = 2 * garden.exit.radius + 2 * garden.exit.glowReach;
   const light = new THREE.PlaneGeometry(span, span);
   light.rotateX(-Math.PI / 2);
   light.boundingBox = new THREE.Box3(new THREE.Vector3(-0.5, 0, -0.5), new THREE.Vector3(0.5, 0, 0.5));
-  const glow = new THREE.Mesh(light, new THREE.MeshBasicMaterial({ map: glowMap(color), transparent: true, opacity: garden.exit.glowPulse.high, depthWrite: false, toneMapped: false }));
+  const glow = new THREE.Mesh(light, new THREE.MeshBasicMaterial({ map: exitGlowMap(color), transparent: true, opacity: garden.exit.glowPulse.high, depthWrite: false, toneMapped: false }));
   glow.name = 'exit-glow';
   glow.position.y = TOP + 0.004;
   glow.renderOrder = 1;
@@ -169,14 +238,12 @@ export function setExitLook(pad: THREE.Group, look: ExitLook): void {
   }
   // Rays and portal exist only in the owner's green: a colour exit keeps its own colour then.
   const name = color && (look === 'rays' || look === 'portal') ? exitSpriteName('green', color) : exitSpriteName(look, color);
-  const main = sprite(name, clearance(name, TOP + FACE));
-  main.position.y += TOP + FACE;
+  const main = tileSprite(name);
   pad.add(main);
   pad.userData.check = main;
   if (color) {
     const shapeName = (look === 'grey' ? 'exit-grey' : `exit-shape-${color}`) as SpriteName;
-    const shape = sprite(shapeName, clearance(shapeName, TOP + FACE));
-    shape.position.y += TOP + FACE;
+    const shape = tileSprite(shapeName);
     shape.visible = false;
     pad.add(shape);
     pad.userData.shape = shape;
@@ -185,16 +252,100 @@ export function setExitLook(pad: THREE.Group, look: ExitLook): void {
   pad.userData.look = look;
 }
 
+const E = garden.exit.entry;
+const ramp = (k: number, from: number, to: number): number => Math.min(1, Math.max(0, (k - from) / (to - from)));
+const smooth = (t: number): number => t * t * (3 - 2 * t);
+
+/** The extra layers of the entry animation of one pad, made on first use: the portal over the pad and the column of light. */
+interface EntryLayers {
+  portal: THREE.Group | null;
+  portalMat: THREE.MeshBasicMaterial | null;
+  beam: THREE.Group | null;
+  beamQuad: THREE.Mesh | null;
+  beamMat: THREE.MeshBasicMaterial | null;
+  beamBottom: number;
+  beamHeight: number;
+  glowOpacity: number;
+}
+
+function entryLayers(pad: THREE.Group): EntryLayers {
+  let layers = pad.userData.entry as EntryLayers | undefined;
+  if (layers) return layers;
+  const color = pad.userData.color as Color | undefined;
+  layers = { portal: null, portalMat: null, beam: null, beamQuad: null, beamMat: null, beamBottom: 0, beamHeight: 0, glowOpacity: 0 };
+  if (!color) {
+    // Own materials: the shared ones of the pictures must not fade on every exit at once.
+    layers.portal = tileSprite('exit-portal');
+    const quad = layers.portal.children[0] as THREE.Mesh;
+    layers.portalMat = new THREE.MeshBasicMaterial({ map: texture('exit-portal'), transparent: true, opacity: 0, depthWrite: false, toneMapped: false });
+    quad.material = layers.portalMat;
+    quad.renderOrder = 3;
+    layers.beam = tileSprite('exit-portal-beam', 'exit-portal');
+    layers.beamQuad = layers.beam.children[0] as THREE.Mesh;
+    layers.beamMat = new THREE.MeshBasicMaterial({ map: texture('exit-portal-beam'), transparent: true, opacity: 0, depthWrite: false, toneMapped: false, blending: THREE.AdditiveBlending });
+    layers.beamQuad.material = layers.beamMat;
+    layers.beamQuad.renderOrder = 4;
+    const beamGeometry = layers.beamQuad.geometry as THREE.PlaneGeometry;
+    layers.beamHeight = beamGeometry.parameters.height;
+    layers.beamBottom = layers.beamQuad.position.y - layers.beamHeight / 2;
+    layers.portal.visible = false;
+    layers.beam.visible = false;
+    pad.add(layers.portal, layers.beam);
+  }
+  pad.userData.entry = layers;
+  return layers;
+}
+
 /**
- * Turn tile: a cream pad with the clockwise arrow of the owner's turn button, on a grass tile.
+ * The animation of a chick going into the exit, at progress `k` (0 to 1 over
+ * `garden.exit.flashSeconds`): call it every frame of that time, as the robot theme pulses its pad
+ * (`pulsePad` in BoardView). The owner's portal picture fades in over the pad, which pops a little;
+ * a column of the portal's own light grows up out of its ring and fades; then the pad's look shows
+ * again. No ring or circle of its own: the light comes from the square tile's picture. A colour exit
+ * (no portal in its colour) only pops and flares its glow. `calm` (reduced motion): the portal only
+ * fades in and out. At `k >= 1` everything is back as it was.
+ */
+export function exitEntry(pad: THREE.Group, k: number, calm = false): void {
+  const layers = entryLayers(pad);
+  const done = k <= 0 || k >= 1;
+  const glow = pad.userData.glow as THREE.Mesh;
+  const glowMat = glow.material as THREE.MeshBasicMaterial;
+  if (!pad.userData.entryActive && !done) layers.glowOpacity = glowMat.opacity;
+  const pop = done || calm ? 1 : 1 + E.pop * Math.sin(Math.PI * ramp(k, 0, E.popUntil));
+  for (const key of ['check', 'shape'] as const) (pad.userData[key] as THREE.Object3D | undefined)?.scale.setScalar(pop);
+  if (layers.portal && layers.portalMat) {
+    layers.portal.visible = !done;
+    layers.portal.scale.setScalar(pop);
+    layers.portalMat.opacity = done ? 0 : smooth(ramp(k, 0, E.portalIn)) * (1 - smooth(ramp(k, E.portalOut[0], E.portalOut[1])));
+  }
+  if (layers.beam && layers.beamQuad && layers.beamMat) {
+    layers.beam.visible = !done && !calm;
+    const rise = ramp(k, E.beamRise[0], E.beamRise[1]);
+    // Grows up out of the ring, a touch past full height, then settles.
+    const grow = rise < 1 ? E.beamOvershoot * smooth(rise) : E.beamOvershoot - (E.beamOvershoot - 1) * smooth(ramp(k, E.beamRise[1], E.beamFade[0]));
+    const g = Math.max(grow, 0.001);
+    layers.beamQuad.scale.y = g;
+    layers.beamQuad.position.y = layers.beamBottom + (layers.beamHeight * g) / 2;
+    layers.beamMat.opacity = E.beamOpacity * smooth(ramp(k, E.beamRise[0], E.beamRise[0] + 0.08)) * (1 - smooth(ramp(k, E.beamFade[0], E.beamFade[1])));
+  }
+  if (done) {
+    if (pad.userData.entryActive) glowMat.opacity = layers.glowOpacity;
+  } else {
+    glowMat.opacity = Math.min(1, layers.glowOpacity * (1 + (E.glowFlare - 1) * Math.sin(Math.PI * k)));
+  }
+  pad.userData.entryActive = !done;
+}
+
+/**
+ * Turn tile: a cream pad with the clockwise arrow of the owner's turn button, standing in for the cell's tile.
  * A painted picture cannot turn with the chick, so `userData.disc` is an empty group (turning it is
  * harmless); `userData.glow` is a ring of light the game flashes while the tile turns a chick.
  */
-export function buildTurnTile(alt = false, pegs = true): THREE.Group {
-  const tile = buildFloorTile(alt, pegs);
-  const pic = sprite('turn', clearance('turn', TOP + FACE * 0.6));
-  pic.position.y += TOP + FACE * 0.6;
-  tile.add(pic);
+export function buildTurnTile(_alt = false, _pegs = true): THREE.Group {
+  // The stone tile is the cell's tile: no grass tile under it.
+  const tile = new THREE.Group();
+  tile.name = 'garden-turn-picture';
+  tile.add(tileSprite('turn'));
   const disc = new THREE.Group();
   disc.name = 'turn-disc';
   disc.position.y = TOP;
@@ -212,13 +363,13 @@ export function buildTurnTile(alt = false, pegs = true): THREE.Group {
   return tile;
 }
 
-/** Pressure plate: the owner's pad retoned lavender, on a grass tile. `userData.button` is the picture; the game lowers it while a chick stands on it. */
-export function buildPlate(alt = false, pegs = true): THREE.Group {
-  const plate = buildFloorTile(alt, pegs);
+/** Pressure plate: the owner's pad retoned lavender, standing in for the cell's tile. `userData.button` is the picture; the game lowers it while a chick stands on it. */
+export function buildPlate(_alt = false, _pegs = true): THREE.Group {
+  // The stone tile is the cell's tile: no grass tile under it.
+  const plate = new THREE.Group();
+  plate.name = 'garden-plate-picture';
   const button = new THREE.Group();
-  const pic = sprite('plate', clearance('plate', TOP + FACE * 0.6));
-  button.add(pic);
-  button.position.y = TOP + FACE * 0.6;
+  button.add(tileSprite('plate'));
   button.userData.restY = button.position.y;
   plate.add(button);
   plate.userData.button = button;

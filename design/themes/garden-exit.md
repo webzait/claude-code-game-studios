@@ -289,3 +289,55 @@ portal and shows it as green.
   levelling the outline lines up but the stones inside can shift slightly when the look changes.
 - The colour-to-alpha light is the least light that gives the picture over white: over dark it is
   a little dimmer than an additive glow would be.
+
+## Entry animation: a chick goes into the exit (2026-11-25)
+
+The owner: "De animatie voor de eindtegel dat het kuiken erin springt is nog niet goed. Dat is nog
+steeds met een rondje." Two circles were left: the round light patch on the grass round the lit pad
+(`userData.glow`, a radial texture from the round pads), and the effects session's `beam` effect that
+the wiring plays at the exit (it opens with a round ring). The exit part now carries its own entry
+animation, built from the owner's portal picture, with no circle:
+
+- `exitEntry(pad, k, calm?)` in `src/render/parts/garden/exitPictures.ts`, called every frame with
+  `k` from 0 to 1 over `flashSeconds` (0.9 s), as the robot theme calls `pulsePad`:
+  1. the portal picture (`exit-portal`, own material per pad) fades in over the pad in 0.11 s; the
+     pad pops 7 % and back in the first 0.27 s;
+  2. a column of the portal's own light (`exit-portal-beam`, drawn additively) grows up out of the
+     ring to 1.6 cells, a touch past full height, settles and fades by 0.86 s;
+  3. the portal fades out over the last 0.27 s and the pad's look (green, or rays when the level is
+     won) shows again; at `k >= 1` everything is back as it was.
+  The glow on the grass flares with it. `calm` (reduced motion): only the portal fades in and out.
+  A colour exit has no portal in its colour: it only pops and flares its glow.
+- `exit-portal-beam` (325×512 px, 11.9 kB) is not a new drawing: across, it is the owner's streaks
+  (each column's average light between the ring and the stone's top, from checkpoint-portaal);
+  upwards it fades out. Its foot is the ring centre (`exit_pads.portal_beam`).
+- The light patch round the pad is now a rounded square that follows the tile
+  (`squareGlowTexture`, `entry.glowSquare` in the data file): full up to the tile edge, then fading.
+- Timings are data: `exit.entry` in `data/themes/garden/exit.json`.
+
+**For the theme session (wiring):** when a chick reaches a garden exit, play `exitEntry` on that pad
+for `flashSeconds` *instead of* the effects session's `play('beam', …)` and the robot `pulsePad`
+(which stretches the pad vertically: a picture must not be stretched). The chick's own jump and
+sink into the pad is the chick session's.
+
+Parts sheet: a filmstrip of nine frames, a looping version at 90 px a cell, and the colour exit.
+Evidence: `production/qa/evidence/garden-exit/garden-exit-entry.png`.
+
+## Lined up with the cell (2026-11-25)
+
+The owner: "de uitlijning van tegel is nog niet goed". The square stone tile was placed like the old
+round plinth: on top of a grass tile, its face centre over the cell centre, so it stood too high (its
+back over the cells behind, a strip of grass showing in front). Now every pad-shaped picture (exit
+in all looks, colour exits, turn tile, plate) *is* the cell's tile (`tileSprite` in exitPictures.ts):
+
+- no grass tile under it;
+- the stone tile's box (`tile` in each sprite fragment, written by the pipeline) is scaled to one
+  grass tile wide (`floorStandIn.size`), uniformly, so the picture is not stretched;
+- its front foot sits on the cell's front edge at floor level, so under the game camera the outline
+  falls where the grass tile would be; its back edge then lands on the cell's back edge (the stone
+  reads about a quarter of a cell high, the grass tile 0.2);
+- the portal's column of light shares the portal's placement.
+
+The quad's origin is now the tile's front foot, so the entry pop grows the pad up from where it
+stands. Evidence: `production/qa/evidence/garden-exit/garden-exit-aligned.png`. Tested: the tile's
+foot spans the cell's front edge (`picture pads line their stone tile up with the cell`).

@@ -22,7 +22,7 @@ import numpy as np
 from scipy import ndimage
 
 from checkpoints import PAD_STONE_OUT_PX, shrink, source
-from exit_pads import face_ellipse, hires_pad, stone_width
+from exit_pads import face_ellipse, hires_pad, stone_width, tile_box
 from lib import CREAM, LEAF, lit_mask, retone, tick_mask, write_part
 from turn_arrow import bounds, fit, render
 
@@ -117,4 +117,4 @@ def run() -> None:
     pad, anchor = hires_pad("green")
     small = shrink(img, PAD_STONE_OUT_PX / stone_width(source("green"), "green"))
     assert small.shape == pad.shape, (small.shape, pad.shape)
-    write_part("turn", {"turn": (small, anchor, 1.0 / PAD_STONE_OUT_PX)})
+    write_part("turn", {"turn": (small, anchor, 1.0 / PAD_STONE_OUT_PX, tile_box("green"))})

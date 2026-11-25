@@ -6,6 +6,7 @@ import refGreen from './ref/garden/checkpoint-actief.webp';
 import refRays from './ref/garden/checkpoint-opgelicht.webp';
 import refPortal from './ref/garden/checkpoint-portaal.webp';
 import type { ExitLook } from '../render/parts/garden/exitMoments';
+import garden from '../../data/themes/garden/exit.json';
 
 /**
  * Parts sheet cards for the garden exit, gazebo and special tiles made from the owner's own
@@ -88,6 +89,48 @@ export function addPictureCards(sheet: HTMLElement, k: Kit): void {
         game.appendChild(k.figure(k.inGame(f, 3, 3, cellPx), `${LOOK_NAMES[look]} · vak ${cellPx} px`));
       }
     }
+    {
+      el.insertAdjacentHTML('beforeend', `<h3>Een kuiken gaat de uitgang in (${garden.exit.flashSeconds} s)</h3>`);
+      const frames = [0, 0.06, 0.15, 0.25, 0.4, 0.55, 0.7, 0.85, 1];
+      const strip = k.row(el, 'game');
+      for (const kk of frames) {
+        const pad = pic.buildExit(undefined, 'green');
+        pic.exitEntry(pad, kk);
+        const f = k.field(null, cells([[0, 0, pad]]), 3);
+        // Framed close round the pad and the column above it.
+        strip.appendChild(k.figure(k.inGame(f, 1.5, 2.4, 60, new THREE.Vector3(0, 0.35, -0.4)), `${Math.round(kk * garden.exit.flashSeconds * 100) / 100} s`));
+      }
+      // The same, playing in a loop, larger: frames drawn once, then shown one after the other.
+      const live = k.row(el, 'game');
+      const shots: HTMLCanvasElement[] = [];
+      const steps = 27;
+      for (let i = 0; i <= steps; i++) {
+        const pad = pic.buildExit(undefined, 'green');
+        pic.exitEntry(pad, i / steps);
+        shots.push(k.inGame(k.field(null, cells([[0, 0, pad]]), 3), 3, 3, 90));
+      }
+      const view = document.createElement('canvas');
+      view.width = shots[0].width;
+      view.height = shots[0].height;
+      view.style.width = shots[0].style.width;
+      view.style.height = shots[0].style.height;
+      const ctx = view.getContext('2d')!;
+      ctx.drawImage(shots[0], 0, 0);
+      let frame = 0;
+      const rest = 18;
+      setInterval(() => {
+        frame = (frame + 1) % (steps + 1 + rest);
+        ctx.clearRect(0, 0, view.width, view.height);
+        ctx.drawImage(shots[Math.min(frame, steps)], 0, 0);
+      }, (garden.exit.flashSeconds * 1000) / steps);
+      live.appendChild(k.figure(view, 'Afgespeeld in een lus (vak 90 px). Het portaal van de eigenaar verschijnt over de groene tegel, die even opveert; een zuil van het eigen licht van het portaal schiet uit de ring omhoog en dooft; dan weer groen. Geen rondje: de gloed op het gras volgt nu ook de vierkante tegel.'));
+      const colour = k.row(el, 'game');
+      for (const kk of [0, 0.15, 0.5, 1]) {
+        const pad = pic.buildExit('blue', 'green');
+        pic.exitEntry(pad, kk);
+        colour.appendChild(k.figure(k.inGame(k.field(null, cells([[0, 0, pad]]), 3), 3, 3, 42), `Blauwe uitgang · ${Math.round(kk * garden.exit.flashSeconds * 100) / 100} s (geen portaal in eigen kleur: alleen opveren en oplichten)`));
+      }
+    }
     k.note(el, `Kosten per uitgang: ${k.cost(pic.buildExit(undefined, 'green'))} (grastegel, gloed en het beeld: één vlak van 2 driehoeken). Moment → stand (data/themes/garden/exit.json, <code>moments</code>): wachten = groen, kuiken net binnen = portaal (voorstel), alle kuikens binnen = stralen, uitgang klaar terwijl anderen nog buiten zijn = grijs. Een uitgang in een kuikenkleur heeft geen portaal of stralen in eigen kleur en houdt dan zijn kleur. De robots staan er als maatstaf; de kuikens zijn een andere sessie.`);
     sheet.appendChild(el);
   }
@@ -138,7 +181,7 @@ export function addPictureCards(sheet: HTMLElement, k: Kit): void {
       const f = k.field(null, [...tiles, [0, 0, k.bot('red', 0)], [1, 1, k.bot('blue', 2)], [-1, 1, k.bot('yellow', 1)]]);
       game.appendChild(k.figure(k.inGame(f, 3, 3, cellPx), `Vak ${cellPx} px · boven: draaitegel, drukplaat, poort dicht · midden: uitgang, plaat met robot, poort open`));
     }
-    k.note(el, `Kosten: draaitegel ${k.cost(pic.buildTurnTile(false, false))}, drukplaat ${k.cost(pic.buildPlate(false, false))}, poort ${k.cost(pic.buildGate(false, false))}, elk inclusief de grastegel. Een geschilderd plaatje kan niet meedraaien met het kuiken: bij de draaitegel draait alleen de lichtring. De grastegel hier is een eenvoudige stand-in; de echte grastegel is van de bordsessie.`);
+    k.note(el, `Kosten: draaitegel ${k.cost(pic.buildTurnTile(false, false))}, drukplaat ${k.cost(pic.buildPlate(false, false))}, poort ${k.cost(pic.buildGate(false, false))}. Draaitegel, drukplaat en uitgang zijn zelf de tegel van het vak (geen grastegel eronder, de steen precies op het vak uitgelijnd); de poort staat op een grastegel. Een geschilderd plaatje kan niet meedraaien met het kuiken: bij de draaitegel draait alleen de lichtring. De grastegel hier is een eenvoudige stand-in; de echte grastegel is van de bordsessie.`);
     sheet.appendChild(el);
   }
 

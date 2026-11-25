@@ -169,6 +169,59 @@ describe('garden picture parts (the standard version) keep the robot contract', 
     expect(spriteOf(pad.userData.check)).toBe('exit-portal');
   });
 
+  it('picture exit entry shows the portal and a rising column, then puts everything back', () => {
+    const pad = pic.buildExit(undefined, 'green');
+    const glow = (pad.userData.glow as THREE.Mesh).material as THREE.MeshBasicMaterial;
+    const before = glow.opacity;
+    pic.exitEntry(pad, 0.3);
+    const layers = pad.userData.entry as { portal: THREE.Group; beam: THREE.Group; beamQuad: THREE.Mesh; portalMat: THREE.MeshBasicMaterial; beamMat: THREE.MeshBasicMaterial };
+    expect(spriteOf(layers.portal)).toBe('exit-portal');
+    expect(spriteOf(layers.beam)).toBe('exit-portal-beam');
+    expect(layers.portal.visible).toBe(true);
+    expect(layers.portalMat.opacity).toBeGreaterThan(0.9);
+    expect(layers.beam.visible).toBe(true);
+    expect(layers.beamQuad.scale.y).toBeGreaterThan(0.5);
+    expect(layers.beamMat.blending).toBe(THREE.AdditiveBlending);
+    expect(glow.opacity).toBeGreaterThan(before);
+    pic.exitEntry(pad, 1);
+    expect(layers.portal.visible).toBe(false);
+    expect(layers.beam.visible).toBe(false);
+    expect(glow.opacity).toBeCloseTo(before, 6);
+    expect((pad.userData.check as THREE.Object3D).scale.x).toBe(1);
+    expect(spriteOf(pad.userData.check)).toBe('exit-green');
+  });
+
+  it('picture exit entry fades only the pad it plays on', () => {
+    const a = pic.buildExit();
+    const b = pic.buildExit();
+    pic.exitEntry(a, 0.3);
+    pic.exitEntry(b, 0);
+    const portalOf = (p: THREE.Group) => (p.userData.entry as { portalMat: THREE.MeshBasicMaterial }).portalMat;
+    expect(portalOf(a)).not.toBe(portalOf(b));
+    expect(portalOf(b).opacity).toBe(0);
+  });
+
+  it('picture colour exit entry pops without a green portal', () => {
+    const pad = pic.buildExit('blue');
+    pic.exitEntry(pad, 0.15);
+    expect((pad.userData.entry as { portal: unknown }).portal).toBeNull();
+    expect((pad.userData.check as THREE.Object3D).scale.x).toBeGreaterThan(1);
+    pic.exitEntry(pad, 1);
+    expect((pad.userData.check as THREE.Object3D).scale.x).toBe(1);
+  });
+
+  it('picture exit glow follows the square tile, not a circle', () => {
+    const g = garden.exit.entry.glowSquare;
+    const n = 64;
+    const square = pic.squareGlowTexture('#ffffff', g.inner, g.corner, g.falloff, n).image.data as Uint8Array;
+    const alpha = (i: number, j: number) => square[(j * n + i) * 4 + 3];
+    // Same distance from the centre: towards a corner as bright as towards a side (a circle would fade the corner).
+    const side = alpha(Math.round(n / 2 + 0.29 * n), n / 2);
+    const diagonal = alpha(Math.round(n / 2 + 0.29 * n), Math.round(n / 2 + 0.29 * n));
+    expect(side).toBe(255);
+    expect(diagonal).toBeGreaterThan(200);
+  });
+
   it('picture colour exit keeps its own colour in the portal moment', () => {
     const pad = pic.buildExit('red', 'portal');
     expect(spriteOf(pad.userData.check)).toBe('exit-red');
@@ -190,7 +243,7 @@ describe('garden picture parts (the standard version) keep the robot contract', 
     expect(normal.z).toBeCloseTo(Math.sin(tilt), 5);
   });
 
-  it('picture quads stay above the grass', () => {
+  it('picture quads stay above the floor', () => {
     for (const part of [pic.buildExit(undefined, 'rays'), pic.buildExit(undefined, 'portal'), pic.buildTurnTile(false, false), pic.buildPlate(false, false)]) {
       part.updateMatrixWorld(true);
       let lowest = Infinity;
@@ -201,7 +254,28 @@ describe('garden picture parts (the standard version) keep the robot contract', 
         }
       });
       expect(lowest).toBeLessThan(1);
-      expect(lowest).toBeGreaterThanOrEqual(garden.floorStandIn.height - 1e-6);
+      expect(lowest).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('picture pads line their stone tile up with the cell', () => {
+    // The stone tile's front foot, corner to corner, lies on the cell's front edge, a cell wide.
+    const sprites = Object.assign({}, ...Object.values(import.meta.glob<{ sprites: Record<string, { width: number; height: number; anchor: number[]; tile?: number[] }> }>('../../data/themes/garden/exit-sprites/*.json', { eager: true, import: 'default' })).map((f) => f.sprites));
+    for (const [part, name] of [[pic.buildExit(undefined, 'green'), 'exit-green'], [pic.buildExit(undefined, 'grey'), 'exit-grey'], [pic.buildExit(undefined, 'rays'), 'exit-rays'], [pic.buildExit('red'), 'exit-red'], [pic.buildTurnTile(false, false), 'turn']] as [THREE.Group, string][]) {
+      part.updateMatrixWorld(true);
+      const quad = part.getObjectByName(name) as THREE.Mesh;
+      const geo = quad.geometry as THREE.PlaneGeometry;
+      const s = sprites[name];
+      const [x0, , x1, y1] = s.tile;
+      const at = (fx: number, fy: number) => new THREE.Vector3((fx - 0.5) * geo.parameters.width, (0.5 - fy) * geo.parameters.height, 0).applyMatrix4(quad.matrixWorld);
+      const left = at(x0, y1);
+      const right = at(x1, y1);
+      expect(right.x - left.x).toBeCloseTo(garden.floorStandIn.size, 4);
+      expect((left.x + right.x) / 2).toBeCloseTo(0, 2);
+      // On the front edge, seen from the camera: the foot is only slid towards the camera by a hair.
+      expect(left.y).toBeGreaterThanOrEqual(0);
+      expect(left.y).toBeLessThan(0.01);
+      expect(left.z).toBeCloseTo(garden.floorStandIn.size / 2, 2);
     }
   });
 
