@@ -29,6 +29,8 @@ interface Sprite {
   width: number;
   height: number;
   anchor: number[];
+  /** Pad-shaped pictures: the stone tile's box (x0, y0, x1, y1, fractions from the top left). */
+  tile?: number[];
 }
 const SPRITES: Record<SpriteName, Sprite> = Object.assign({}, ...Object.values(FRAGMENTS).map((f) => f.sprites));
 const URLS: Record<SpriteName, string> = Object.fromEntries(Object.entries(FILES).map(([path, url]) => [path.replace(/^.*\/(.+)\.webp$/, '$1'), url]));
@@ -39,8 +41,6 @@ const TILT = THREE.MathUtils.degToRad(CONFIG.board.roomy.tilt);
 const TOWARDS_CAMERA = new THREE.Vector3(0, Math.cos(TILT), Math.sin(TILT));
 /** Height of a grass tile's top. */
 const TOP = garden.floorStandIn.height;
-/** Height of the painted pad's face above the floor, where the sprite's anchor goes. */
-const FACE = garden.exit.faceHeight;
 
 const textures = new Map<SpriteName, THREE.Texture>();
 const pending: Promise<void>[] = [];
@@ -104,14 +104,41 @@ function sprite(name: SpriteName, lift = 0): THREE.Group {
   return holder;
 }
 
-/** How far a sprite with its anchor at `height` must slide towards the camera so its lower edge stays above the grass. */
-function clearance(name: SpriteName, height: number): number {
+/** Width of a cell's tile: a pad picture's stone tile is drawn this wide. */
+const CELL = garden.floorStandIn.size;
+/** A hair towards the camera, so a tile picture standing on the floor never fights with it. */
+const TILE_LIFT = 0.006;
+
+/**
+ * A pad-shaped picture standing in for a cell's tile. The owner's stone tile is lined up with the
+ * cell: as wide as a grass tile, its front foot on the cell's front edge at floor level, so under the
+ * game camera its outline sits where the grass tile it replaces would be (its back edge lands on the
+ * cell's back edge, the stone reading about a quarter of a cell high). Scaled uniformly: the picture
+ * is not stretched. `ref` is the pad whose tile box places it; another picture (the portal's column
+ * of light) can share it, its own anchor landing on the ref's anchor. The holder's origin is the
+ * tile's front foot, so a pop scales it up from where it stands.
+ */
+function tileSprite(name: SpriteName, ref: SpriteName = name): THREE.Group {
+  const r = SPRITES[ref];
   const s = SPRITES[name];
-  const below = (1 - s.anchor[1]) * s.height;
-  // The quad leans back by 90° - tilt, so going `below` down its own height drops `below * sin(tilt)`.
-  const drop = below * Math.sin(TILT);
-  const need = drop - (height - TOP) + 0.01;
-  return Math.max(0, need / TOWARDS_CAMERA.y);
+  if (!r.tile) throw new Error(`garden exit picture "${ref}" has no tile box: run tools/asset-pipeline/garden_exit/build.py`);
+  const [x0, , x1, y1] = r.tile;
+  const k = CELL / ((x1 - x0) * r.width);
+  // The ref's anchor, measured from the tile's front foot (x right, y up the picture), in cells.
+  const ax = (r.anchor[0] - (x0 + x1) / 2) * r.width * k;
+  const ay = (y1 - r.anchor[1]) * r.height * k;
+  const w = s.width * k;
+  const h = s.height * k;
+  const quad = new THREE.Mesh(new THREE.PlaneGeometry(w, h), material(name));
+  quad.position.set(ax + (0.5 - s.anchor[0]) * w, ay + (s.anchor[1] - 0.5) * h, 0);
+  quad.name = name;
+  quad.renderOrder = 2;
+  const holder = new THREE.Group();
+  holder.rotation.x = -(Math.PI / 2 - TILT);
+  holder.add(quad);
+  holder.position.set(0, 0, CELL / 2).addScaledVector(TOWARDS_CAMERA, TILE_LIFT);
+  holder.userData.sprite = name;
+  return holder;
 }
 
 function exitSpriteName(look: ExitLook, color?: Color): SpriteName {
@@ -186,7 +213,7 @@ function exitGlowMap(color?: Color): THREE.Texture {
 export function buildExit(color?: Color, look: ExitLook = EXIT_MOMENT_LOOKS.waiting): THREE.Group {
   const pad = new THREE.Group();
   pad.name = 'garden-exit-picture';
-  pad.add(buildFloorTile(false, false));
+  // The stone tile is the cell's tile: no grass tile under it.
   pad.userData.color = color;
   const span = 2 * garden.exit.radius + 2 * garden.exit.glowReach;
   const light = new THREE.PlaneGeometry(span, span);
@@ -211,14 +238,12 @@ export function setExitLook(pad: THREE.Group, look: ExitLook): void {
   }
   // Rays and portal exist only in the owner's green: a colour exit keeps its own colour then.
   const name = color && (look === 'rays' || look === 'portal') ? exitSpriteName('green', color) : exitSpriteName(look, color);
-  const main = sprite(name, clearance(name, TOP + FACE));
-  main.position.y += TOP + FACE;
+  const main = tileSprite(name);
   pad.add(main);
   pad.userData.check = main;
   if (color) {
     const shapeName = (look === 'grey' ? 'exit-grey' : `exit-shape-${color}`) as SpriteName;
-    const shape = sprite(shapeName, clearance(shapeName, TOP + FACE));
-    shape.position.y += TOP + FACE;
+    const shape = tileSprite(shapeName);
     shape.visible = false;
     pad.add(shape);
     pad.userData.shape = shape;
@@ -250,21 +275,19 @@ function entryLayers(pad: THREE.Group): EntryLayers {
   layers = { portal: null, portalMat: null, beam: null, beamQuad: null, beamMat: null, beamBottom: 0, beamHeight: 0, glowOpacity: 0 };
   if (!color) {
     // Own materials: the shared ones of the pictures must not fade on every exit at once.
-    layers.portal = sprite('exit-portal', clearance('exit-portal', TOP + FACE));
-    layers.portal.position.y += TOP + FACE;
+    layers.portal = tileSprite('exit-portal');
     const quad = layers.portal.children[0] as THREE.Mesh;
     layers.portalMat = new THREE.MeshBasicMaterial({ map: texture('exit-portal'), transparent: true, opacity: 0, depthWrite: false, toneMapped: false });
     quad.material = layers.portalMat;
     quad.renderOrder = 3;
-    layers.beam = sprite('exit-portal-beam', clearance('exit-portal', TOP + FACE));
-    layers.beam.position.y += TOP + FACE;
+    layers.beam = tileSprite('exit-portal-beam', 'exit-portal');
     layers.beamQuad = layers.beam.children[0] as THREE.Mesh;
     layers.beamMat = new THREE.MeshBasicMaterial({ map: texture('exit-portal-beam'), transparent: true, opacity: 0, depthWrite: false, toneMapped: false, blending: THREE.AdditiveBlending });
     layers.beamQuad.material = layers.beamMat;
     layers.beamQuad.renderOrder = 4;
-    const s = SPRITES['exit-portal-beam'];
-    layers.beamHeight = s.height;
-    layers.beamBottom = layers.beamQuad.position.y - s.height / 2;
+    const beamGeometry = layers.beamQuad.geometry as THREE.PlaneGeometry;
+    layers.beamHeight = beamGeometry.parameters.height;
+    layers.beamBottom = layers.beamQuad.position.y - layers.beamHeight / 2;
     layers.portal.visible = false;
     layers.beam.visible = false;
     pad.add(layers.portal, layers.beam);
@@ -314,15 +337,15 @@ export function exitEntry(pad: THREE.Group, k: number, calm = false): void {
 }
 
 /**
- * Turn tile: a cream pad with the clockwise arrow of the owner's turn button, on a grass tile.
+ * Turn tile: a cream pad with the clockwise arrow of the owner's turn button, standing in for the cell's tile.
  * A painted picture cannot turn with the chick, so `userData.disc` is an empty group (turning it is
  * harmless); `userData.glow` is a ring of light the game flashes while the tile turns a chick.
  */
-export function buildTurnTile(alt = false, pegs = true): THREE.Group {
-  const tile = buildFloorTile(alt, pegs);
-  const pic = sprite('turn', clearance('turn', TOP + FACE * 0.6));
-  pic.position.y += TOP + FACE * 0.6;
-  tile.add(pic);
+export function buildTurnTile(_alt = false, _pegs = true): THREE.Group {
+  // The stone tile is the cell's tile: no grass tile under it.
+  const tile = new THREE.Group();
+  tile.name = 'garden-turn-picture';
+  tile.add(tileSprite('turn'));
   const disc = new THREE.Group();
   disc.name = 'turn-disc';
   disc.position.y = TOP;
@@ -340,13 +363,13 @@ export function buildTurnTile(alt = false, pegs = true): THREE.Group {
   return tile;
 }
 
-/** Pressure plate: the owner's pad retoned lavender, on a grass tile. `userData.button` is the picture; the game lowers it while a chick stands on it. */
-export function buildPlate(alt = false, pegs = true): THREE.Group {
-  const plate = buildFloorTile(alt, pegs);
+/** Pressure plate: the owner's pad retoned lavender, standing in for the cell's tile. `userData.button` is the picture; the game lowers it while a chick stands on it. */
+export function buildPlate(_alt = false, _pegs = true): THREE.Group {
+  // The stone tile is the cell's tile: no grass tile under it.
+  const plate = new THREE.Group();
+  plate.name = 'garden-plate-picture';
   const button = new THREE.Group();
-  const pic = sprite('plate', clearance('plate', TOP + FACE * 0.6));
-  button.add(pic);
-  button.position.y = TOP + FACE * 0.6;
+  button.add(tileSprite('plate'));
   button.userData.restY = button.position.y;
   plate.add(button);
   plate.userData.button = button;

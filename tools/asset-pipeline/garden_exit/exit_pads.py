@@ -113,8 +113,13 @@ def hires_pad(look: str) -> tuple[np.ndarray, tuple[float, float]]:
     return rgba, at
 
 
-def _levelled(look: str) -> tuple[np.ndarray, tuple[float, float], float]:
-    """`hires_pad` plus the tile's top row in output px."""
+def tile_box(look: str = "green") -> tuple[float, float, float, float]:
+    """The stone tile's box (x0, y0, x1, y1) in `hires_pad(look)`'s px, edges not pixel centres."""
+    return _levelled(look)[2]
+
+
+def _levelled(look: str) -> tuple[np.ndarray, tuple[float, float], tuple[float, float, float, float]]:
+    """`hires_pad` plus the tile's box in output px."""
     rgba, (x0, y0, x1, y1) = _scaled(look)
     if LEVEL and look != "green":
         _, (_, gy0, _, gy1) = _scaled("green")
@@ -123,7 +128,7 @@ def _levelled(look: str) -> tuple[np.ndarray, tuple[float, float], float]:
         k = rgba.shape[0] / _scaled(look)[0].shape[0]
         y0, y1 = y0 * k, y1 * k
     fx, fy = face_fraction()
-    return rgba.copy(), (x0 + fx * (x1 - x0) - 0.5, y0 + fy * (y1 - y0) - 0.5), y0
+    return rgba.copy(), (x0 + fx * (x1 - x0) - 0.5, y0 + fy * (y1 - y0) - 0.5), (x0, y0, x1, y1)
 
 
 # For the entry animation (exitPictures.exitEntry): a column of the portal's own light that the game
@@ -198,7 +203,7 @@ def run() -> None:
     for look in LOOKS:
         rgba, at = hires_pad(look)
         print(f"exit-{look}: {rgba.shape[1]}x{rgba.shape[0]} px, anchor ({at[0]:.1f}, {at[1]:.1f})")
-        sprites[f"exit-{look}"] = (rgba, at, 1.0 / PAD_STONE_OUT_PX)
+        sprites[f"exit-{look}"] = (rgba, at, 1.0 / PAD_STONE_OUT_PX, tile_box(look))
     beam, bat = portal_beam()
     ring = ring_centre_row(hires_pad("portal")[0])
     sprites["exit-portal-beam"] = (beam, bat, 1.0 / PAD_STONE_OUT_PX)

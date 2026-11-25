@@ -184,6 +184,7 @@
   },
   "floorStandIn": {
     "_about": "A plain grass tile, only so the special tiles can be shown on their own. In the game the theme uses the board session's grass tile (useGardenFloorTile).",
+    "size": 1,
     "height": 0.2,
     "radius": 0.15,
     "top": "#8BD14A",

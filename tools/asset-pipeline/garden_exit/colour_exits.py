@@ -301,5 +301,6 @@ def run() -> None:
     sprites = {}
     for name, rgba in pads.items():
         if not name.startswith("_"):
-            sprites[name] = (to_frame(rgba, size), at, 1.0 / PAD_STONE_OUT_PX)
+            from exit_pads import tile_box
+            sprites[name] = (to_frame(rgba, size), at, 1.0 / PAD_STONE_OUT_PX, tile_box("green"))
     write_part("colour_exits", sprites)
