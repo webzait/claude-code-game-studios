@@ -6,7 +6,8 @@ Build the garden board's grass bed (the green between the tiles) as one repeatin
 
 Needs Pillow and numpy. Writes next to this file:
   bed.webp     the bed, laid over the underlay's top, repeating every `bedRepeat` cells
-  fringe.webp  a strip of upright blades along the inside of the rim (`underlay.fringe`)
+  blades.webp  strips of upright blades on a see-through ground, for the blade cards that
+               make up the whole bed (`underlay.blades`)
 src/render/parts/garden/underlay.ts lays both out (sizes in data/themes/garden/underlay.json).
 
 Why it is built and not cut: in the owner's picture 01-board-full the bed shows only in thin
@@ -31,7 +32,7 @@ from PIL import Image, ImageDraw, ImageFilter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-SIZE = 640           # px of the finished patch (one repeat)
+SIZE = 256           # px of the finished patch (one repeat); only the shade between the blades shows
 SS = 3               # drawn this many times larger, then scaled down
 REPEAT = 1.25        # cells per repeat; keep equal to underlay.bedRepeat (px per cell = SIZE / REPEAT)
 SEED = 11
@@ -52,27 +53,38 @@ BLADE_WIDTH = (0.02, 0.028)
 LEAF_STEP = 0.022            # grid step of the leaves
 TILT = 0.38                  # largest lean either way, radians
 
-# The fringe: a strip of taller blades standing up along the inside of the rim, as in
-# 01-board-full, where blade tips stand up against the braid all round. One repeat is FRINGE_W
-# cells along the rim by FRINGE_H cells up; keep equal to underlay.fringe.repeat and .height.
-FRINGE_SIZE = (512, 120)     # px
-FRINGE_W = 1.0
-FRINGE_H = 0.234
-FRINGE_LEN = (0.6, 1.0)      # blade length as a fraction of the strip's height
-FRINGE_STEP = 0.026          # cells between roots along the strip
+# The blade cards: the whole bed is rows of see-through cards standing in the gaps
+# (underlay.blades). Each card shows a row of upright blades from this atlas: BLADE_VARIANTS
+# strips stacked, each BLADE_W cells wide (it repeats along a row) and BLADE_H cells tall, at
+# BLADE_PX px per cell. Keep BLADE_W, BLADE_H and the variant count equal to underlay.blades.
+BLADE_PX = 1024
+BLADE_W = 0.5
+BLADE_H = 0.12
+BLADE_VARIANTS = 4
+BLADE_PAD = 8                # see-through px between strips, so mipmaps do not bleed
+BLADE_STEP = 0.012           # cells between roots along a strip
+BLADE_LENGTHS = (0.5, 1.0)   # blade length as a fraction of the strip's height
+BLADE_WIDTHS = (0.012, 0.018)
+# The blades' own colours: deeper and less yellow than the tiles, as the bed in 01-board-full
+# (about 0.55 of the tiles' red and 0.7 of their green), with light lime tips.
+B_ROOT = (34, 92, 0)
+B_MID = (86, 168, 0)
+B_TIP = (168, 228, 24)
+B_EDGE = (178, 232, 60)
 
 
 def lerp(a, b, t):
     return tuple(int(round(a[i] + (b[i] - a[i]) * t)) for i in range(3))
 
 
-def blade_colour(t, shade):
+def blade_colour(t, shade, palette=None):
     """Colour at fraction t from root (0) to tip (1), darkened by shade (0..1)."""
-    c = lerp(ROOT, MID, t / 0.45) if t < 0.45 else lerp(MID, TIP, (t - 0.45) / 0.55)
+    root, mid, tip = palette[:3] if palette else (ROOT, MID, TIP)
+    c = lerp(root, mid, t / 0.45) if t < 0.45 else lerp(mid, tip, (t - 0.45) / 0.55)
     return tuple(int(v * shade) for v in c)
 
 
-def blade(draw, x, y, length, width, angle, bend, shade, cell):
+def blade(draw, x, y, length, width, angle, bend, shade, cell, palette=None):
     """One pointed blade from root (x, y), pointing up (-y) turned by angle, bending by bend.
     Drawn as stacked quads, each its own colour, so the root-to-tip shading is smooth."""
     segs = 8
@@ -91,7 +103,7 @@ def blade(draw, x, y, length, width, angle, bend, shade, cell):
         nx, ny = np.cos(a), np.sin(a)
         pts_l.append((cx - nx * w, cy - ny * w))
         pts_r.append((cx + nx * w, cy + ny * w))
-        cols.append(blade_colour(t, shade))
+        cols.append(blade_colour(t, shade, palette))
     for i in range(segs):
         quad = [pts_l[i], pts_r[i], pts_r[i + 1], pts_l[i + 1]]
         draw.polygon(quad, fill=cols[i + 1])
@@ -100,7 +112,7 @@ def blade(draw, x, y, length, width, angle, bend, shade, cell):
         mid_l = [(pts_l[i][0] * 0.7 + pts_r[i][0] * 0.3, pts_l[i][1] * 0.7 + pts_r[i][1] * 0.3),
                  (pts_l[i + 1][0] * 0.7 + pts_r[i + 1][0] * 0.3, pts_l[i + 1][1] * 0.7 + pts_r[i + 1][1] * 0.3)]
         if t > 0.3:
-            edge = lerp(cols[i + 1], tuple(int(v * shade) for v in EDGE), min(1, (t - 0.3) * 1.2) * 0.8)
+            edge = lerp(cols[i + 1], tuple(int(v * shade) for v in (palette[3] if palette else EDGE)), min(1, (t - 0.3) * 1.2) * 0.8)
             draw.polygon([pts_l[i], mid_l[0], mid_l[1], pts_l[i + 1]], fill=edge)
 
 
@@ -156,47 +168,62 @@ def build():
     return img.resize((SIZE, SIZE), Image.LANCZOS)
 
 
-def build_fringe():
-    """The fringe strip: blades rooted along the bottom edge, pointing up, on a see-through
-    ground, repeating along its length. See-through pixels take the colour of the blades, so the
-    edges show no dark halo when the texture is filtered."""
-    rand = np.random.default_rng(SEED + 1)
-    w, h = FRINGE_SIZE[0] * SS, FRINGE_SIZE[1] * SS
-    cell = w / FRINGE_W
-    img = Image.new('RGB', (w, h), MID)
-    mask = Image.new('L', (w, h), 0)
+def build_blades():
+    """The blade atlas: BLADE_VARIANTS strips of upright blades rooted along each strip's
+    bottom edge, on a see-through ground, each repeating along its length. Within a strip some
+    blades stand behind the others, darker, so the light tips of the front ones stand out.
+    See-through pixels take a blade colour, so filtered edges show no dark halo."""
+    rand = np.random.default_rng(SEED + 2)
+    sw, sh = int(BLADE_W * BLADE_PX), int(round(BLADE_H * BLADE_PX))
+    W, H = sw * SS, (sh + BLADE_PAD) * BLADE_VARIANTS * SS
+    cell = BLADE_PX * SS
+    img = Image.new('RGB', (W, H), B_MID)
+    mask = Image.new('L', (W, H), 0)
     draw, mdraw = ImageDraw.Draw(img), ImageDraw.Draw(mask)
-    k = int(round(FRINGE_W / FRINGE_STEP))
-    step = w / k
-    blades = []
-    for i in range(k):
-        blades.append(dict(
-            x=(i + rand.uniform(0, 1)) * step,
-            y=h * rand.uniform(1.0, 1.06),
-            length=rand.uniform(*FRINGE_LEN) * h,
-            width=rand.uniform(*BLADE_WIDTH) * cell * 1.7,
-            angle=rand.uniform(-TILT, TILT) * 0.8,
-            bend=rand.uniform(-0.3, 0.3),
-            shade=rand.uniform(0.84, 1.0),
-            back=rand.uniform(0, 1),
-        ))
-    # Back to front: a back row of dark blades (the shade under the braid in the picture), so
-    # the light tips of the front row stand out against it.
-    blades.sort(key=lambda b: b['back'])
-    for b in blades:
-        shade = b['shade'] * (0.52 + 0.1 * b['back'] if b['back'] < 0.45 else 1.0)
-        for ox in (-w, 0, w):
-            blade(draw, b['x'] + ox, b['y'], b['length'], b['width'], b['angle'], b['bend'], shade, cell)
-            blade_mask(mdraw, b['x'] + ox, b['y'], b['length'], b['width'], b['angle'], b['bend'])
-    img = img.resize(FRINGE_SIZE, Image.LANCZOS)
-    mask = mask.resize(FRINGE_SIZE, Image.LANCZOS)
+    for v in range(BLADE_VARIANTS):
+        top = v * (sh + BLADE_PAD) * SS + BLADE_PAD // 2 * SS
+        bottom = top + sh * SS
+        k = int(round(BLADE_W / BLADE_STEP))
+        step = sw * SS / k
+        blades = []
+        for i in range(k):
+            blades.append(dict(
+                x=(i + rand.uniform(0, 1)) * step,
+                y=bottom + rand.uniform(0.0, 0.04) * sh * SS,
+                length=rand.uniform(*BLADE_LENGTHS) * sh * SS * 0.98,
+                width=rand.uniform(*BLADE_WIDTHS) * cell,
+                angle=rand.uniform(-TILT, TILT) * 0.7,
+                bend=rand.uniform(-0.3, 0.3),
+                shade=rand.uniform(0.86, 1.0),
+                back=rand.uniform(0, 1),
+            ))
+        blades.sort(key=lambda b: b['back'])
+        # Clip each strip to its own band, so no blade reaches into the next.
+        band = Image.new('L', (W, H), 0)
+        ImageDraw.Draw(band).rectangle([0, top, W, bottom], fill=255)
+        layer = Image.new('RGB', (W, H), B_MID)
+        lmask = Image.new('L', (W, H), 0)
+        ld, lm = ImageDraw.Draw(layer), ImageDraw.Draw(lmask)
+        for b in blades:
+            shade = b['shade'] * (0.62 + 0.2 * b['back'] if b['back'] < 0.35 else 1.0)
+            length = min(b['length'], b['y'] - top - 2 * SS)
+            for ox in (-sw * SS, 0, sw * SS):
+                blade(ld, b['x'] + ox, b['y'], length, b['width'], b['angle'], b['bend'], shade, cell, (B_ROOT, B_MID, B_TIP, B_EDGE))
+                blade_mask(lm, b['x'] + ox, b['y'], length, b['width'], b['angle'], b['bend'])
+        from PIL import ImageChops
+        lmask = ImageChops.multiply(lmask, band)
+        img.paste(layer, (0, 0), band)
+        mask = ImageChops.lighter(mask, lmask)
+    size = (sw, (sh + BLADE_PAD) * BLADE_VARIANTS)
+    img = img.resize(size, Image.LANCZOS)
+    mask = mask.resize(size, Image.LANCZOS)
     rgba = img.convert('RGBA')
     rgba.putalpha(mask)
     return rgba
 
 
 def blade_mask(draw, x, y, length, width, angle, bend):
-    """The same outline as blade(), filled white, for the fringe's see-through mask."""
+    """The same outline as blade(), filled white, for the blade atlas's see-through mask."""
     segs = 8
     left, right = [], []
     cx, cy = x, y
@@ -217,9 +244,12 @@ def main():
     out = os.path.join(HERE, 'bed.webp')
     build().save(out, 'WEBP', quality=QUALITY, method=6)
     print('bed.webp', SIZE, 'px,', round(os.path.getsize(out) / 1024, 1), 'kB')
-    out = os.path.join(HERE, 'fringe.webp')
-    build_fringe().save(out, 'WEBP', quality=QUALITY, alpha_quality=80, method=6, exact=True)
-    print('fringe.webp', FRINGE_SIZE, round(os.path.getsize(out) / 1024, 1), 'kB')
+    out = os.path.join(HERE, 'blades.webp')
+    atlas = build_blades()
+    # Lower quality than the bed: 34 kB instead of 51, the blades' colour and outline change by
+    # under 1.5 % on average (measured against the uncompressed atlas).
+    atlas.save(out, 'WEBP', quality=62, alpha_quality=70, method=6, exact=True)
+    print('blades.webp', atlas.size, round(os.path.getsize(out) / 1024, 1), 'kB')
 
 
 if __name__ == '__main__':

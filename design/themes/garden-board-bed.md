@@ -23,7 +23,7 @@ green with sharp, light blade tips, and it sits well next to the tiles.
    to every pixel (blue went from 23 to 36 out of 255 when measured), which washes out the
    yellow-green and turns it dull olive.
 
-## What it is now
+## The flat bed (2026-11-24; since 2026-11-25 only the ground under the blades, at 256 px)
 
 The first version (tufts of long blades, 384 px) was sharp, but the owner asked for "compacter
 en hogere resolutie gras" (more compact grass at a higher resolution), and pointed to the fur
@@ -70,40 +70,90 @@ seed is fixed, so every run writes the same file. If you change `REPEAT` there, 
 The parts page's rim card (`src/parts/garden-board/rim.ts`) now imports the bed from its new
 place.
 
-## Blades along the rim
+## The whole bed is blades (2026-11-25)
 
-The owner said: "aan de rand moet je wel wat grassprieten zien" (at the rim you should see some
-grass blades). In `01-board-full` a row of blades stands up against the braid all round, with light
-tips against the dark shade under the braid. In the game the rim is a flat picture lying at
-height 0.3, and the bed just ran under it, so nothing stood up there.
+The owner said: "Het grasveld moet in zijn geheel uit sprieten bestaan. Hoeft niet perse op de
+plekken waar tegels liggen. Goede resolutie net als in het voorbeeld." (The whole bed must be
+made of blades, not under the tiles, at a good resolution as in the picture.) In `01-board-full`
+the bed shows separate, upright blades with light tips everywhere, not a flat picture of blades.
 
-- **The picture.** `build-bed.py` also writes `fringe.webp` (512×120 px, about 10 kB): blades
-  rooted along the bottom edge and pointing up, on a see-through ground. Behind them is a row of
-  dark blades (the shade under the braid), so the light tips of the front row stand out. It
-  repeats along its length.
-- **The band.** `fringeGeometry` (in `underlay.ts`) lays it on a band round the inside of the
-  rim. The band starts `outset` 0.04 under the rim's inner edge and rises `height` 0.2 (the tiles
-  are 0.2 high, the rim picture lies at 0.3).
-- **Why the band does not lean in everywhere.** At the 30° camera tilt, a band that leans toward
-  the camera on the far side is seen almost exactly edge-on, as a line. So it stands upright on
-  the far side. On the left and right sides it leans in by `lean` 0.12 (by the sideways part of
-  the rim's normal), where upright blades would be edge-on instead. The near side is mostly
-  behind the rim, as in the picture.
-- **Material and shadows.** Matte, toned like the bed, both faces, `alphaTest` 0.5. It takes no
-  shadows and casts none: a cut-out casts a square shadow, and the rim's shadow turned it into a
-  dark band. The game's fusing (`fuse` in `src/render/kit.ts`) turns every shadow on, so the band
-  is marked `userData.keepApart` and kept as it is. That costs one extra draw call and under 1,000
-  triangles on an 8×8 board.
+**Approach: rows of blade cards.** `bladeFieldGeometry` (in `underlay.ts`) stands a row of
+see-through cards every `blades.step` (0.03) cells, from the far rim to the near one. Each card
+shows a row of upright blades from `blades.webp` and leans back from the camera by `lean` (45°),
+so at the game's 30° tilt it is seen almost face-on (an upright card would show at half height,
+one leaning back at 60° would be edge-on for the rows behind it). Each card fills exactly one
+stretch of bed along its row (`bedSpans`): a row along a gap between two rows of tiles is one long
+card the width of the bed; a row through a row of tiles is one short card per gap, its ends
+`tuck` (0.02) inside the tile walls so no cut edge shows. Where tiles are, there is nothing.
+
+Why cards and not one triangle per blade: one triangle per blade needs about 50,000 triangles
+on an 8×8 board for the same density, and the 8×8 board's budget (the robot board,
+19,596 triangles, `garden-rim.test.ts`) leaves about 13,000. Each card carries about 30 blades
+in 2 triangles. Why cards and not the old flat picture: the blades of one row stand in front of
+the rows behind and hide their roots, so the bed has depth and the light tips stand out, as in
+the picture.
+
+- **No rows or repeats in view.** Every row is jittered in depth (`jitter`), has its own height
+  (`heightJitter`, ±20 %), its own strip of the atlas (4 `variants`) and its own offset along it.
+  The cards in one row share the row's offset in world units, so a row's blades run on across
+  a tile unbroken.
+- **Darker at the root.** Each card's bottom is shaded to `rootShade` (vertex colours), as the
+  blades in front would shade it. The flat bed under the cards is the shade between them
+  (`ground` 0.95 of its picture).
+- **Taller against the braid.** Within `rimBand` (0.12) of the far rim the rows grow up to
+  `rimHeight` (2) times taller; on the left and right the end of every row is a separate taller
+  card. This replaces the separate fringe band (and `fringe.webp`) of the previous version, so it
+  costs no extra draw call.
+- **The picture.** `build-bed.py` writes `blades.webp`: 4 strips, each 0.5 cells wide (it
+  repeats along a row) and 0.12 cells tall, at 1,024 px per cell (512 × 524 px). Blades are
+  rooted on the strip's bottom edge, leaf-shaped, 0.012 to 0.018 cells wide, a root every 0.012
+  cells, shaded from a deep green root to a light lime tip with a lit edge; a third of them stand
+  behind, darker. Colours are deeper and less yellow than the tiles, as in the picture (there the
+  bed has about 0.55 of the tiles' red and 0.7 of their green).
+- **Material.** `MeshLambertMaterial` with `alphaTest` 0.5 and `alphaToCoverage`, so the cut
+  edges are antialiased by the renderer's multisampling instead of stair-stepped. Both faces,
+  `tone` 1.4. The cards take the tiles' and chicks' shadows but cast none (a cut-out casts a
+  square shadow). They are marked `userData.keepApart`, because `fuse` in `src/render/kit.ts`
+  would turn their shadows on.
+- **No browser, no blades.** In the unit tests there is no picture, so `buildUnderlay` leaves the
+  cards out (as the fringe band was before). `tests/unit/garden-bed-blades.test.ts` tests
+  `bladeFieldGeometry` and `bedSpans` directly, and counts the cards into the 8×8 budget.
+
+| | Before (flat bed and fringe) | Now (blade cards) |
+|---|---|---|
+| Pictures | `bed.webp` 71 kB + `fringe.webp` 10 kB | `bed.webp` 17 kB (256 px) + `blades.webp` 34 kB |
+| Triangles on 8×8 | 322 + about 1,000 | 322 + 5,308 (4×4: 1,776; 6×5: 2,766) |
+| Whole 8×8 board | about 7,300 | about 11,600 (budget 19,600) |
+| Draw calls for the bed | 3 (bed, soil, fringe) | 3 (bed, soil, blades) |
+
+`bed.webp` went from 640 to 256 px: only the shade between the blades shows of it now, and side
+by side at 1:1 there was no visible difference. `blades.webp` is saved at WebP quality 62: 34 kB
+instead of 51, with colour and outline off by under 1.5 % on average.
+
+**Colour.** In level 1 the bed between the tiles measures (103, 153, 19) on average, the picture's
+bed (101, 161, 2). The game's tiles are paler than the picture's, see below.
 
 ## Evidence
 
-`production/qa/evidence/garden-board/bed/`: levels 1, 7 and 11 at 390×844 with
-deviceScaleFactor 3 (`in-game-*`). The reference, the old bed and the new bed side by side
-(`compare-*`, at half size). A close-up at 1:1 device pixels next to the reference at the same
-cell size (`closeup-level01-bed`, with the first try between). The rim blades at 1:1,
-without and with them, next to the reference (`closeup-level01-rim-blades`). The patch repeated 2×2 (`bed-texture-2x2-repeat`).
+`production/qa/evidence/garden-board/bed-blades/` (the blade bed): levels 1, 7 and 11 at 390×844
+with deviceScaleFactor 3 (`in-game-*`); the reference, the previous flat bed and the blade bed
+side by side (`compare-*`); close-ups at 1:1 device pixels at a tile crossing and at the far rim,
+next to the reference scaled to the same cell size (`closeup-level01-*-1to1`); the same spot drawn
+at 2× and at 3× (`closeup-level01-2x-vs-3x-1to1`, see below); the atlas at 2× (`blade-atlas-2x`).
+Shots: `node assets/turnflock/garden/board/bed/bed-shots.mjs <dir> 0,6,10` after
+`npm run build:single`.
+
+`production/qa/evidence/garden-board/bed/`: the previous flat bed and fringe band.
 
 ## Where it still differs from the reference
+
+- **Drawn at 2×.** The game draws at most 2 pixels per CSS pixel
+  (`setPixelRatio(Math.min(devicePixelRatio, 2))` in `src/render/boardView.ts`, not the bed's file),
+  and a 3× phone stretches that 1.5 times. The blades are then softer than they are: drawn at 3×
+  they are clearly separate and pointed (`closeup-level01-2x-vs-3x-1to1`). Raising the limit to 3
+  sharpens the whole board, at 2.25 times the pixels to draw. That is the owner's choice.
+- **Finer than the picture.** The picture's bed blades are a little larger and fewer. Larger ones
+  turned blocky at 2× (tried: 0.017 to 0.025 cells wide), so they are kept fine.
 
 - **Wider gaps.** The game's gaps between tiles, plus the tile sides seen at the 30° tilt, show
   about twice as much bed as the reference does. That is the tile's size, set in `tile.json` and

@@ -18,13 +18,27 @@
     "soil": "#6B4220",
     "soilDark": "#4A2C14"
   },
-  "fringe": {
-    "$comment": "Grass blades standing up along the inside of the rim, as in 01-board-full: fringe.webp (built by build-bed.py) on a band rooted outset cells under the rim's inner edge, rising height cells; upright on the far side, leaning in by lean cells on the left and right sides (seen edge-on otherwise). repeat: cells along the rim per picture (keep equal to FRINGE_W); height is about FRINGE_H. cornerRadius: the band's corners, inside the rim picture's round inner corners.",
-    "height": 0.2,
-    "lean": 0.12,
+  "blades": {
+    "$comment": "The whole bed is grass blades: rows of see-through cards (blades.webp, built by build-bed.py) standing in every gap between the tiles and between the tiles and the rim, leaning back from the camera by lean degrees so they are seen face-on. A row every step cells (jittered by jitter of a step), each card height cells tall (times 1 +- heightJitter), tucked tuck cells into the tile walls so no root shows. The picture repeats every repeat cells along a row and has variants strips of stripHeight (keep equal to BLADE_W, BLADE_VARIANTS and BLADE_H). Inside the rim's inner edge by outset, corners cornerRadius. rootShade darkens each card at the ground, as the blades in front shade it. ground: the bed's tone under the blades. stripPx and padPx: one strip's height and the see-through gap between strips in the atlas, in px (BLADE_H * BLADE_PX and BLADE_PAD). rimBand, rimHeight: within rimBand cells of the rim on the far, left and right sides the blades grow up to rimHeight times taller, standing against the braid as in the picture.",
+    "step": 0.03,
+    "jitter": 0.4,
+    "height": 0.11,
+    "heightJitter": 0.2,
+    "lean": 45,
+    "tuck": 0.02,
     "outset": 0.04,
-    "repeat": 1.0,
     "cornerRadius": 0.35,
-    "alphaTest": 0.5
+    "repeat": 0.5,
+    "stripHeight": 0.12,
+    "variants": 4,
+    "rootShade": 0.8,
+    "alphaTest": 0.5,
+    "tone": 1.4,
+    "ground": 0.95,
+    "seed": 23,
+    "stripPx": 123,
+    "padPx": 8,
+    "rimBand": 0.12,
+    "rimHeight": 2.0
   }
 }
